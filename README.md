@@ -1,5 +1,5 @@
 <!-- README.md -->
-# helloagents
+# HelloAGENTS
 
 <p align="center"><a href="./README_EN.md">ENGLISH</a></p>
 
@@ -16,29 +16,24 @@
 
 ## 目录结构
 ```
+%USERPROFILE%/.codex/AGENTS.md  # 全局规则（供各大模型读取）
 
 your-project/
-├─ AGENTS.md                 # 全局规则（供各大模型读取）
-├─ PROJECTWIKI.md            # 项目 Wiki（代码与文档强一致）
-├─ adr/                      # 架构决策记录（ADR）
-├─ CHANGELOG.md              # 遵循 Keep a Changelog
-├─ docs/                     # 其他文档
-└─ src/                      # 源码
+├─ PROJECTWIKI.md               # 项目 Wiki（代码与文档强一致）
+├─ adr/                         # 架构决策记录（ADR）
+├─ CHANGELOG.md                 # 遵循 Keep a Changelog
+├─ docs/                        # 其他文档
+└─ src/                         # 源码
 
 ````
 
-## 环境与安装
-- 待补充（TBD）
-
 ## 快速开始
-```bash
-# 将本仓复制到你的项目
-cp -r helloagents/* your-project/
-# 重命名
-mv your-project/README.md your-project/AGENTS.md
-```
 
-## 使用说明
+# 将本仓中的AGENTS.md复制到你的当前用户的主目录（如 C:\Users\ZhangSan）
+  资源管理器地址栏输入：%USERPROFILE%\.codex
+# 关闭CLI重新进入
+
+## 逻辑说明
 
 - **C0｜纯咨询（No-Code）**：仅给出答案或建议，不读写项目文件。
 - **P0｜方案规划（No-Exec）**：生成可落地方案，不修改代码。
@@ -78,19 +73,19 @@ mv your-project/README.md your-project/AGENTS.md
    - 允许商业使用。要求在分发中保留 **LICENSE** 与 **NOTICE** 信息（版权与许可说明）。
    - 在你的分发包中加入 `NOTICE`（示例）：
      ```
-     本产品包含 "helloagents"（作者：hellowind），依据 Apache License 2.0 授权。
+     本产品包含 "HelloAGENTS"（作者：hellowind），依据 Apache License 2.0 授权。
      ```
 
 2. **文档（README/PROJECTWIKI/图表）** — **CC BY 4.0** © 2025 hellowind
    - 允许商业使用，但**必须署名**；需给出许可链接并标注是否做了修改。
    - 复用文档时建议的署名例句：
      ```
-     文本/图表改编自 "helloagents" —— © 2025 hellowind，CC BY 4.0。
+     文本/图表改编自 "HelloAGENTS" —— © 2025 hellowind，CC BY 4.0。
      ```
 
 **统一署名建议（代码与文档皆可）**：
 ```
-helloagents — © 2025 hellowind. 代码：Apache-2.0；文档：CC BY 4.0。
+HelloAGENTS — © 2025 hellowind. 代码：Apache-2.0；文档：CC BY 4.0。
 ```
 
 ## 致谢 / 上游模板
