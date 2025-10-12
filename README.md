@@ -1,61 +1,74 @@
+<!-- README.md -->
 # helloagents
 
-> **面向 AI 编程智能体的「多阶段 + 项目 Wiki 驱动」规则集。**
-> 本项目在上游 **workflow3.md**（`geekoe/workflow3`）的三阶段工作流基础上进行二次扩展，**融合项目 Wiki 全功能**（ADR、Mermaid 图表、变更日志、治理规范等），**新增错误处理与复盘阶段**。
->
-> 上游模板：`workflow3.md`（geekoe/workflow3）。
+<p align="center"><a href="./README_EN.md">ENGLISH</a></p>
 
-- 上游仓库：<https://github.com/geekoe/workflow3>
-- 模板文件：<https://github.com/geekoe/workflow3/blob/main/src/templates/workflow3.md>
+**面向 AI 编程智能体的「多阶段 + 项目 Wiki 驱动」规则集。**
+本项目在上游 **workflow3.md**（`geekoe/workflow3`）三阶段流程的基础上扩展，新增完整的 **项目 Wiki 驱动机制**（ADR、Mermaid 图表、变更日志、治理规范等），并加入**意图分流**与**错误处理复盘**阶段，使 AI 编程流程具备自解释性、可追溯性与可持续一致性。
 
-## 亮点特性
+## 特性
+- **五阶段闭环**：Router → Analyze → Plan → Execute → Error Handling（按需触发）
+- **项目 Wiki 一等公民**：`PROJECTWIKI.md` 作为事实来源，与代码保持**强一致**
+- **Mermaid-first 图表体系**：架构、时序、ER、类、依赖、状态等图表皆可版本化管理
+- **治理内建**：ADR、Conventional Commits、Keep a Changelog、原子化提交
+- **安全边界**：禁止私自运行服务或外联生产资源；统一密钥管理方案
+- **最小化原则（No-Write-by-Default）**：仅在项目型请求（P1/P2）中读写 `PROJECTWIKI.md`
 
-- **多阶段闭环**：Analyze → Plan → Execute → Error Handling（按需触发）
-- **项目 Wiki 一等公民**：`PROJECTWIKI.md` 作为事实来源，要求与代码**强一致**；长文档可放在仓库 **GitHub Wiki**。
-- **Mermaid-first 图表**：系统、时序、ER、类、依赖、状态等图全部使用 Mermaid，文本即图，便于评审与版本控制。
-- **工程治理内建**：ADR（架构决策记录）、Conventional Commits + 原子化提交、Keep a Changelog。
-- **安全边界控制**：禁止私自运行服务、外联生产资源，统一密钥管理方案。
-
-## 全局用法（适配大模型）
-
-**方式之一：将本 README 重命名为 `AGENTS.md` 并置于仓库根目录。**
-这样，多数 AI 编程大模型即可将其当作**项目级全局提示词**来加载执行（阶段、产出、Do/Don't 规则）。
-如需长文档空间，可开启仓库 **Wiki**。
-
-## 快速开始
-
-1. 复制本仓内容到你的项目；
-2. 将本文件重命名为 **`AGENTS.md`**（项目根目录）；
-3. 新建 `/adr` 与 `CHANGELOG.md`；
-4. （可选）开启 **GitHub Wiki** 存放教程/设计长文。
-
-### 目录建议
-
+## 目录结构
 ```
+
 your-project/
-├─ AGENTS.md                 # ← 本规则（供各大模型读取的全局提示词）
-├─ PROJECTWIKI.md            # ← 项目 Wiki（与代码同步更新）
-├─ adr/                      # ADR-0001.md, ADR-0002.md, ...
-├─ CHANGELOG.md              # Keep a Changelog
+├─ AGENTS.md                 # 全局规则（供各大模型读取）
+├─ PROJECTWIKI.md            # 项目 Wiki（代码与文档强一致）
+├─ adr/                      # 架构决策记录（ADR）
+├─ CHANGELOG.md              # 遵循 Keep a Changelog
 ├─ docs/                     # 其他文档
 └─ src/                      # 源码
+
+````
+
+## 环境与安装
+- 待补充（TBD）
+
+## 快速开始
+```bash
+# 将本仓复制到你的项目
+cp -r helloagents/* your-project/
+# 重命名
+mv your-project/README.md your-project/AGENTS.md
 ```
 
-### 阶段总览（产出要求）
+## 使用说明
 
-- **Phase 1 · Analyze（【分析问题】）**：根因与影响面、待确认决策；禁止改代码。
-- **Phase 2 · Plan（【制定方案】）**：**代码变更清单 + Wiki 变更清单（含 Mermaid 图）**、风险与回滚、验收标准（AC/DoD）；**需用户批准**。
-- **Phase 3 · Execute（【执行方案】）**：按方案实现；类型/静态检查；**同步更新 `PROJECTWIKI.md`**；建立代码↔文档追溯（优先原子提交）。
-- **Phase 4 · Error Handling（【错误处理】）**：按需触发，当用户报告错误时进行错误复现、修复和复盘，并更新PROJECTWIKI。
+- **C0｜纯咨询（No-Code）**：仅给出答案或建议，不读写项目文件。
+- **P0｜方案规划（No-Exec）**：生成可落地方案，不修改代码。
+- **P1｜现有项目变更**：已有仓库代码，进入【分析问题】。
+- **P2｜新建项目**：无现成代码，从零生成脚手架与 `PROJECTWIKI.md`。
 
-```mermaid
-flowchart LR
-  A[Phase 1: Analyze] -->|approved| B[Phase 2: Plan]
-  B -->|user approval| C[Phase 3: Execute]
-  C --> F[Done]
-  F -.->|Error Reported| D[Phase 4: Error Handling]
-  D --> B
-```
+## 开发与构建
+
+- 遵循 **Conventional Commits** 与 **Keep a Changelog**
+- 所有文档与代码修改需保持原子化提交
+- Mermaid 图表用于架构与依赖可视化
+
+## 兼容性与已知问题
+
+- 目前仅验证在 GitHub 项目结构下的可用性
+- 未来版本计划扩展对私有 Wiki 与外部知识库的同步支持
+
+## 版本与升级
+
+- 新增阶段一【意图分流】与最小化写入原则
+- 保持与上游 `workflow3.md` 模板兼容
+
+## 贡献
+
+- 欢迎提交改进文档结构、Mermaid 模板或 ADR 模型的 PR
+
+## 安全
+
+- 严禁提交密钥或生产凭证
+- 推荐使用 `.env.example` + CI 注入方式
 
 ## 许可证与署名（**允许商用，但必须注明出处**）
 
@@ -80,6 +93,7 @@ flowchart LR
 helloagents — © 2025 hellowind. 代码：Apache-2.0；文档：CC BY 4.0。
 ```
 
-## 致谢
-- 上游：**workflow3.md**（geekoe/workflow3）。
-- Mermaid、Conventional Commits、Keep a Changelog、GitHub Wiki 文档与生态。
+## 致谢 / 上游模板
+- 上游：**workflow3.md**（geekoe/workflow3）
+- Mermaid、Conventional Commits、Keep a Changelog、GitHub Wiki 文档与生态
+````
