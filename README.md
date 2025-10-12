@@ -1,10 +1,10 @@
 <!-- README.md -->
 # HelloAGENTS
 
-<p align="center"><a href="./README_EN.md">ENGLISH</a></p>
+<p align="center">简体中文    <a href="./README_EN.md">ENGLISH</a></p>
 
-**面向 AI 编程智能体的「多阶段 + 项目 Wiki 驱动」规则集。**
-本项目在上游 **workflow3.md**（`geekoe/workflow3`）三阶段流程的基础上扩展，新增完整的 **项目 Wiki 驱动机制**（ADR、Mermaid 图表、变更日志、治理规范等），并加入**意图分流**与**错误处理复盘**阶段，使 AI 编程流程具备自解释性、可追溯性与可持续一致性。
+**`HelloAGENTS`是一个面向 AI 编程智能体的「多阶段 + 项目 Wiki 驱动」规则集。**
+本项目在上游 **workflow3.md**（<a href="./README_EN.md" target="_blank">geekoe/workflow3</a>）三阶段流程的基础上扩展，新增完整的 **项目 Wiki 驱动机制**（ADR、Mermaid 图表、变更日志、治理规范等），并加入**意图分流**与**错误处理复盘**阶段，使 AI 编程流程具备自解释性、可追溯性与可持续一致性。
 
 ## 特性
 - **五阶段闭环**：Router → Analyze → Plan → Execute → Error Handling（按需触发）
@@ -27,11 +27,10 @@ your-project/
 
 ````
 
-## 快速开始
+## 安装使用
 
-# 将本仓中的AGENTS.md复制到你的当前用户的主目录（如 C:\Users\ZhangSan）
-  资源管理器地址栏输入：%USERPROFILE%\.codex
-# 关闭CLI重新进入
+1. 将本仓中的`AGENTS.md`复制到你的当前用户的主目录（在资源管理器地址栏输入：`%USERPROFILE%\.codex`）；
+2. 关闭终端，重新进入CLI即可使用。
 
 ## 逻辑说明
 
@@ -89,6 +88,6 @@ HelloAGENTS — © 2025 hellowind. 代码：Apache-2.0；文档：CC BY 4.0。
 ```
 
 ## 致谢 / 上游模板
-- 上游：**workflow3.md**（geekoe/workflow3）
+- 上游：**workflow3.md**（<a href="./README_EN.md" target="_blank">geekoe/workflow3</a>）
 - Mermaid、Conventional Commits、Keep a Changelog、GitHub Wiki 文档与生态
 ````
