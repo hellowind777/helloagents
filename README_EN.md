@@ -1,81 +1,99 @@
+<!-- README_EN.md -->
 # helloagents
 
-> **Multi‑stage + Project‑Wiki–driven rules for AI coding agents.**
-> This project builds on **workflow3.md** (by `geekoe/workflow3`) and **extends** the three‑stage flow with a full **Project Wiki** operating model (ADRs, Mermaid diagrams, changelog, governance), **adding an error handling stage**.
+<p align="center"><a href="./README.md">中文</a></p>
 
-- Upstream repo: <https://github.com/geekoe/workflow3>
-- Template: <https://github.com/geekoe/workflow3/blob/main/src/templates/workflow3.md>
+**Multi-stage + Project-Wiki–driven rules for AI coding agents.**
+Built upon **workflow3.md** (`geekoe/workflow3`), this project extends the three-phase workflow with a complete **Project Wiki operating model** (ADR, Mermaid diagrams, changelog, governance), adding an **Intent Routing** and **Error Handling** stage for full traceability and self-governance of AI programming processes.
 
-## Highlights
+## Features
+- **Five-phase loop**: Router → Analyze → Plan → Execute → Error Handling (on-demand)
+- **Project Wiki first-class**: `PROJECTWIKI.md` as the single source of truth, in strict sync with code
+- **Mermaid-first diagrams**: architecture, sequence, ER, class, dependency, and state, all version-controlled
+- **Built-in governance**: ADR, Conventional Commits, Keep a Changelog, atomic commits
+- **Security boundaries**: no unauthorized execution or production access; unified secret management
+- **No-Write-by-Default principle**: only P1/P2 project paths perform repository writes
 
-- **Multi‑phase loop**: Analyze → Plan → Execute → Error Handling (on‑demand)
-- **Wiki as first‑class**: `PROJECTWIKI.md` is the source of truth and stays **in lockstep** with code; use the repo's **GitHub Wiki** for long‑form content.
-- **Mermaid‑first diagrams** for architecture, sequence, ER, class, dependency, and state; text‑first, reviewable, versionable.
-- **Built‑in governance**: ADRs, Conventional Commits + atomic commits, Keep a Changelog.
-- **Security boundaries**: No unauthorized service execution or production resource access; unified secret management.
-
-## Global usage (LLM‑friendly)
-
-**One simple pattern is to rename this file to `AGENTS.md`** at the repo root so multiple AI coding models can treat it as your **project‑level system prompt** (phases, outputs, and do/don't rules). For longer guides, enable the repo **Wiki**.
-
-## Quickstart
-
-1. Copy the rules into your project.
-2. Rename this file to **`AGENTS.md`** (repo root).
-3. Add `/adr` and `CHANGELOG.md`.
-4. (Optional) turn on the repo **Wiki** for long‑form docs.
-
-### Suggested layout
-
+## Project Layout
 ```
+
 your-project/
-├─ AGENTS.md                 # ← this spec (global rules for agents)
-├─ PROJECTWIKI.md            # ← first‑class project wiki (kept in sync with code)
-├─ adr/                      # ADR-0001.md, ADR-0002.md, ...
-├─ CHANGELOG.md              # Keep a Changelog
-├─ docs/                     # additional docs
+├─ AGENTS.md                 # global rules for agent execution
+├─ PROJECTWIKI.md            # synced project wiki
+├─ adr/                      # architecture decision records
+├─ CHANGELOG.md              # follows Keep a Changelog
+├─ docs/                     # other documentation
 └─ src/                      # source code
+
+````
+
+## Requirements & Installation
+- TBD
+
+## Quick Start
+```bash
+# copy rules into your project
+cp -r helloagents/* your-project/
+# rename for agent compatibility
+mv your-project/README.md your-project/AGENTS.md
 ```
 
-### Phase overview (expected outputs)
+## Usage
 
-- **Phase 1 · Analyze** (`【分析问题】`): root cause & blast radius; open decisions; no code changes.
-- **Phase 2 · Plan** (`【制定方案】`): **code change list + wiki change list (with Mermaid diagrams)**, risks & rollback, AC/DoD; **requires explicit approval**.
-- **Phase 3 · Execute** (`【执行方案】`): implement per plan; type/static checks; **update `PROJECTWIKI.md`**; ensure code↔docs traceability (prefer atomic commits).
-- **Phase 4 · Error Handling** (`【错误处理】`): triggered on‑demand when errors are reported; includes reproduction, fix, and documentation updates.
+- **C0 | Advisory (No-Code)**: answers only, no repo I/O.
+- **P0 | Planning (No-Exec)**: design proposal, no code change.
+- **P1 | Existing project change**: analyze existing repo.
+- **P2 | New project**: generate minimal scaffold and base wiki.
 
-```mermaid
-flowchart LR
-  A[Phase 1: Analyze] -->|approved| B[Phase 2: Plan]
-  B -->|user approval| C[Phase 3: Execute]
-  C --> F[Done]
-  F -.->|Error Reported| D[Phase 4: Error Handling]
-  D --> B
-```
+## Development
 
-## License & attribution (**commercial use allowed with credit**)
+- Follow **Conventional Commits** & **Keep a Changelog**
+- Ensure atomic commits across code and docs
+- Use **Mermaid** for architecture & dependency visualization
 
-To make "commercial use with attribution" explicit, this project adopts a **dual‑license**:
+## Compatibility & Known Issues
+
+- Verified for GitHub-based project structures only
+- Future updates may add private Wiki / external KB sync support
+
+## Versioning & Upgrade
+
+- Added new “Intent Routing” stage and No-Write-by-Default rule
+- Compatible with upstream `workflow3.md` template
+
+## Contributing
+
+- PRs welcome for improved structure, Mermaid templates, or ADR examples
+
+## Security
+
+- Do not commit secrets or credentials
+- Use `.env.example` + CI injection approach
+
+## License & Attribution (**Commercial use allowed, attribution required**)
+
+To ensure "commercial use allowed + attribution required", this project adopts a **dual-license** scheme:
 
 1. **Code** — **Apache License 2.0** © 2025 hellowind
-   - Commercial use permitted. Keep **LICENSE**/**NOTICE** in distributions (copyright & license info).
-   - Add a `NOTICE` line in your product, e.g.:
+   - Commercial use is allowed. You must retain **LICENSE** and **NOTICE** information in your distribution.
+   - Include a `NOTICE` in your distribution (example):
      ```
-     This product includes "helloagents" by hellowind, licensed under the Apache License 2.0.
-     ```
-
-2. **Docs (README/PROJECTWIKI/diagrams)** — **CC BY 4.0** © 2025 hellowind
-   - Commercial use permitted **with attribution**; include a license link and indicate changes.
-   - Suggested attribution:
-     ```
-     Text/diagrams adapted from "helloagents" — © 2025 hellowind, CC BY 4.0.
+     This product includes "helloagents" (author: hellowind), licensed under the Apache License 2.0.
      ```
 
-**Preferred combined credit:**
+2. **Documentation (README/PROJECTWIKI/Diagrams)** — **CC BY 4.0** © 2025 hellowind
+   - Commercial use is allowed, but **attribution is required**; provide a license link and indicate whether changes were made.
+   - Suggested attribution when reusing documentation:
+     ```
+     Text/graphics adapted from "helloagents" — © 2025 hellowind, CC BY 4.0.
+     ```
+
+**Unified attribution suggestion (for both code and docs):**
 ```
-helloagents — © 2025 hellowind. Code: Apache‑2.0. Docs: CC BY 4.0.
+helloagents — © 2025 hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
 ```
 
-## Credits
-- Upstream: **workflow3.md** (geekoe/workflow3).
-- Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki docs & ecosystem.
+## Acknowledgments / Upstream
+- Upstream: **workflow3.md** (geekoe/workflow3)
+- Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki ecosystem
+````
