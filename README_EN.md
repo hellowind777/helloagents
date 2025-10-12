@@ -1,101 +1,96 @@
 # HelloAGENTS
 
-<p align="center"><a href="./README_EN.md">ENGLISH</a></p>
+<p align="center"><a href="./README.md">简体中文</a>    ENGLISH</p>
 
-**A “multi-stage + project Wiki–driven” rule set for AI programming agents.**
-This project extends the three-phase process from **workflow3.md** (`geekoe/workflow3`) by introducing a complete **project Wiki–driven mechanism** (ADR, Mermaid diagrams, changelogs, governance rules, etc.), along with **intent routing** and **error-handling retrospection** phases. Together, these enable self-explanatory, traceable, and sustainably consistent AI programming workflows.
+**`HelloAGENTS` is a “multi-stage + project Wiki–driven” rule set for AI programming agents.**
+This project extends the three-phase process of **workflow3.md** (<a href="./README_EN.md" target="_blank">geekoe/workflow3</a>), adding a complete **project Wiki–driven mechanism** (ADR, Mermaid diagrams, changelog, governance standards, etc.), and introducing **intent routing** and **error-handling retrospection** phases — enabling AI programming workflows that are self-explanatory, traceable, and sustainably consistent.
 
 ---
 
 ## Features
 
 * **Five-phase closed loop**: Router → Analyze → Plan → Execute → Error Handling (triggered as needed)
-* **Project Wiki as a first-class citizen**: `PROJECTWIKI.md` serves as the single source of truth and stays **strongly consistent** with the codebase
-* **Mermaid-first diagram system**: Architecture, sequence, ER, class, dependency, and state diagrams are all version-controlled
-* **Built-in governance**: ADR, Conventional Commits, Keep a Changelog, and atomic commits
-* **Security boundaries**: Prohibits unauthorized service execution or external production access; unified key management
-* **Minimalist principle (No-Write-by-Default)**: Read/write `PROJECTWIKI.md` only for project-type requests (P1/P2)
+* **Project Wiki as a first-class citizen**: `PROJECTWIKI.md` serves as the single source of truth, remaining **strongly consistent** with code
+* **Mermaid-first diagram system**: Architecture, sequence, ER, class, dependency, and state diagrams are all version-controllable
+* **Built-in governance**: ADR, Conventional Commits, Keep a Changelog, atomic commits
+* **Security boundaries**: Disallows unauthorized service execution or external production access; unified key management
+* **Minimalist principle (No-Write-by-Default)**: `PROJECTWIKI.md` is read/written only for project-type requests (P1/P2)
 
 ---
 
 ## Directory Structure
 
 ```
-%USERPROFILE%/.codex/AGENTS.md  # Global rules (accessible to all models)
+%USERPROFILE%/.codex/AGENTS.md  # Global rules (readable by all models)
 
 your-project/
-├─ PROJECTWIKI.md               # Project Wiki (code–doc strong consistency)
+├─ PROJECTWIKI.md               # Project Wiki (strong code–doc consistency)
 ├─ adr/                         # Architecture Decision Records (ADR)
-├─ CHANGELOG.md                 # Follows "Keep a Changelog"
+├─ CHANGELOG.md                 # Follows Keep a Changelog
 ├─ docs/                        # Other documentation
 └─ src/                         # Source code
 ```
 
 ---
 
-## Quick Start
+## Installation & Usage
 
-1. Copy the `AGENTS.md` file from this repository to your user home directory (e.g., `C:\Users\ZhangSan`).
-   In File Explorer, enter:
-
-   ```
-   %USERPROFILE%\.codex
-   ```
-2. Close and reopen your CLI.
+1. Copy `AGENTS.md` from this repository to your current user’s home directory (enter `%USERPROFILE%\.codex` in the file explorer address bar);
+2. Close the terminal and reopen the CLI — the system will be ready to use.
 
 ---
 
 ## Logic Overview
 
-* **C0 | Pure Consultation (No-Code)**: Only provides answers or advice, does not read/write project files.
-* **P0 | Solution Planning (No-Exec)**: Produces actionable plans but does not modify code.
-* **P1 | Existing Project Changes**: For existing repositories—enter the “Analyze Problem” phase.
-* **P2 | New Project**: No existing code—scaffold a new project and generate `PROJECTWIKI.md`.
+* **C0 | Pure Consultation (No-Code)**: Provides answers or advice only; does not read/write project files.
+* **P0 | Solution Planning (No-Exec)**: Generates practical plans but does not modify code.
+* **P1 | Existing Project Modification**: For existing repositories — enter the “Analyze Problem” phase.
+* **P2 | New Project Creation**: No existing code — scaffold from scratch and generate `PROJECTWIKI.md`.
 
 ---
 
 ## Development & Build
 
 * Follow **Conventional Commits** and **Keep a Changelog**
-* All documentation and code changes must be **atomically committed**
+* All documentation and code changes must be atomically committed
 * Use Mermaid diagrams for architecture and dependency visualization
 
 ---
 
 ## Compatibility & Known Issues
 
-* Currently tested only in GitHub project structures
+* Currently validated only under GitHub project structures
 * Future versions plan to support synchronization with private Wikis and external knowledge bases
 
 ---
 
 ## Version & Upgrade Notes
 
-* Added Phase 1 **Intent Routing** and **Minimal Write Principle**
-* Remains compatible with the upstream `workflow3.md` template
+* Added Phase 1 **Intent Routing** and the **Minimal Write Principle**
+* Maintains compatibility with the upstream `workflow3.md` template
 
 ---
 
 ## Contribution
 
-* Contributions improving document structure, Mermaid templates, or ADR models are welcome
+* Contributions that improve documentation structure, Mermaid templates, or ADR models are welcome
 
 ---
 
 ## Security
 
 * Never commit keys or production credentials
-* Recommended approach: `.env.example` + CI-based secret injection
+* Recommended pattern: use `.env.example` + CI-based variable injection
 
 ---
 
-## License & Attribution (**Commercial use allowed with attribution required**)
+## License & Attribution (**Commercial use allowed, attribution required**)
 
-To ensure "commercial use allowed + attribution required," this project uses a **dual license** model:
+To ensure “commercial use allowed + attribution required,” this project adopts a **dual license**:
 
 1. **Code** — **Apache License 2.0** © 2025 hellowind
 
-   * Commercial use permitted. Distribution must retain **LICENSE** and **NOTICE** files (copyright and license info).
+   * Commercial use permitted. You must retain **LICENSE** and **NOTICE** files (copyright and license info).
    * Example `NOTICE` for your distribution:
 
      ```
@@ -104,14 +99,14 @@ To ensure "commercial use allowed + attribution required," this project uses a *
 
 2. **Documentation (README / PROJECTWIKI / Diagrams)** — **CC BY 4.0** © 2025 hellowind
 
-   * Commercial use allowed **with attribution**; must link to the license and indicate any modifications.
+   * Commercial use allowed **with attribution**; you must provide a license link and indicate modifications.
    * Suggested attribution example:
 
      ```
      Text/diagrams adapted from "HelloAGENTS" — © 2025 hellowind, CC BY 4.0.
      ```
 
-**Unified attribution recommendation (for both code and docs):**
+**Unified attribution suggestion (for both code and documentation):**
 
 ```
 HelloAGENTS — © 2025 hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
@@ -121,5 +116,5 @@ HelloAGENTS — © 2025 hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
 
 ## Acknowledgments / Upstream Template
 
-* Upstream: **workflow3.md** (`geekoe/workflow3`)
-* Ecosystem: Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki docs
+* Upstream: **workflow3.md** (<a href="./README_EN.md" target="_blank">geekoe/workflow3</a>)
+* Ecosystem: Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki documentation and community
