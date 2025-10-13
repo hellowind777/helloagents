@@ -75,6 +75,7 @@ your-project/
 2025-10-12 Update:
 * Maintained compatibility with workflow3.md template
 * Unified naming and commit conventions
+
 …older updates omitted…
 
 ---
