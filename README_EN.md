@@ -71,6 +71,7 @@ your-project/
 * Added Smart Routing (Intent Classification)
 * Enhanced Error Handling & Retrospective Workflow
 * Improved PROJECTWIKI governance lifecycle
+
 2025-10-12 Update:
 * Maintained compatibility with workflow3.md template
 * Unified naming and commit conventions
