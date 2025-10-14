@@ -19,11 +19,12 @@ making AI agent workflows self-explanatory, traceable, and consistently maintain
 - **Governance built-in**: ADR, Conventional Commits, Keep a Changelog, atomic commits
 - **Security boundaries**: No unauthorized execution or external production access; unified key management
 - **Minimalist principle (No-Write-by-Default)**: `PROJECTWIKI.md` is read/written only for project-type requests (P1/P2)
+- **Automated Governance Metrics (SLO)**: Freshness, Traceability, Completeness, Consistency
 
 ---
 
 ## Project Layout
-```
+````
 
 %USERPROFILE%/.codex/AGENTS.md  # Global rules (for all models)
 your-project/
@@ -43,7 +44,8 @@ your-project/
 
 ---
 
-## Logic Overview
+## Usage
+
 - **C0 | Pure Consultation (No-Code)**: Provides answers/advice; does not read/write project files.
 - **P0 | Solution Planning (No-Exec)**: Generates practical plans; does not modify code.
 - **P1 | Existing Project Modification**: For repositories with code — enters “Analyze Problem.”
@@ -53,6 +55,7 @@ your-project/
 ---
 
 ## Development
+
 - Follow **Conventional Commits** and **Keep a Changelog**
 - All code and docs must be atomically committed
 - Use Mermaid diagrams for architecture and dependency visualization
@@ -61,12 +64,18 @@ your-project/
 ---
 
 ## Compatibility & Known Issues
+
 - Validated under GitHub project structures
 - Future plans: support private Wikis and external knowledge base sync
 
 ---
 
 ## Version & Upgrade
+2025-10-14 Update:
+* Enhanced lifecycle governance across all stages
+* Improved PROJECTWIKI auto-validation and incremental updates
+* Clarified error-handling triggers and outputs
+
 2025-10-13 Update:
 * Added Smart Routing (Intent Classification)
 * Enhanced Error Handling & Retrospective Workflow
@@ -81,12 +90,14 @@ your-project/
 ---
 
 ## Contributing
+
 - Contributions improving documentation structure, Mermaid templates, or ADR models are welcome
 - Please follow project conventions when submitting PRs
 
 ---
 
 ## Security
+
 - Never commit keys or production credentials
 - Use `.env.example` + CI-based variable injection
 
@@ -97,21 +108,21 @@ your-project/
 To ensure "commercial use allowed + attribution required", this project adopts a **dual-license** scheme:
 
 1. **Code** — **Apache License 2.0** © 2025 hellowind
-   - Commercial use is allowed. You must retain **LICENSE** and **NOTICE** information.
+   - Commercial use is allowed. You must retain **LICENSE** and **NOTICE** information in your distribution.
    - Include a `NOTICE` in your distribution (example):
      ```
      This product includes "helloagents" (author: hellowind), licensed under the Apache License 2.0.
      ```
 
 2. **Documentation (README/PROJECTWIKI/Diagrams)** — **CC BY 4.0** © 2025 hellowind
-   - Commercial use is allowed, but **attribution is required**.
-   - Suggested attribution:
+   - Commercial use is allowed, but **attribution is required**; provide a license link and indicate whether changes were made.
+   - Suggested attribution when reusing documentation:
      ```
      Text/graphics adapted from "helloagents" — © 2025 hellowind, CC BY 4.0.
      ```
 
 **Unified attribution suggestion (for both code and docs):**
-````
+```
 
 helloagents — © 2025 hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
 
@@ -120,6 +131,6 @@ helloagents — © 2025 hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
 ---
 
 ## Acknowledgments / Upstream Template
-- Upstream: **workflow3.md** ([geekoe/workflow3](https://github.com/geekoe/workflow3))
-- Ecosystem: Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki docs and community
-```
+
+* Upstream: **workflow3.md** ([geekoe/workflow3](https://github.com/geekoe/workflow3))
+* Ecosystem: Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki docs and community.

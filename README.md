@@ -19,6 +19,7 @@
 - **治理内建**：ADR、Conventional Commits、Keep a Changelog、原子化提交
 - **安全边界**：禁止私自运行服务或外联生产资源；统一密钥管理方案
 - **最小化原则（No-Write-by-Default）**：仅在项目型请求（P1/P2）中读写 `PROJECTWIKI.md`
+- **自动化治理指标（SLO）**：Freshness、Traceability、Completeness、Consistency 全面校验
 
 ---
 
@@ -43,30 +44,38 @@ your-project/
 
 ---
 
-## 逻辑说明
+## 使用说明
+
 - **C0｜纯咨询（No-Code）**：仅提供答案与建议，不读写项目文件。
-- **P0｜方案规划（No-Exec）**：生成方案，不修改代码。
-- **P1｜现有项目变更**：已有仓库代码，进入【分析问题】。
-- **P2｜新建项目**：从零生成脚手架与 `PROJECTWIKI.md`。
+- **P0｜方案规划（No-Exec）**：生成可落地方案，不修改代码。
+- **P1｜现有项目变更**：已有仓库/代码，进入【分析问题】并基于 `PROJECTWIKI.md` 协同更新。
+- **P2｜新建项目**：从零生成脚手架与基础版 `PROJECTWIKI.md`。
 - **错误类请求**：可直接进入阶段五【错误处理】，进行复现与修复分析。
 
 ---
 
 ## 开发与构建
+
 - 遵循 **Conventional Commits** 与 **Keep a Changelog**
-- 所有代码与文档修改需保持原子化提交
-- 使用 Mermaid 绘制架构与依赖图表
-- 更新文档与代码必须同步提交，确保可追溯一致性
+- 代码与文档修改保持**原子化提交**
+- 架构/流程/依赖图统一以 **Mermaid** 维护
+- 文档更新与代码变更**同步提交**，确保可追溯一致性
 
 ---
 
 ## 兼容性与已知问题
-- 当前主要验证于 GitHub 项目结构下
+
+- 当前主要验证于 GitHub 项目结构
 - 未来版本将支持私有 Wiki 与外部知识库同步
 
 ---
 
 ## 版本与升级
+2025-10-14版本更新：
+* 增强多阶段流程与生命周期治理规则
+* 优化 PROJECTWIKI 自动校验与增量同步机制
+* 明确错误处理阶段触发逻辑与输出模板
+
 2025-10-13版本更新：
 * 新增“智能路由（意图分流）”机制
 * 增强错误处理与复盘流程
@@ -75,20 +84,22 @@ your-project/
 2025-10-12版本更新：
 * 保持与 workflow3.md 模板兼容
 * 统一命名与提交规范
-  
+
 ……以往更新不再记录……
 
 ---
 
 ## 贡献
+
 - 欢迎改进文档结构、Mermaid 模板或 ADR 模型
-- 建议遵循项目规范提交 PR 与变更记录
+- 提交 PR 时请遵循项目规范与提交格式
 
 ---
 
 ## 安全
+
 - 禁止提交密钥或生产凭证
-- 推荐使用 `.env.example` + CI 注入方案
+- 推荐使用 `.env.example` + CI/环境变量注入方案
 
 ---
 
@@ -111,15 +122,13 @@ your-project/
      ```
 
 **统一署名建议（代码与文档皆可）**：
-````
+```
 
 helloagents — © 2025 hellowind. 代码：Apache-2.0；文档：CC BY 4.0。
 
 ```
 
----
-
 ## 致谢 / 上游模板
-- 上游：**workflow3.md**（[geekoe/workflow3](https://github.com/geekoe/workflow3)）
-- 参考：Mermaid、Conventional Commits、Keep a Changelog、GitHub Wiki 生态
-```
+
+* 上游：**workflow3.md**（[geekoe/workflow3](https://github.com/geekoe/workflow3)）
+* 参考：Mermaid、Conventional Commits、Keep a Changelog、GitHub Wiki 生态。
