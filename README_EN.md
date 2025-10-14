@@ -100,23 +100,23 @@ your-project/
 To ensure "commercial use allowed + attribution required", this project adopts a **dual-license** scheme:
 
 1. **Code** — **Apache License 2.0** © 2025 Hellowind
-   - Commercial use is allowed. You must retain **LICENSE** and **NOTICE** information.
-   - Include a `NOTICE` file (example):
-     ```
-     This product includes "HelloAGENTS" (author: Hellowind), licensed under the Apache License 2.0.
-     ```
+   - Commercial use is allowed. You must retain **LICENSE** and **NOTICE** information in your distribution.
+   - Include a `NOTICE` in your distribution (example):
+     <pre>
+     This product includes "HelloAGENTS" (author: <a href="https://github.com/hellowind777/helloagents">Hellowind</a>), licensed under the Apache License 2.0.
+     </pre>
 
 2. **Documentation (README/PROJECTWIKI/Diagrams)** — **CC BY 4.0** © 2025 Hellowind
-   - Commercial use is allowed, but **attribution is required**; link the license and indicate modifications.
-   - Suggested attribution:
-     ```
-     Text/graphics adapted from "HelloAGENTS" — © 2025 Hellowind, CC BY 4.0.
-     ```
+   - Commercial use is allowed, but **attribution is required**; provide a license link and indicate whether changes were made.
+   - Suggested attribution when reusing documentation:
+     <pre>
+     Text/graphics adapted from "HelloAGENTS" — © 2025 <a href="https://github.com/hellowind777/helloagents">Hellowind</a>, CC BY 4.0.
+     </pre>
 
-3. **Unified attribution (for both code and docs):**
-     ```
-     HelloAGENTS — © 2025 Hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
-     ```
+3. **Unified attribution suggestion (for both code and docs):**
+     <pre>
+     HelloAGENTS — © 2025 <a href="https://github.com/hellowind777/helloagents">Hellowind</a>. Code: Apache-2.0; Docs: CC BY 4.0.
+     </pre>
 
 ---
 
