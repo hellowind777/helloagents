@@ -102,21 +102,21 @@ your-project/
 1. **代码** — **Apache License 2.0** © 2025 Hellowind
    - 允许商业使用。要求在分发中保留 **LICENSE** 与 **NOTICE** 信息（版权与许可说明）。
    - 在你的分发包中加入 `NOTICE`（示例）：
-     ```
-     本产品包含 "HelloAGENTS"（作者：Hellowind），依据 Apache License 2.0 授权。
-     ```
+     <pre>
+     本产品包含 "HelloAGENTS"（作者：<a href="https://github.com/hellowind777/helloagents">Hellowind</a>），依据 Apache License 2.0 授权。
+     </pre>
 
 2. **文档（README/PROJECTWIKI/图表）** — **CC BY 4.0** © 2025 Hellowind
    - 允许商业使用，但**必须署名**；需给出许可链接并标注是否做了修改。
    - 复用文档时建议的署名例句：
-     ```
-     文本/图表改编自 "HelloAGENTS" —— © 2025 Hellowind，CC BY 4.0。
-     ```
+     <pre>
+     文本/图表改编自 "HelloAGENTS" —— © 2025 <a href="https://github.com/hellowind777/helloagents">Hellowind</a>，CC BY 4.0。
+     </pre>
 
 3. **统一署名建议（代码与文档皆可）**：
-     ```
-     HelloAGENTS — © 2025 Hellowind. 代码：Apache-2.0；文档：CC BY 4.0。
-     ```
+     <pre>
+     HelloAGENTS — © 2025 <a href="https://github.com/hellowind777/helloagents">Hellowind</a>. 代码：Apache-2.0；文档：CC BY 4.0。
+     </pre>
 
 ---
 
