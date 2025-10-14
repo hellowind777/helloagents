@@ -1,7 +1,7 @@
 <!-- README_EN.md -->
 # HelloAGENTS
 
-<p align="center"><a href="./README.md">中文</a>    ENGLISH</p>
+<p align="center"><a href="./README.md">简体中文</a>    ENGLISH</p>
 
 **`HelloAGENTS` is a “Smart Routing + Multi-Stage + Project Wiki–Driven” rule set for AI programming agents.**
 It extends the upstream [workflow3.md](https://github.com/geekoe/workflow3) three-phase model,
