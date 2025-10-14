@@ -1,76 +1,79 @@
 <!-- README_EN.md -->
-# helloagents
+# HelloAGENTS
 
 <p align="center"><a href="./README.md">中文</a>    ENGLISH</p>
 
-**`helloagents` is a “Smart Routing + Multi-Stage + Project Wiki–Driven” rule set for AI programming agents.**
-It extends the upstream [workflow3.md](https://github.com/geekoe/workflow3) 3-phase model by adding a
-complete **Project Wiki–driven mechanism** (ADR, Mermaid diagrams, changelogs, governance standards, etc.),
-and introducing **intent routing** and **error-handling retrospection**,
-making AI agent workflows self-explanatory, traceable, and consistently maintainable.
+**`HelloAGENTS` is a “Smart Routing + Multi-Stage + Project Wiki–Driven” rule set for AI programming agents.**
+It extends the upstream [workflow3.md](https://github.com/geekoe/workflow3) three-phase model,
+introducing **smart intent routing**, **multi-stage pipelines**, and a **PROJECTWIKI governance lifecycle**
+to ensure continuous consistency, traceability, and self-evolving documentation across projects.
 
 ---
 
 ## Features
-- **Five-phase closed loop**: Router → Analyze → Plan → Execute → Error Handling (triggered as needed)
-- **Project Wiki as a first-class citizen**: `PROJECTWIKI.md` serves as the single source of truth
-- **Smart intent routing**: Automatically classifies C0/P0/P1/P2 paths for minimal cost execution
-- **Mermaid-first visualization**: Architecture, process, ER, class, dependency diagrams all version-controllable
+- **Five-phase closed loop**: Router → Analyze → Plan → Execute → Error Handling (on demand)
+- **Project Wiki as first-class citizen**: `PROJECTWIKI.md` ensures strong code–doc consistency
+- **Smart Intent Routing**: Automatically identifies C0/P0/P1/P2 scenarios
+- **Mermaid-first visualization**: Architecture, process, dependency, ER, and class diagrams version-controlled
 - **Governance built-in**: ADR, Conventional Commits, Keep a Changelog, atomic commits
-- **Security boundaries**: No unauthorized execution or external production access; unified key management
-- **Minimalist principle (No-Write-by-Default)**: `PROJECTWIKI.md` is read/written only for project-type requests (P1/P2)
+- **Security boundaries**: No unauthorized execution or external access; unified key management
+- **No-Write-by-Default**: Only project-type requests (P1/P2) read or write `PROJECTWIKI.md`
+- **Continuous Consistency**: CI hooks ensure PROJECTWIKI freshness and dependency alignment
 
 ---
 
 ## Project Layout
 ```
-
-%USERPROFILE%/.codex/AGENTS.md  # Global rules (for all models)
+%USERPROFILE%/.codex/AGENTS.md  # Global rules (for model access)
 your-project/
-├─ PROJECTWIKI.md               # Project Wiki (strong code–doc consistency)
+├─ PROJECTWIKI.md               # Project Wiki (code–doc consistency)
 ├─ adr/                         # Architecture Decision Records (ADR)
 ├─ CHANGELOG.md                 # Follows Keep a Changelog
-├─ docs/                        # Other documentation
+├─ docs/                        # Other docs
 └─ src/                         # Source code
-
-````
+```
 
 ---
 
 ## Installation & Usage
-1. Copy `AGENTS.md` to your user home’s `.codex` directory.
-2. Restart the terminal; the CLI will automatically load the rule set.
+1. Copy `AGENTS.md` into your home directory under `.codex`.
+2. Restart the terminal — the CLI will automatically load the rule set.
 
 ---
 
 ## Logic Overview
-- **C0 | Pure Consultation (No-Code)**: Provides answers/advice; does not read/write project files.
-- **P0 | Solution Planning (No-Exec)**: Generates practical plans; does not modify code.
-- **P1 | Existing Project Modification**: For repositories with code — enters “Analyze Problem.”
-- **P2 | New Project Creation**: Scaffolds and generates a `PROJECTWIKI.md`.
-- **Error Requests**: May directly enter Phase 5 “Error Handling” for debugging and retrospection.
+- **C0 | Pure Consultation (No-Code)**: Only advice, no file operations.
+- **P0 | Planning (No-Exec)**: Generates design plans without editing code.
+- **P1 | Existing Project Update**: Analyzes and updates the PROJECTWIKI.
+- **P2 | New Project Creation**: Scaffolds new code and initializes `PROJECTWIKI.md`.
+- **Error Handling**: Automatically invokes Phase 5 for replication and fix tracking.
 
 ---
 
 ## Development
 - Follow **Conventional Commits** and **Keep a Changelog**
-- All code and docs must be atomically committed
-- Use Mermaid diagrams for architecture and dependency visualization
-- Ensure consistent synchronization between documentation and code
+- Enforce atomic commits for all code–doc updates
+- Use **Mermaid** for architecture and dependency diagrams
+- Always sync documentation with code updates
 
 ---
 
 ## Compatibility & Known Issues
-- Validated under GitHub project structures
-- Future plans: support private Wikis and external knowledge base sync
+- Tested within GitHub repository environments
+- Future updates will support private Wikis and external knowledge integration
 
 ---
 
 ## Version & Upgrade
+2025-10-14 Update:
+* Synced with new governance model in AGENTS.md
+* Improved PROJECTWIKI lifecycle and incremental updates
+* Enhanced retrospection and consistency verification
+
 2025-10-13 Update:
-* Added Smart Routing (Intent Classification)
-* Enhanced Error Handling & Retrospective Workflow
-* Improved PROJECTWIKI governance lifecycle
+* Added Smart Routing (Intent Flow)
+* Enhanced error handling and retrospective process
+* Optimized PROJECTWIKI lifecycle and governance model
 
 2025-10-12 Update:
 * Maintained compatibility with workflow3.md template
@@ -81,14 +84,14 @@ your-project/
 ---
 
 ## Contributing
-- Contributions improving documentation structure, Mermaid templates, or ADR models are welcome
-- Please follow project conventions when submitting PRs
+- Contributions improving structure, Mermaid templates, or ADR models are welcome
+- Follow project conventions and update changelogs when submitting PRs
 
 ---
 
 ## Security
-- Never commit keys or production credentials
-- Use `.env.example` + CI-based variable injection
+- Do not commit keys or production credentials
+- Use `.env.example` + CI variable injection
 
 ---
 
@@ -96,30 +99,27 @@ your-project/
 
 To ensure "commercial use allowed + attribution required", this project adopts a **dual-license** scheme:
 
-1. **Code** — **Apache License 2.0** © 2025 hellowind
+1. **Code** — **Apache License 2.0** © 2025 Hellowind
    - Commercial use is allowed. You must retain **LICENSE** and **NOTICE** information.
-   - Include a `NOTICE` in your distribution (example):
+   - Include a `NOTICE` file (example):
      ```
-     This product includes "helloagents" (author: hellowind), licensed under the Apache License 2.0.
+     This product includes "HelloAGENTS" (author: Hellowind), licensed under the Apache License 2.0.
      ```
 
-2. **Documentation (README/PROJECTWIKI/Diagrams)** — **CC BY 4.0** © 2025 hellowind
-   - Commercial use is allowed, but **attribution is required**.
+2. **Documentation (README/PROJECTWIKI/Diagrams)** — **CC BY 4.0** © 2025 Hellowind
+   - Commercial use is allowed, but **attribution is required**; link the license and indicate modifications.
    - Suggested attribution:
      ```
-     Text/graphics adapted from "helloagents" — © 2025 hellowind, CC BY 4.0.
+     Text/graphics adapted from "HelloAGENTS" — © 2025 Hellowind, CC BY 4.0.
      ```
 
-**Unified attribution suggestion (for both code and docs):**
-````
-
-helloagents — © 2025 hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
-
-```
+3. **Unified attribution (for both code and docs):**
+     ```
+     HelloAGENTS — © 2025 Hellowind. Code: Apache-2.0; Docs: CC BY 4.0.
+     ```
 
 ---
 
 ## Acknowledgments / Upstream Template
 - Upstream: **workflow3.md** ([geekoe/workflow3](https://github.com/geekoe/workflow3))
-- Ecosystem: Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki docs and community
-```
+- Ecosystem: Mermaid, Conventional Commits, Keep a Changelog, GitHub Wiki community
