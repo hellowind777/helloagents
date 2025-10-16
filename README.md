@@ -3,24 +3,20 @@
 
 <p align="center">简体中文    <a href="./README_EN.md">ENGLISH</a></p>
 
-**`HelloAGENTS` 是一个面向 AI 编程智能体的「智能路由 + 多阶段 + 项目Wiki驱动」规则集。**
-在原有 [workflow3.md](https://github.com/geekoe/workflow3) 三阶段模型的基础上扩展，
-引入 **智能路由（意图分流）机制**、**多阶段闭环流程** 与 **PROJECTWIKI 生命周期治理**，
-确保项目的代码、文档与知识库持续一致、可追溯且可自动演进。
+**`HelloAGENTS` 是一个面向 AI 编程智能体的「轻量路由（Router）+ 多阶段（P1–P4）+ 知识库驱动」规则集。**
+以 `PROJECTWIKI.md` 为唯一可信文档源（SSoT），通过**意图分流（Direct Answer / P1 / P2 / P3，P4按需触发）**、**最小写入与原子追溯（P3 Gate）**、**Mermaid-first 图表**与**Conventional Commits + Keep a Changelog**，确保代码—文档—知识库持续一致、可追溯、可治理。
 
----
+面向实际工程，内置 **PROJECTWIKI/CHANGELOG 标准模板与校验清单**，并以增量方式维持文档新鲜度（Freshness）、可追溯性（Traceability）、完备性（Completeness）与一致性（Consistency）的质量门槛（SLO）。
 
 ## 特性
-- **五阶段闭环**：Router → Analyze → Plan → Execute → Error Handling（按需触发）
-- **项目 Wiki 一等公民**：`PROJECTWIKI.md` 为事实来源，确保文档与代码强一致
-- **智能意图分流**：自动识别 C0/P0/P1/P2 场景并选择最小代价路径
-- **Mermaid-first 图表体系**：架构、流程、依赖、ER、类图均支持版本化追踪
-- **治理内建**：ADR、Conventional Commits、Keep a Changelog、原子化提交
-- **安全边界**：禁止私自运行服务或外联生产资源，统一密钥管理方案
-- **No-Write-by-Default**：非项目型请求不读取、不生成、不更新 `PROJECTWIKI.md`
-- **持续一致性**：集成 CI 钩子校验 PROJECTWIKI 新鲜度与依赖图一致性
-
----
+- **Router 路由机制**：Direct Answer / P1（分析）/ P2（制定方案）/ P3（执行）；**P4（错误处理）**按需触发
+- **文档一等公民**：`PROJECTWIKI.md` 作为 SSoT，代码与文档强一致
+- **P3 前置 Gate**：低风险判定 + 方案完备性（接口/数据/回滚/测试/发布/文档）+ 明确授权
+- **最小写入与原子追溯**：代码改动与文档更新同一原子提交，并双向链接到 `CHANGELOG.md`
+- **Mermaid-first**：架构/流程/依赖/ER/类图全部使用 Mermaid
+- **治理内建**：ADR 模型、Conventional Commits、Keep a Changelog、增量更新策略
+- **安全与合规**：统一密钥管理，禁止外联生产与明文秘钥
+- **模板与校验**：提供 `PROJECTWIKI.md` / `CHANGELOG.md` 模板与自动化校验要点
 
 ## 目录结构
 ```
@@ -33,38 +29,32 @@ your-project/
 └─ src/                         # 源码
 ```
 
----
-
 ## 安装使用
 1. 将本仓中的 `AGENTS.md` 复制到当前用户主目录（路径：`%USERPROFILE%\.codex`）；
 2. 关闭终端并重新进入 CLI，即可启用智能体全局规则。
 
----
-
-## 逻辑说明
-- **C0｜纯咨询（No-Code）**：仅提供结论与建议，不读写项目文件。
-- **P0｜方案规划（No-Exec）**：生成方案，不修改代码。
-- **P1｜现有项目变更**：分析现有仓库并更新 PROJECTWIKI。
-- **P2｜新建项目**：从零初始化脚手架与 `PROJECTWIKI.md`。
-- **错误类请求**：自动进入阶段五【错误处理】，执行复现与修复。
-
----
+## 使用说明
+- **C0｜纯咨询（No-Code）**：仅提供结论/建议，不读写项目文件
+- **P0｜方案规划（No-Exec）**：给出可落地方案，但不执行改动
+- **P1｜现有项目变更**：基于既有仓库分析问题并定位影响面
+- **P2｜新建项目**：初始化脚手架与 `PROJECTWIKI.md`
+- **P4｜错误处理（按需）**：MRE 复现 → 修复 → 复盘与文档同步
 
 ## 开发与构建
 - 遵循 **Conventional Commits** 与 **Keep a Changelog**
-- 所有代码与文档修改需保持原子化提交
-- 使用 **Mermaid** 绘制架构、依赖、流程图
-- 每次变更同步更新 `PROJECTWIKI.md`，确保文档与代码一致
-
----
+- 代码与文档**原子化提交**；提交中需关联 `PROJECTWIKI.md` 与 `CHANGELOG.md`
+- **Mermaid** 统一绘制架构与依赖图；文件一律 **UTF-8** 编码
 
 ## 兼容性与已知问题
 - 当前版本适配 GitHub 项目结构
 - 后续版本将支持私有 Wiki 与外部知识库同步
 
----
-
 ## 版本与升级
+2025-10-16版本更新：
+* 对齐新版「Router → Phases」路由与阶段展示规则（Direct Answer / P1–P3，P4按需）
+* 引入 **P3 前置 Gate**（低风险判定 + 方案完备性 + 明确授权）与**最小写入/原子追溯**
+* 增补 `PROJECTWIKI.md` 与 `CHANGELOG.md` 标准模板与自动化校验要点
+
 2025-10-14版本更新：
 * 对齐新版《AGENTS.md》治理模型
 * 优化 PROJECTWIKI 生命周期与增量更新机制
@@ -81,19 +71,13 @@ your-project/
 
 ……以往更新不再记录……
 
----
-
 ## 贡献
 - 欢迎改进文档结构、Mermaid 模板或 ADR 模型
 - 提交 PR 时请遵循项目规范并更新变更记录
 
----
-
 ## 安全
 - 禁止提交密钥或生产凭证
 - 推荐使用 `.env.example` + CI 注入方案
-
----
 
 ## 许可证与署名（**允许商用，但必须注明出处**）
 
@@ -118,8 +102,10 @@ your-project/
      HelloAGENTS — © 2025 <a href="https://github.com/hellowind777/helloagents">Hellowind</a>. 代码：Apache-2.0；文档：CC BY 4.0。
      </pre>
 
----
+## 第三方声明（可选）
 
-## 致谢 / 上游模板
+（无）
+
+## 致谢 / 上游模板（可选）
 - 上游：**workflow3.md**（[geekoe/workflow3](https://github.com/geekoe/workflow3)）
 - 参考：Mermaid、Conventional Commits、Keep a Changelog、GitHub Wiki 生态
