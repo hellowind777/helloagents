@@ -3,27 +3,26 @@
 
 <p align="center"><a href="./README.md">简体中文</a>    ENGLISH</p>
 
-**`HelloAGENTS` is a “lightweight Router + multi-stage (P1–P4) + Wiki-driven” rule set for AI programming agents.**
-`PROJECTWIKI.md` acts as the single source of truth (SSoT). With **intent routing (Direct Answer / P1 / P2 / P3; P4 on demand)**, a **P3 execution gate** (minimal write + atomic traceability), **Mermaid-first** diagrams, and **Conventional Commits + Keep a Changelog**, it keeps code, docs, and knowledge base continuously consistent and auditable.
-
-For real-world projects, it ships **standard templates for PROJECTWIKI / CHANGELOG** and quality SLOs on Freshness, Traceability, Completeness, and Consistency—maintained incrementally.
+**`HelloAGENTS` is a “lightweight Router + multi-stage (P1–P4) + wiki-driven” rule set for AI programming agents.**
+`PROJECTWIKI.md` is the single source of truth (SSoT). With **Direct Answer first**, a **P3 execution gate** (minimal write + atomic traceability), **Mermaid-first** diagrams, and **Conventional Commits + Keep a Changelog**, it keeps code, docs, and knowledge base consistent and auditable. This update adds **RISK-GATE@P2** and **G8 file/directory conventions** (no assumed structure; ADR consolidated into root `adr.md`).
 
 ## Features
-- **Router mechanism**: Direct Answer / P1 (Analyze) / P2 (Plan) / P3 (Execute); **P4 (Error Handling)** on demand
+- **Router**: Direct Answer / P1 (Analyze) / P2 (Plan) / P3 (Execute); **P4 (Error Handling)** on demand, with stage lock & switch hints
 - **Docs as first-class**: `PROJECTWIKI.md` as SSoT with strong code–doc consistency
-- **P3 execution gate**: low-risk check + solution completeness (API/Data/Rollback/Tests/Release/Docs) + explicit approval
-- **Minimal write & atomic traceability**: code and docs in the same atomic commit, cross-linked with `CHANGELOG.md`
+- **P3 execution gate**: low-risk check + solution completeness (API/Data/Rollback/Tests/Release/Docs) + explicit approval + atomic traceability
+- **RISK-GATE@P2**: preflight for high-risk changes (dry-run, rollback, compatibility, observability, approval, security)
 - **Mermaid-first**: architecture/process/dependency/ER/class diagrams
-- **Governance built-in**: ADRs, Conventional Commits, Keep a Changelog, incremental updates
-- **Security & compliance**: unified secret management; no prod access or plaintext secrets
-- **Templates & checks**: `PROJECTWIKI.md` / `CHANGELOG.md` templates and validation checklist
+- **Governance**: ADR (**single file `adr.md` at repo root**), Conventional Commits, Keep a Changelog, incremental updates
+- **Security & compliance**: no prod connections; no plaintext secrets
+- **G8 conventions**: do not assume/create standard dirs; operate on existing paths
+- **Templates & checks**: standard `PROJECTWIKI.md` / `CHANGELOG.md` with validation checklist
 
 ## Project Layout
 ```
 %USERPROFILE%/.codex/AGENTS.md  # Global rules (for model access)
 your-project/
 ├─ PROJECTWIKI.md               # Project Wiki (code–doc consistency)
-├─ adr/                         # Architecture Decision Records (ADR)
+├─ adr.md                       # Architecture Decision Records (ADR)
 ├─ CHANGELOG.md                 # Follows Keep a Changelog
 ├─ docs/                        # Other docs
 └─ src/                         # Source code
@@ -35,21 +34,29 @@ your-project/
 
 ## Usage
 - **C0 | Pure Consultation (No-Code)**: guidance only, no file ops
-- **P0 | Planning (No-Exec)**: deliver plans without executing changes
+- **P0 | Planning (No-Exec)**: deliver an executable plan without execution
 - **P1 | Existing Project Update**: analyze repo & impact surface
-- **P2 | New Project**: scaffold + initialize `PROJECTWIKI.md`
+- **P2 | Planning**: produce an executable plan, pass **RISK-GATE@P2** if high risk
+- **P3 | Execution**: meet the execution gate; atomic commit for code+docs
 - **P4 | Error Handling (on demand)**: MRE → fix → retrospective & doc sync
 
 ## Development
 - Follow **Conventional Commits** and **Keep a Changelog**
 - **Atomic commits** for code–doc updates; reference `PROJECTWIKI.md` and `CHANGELOG.md`
-- **Mermaid** for all diagrams; use **UTF-8** encoding
+- Use **Mermaid** for all diagrams; files in **UTF-8**
+- **ADR is stored as a single root file `adr.md` (MADR template)**
 
 ## Compatibility & Known Issues
 - Verified with GitHub-style repositories
-- Future support for private Wikis and external knowledge sources
+- Planned support for private Wikis and external knowledge sources
+- Projects using an `adr/` folder should see Version & Upgrade for migration tips
 
 ## Version & Upgrade
+2025-10-28 Update:
+* Align with **AGENTS_VERSION 2025-10-12.7**: Direct Answer-first routing and stage display; stage lock clarified
+* Add **G8 conventions** and **single-file ADR `adr.md`** (migration: merge entries from `adr/` into root `adr.md`, keep link map)
+* Strengthen **RISK-GATE@P2** checklist across dry-run/rollback/compatibility/observability/approval/security
+
 2025-10-16 Update:
 * Aligned with the new **Router → Phases** rules and display (Direct Answer / P1–P3, P4 on demand)
 * Added **P3 execution gate** (low-risk check + solution completeness + explicit approval) and **minimal write/atomic traceability**
