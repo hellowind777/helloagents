@@ -48,7 +48,7 @@ your-project/
 - **P1 | Analyze**: inspect repo/context for impact surface and uncertainties; analysis only; execute knowledge base quality check (read-only, mark issues).
 - **P2 | Plan**: produce an executable plan; generate `TASK.md` checklist; for EHRB high-risk changes, FA mode attempts auto-mitigation, non-FA mode lists risk points.
 - **P3 | Execute**: proceed only after the **execution gate** (low-risk check + plan completeness + explicit approval); strictly execute per `TASK.md` item by item; use **atomic commits** for code + docs with backlinks to `HELLOWIKI.md` and `CHANGELOG.md`; archive checklist to `history/TASK_YYYYMMDD.md` after completion.
-- **P4 | Error Handling (on demand)**: MRE → fix → retrospective & documentation sync; prioritize suspecting code implementation errors; warn if unresolved ≥2 consecutive times, force prompt to rebuild knowledge base or rollback if ≥3 times.
+- **P4 | Error Handling (on demand)**: MRE → fix → retrospective & documentation sync; prioritize suspecting code implementation errors; warn and recommend comprehensive codebase rescan/return to P1/P2 if unresolved ≥2 consecutive times, mandatory halt requiring user intervention if ≥3 times.
 - **Feedback-Delta**: Recognize incremental feedback (contains directional vocabulary + explicitly references current phase output + no cross-phase jump instructions), iterate in current phase instead of re-routing.
 - **Encoding & style**: **UTF-8** for text; **Mermaid** for diagrams; **Conventional Commits** for messages.
 
@@ -65,14 +65,21 @@ your-project/
 - Projects still using `PROJECTWIKI.md` should see Version & Upgrade for migration tips (rename to `HELLOWIKI.md` and adjust references)
 
 ## Versioning & Upgrade
-2025-11-10 Update:
+2025-11-10.08 Update:
+* **P4 iteration protection rule optimization**: Removed misleading "rebuild knowledge base" phrasing, clarified three specific response strategies:
+  1. Comprehensive codebase rescan (may have missed critical modules/configurations/dependencies)
+  2. Return to P1 for reanalysis (root cause hypothesis may be incorrect)
+  3. Return to P2 for solution redesign (remediation strategy may be fundamentally flawed)
+* P4 executed consecutively ≥3 times now triggers mandatory halt requiring user intervention, must explain attempted approaches, potential root causes, and recommended next steps
+
+2025-11-10.01 Update:
 * Align with **AGENTS_VERSION 2025-11-10.01**: Knowledge base file system refactoring (PROJECTWIKI.md → HELLOWIKI.md; added history/ directory and TASK.md mechanism)
 * Introduce **FA (Full Authorization) mode** and **silent execution spec** (output only paths and operation types)
 * Add **Feedback-Delta incremental feedback mechanism** and **EHRB (Extreme High-Risk Behavior) identification** (production/PII/destructive/irreversible operations)
 * Strengthen **G5 consistency audit**: Code is the sole source of execution truth; default correction direction is to align knowledge base with code
 * Add **G8 large project strategy**: Progressive knowledge base initialization, task decomposition (50-100 lines per task), tiered testing strategy
 * Comprehensive routing mechanism upgrade: Phase state lock, post-P3/P4 joint determination, first conversation determination, FA trigger command detection priority
-* Add **P4 iteration protection**: Warn if unresolved ≥2 consecutive times, force prompt to rebuild knowledge base or rollback if ≥3 times
+* Add **P4 iteration protection**: Warn if unresolved ≥2 consecutive times, force prompt if ≥3 times
 
 2025-10-29 Update:
 * Align with **AGENTS_VERSION 2025-10-12.7**: Direct Answer-first routing and stage-lock guidance

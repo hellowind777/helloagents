@@ -1,5 +1,5 @@
 <!-- bootstrap: lang=zh-CN; encoding=UTF-8 -->
-<!-- AGENTS_VERSION: 2025-11-10.01 -->
+<!-- AGENTS_VERSION: 2025-11-10.08 -->
 
 # HelloAGENTS - AI Programming Agent Rule Set
 
@@ -378,8 +378,11 @@ Code changes must synchronously update the knowledge base, adhering to:
 **Phase Transition:**
 - Problem resolved → Flow ends
 - Problem unresolved → Explain reason in output
-- **P4 Iteration Protection:** P4 executed consecutively ≥2 times unresolved → Warn and suggest rebuilding knowledge base/returning to P1/P2
-- P4 executed consecutively ≥3 times → Force prompt to consider rebuilding knowledge base or rollback
+- **P4 Iteration Protection:** P4 executed consecutively ≥2 times unresolved → Warn and recommend:
+  1. Comprehensive codebase rescan (may have missed critical modules/configurations/dependencies)
+  2. Return to P1 for reanalysis (root cause hypothesis may be incorrect)
+  3. Return to P2 for solution redesign (remediation strategy may be fundamentally flawed)
+- P4 executed consecutively ≥3 times → Mandatory halt, require user intervention (explain attempted approaches, potential root causes, recommended next steps)
 - Subsequent user messages handled per routing priority rule 2
 
 ---
