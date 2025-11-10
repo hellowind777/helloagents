@@ -1,7 +1,9 @@
-<!-- README.md -->
+<!-- README_CN.md -->
 # HelloAGENTS
 
 <p align="center">简体中文    <a href="./README.md">ENGLISH</a></p>
+
+> **⚠️ 重要提示：** 使用前请先在 `AGENTS.md` 文件头部的 `bootstrap: lang=zh-CN` 中设置语言，并在全局规则的 **"Response Language"** 中配置回复语言为"简体中文"，以确保智能体按预期语言输出。
 
 **`HelloAGENTS` 是一个面向 AI 编程智能体的「轻量路由（Router）+ 多阶段（P1–P4）+ 知识库驱动」规则集。**
 以 `HELLOWIKI.md` 为唯一可信文档源（SSoT），通过 **Direct Answer 优先判定**、**FA 全授权模式**、**静默执行规范**、**Feedback-Delta 增量反馈**、**EHRB 极高风险行为识别**、**P3 执行 Gate（最小写入 + 原子追溯）**、**Mermaid-first 图表** 与 **Conventional Commits + Keep a Changelog**，确保代码—文档—知识库持续一致、可追溯、可治理。新增 **G8 大型项目策略**、**TASK.md 任务清单机制** 与 **history/ 归档目录**。
@@ -37,7 +39,8 @@ your-project/
 
 ## 安装使用
 1. 将本仓中的 `AGENTS.md` 复制到当前用户主目录（路径：`%USERPROFILE%\.codex`）；
-2. 关闭终端并重新进入 CLI，即可启用智能体全局规则。
+2. **重要：** 在 `AGENTS.md` 文件头部设置 `bootstrap: lang=zh-CN`，并在全局规则的 **"Response Language"** 中配置为"简体中文"；
+3. 关闭终端并重新进入 CLI，即可启用智能体全局规则。
 
 ## 使用说明
 - **Direct Answer（优先）**：若用户问题属于直接解答范畴，则**不进入**任何阶段，直接给出答案/结论。
