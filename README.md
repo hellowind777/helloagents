@@ -12,15 +12,16 @@
 - **Router**: Direct Answer / P1 (Analyze) / P2 (Plan) / P3 (Execute); **P4 (Error Handling)** on demand
 - **FA (Full Authorization) mode**: Trigger via `~auto` / `~helloauto` / `~fa`, auto-execute across phases (P1→P2→P3)
 - **Silent execution spec**: Output only file paths and operation types, no file contents, diffs, code snippets, or tool results
-- **Feedback-Delta mechanism**: Recognize incremental feedback and iterate in current phase, avoiding unnecessary phase switches
+- **Feedback-Delta mechanism**: Based on semantic understanding rather than keyword matching, recognize incremental feedback and iterate in current phase, avoiding unnecessary phase switches
 - **EHRB identification**: Auto-detect production operations, PII data processing, destructive operations, irreversible operations
 - **Docs as first-class**: `HELLOWIKI.md` as SSoT with strong code–doc consistency; added `TASK.md` checklist and `history/` archive
 - **P3 execution gate**: low-risk check + solution completeness (API/Data/Rollback/Tests/Release/Docs) + explicit approval + atomic traceability
 - **G5 consistency audit**: Code is the sole source of execution truth; default correction direction is to align knowledge base with code
-- **G8 large project strategy**: Progressive knowledge base initialization, task decomposition (50-100 lines per task), tiered testing strategy
+- **G7 product design principles**: For new projects/features, conduct in-depth requirements analysis from product manager perspective, focusing on user research, feasibility assessment, humanistic care design
+- **G8 security & compliance**: EHRB identification and auto-mitigation; no prod connections; no plaintext secrets
+- **G9 large project strategy**: Progressive knowledge base initialization, task decomposition (50-100 lines per task), tiered testing strategy
 - **Mermaid-first** for all diagrams; **UTF-8** files
 - **Governance**: ADR (**single file `ADR.md` at repo root**), Conventional Commits, Keep a Changelog
-- **Security & compliance**: no prod connections; no plaintext secrets; EHRB auto-mitigation
 
 ## Project Layout
 ```
@@ -48,8 +49,8 @@ your-project/
 - **P1 | Analyze**: inspect repo/context for impact surface and uncertainties; analysis only; execute knowledge base quality check (read-only, mark issues).
 - **P2 | Plan**: produce an executable plan; generate `TASK.md` checklist; for EHRB high-risk changes, FA mode attempts auto-mitigation, non-FA mode lists risk points.
 - **P3 | Execute**: proceed only after the **execution gate** (low-risk check + plan completeness + explicit approval); strictly execute per `TASK.md` item by item; use **atomic commits** for code + docs with backlinks to `HELLOWIKI.md` and `CHANGELOG.md`; archive checklist to `history/TASK_YYYYMMDD.md` after completion.
-- **P4 | Error Handling (on demand)**: MRE → fix → retrospective & documentation sync; prioritize suspecting code implementation errors; warn and recommend comprehensive codebase rescan/return to P1/P2 if unresolved ≥2 consecutive times, mandatory halt requiring user intervention if ≥3 times.
-- **Feedback-Delta**: Recognize incremental feedback (contains directional vocabulary + explicitly references current phase output + no cross-phase jump instructions), iterate in current phase instead of re-routing.
+- **P4 | Error Handling (on demand)**: MRE → fix → retrospective & documentation sync; prioritize suspecting code implementation errors; **dual-layer protection mechanism**: ①For same error consecutive failures ≥2 times warn, ≥3 times mandatory halt; ②For P4 loop (≥4 times or consecutive different errors) proactively ask whether to return to P1/P2 for re-evaluation.
+- **Feedback-Delta**: Based on semantic understanding, recognize incremental feedback (directional semantics + incremental modification intent + time continuity + non-cross-phase instructions), iterate in current phase instead of re-routing.
 - **Encoding & style**: **UTF-8** for text; **Mermaid** for diagrams; **Conventional Commits** for messages.
 
 ## Development
@@ -65,6 +66,19 @@ your-project/
 - Projects still using `PROJECTWIKI.md` should see Version & Upgrade for migration tips (rename to `HELLOWIKI.md` and adjust references)
 
 ## Versioning & Upgrade
+2025-11-10.10 Update:
+* **Section numbering standardization**: Corrected global rules section numbering (G7 Product Design Principles, G8 Security & Compliance, G9 Large Project Strategy)
+* **Added G7 Product Design Principles**: For new projects/features, conduct in-depth requirements analysis from product manager perspective, including user research, feasibility assessment, experience design, inclusive design, ethical considerations
+* **Feedback-Delta rule optimization**: Emphasize semantic understanding over keyword matching, using four-dimensional determination criteria (directional semantics, incremental modification intent, time continuity, non-cross-phase instructions)
+* **P4 error determination criteria refinement**: Use semantic root cause determination rather than relying solely on literal error message matching
+* **P1/P2 phase enhancement**: Added product perspective analysis and product solution design steps (executed when G7 triggered)
+* **Knowledge base template improvement**: HELLOWIKI.md added product design section, including core value proposition, user personas, user journey map, humanistic care design, success metrics
+
+2025-11-10.09 Update:
+* P4 iteration protection mechanism comprehensive upgrade with dual-layer protection
+* Knowledge base management strategy refinement
+* Feedback-Delta trigger conditions supplemented
+
 2025-11-10.08 Update:
 * **P4 iteration protection rule optimization**: Removed misleading "rebuild knowledge base" phrasing, clarified three specific response strategies:
   1. Comprehensive codebase rescan (may have missed critical modules/configurations/dependencies)
