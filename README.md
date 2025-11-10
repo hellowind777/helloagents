@@ -1,7 +1,9 @@
-<!-- README_EN.md -->
+<!-- README.md -->
 # HelloAGENTS
 
 <p align="center"><a href="./README_CN.md">简体中文</a>    ENGLISH</p>
+
+> **⚠️ Important:** Before using, set the language in `AGENTS.md` file header (`bootstrap: lang=en-US`) and configure **"Response Language"** in Global Rules to "English" to ensure the agent outputs in the expected language.
 
 **`HelloAGENTS` is a "lightweight Router + multi-stage (P1–P4) + wiki-driven" ruleset for AI programming agents.**
 `HELLOWIKI.md` is the single source of truth (SSoT). With **Direct Answer first**, **FA (Full Authorization) mode**, **silent execution spec**, **Feedback-Delta incremental feedback**, **EHRB (Extreme High-Risk Behavior) identification**, a **P3 execution gate** (minimal write + atomic traceability), **Mermaid-first** diagrams, and **Conventional Commits + Keep a Changelog**, it keeps code, docs, and knowledge base consistent and auditable. Added **G8 large project strategy**, **TASK.md checklist mechanism**, and **history/ archive directory**.
@@ -37,7 +39,8 @@ your-project/
 
 ## Installation & Usage
 1. Copy `AGENTS.md` into your home directory under `.codex`.
-2. Restart the terminal — the CLI will automatically load the rule set.
+2. **Important:** Set `bootstrap: lang=en-US` in the `AGENTS.md` file header and configure **"Response Language"** to "English" in Global Rules.
+3. Restart the terminal — the CLI will automatically load the rule set.
 
 ## Usage
 - **Direct Answer (first)**: if the request can be answered directly, **do not** enter any stage.
