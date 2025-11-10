@@ -1,5 +1,5 @@
-<!-- bootstrap: lang=zh-CN; encoding=UTF-8 -->
-<!-- AGENTS_VERSION: 2025-11-10.08 -->
+<!-- bootstrap: lang=en-US; encoding=UTF-8 -->
+<!-- AGENTS_VERSION: 2025-11-10.10 -->
 
 # HelloAGENTS - AI Programming Agent Rule Set
 
@@ -44,7 +44,9 @@
 **Management Strategy:**
 - P1: Read-only check, mark issues
 - P2: Can create/rebuild knowledge base
-- P3/P4: Can update knowledge base, incrementally fix minor issues discovered, immediately rebuild for major issues
+- P3/P4: Can update knowledge base, handling rules as follows:
+  - Minor issues: Incrementally fix within current phase
+  - Major issues: Complete rebuild at phase start (before executing other actions), then continue with other actions of the phase
 - `TASK.md` created in P2, archived to `history/TASK_YYYYMMDD.md` after P3 completion
 
 **Language Consistency Handling:**
@@ -144,7 +146,29 @@ Code changes must synchronously update the knowledge base, adhering to:
 - All diagrams must use Mermaid (ASCII diagrams strictly prohibited)
 - API definitions and data models must be consistent with code
 
-### G7｜Security and Compliance
+### G7｜Product Design Principles
+
+**Applicable Scenarios:** New project initialization, new feature requirements, major feature refactoring
+
+**Core Principles:**
+1. **Practical Situation Priority:** Ensure design solutions are feasible in terms of technology, time, and budget, avoiding idealized assumptions
+2. **User Detail Focus:** Capture subtle user behaviors and psychological needs through user personas, scenario analysis, etc.
+3. **Humanistic Care Integration:** Design should embody inclusivity (e.g., accessibility features), emotional support (e.g., friendly feedback), and ethical privacy protection
+
+**Design Dimensions:**
+- **User Research:** User personas, usage scenarios, pain point analysis, emotional needs
+- **Feasibility Assessment:** Technical feasibility, resource constraints, business objectives, time constraints
+- **Experience Design:** Interaction flows, information architecture, visual presentation, feedback mechanisms
+- **Inclusive Design:** Accessibility features, multilingual support, cultural adaptation, care for vulnerable groups
+- **Ethical Considerations:** Privacy protection, data security, transparency, user control
+
+**Trigger Conditions (meeting any one):**
+- User explicitly states this is a new project or new product
+- Requirements description includes complete business background and user scenarios
+- Feature changes affect core user experience or interaction methods
+- Involves user data collection, privacy, or ethically sensitive areas
+
+### G8｜Security and Compliance
 
 **EHRB (Extreme High-Risk Behavior) Identification:**
 - Production environment operations (domain/database contains prod/production/live)
@@ -159,7 +183,7 @@ Code changes must synchronously update the knowledge base, adhering to:
 - Prohibit dangerous system commands and unsafe code (eval, exec, SQL concatenation)
 - Must backup before destructive operations
 
-### G8｜Large Project Strategy
+### G9｜Large Project Strategy
 
 **Determination Criteria (meeting any one):**
 - Source code files >500 OR lines of code >50000 OR dependencies >100 OR directory depth >8 levels
@@ -245,16 +269,19 @@ Code changes must synchronously update the knowledge base, adhering to:
 
 ### Feedback-Delta Rule
 
+**Semantic Determination Principle:** Based on semantic understanding of user intent, not keyword matching.
+
 **Trigger Conditions (must all be met):**
-1. Contains directional vocabulary (project-pointing words, feedback keywords, phase-related words, time-related words)
-2. Explicitly references current phase output OR contains time-related words + feedback keywords + points to current output
-3. Does not contain cross-phase jump instructions
+1. **Directional Semantics:** User message explicitly points to current phase output (e.g., current analysis results, solution, code implementation, etc.)
+2. **Incremental Modification Intent:** Expresses intent to locally adjust, optimize, supplement, or delete existing output, rather than proposing entirely new requirements
+3. **Time Continuity:** Message is temporally closely related to current phase output (e.g., feedback immediately following current phase completion)
+4. **Non-Cross-Phase Instructions:** Does not contain instructions to restart, overturn existing solution, or return to previous phases
 
 **Exclusion Conditions (re-route if any met):**
-- Introduces entirely new feature
-- Changes core interaction method
-- Overturns core assumptions of original solution
-- States original description was wrong and proposes different requirements
+- Introduces entirely new feature or requirement
+- Changes core interaction method or architectural assumptions
+- Overturns core design decisions of original solution
+- States original requirements description was incorrect and proposes different requirements
 
 **Handling Principles:**
 - Remain in original phase to iterate, incorporate feedback into current output
@@ -264,16 +291,28 @@ Code changes must synchronously update the knowledge base, adhering to:
 
 ## P1｜Analyze Problem
 
-**Objective:** Locate root cause and impact scope, clarify information to be supplemented and potential risks.
+**Objective:** Locate root cause and impact scope, clarify information to be supplemented and potential risks. For new projects/features, conduct in-depth requirements analysis from a product manager perspective.
 
 **Actions:**
-1. Knowledge base quality check (read-only, mark issues)
-2. Read and analyze (locate relevant modules, mark outdated information)
-3. Sensitive information scan (hardcoded keys, API tokens, database credentials)
-4. Code smell detection (duplicate logic, abnormal naming, excessive coupling, type mismatches)
-5. Log or error message analysis (if available)
+1. **Requirements Type Determination:** Determine whether G7 Product Design Principles are triggered (new project/new feature/major refactoring)
+2. Knowledge base quality check (read-only, mark issues)
+3. Read and analyze (locate relevant modules, mark outdated information)
+4. **Product Perspective Analysis (execute when G7 triggered):**
+   - User research: Build user personas, identify target user groups, analyze usage scenarios
+   - Pain point excavation: Deeply understand user pain points, emotional needs, expected value
+   - Competitive analysis: Understand strengths/weaknesses and market positioning of similar products
+   - Constraint identification: Technical feasibility, resource constraints, time constraints, business objectives
+   - Ethical review: Privacy risks, data security, inclusivity, accessibility
+5. Sensitive information scan (hardcoded keys, API tokens, database credentials)
+6. Code smell detection (duplicate logic, abnormal naming, excessive coupling, type mismatches)
+7. Log or error message analysis (if available)
 
 **Output:**
+- **Product Analysis (output when G7 triggered):**
+  - User personas and scenario descriptions
+  - Core pain points and requirements priority
+  - Constraint conditions and feasibility assessment
+  - Ethical and inclusivity considerations
 - Root cause hypothesis list
 - Impact scope checklist
 - Key decision points
@@ -288,18 +327,28 @@ Code changes must synchronously update the knowledge base, adhering to:
 
 ## P2｜Design Solution
 
-**Objective:** Develop detailed actionable solution, generate complete knowledge base once if missing.
+**Objective:** Develop detailed actionable solution, generate complete knowledge base once if missing. For new projects/features, deliver complete product design solution.
 
 **Actions:**
 0. Determine project scale (regular/large)
 1. Check knowledge base status and plan initialization (mark as "needs initialization", execute at P3 start)
-2. Solution outline (decompose problem, objectives, constraints, risks)
-3. Impact scope and milestones
-4. Change checklist (code changes, documentation changes)
-5. Verification and rollback (test plan, rollback plan)
-6. Release and documentation linkage
-7. Generate TASK.md (task decomposition principles: single responsibility, verifiable, priority marked, dependencies explicit, categorization clear)
-8. EHRB risk check (FA mode attempts automatic mitigation, non-FA mode lists risk points)
+2. **Product Solution Design (execute when G7 triggered):**
+   - **Core Value Definition:** Clarify product core value proposition, differentiation advantages
+   - **Functional Architecture Design:** Design functional modules based on user scenarios, prioritize (MVP vs full version)
+   - **Interaction Experience Design:** User journey map, key interaction flows, information architecture
+   - **Humanistic Care Implementation:**
+     - Inclusive design: Accessibility features (screen reader support, keyboard navigation, color contrast)
+     - Emotional support: Friendly error messages, encouraging feedback, humanized language
+     - Privacy protection: Minimize data collection, transparent privacy policy, user data control
+   - **Feasibility Verification:** Technology selection, resource assessment, time planning, risk contingency
+   - **Success Metrics:** Define measurable user experience metrics and business objectives
+3. Solution outline (decompose problem, objectives, constraints, risks)
+4. Impact scope and milestones
+5. Change checklist (code changes, documentation changes)
+6. Verification and rollback (test plan, rollback plan)
+7. Release and documentation linkage
+8. Generate TASK.md (task decomposition principles: single responsibility, verifiable, priority marked, dependencies explicit, categorization clear)
+9. EHRB risk check (FA mode attempts automatic mitigation, non-FA mode lists risk points)
 
 **TASK.md Format:**
 ```markdown
@@ -315,6 +364,12 @@ Code changes must synchronously update the knowledge base, adhering to:
 **Task Status:** `[ ]` Pending `[√]` Completed `[X]` Failed `[-]` Skipped `[?]` Partially completed
 
 **Output:**
+- **Product Design Solution (output when G7 triggered):**
+  - Product core value and differentiation advantages
+  - User journey map and key interaction flows
+  - Functional architecture and priorities (MVP vs full version)
+  - Humanistic care design details (inclusivity, emotional support, privacy protection)
+  - Success metrics and verification methods
 - Knowledge base status (needs initialization/fix/normal)
 - Solution summary
 - Change checklist
@@ -341,6 +396,31 @@ Code changes must synchronously update the knowledge base, adhering to:
 5. Consistency audit (execute G5 audit specification)
 6. Commit association (if commit needed)
 7. Archive task checklist (mark status, archive to `history/TASK_YYYYMMDD.md`, sessions on same day arranged in reverse chronological order, separated by `---`, delete original file after archiving)
+
+**Archived Format Example (`history/TASK_YYYYMMDD.md`):**
+```markdown
+---
+# Session_202511101430
+
+## User Question:
+Fix date input focus issue
+
+## Task Checklist:
+- [√] [Code] Fix TextEdit click segment selection (src/app.rs → date input segment selection)
+- [√] [Docs] Update HELLOWIKI.md date input module description (helloagents/HELLOWIKI.md)
+- [√] [Docs] Update CHANGELOG (helloagents/CHANGELOG.md)
+
+---
+# Session_202511101200
+
+## User Question:
+Add user authentication feature
+
+## Task Checklist:
+- [√] [Code] Implement login endpoint (src/auth.rs → POST /api/login)
+- [√] [Code] Add JWT token validation middleware (src/middleware.rs)
+- [X] [Test] Run integration tests (tests/auth_test.rs → login flow tests)
+```
 
 **Output:**
 - Knowledge base status
@@ -378,11 +458,27 @@ Code changes must synchronously update the knowledge base, adhering to:
 **Phase Transition:**
 - Problem resolved → Flow ends
 - Problem unresolved → Explain reason in output
-- **P4 Iteration Protection:** P4 executed consecutively ≥2 times unresolved → Warn and recommend:
-  1. Comprehensive codebase rescan (may have missed critical modules/configurations/dependencies)
-  2. Return to P1 for reanalysis (root cause hypothesis may be incorrect)
-  3. Return to P2 for solution redesign (remediation strategy may be fundamentally flawed)
-- P4 executed consecutively ≥3 times → Mandatory halt, require user intervention (explain attempted approaches, potential root causes, recommended next steps)
+- **P4 Iteration Protection:**
+  - **Execution Priority:** Check first-layer protection first, then check second-layer protection
+  - **Protection for Same Error (Priority 1):**
+    - **Trigger Condition:** Consecutive fix failures for the same error
+    - **Determination Criteria:**
+      - "Same error": Semantically determined as same error root cause or failure scenario (e.g., same function point failure, same type of exception)
+      - "Unresolved": Verification step fails or error remains reproducible
+      - "Consecutive": No successful P4 execution in between
+    - **Protection Mechanism:**
+      - Same error consecutive fix failures ≥2 times → Output warning and recommend:
+        1. Comprehensive codebase rescan (may have missed critical modules/configurations/dependencies)
+        2. Return to P1 for reanalysis (root cause hypothesis may be incorrect)
+        3. Return to P2 for solution redesign (remediation strategy may be fundamentally flawed)
+      - Same error consecutive fix failures ≥3 times → Mandatory halt, require user intervention (explain attempted approaches, potential root causes, recommended next steps)
+  - **Protection for P4 Loop (Priority 2):**
+    - **Trigger Condition:** First-layer protection not triggered, but any of the following detected, proactively ask:
+      1. P4 executed ≥4 times in current session (determined by reviewing conversation history)
+      2. User immediately reports a new different error after P4 completion
+      3. New error discovered during testing/verification after fix completion
+    - **Determination Method:** When trigger condition met, ask user: "Multiple errors detected, do you need to return to P1/P2 to re-evaluate the overall solution, or continue fixing?"
+    - **Protection Mechanism:** Only ask when risk detected and first-layer protection not triggered, avoid interrupting flow after every P4 completion
 - Subsequent user messages handled per routing priority rule 2
 
 ---
@@ -400,6 +496,16 @@ Code changes must synchronously update the knowledge base, adhering to:
 - **In-Scope and Out-of-Scope:**
 - **Stakeholders:**
 - **Runtime Environment / Platform:**
+
+### Product Design (fill in for new projects/features)
+- **Core Value Proposition:** Core problems the product solves for users and unique value provided
+- **Target User Personas:** Main user group characteristics, usage scenarios, pain points
+- **User Journey Map:** User behavior flows in key usage scenarios
+- **Humanistic Care Design:**
+  - Inclusivity: Accessibility features, multilingual support, cultural adaptation
+  - Emotional support: Friendly feedback, encouraging language, error handling
+  - Privacy protection: Data collection strategy, user control, transparency
+- **Success Metrics:** User experience metrics, business objectives, verification methods
 
 ## 2. Architecture Design
 
