@@ -321,7 +321,7 @@ Immediately pause after detecting FA command, clear old state, output confirmati
 
 #### ~wiki｜Knowledge Base Management
 
-**Trigger Command:** `~wiki` (case-insensitive)
+**Trigger Command:** `~init` / `~wiki` (case-insensitive)
 
 **Function:** Comprehensively scan codebase, create or update wiki/ knowledge base files.
 
@@ -342,7 +342,7 @@ Immediately pause after detecting FA command, clear old state, output confirmati
 
 #### ~plan｜Planning Mode
 
-**Trigger Commands:** `~plan` / `~init` (case-insensitive)
+**Trigger Commands:** `~plan` / `~design` (case-insensitive)
 
 **Function:** Only execute P1→P2, generate complete solution documents (plan/ directory), do not execute code.
 
