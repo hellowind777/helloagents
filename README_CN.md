@@ -184,6 +184,9 @@ cp AGENTS.md ~/.codex/
 
 ### 架构概览
 
+<details>
+<summary><strong>📊 点击查看完整架构图</strong></summary>
+
 ```mermaid
 flowchart TD
     Start([用户请求]) --> Router{智能路由}
@@ -233,6 +236,8 @@ flowchart TD
     style Halt fill:#ff5252,color:#fff
     style Done fill:#4caf50,color:#fff
 ```
+
+</details>
 
 ### 阶段流程详解
 

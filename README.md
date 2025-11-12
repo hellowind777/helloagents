@@ -184,6 +184,9 @@ Requirement Score: 8/10
 
 ### Architecture Overview
 
+<details>
+<summary><strong>📊 Click to view full architecture diagram</strong></summary>
+
 ```mermaid
 flowchart TD
     Start([User Request]) --> Router{Smart Router}
@@ -233,6 +236,8 @@ flowchart TD
     style Halt fill:#ff5252,color:#fff
     style Done fill:#4caf50,color:#fff
 ```
+
+</details>
 
 ### Phase Flow Explained
 
