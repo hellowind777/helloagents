@@ -54,24 +54,25 @@ Prioritize AI built-in tools (no distinction needed, auto-select based on availa
 | File Edit | apply_patch | Edit |
 | File Write | apply_patch | Write |
 
-**Windows PowerShell Additional Rules (when Platform=win32):**
+**Windows PowerShell Environment Rules (when Platform=win32):**
 
 ```yaml
-Encoding Constraints:
-  Read: Auto-detect or specify -Encoding UTF8
-  Write: MUST add -Encoding UTF8
-  Examples:
-    - Get-Content "file.txt" -Encoding UTF8
-    - Get-Content "$filePath" -Encoding UTF8
-    - Set-Content "file.txt" -Value "content" -Encoding UTF8
-    - Set-Content "$filePath" -Value "content" -Encoding UTF8
+Core Principles:
+  - MUST use PowerShell native commands and syntax, Bash/Unix syntax is prohibited
+  - Before executing shell commands, MUST verify in internal thinking that commands and parameters conform to PowerShell specifications
+  - If uncertain about command usage, search and query PowerShell documentation for confirmation before execution
+
+Encoding Rules:
+  Read: Auto-detect and use original file encoding or specify -Encoding UTF8
+  Write: MUST add -Encoding UTF8 by default, unless special encoding requirements exist
+  Transfer: Auto-detect and use original file encoding
 
 Startup Constraints:
   Prohibited: -NoProfile parameter (profile must load to avoid Windows system default encoding)
 
 Syntax Constraints:
   Variable Reference: $ must be followed by valid variable name, use ${var} form to avoid ambiguity
-  Path Parameters: Filenames and paths must be wrapped in double quotes, e.g., "file.txt", "$filePath", to avoid null errors and space issues
+  Path Parameters: Filenames and paths MUST be wrapped in double quotes, e.g., "file.txt", "$filePath", to avoid null errors and space issues
   Escape Sequences: Use backtick for literal $, e.g., "Price: `$100"
   Quote Nesting: Double quotes inside double quotes must be escaped "", or use single quotes
   Escape Characters: `n (newline) `t (tab) `$ (literal $)
