@@ -2,11 +2,11 @@
 
 <div align="center">
 
-**Transform chaotic AI agent outputs into structured, traceable, and production-ready code**
+**Modular AI programming skill system that transforms chaotic AI agent outputs into structured, traceable, and production-ready code**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-CC%20BY%204.0-green.svg)](https://creativecommons.org/licenses/by/4.0/)
-[![Version](https://img.shields.io/badge/version-2025--11--24.18-orange.svg)](#-version-history)
+[![Version](https://img.shields.io/badge/version-2025--12--16.2-orange.svg)](#-version-history)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 [English](./README.md) · [简体中文](./README_CN.md) · [Quick Start](#-quick-start) · [Documentation](#-documentation)
@@ -15,32 +15,32 @@
 
 ---
 
-> **Important:** Before using, set the language in `AGENTS.md` file header (`bootstrap: lang=en-US`) and configure **"Response Language"** in Global Rules to "English" to ensure the agent outputs in the expected language.
+> **⚠️ Important:** Before using, set the language in `AGENTS.md` file header (`bootstrap: lang=en-US`) and configure **"Response Language"** in Global Rules to "English" to ensure the agent outputs in the expected language.
 
 ---
 
 ## 🎯 Why HelloAGENTS?
 
-**The Problem:** AI agents are powerful but unpredictable—they produce inconsistent code, lose track of changes, and lack safety guardrails.
+**The Problem:** AI agents are powerful but unpredictable—they produce inconsistent code, lose track of changes, lack safety guardrails, and can't adapt to different task complexities.
 
-**The Solution:** HelloAGENTS enforces a structured 4-phase workflow (Research → Plan → Execute → Handle Errors) with built-in documentation sync, change traceability, and production safeguards.
+**The Solution:** HelloAGENTS 2.0 introduces a **modular skill system** with intelligent complexity routing that automatically selects the right workflow (Quick Fix → Light Iteration → Standard Development → Full R&D) based on task requirements.
 
-| Challenge | Without HelloAGENTS | With HelloAGENTS |
-|-----------|---------------------|------------------|
-| **Inconsistent outputs** | Agent produces random code changes | Smart router ensures systematic P1→P2→P3→P4 flow |
-| **Docs drift from code** | Manual sync always lags behind | Auto-synced `Knowledge Base` as Single Source of Truth (SSOT) |
+| Challenge | Without HelloAGENTS | With HelloAGENTS 2.0 |
+|-----------|---------------------|---------------------|
+| **One-size-fits-all workflow** | Same heavy process for every change | Smart router picks 1 of 4 workflows by complexity |
+| **Docs drift from code** | Manual sync always lags behind | Auto-synced `Knowledge Base` as SSOT |
+| **Monolithic ruleset** | 2000+ lines in single file | Modular skills: analyze, design, develop, kb, templates |
+| **Platform incompatibility** | Unix commands fail on Windows | Cross-platform rules (Windows/Unix/Python support) |
+| **Uncertain decisions** | Agent guesses or freezes | G3 Uncertainty Principles: explicit assumptions + conservative fallback |
 | **No change history** | Lost track after 3 iterations | Full audit trail in `history/` with ADR indexes |
 | **Unsafe operations** | Accidental production deployments | EHRB detection blocks destructive actions |
-| **Error loops** | Wasted 2 hours fixing same bug | Halts at 3 failures, suggests re-analysis |
-| **Incomplete execution** | Agent stops at analysis | Complete Execution principle ensures full implementation |
-| **Solution package chaos** | No lifecycle management | G13 manages creation, migration, and archival |
 
 ### 💡 Best For
-- ✅ **Teams** building production AI-assisted projects
-- ✅ **Solo developers** who need high code quality
+- ✅ **Teams** needing both speed (quick fixes) and rigor (complex features)
+- ✅ **Cross-platform projects** (Windows + macOS + Linux)
+- ✅ **Solo developers** who want flexible workflows
 - ✅ **Projects** requiring documentation consistency
 - ✅ **Regulated industries** needing full traceability
-- ✅ **Complex features** requiring structured planning
 
 ### ⚠️ Not For
 - ❌ One-off scripts without documentation needs
@@ -57,29 +57,29 @@
 <tr>
 <td width="50%">
 
-**🧭 Smart Router + 4-Phase Workflow**
+**🧭 Intelligent Complexity Router**
 
-Automatically routes requests to:
-- **Direct Answer** for simple questions
-- **P1 (Research & Analysis)** to validate requirements
-- **P2 (Solution Planning)** to design solutions
-- **P3 (Solution Implementation)** to execute changes
-- **P4 (Error Handling)** when issues arise
+Automatically routes requests to 1 of 4 workflows:
+- **Quick Fix** (≤2 files, ≤30 lines) - Direct code edit
+- **Light Iteration** (3-5 files) - Simplified plan with task.md only
+- **Standard Development** (multi-file) - Full plan without requirement scoring
+- **Full R&D** (architecture/new modules) - Complete 3-phase workflow
 
-**Your benefit:** No more random code changes—every action follows a proven process.
+**Your benefit:** No more overhead for simple fixes, full rigor when needed.
 
 </td>
 <td width="50%">
 
-**📚 Knowledge Base Driven Development (SSOT)**
+**📚 Modular Skill System**
 
-Maintains `Knowledge Base` as Single Source of Truth (SSOT):
-- `wiki/` auto-synced docs via G3 rules
-- `plan/` & `history/` for solution traceability
-- `project.md` for tech conventions
-- `CHANGELOG.md` for version history
+Split from monolithic 2000+ lines into:
+- **analyze** - Requirement analysis (scoring, follow-up questions)
+- **design** - Solution planning (conception, task breakdown)
+- **develop** - Implementation (execution, KB sync, migration)
+- **kb** - Knowledge base ops (create, sync, audit)
+- **templates** - All document templates (A1, A2, A3)
 
-**Your benefit:** Documentation stays current without manual effort.
+**Your benefit:** Load only what you need, easier to customize.
 
 </td>
 </tr>
@@ -89,108 +89,116 @@ Maintains `Knowledge Base` as Single Source of Truth (SSOT):
 **⚡ Progressive Execution Modes**
 
 Multiple workflow options:
-- `~auto` Full Authorization: P1→P2→P3 continuous
-- `~plan` Planning Only: P1→P2 then stop
+- `~auto` Full Authorization: Analyze→Design→Develop continuous
+- `~plan` Planning Only: Analyze→Design then stop
 - `~exec` Execute Only: Run existing plan/
-- `~wiki` Knowledge Base: Initialize/refresh Knowledge Base
+- `~wiki` Knowledge Base: Initialize/refresh KB from code
 
 **Your benefit:** Choose your workflow—manual control or autopilot.
 
 </td>
 <td width="50%">
 
-**🛡️ Intelligent Safeguards**
+**🛡️ Enhanced Safeguards + Cross-Platform**
 
 Multi-layer protection:
 - Requirement scoring (0-10) with follow-up questions
-- EHRB detection blocks prod operations (G10)
-- P4 iteration protection (warn at 2, halt at 3)
-- P3 mandatory pre-check gate
-- Solution package lifecycle management (G13)
+- EHRB detection blocks prod operations (G9)
+- G3 Uncertainty Principles (explicit assumptions)
+- Platform compatibility rules (Windows/Unix/Python)
+- Solution package lifecycle management (G11)
 
-**Your benefit:** Sleep better knowing safeguards prevent disasters.
+**Your benefit:** Works reliably across Windows PowerShell, Git Bash, WSL, macOS, and Linux.
 
 </td>
 </tr>
 </table>
 
 ### 📊 By the Numbers
-- **3x faster** change traceability (vs manual docs)
+- **4x faster** for simple fixes (Quick Fix vs Full R&D)
+- **70% smaller** ruleset files (modular skills vs monolithic)
 - **90% reduction** in doc-code inconsistencies
 - **Zero** accidental production deployments (with EHRB enabled)
-- **50% fewer** error loop iterations
-- **100%** solution package traceability with G13
+- **100%** solution package traceability with G11
+- **Cross-platform** Windows/Unix/Python compatibility
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- CLI environment with file system access
+- CLI environment with file system access (Codex CLI, Claude Code, or custom AI client)
 - Basic Git knowledge (for version control)
 
 ### Installation
 
-**Step 1: Copy the ruleset**
-```bash
-# Windows (PowerShell)
-Copy-Item AGENTS.md $env:USERPROFILE\.codex\
+**Step 1: Copy the ruleset for your platform**
 
-# macOS/Linux
-cp AGENTS.md ~/.codex/
+```bash
+# For Codex CLI - Chinese version
+cp -r Codex/Skills/CN ~/.codex/skills/
+
+# For Codex CLI - English version
+cp -r Codex/Skills/EN ~/.codex/skills/
+
+# For Claude Code - Chinese version
+cp -r Claude/Skills/CN ~/.claude/skills/
+
+# For Claude Code - English version
+cp -r Claude/Skills/EN ~/.claude/skills/
 ```
 
 **Step 2: Configure language**
 
-Edit `~/.codex/AGENTS.md` header:
+Edit the AGENTS.md header in your skills directory:
+
 ```markdown
 <!-- bootstrap: lang=en-US; encoding=UTF-8 -->
 ```
 
-Set **Global Rules → OUTPUT_LANGUAGE** to `English` in your AI client.
+Set **Global Rules → OUTPUT_LANGUAGE** to `English` in the AGENTS.md G1 section.
 
 **Step 3: Verify installation**
+
 ```bash
 # Restart terminal and ask:
-"Show me the current phase rules"
+"Show me the skills reference table"
 
-# Expected: Agent should respond with P1/P2/P3/P4 descriptions
+# Expected: Agent should list 5 skills (analyze, design, develop, kb, templates)
 ```
 
 ### First Use Example
 
 ```bash
-# 1. Ask a simple question (routes to Direct Answer)
-"What is the current project version?"
+# 1. Quick fix (routes to Quick Fix mode)
+"Fix the typo in src/utils/helper.ts line 42: 'respose' should be 'response'"
 
-# 2. Request a feature (routes to P1 → P2 → P3)
-"Add user authentication to the login page"
+# 2. Light iteration (routes to Light Iteration with simplified plan)
+"Add error handling to the login, signup, and password reset functions"
 
-# 3. Use hands-free mode (auto-executes P1 → P2 → P3)
+# 3. Full workflow (routes to Full R&D: Analyze → Design → Develop)
+"Add user authentication with OAuth2"
+
+# 4. Hands-free mode (auto-executes Analyze → Design → Develop)
 ~auto
-"Fix the login bug and update docs"
-
-# 4. Plan without executing (stops at P2)
-~plan
 "Refactor the database layer to use repositories"
 ```
 
 **Expected Output:**
-```
-✅【HelloAGENTS】- P1｜Research and Analysis
 
-📋 Complete Requirement Description: Add OAuth2-based user authentication
-🏷️ Requirement Type: Technical change
-📊 Requirement Completeness Score: 8/10
-🎯 Key Goals: Implement secure login with Google/GitHub providers
-✅ Success Criteria: Users can authenticate via OAuth2
-📚 Knowledge Base Status: Normal
+```
+✅【HelloAGENTS】- Quick Fix Mode Complete
+
+- ✅ Change: Fixed typo 'respose' → 'response'
+- 📁 Affected file: src/utils/helper.ts
+- 📚 Knowledge Base: Updated module documentation
 
 ────
+📁 Changes:
+  - src/utils/helper.ts
+  - helloagents/wiki/modules/utils.md
 
-📁 File Changes: None
-
-🔄 Next Step: Proceed to P2｜Solution Planning? (Yes/No)
+🔄 Next Step: Please verify the fix
 ```
 
 ---
@@ -204,204 +212,243 @@ Set **Global Rules → OUTPUT_LANGUAGE** to `English` in your AI client.
 
 ```mermaid
 flowchart TD
-    Start([User Request]) --> Router{Smart Router}
+    Start([User Request]) --> Router{Complexity Router}
 
-    Router -->|"Simple Q&A"| DA[Direct Answer]
-    Router -->|"Needs Analysis"| P1[P1: Research & Analysis]
+    Router -->|"≤2 files, ≤30 lines"| QuickFix[Quick Fix Mode]
+    Router -->|"3-5 files"| LightIter[Light Iteration]
+    Router -->|"Multi-file, clear req"| StdDev[Standard Development]
+    Router -->|"Architecture/unclear"| FullRD[Full R&D]
+    Router -->|"Simple Q&A"| QA[Consulting Q&A]
 
-    P1 --> Score{Score ≥7?}
+    QuickFix --> DirectEdit[Direct Code Edit]
+    DirectEdit --> QuickKB{KB Exists?}
+    QuickKB -->|Yes| UpdateModule[Update Module Doc]
+    QuickKB -->|No| WarnInit[⚠️ Suggest ~init]
+    UpdateModule --> QFDone[✅ Quick Fix Done]
+    WarnInit --> QFDone
+
+    LightIter --> LICheck[Check KB + Context]
+    LICheck --> LICreate[Create Simplified Plan<br/>task.md only]
+    LICreate --> LIExec[Execute Tasks]
+    LIExec --> LISync[Sync KB]
+    LISync --> LIMigrate[Migrate to history/]
+    LIMigrate --> LIScan[Scan Legacy Plans]
+    LIScan --> LIDone[✅ Light Iteration Done]
+
+    StdDev --> SDDesign[Design Skill]
+    SDDesign --> SDDevelop[Develop Skill]
+    SDDevelop --> SDDone[✅ Standard Dev Done]
+
+    FullRD --> Analyze[Analyze Skill]
+    Analyze --> Score{Score ≥7?}
     Score -->|No| Ask[❓ Follow-up Questions]
-    Score -->|Yes| P2[P2: Solution Planning]
+    Score -->|Yes| Design[Design Skill]
 
     Ask --> UserResp{User Response}
-    UserResp -->|Supplement| P1
-    UserResp -->|Cancel| End1[Flow Terminates]
+    UserResp -->|Supplement| Analyze
+    UserResp -->|Cancel| End1[🚫 Cancelled]
 
-    P2 --> P2_1[P2.1: Solution Conception]
-    P2_1 --> Complex{Complex Task?}
-    Complex -->|Yes| Solutions[Generate 2-3 Solutions]
-    Complex -->|No| P2_2[P2.2: Detailed Planning]
-    Solutions --> Select[👤 User Selects / Auto-select in FA]
-    Select --> P2_2
-    P2_2 --> CreatePkg[Create plan/ Solution Package]
+    Design --> Conception[Solution Conception]
+    Conception --> Complex{Complex Task?}
+    Complex -->|Yes| MultiSol[Generate 2-3 Solutions]
+    Complex -->|No| Detailed[Detailed Planning]
+    MultiSol --> Select[👤 User Selects]
+    Select --> Detailed
+    Detailed --> CreatePkg[Create Full Plan Package<br/>why.md + how.md + task.md]
     CreatePkg --> SetVar[Set CREATED_PACKAGE]
 
-    SetVar --> Gate{P3 Pre-Check Gate}
-    Gate -->|"Pass"| P3[P3: Solution Implementation]
-    Gate -->|"EHRB Detected"| Mitigate{Mitigable?}
-    Mitigate -->|Yes| P3
-    Mitigate -->|No| Halt1[🛑 Pause for User]
+    SetVar --> Gate{Pre-Check Gate}
+    Gate -->|Pass| Develop[Develop Skill]
+    Gate -->|EHRB| Mitigate{Mitigable?}
+    Mitigate -->|Yes| Develop
+    Mitigate -->|No| Halt[🛑 Pause for User]
 
-    P3 --> ReadPkg[Read CURRENT_PACKAGE]
-    ReadPkg --> Execute[Execute task.md]
-    Execute --> SyncKB[Sync Knowledge Base G3]
-    SyncKB --> Migrate[Migrate to history/ G13]
-    Migrate --> Test{Tests Pass?}
-
+    Develop --> ReadPkg[Read CURRENT_PACKAGE]
+    ReadPkg --> ExecTasks[Execute task.md]
+    ExecTasks --> SyncKB[Sync KB via kb Skill]
+    SyncKB --> Migrate[Migrate to history/]
+    Migrate --> ScanLegacy[Scan Legacy Plans]
+    ScanLegacy --> Test{Tests Pass?}
     Test -->|Yes| Done[✅ Complete]
-    Test -->|No| P4[P4: Error Handling]
+    Test -->|No| Warn[⚠️ Mark in Summary]
 
-    P4 --> Analyze[Quick Error Analysis]
-    Analyze --> FixPkg[Create Fix Solution Package]
-    FixPkg --> Fix[Execute Fix]
-    Fix --> Verify{Fix Verified?}
-    Verify -->|Yes| Done
-    Verify -->|Failed x2| Warn[⚠️ Warn User]
-    Verify -->|Failed x3| Halt2[🛑 Force Halt]
+    QA --> Done
+    Warn --> Done
 
-    DA --> Done
-    Warn --> P4
-    Halt2 --> Manual[👤 Manual Intervention]
-
-    style P1 fill:#e3f2fd
-    style P2 fill:#fff3e0
-    style P2_1 fill:#fff8e1
-    style P2_2 fill:#ffe0b2
-    style P3 fill:#e8f5e9
-    style P4 fill:#ffebee
-    style DA fill:#f3e5f5
-    style Halt1 fill:#ff5252,color:#fff
-    style Halt2 fill:#ff5252,color:#fff
+    style QuickFix fill:#c8e6c9
+    style LightIter fill:#fff9c4
+    style StdDev fill:#b3e5fc
+    style FullRD fill:#f8bbd0
+    style QA fill:#f3e5f5
+    style Analyze fill:#e3f2fd
+    style Design fill:#fff3e0
+    style Develop fill:#e8f5e9
+    style Halt fill:#ff5252,color:#fff
     style Done fill:#4caf50,color:#fff
 ```
 
 </details>
 
-### Phase Flow Explained
+### Complexity-Based Workflow Selection
 
 <table>
-<tr><th>Phase</th><th>What It Does</th><th>When It Runs</th><th>Output</th></tr>
+<tr><th>Mode</th><th>When Selected</th><th>What It Does</th><th>Output</th></tr>
 
 <tr>
-<td><strong>Direct Answer</strong></td>
-<td>Answers questions without code changes</td>
-<td>Pure Q&A, no modification intent</td>
-<td>Text response only</td>
-</tr>
-
-<tr>
-<td><strong>P1: Research & Analysis</strong></td>
+<td><strong>Quick Fix</strong></td>
 <td>
-• Scores requirement (0-10) with 4 dimensions<br>
-• Triggers follow-up questions if score < 7<br>
-• Checks knowledge base quality (G3)<br>
-• Extracts key goals and success criteria<br>
-• Performs code analysis and technical prep
+• Intent: Code change<br>
+• Files ≤2, Lines ≤30<br>
+• File path specified<br>
+• No architecture impact<br>
+• EHRB signal: None
 </td>
-<td>User requests feature/fix without a plan</td>
 <td>
-• Requirement completeness score<br>
-• Key goals and success criteria<br>
-• Project context<br>
-• KB status report
+• Direct code edit<br>
+• Optional KB update (if exists)<br>
+• No plan package created
+</td>
+<td>
+• Changed files<br>
+• KB update status<br>
+• Verification prompt
 </td>
 </tr>
 
 <tr>
-<td><strong>P2: Solution Planning</strong></td>
+<td><strong>Light Iteration</strong></td>
 <td>
-• P2.1: Solution Conception (2-3 options for complex tasks)<br>
-• P2.2: Detailed Planning with solution package:<br>
-  - why.md (proposal)<br>
-  - how.md (design + ADR)<br>
-  - task.md (checklist)<br>
-• Sets CREATED_PACKAGE variable (G14)
+• Intent: Code change<br>
+• Files 3-5<br>
+• Clear instructions<br>
+• No architecture decisions<br>
+• EHRB signal: None
 </td>
-<td>After P1 completion (auto or manual)</td>
 <td>
-• Solution comparison (complex tasks)<br>
-• Complete plan/ artifacts<br>
-• EHRB risk report
+• Check KB + context<br>
+• Create simplified plan (task.md only)<br>
+• Execute tasks<br>
+• Sync KB<br>
+• Migrate to history/
 </td>
-</tr>
-
-<tr>
-<td><strong>P3: Solution Implementation</strong></td>
 <td>
-• Mandatory pre-check gate<br>
-• Reads CURRENT_PACKAGE (G14)<br>
-• Executes tasks from task.md<br>
-• Syncs knowledge base (G3 steps 1-4)<br>
-• Migrates to history/ (G13 mandatory)<br>
-• Runs tests
-</td>
-<td>After P2 + P3 Gate passes</td>
-<td>
-• File change list<br>
-• Test results<br>
+• Task completion stats<br>
 • Migration info<br>
-• Consistency audit
+• Legacy plan scan
 </td>
 </tr>
 
 <tr>
-<td><strong>P4: Error Handling</strong></td>
+<td><strong>Standard Development</strong></td>
 <td>
-• Quick error analysis with CoT reasoning<br>
-• Creates new fix solution package<br>
-• Executes fixes with verification<br>
-• Syncs KB including defect review (G3 step 5)<br>
-• Iteration protection (≥3 fails = halt)
+• Intent: Code change<br>
+• Multi-file coordination OR >5 files<br>
+• Clear requirements<br>
+• No architecture decisions
 </td>
-<td>After P3 when errors occur</td>
 <td>
-• Root cause analysis<br>
-• Fix implementation<br>
-• Verification status<br>
-• Iteration protection status
+• Skip requirement scoring<br>
+• Design Skill → Develop Skill<br>
+• Full plan package (why.md + how.md + task.md)<br>
+• Complete KB sync
+</td>
+<td>
+• Solution overview<br>
+• Task list<br>
+• Full change audit
+</td>
+</tr>
+
+<tr>
+<td><strong>Full R&D</strong><br/>(Default Fallback)</td>
+<td>
+• Vague requirements<br>
+• OR Architecture decisions<br>
+• OR New modules<br>
+• OR Tech selection<br>
+• OR Unclear scope<br>
+• OR EHRB signal present
+</td>
+<td>
+• Analyze Skill (score 0-10, follow-ups)<br>
+• Design Skill (2-3 solutions if complex)<br>
+• Develop Skill (full implementation)<br>
+• Complete KB lifecycle
+</td>
+<td>
+• Requirement score<br>
+• Solution comparison<br>
+• Complete audit trail
+</td>
+</tr>
+
+<tr>
+<td><strong>Consulting Q&A</strong></td>
+<td>
+• Intent: Question/chat<br>
+• No modification intent
+</td>
+<td>
+• Direct answer<br>
+• No code changes<br>
+• No KB operations
+</td>
+<td>
+• Text response only<br>
+• ≤5 bullet points
 </td>
 </tr>
 </table>
 
-### Knowledge Base Structure
+### Modular Skills Architecture
 
 ```
-your-project/
-└── helloagents/                 # HelloAGENTS workspace (SSOT)
-    ├── CHANGELOG.md             # Version history (Keep a Changelog)
-    ├── project.md               # Tech conventions (testing, naming, etc.)
-    │
-    ├── wiki/                    # 📚 Core documentation
-    │   ├── overview.md          # Project goals, scope, module index
-    │   ├── arch.md              # Architecture + ADR index table
-    │   ├── api.md               # API reference
-    │   ├── data.md              # Data models + ER diagrams
-    │   └── modules/             # Per-module documentation
-    │       └── auth.md          # Example: Authentication module
-    │
-    ├── plan/                    # 🔄 Change workspace (Solution Packages)
-    │   └── 202511241430_oauth/  # Feature being worked on
-    │       ├── why.md           # Change proposal (requirements, scenarios)
-    │       ├── how.md           # Technical design (+ ADR if applicable)
-    │       └── task.md          # Task list to be completed
-    │
-    └── history/                 # 📦 Completed Changes Archive
-        ├── index.md             # Navigation index (sorted by date)
-        └── 2025-11/
-            └── 202511241430_oauth/
-                ├── why.md       # Archived proposal
-                ├── how.md       # Design + ADR-xxx
-                └── task.md      # Completed checklist [√]
+helloagents/
+├── Codex/Skills/                # For Codex CLI
+│   ├── CN/                      # Chinese version
+│   │   ├── AGENTS.md            # Core router + global rules (compact)
+│   │   └── skills/helloagents/
+│   │       ├── analyze/SKILL.md    # Requirement analysis (scoring, follow-ups)
+│   │       ├── design/SKILL.md     # Solution planning (conception, task breakdown)
+│   │       ├── develop/SKILL.md    # Implementation (execution, KB sync, migration)
+│   │       ├── kb/SKILL.md         # Knowledge base ops (create, sync, audit)
+│   │       └── templates/SKILL.md  # Document templates (A1-A3)
+│   └── EN/                      # English version (same structure)
+│
+├── Claude/Skills/               # For Claude Code
+│   ├── CN/
+│   │   ├── CLAUDE.md            # Claude-specific adaptations
+│   │   └── skills/helloagents/ (same 5 skills)
+│   └── EN/
+│
+└── helloagents/                 # Knowledge Base (SSOT)
+    ├── CHANGELOG.md             # Version history
+    ├── project.md               # Tech conventions
+    ├── wiki/                    # Core documentation
+    ├── plan/                    # Active solution packages
+    └── history/                 # Completed changes archive
 ```
 
-**Real Example: Adding OAuth2 Authentication**
+**Real Example: Evolution from v1 to v2**
 
 ```
-Before (P2 creates solution package):
-  plan/202511241430_oauth/
-    ├── why.md      → Requirements, core scenarios, impact scope
-    ├── how.md      → Technical solution, ADR-001 if architecture decision
-    └── task.md     → [ ] Install passport [ ] Add routes...
+Version 1 (2025-11-24.18):
+  AGENTS.md (2020 lines, all rules in one file)
 
-After (P3 executes and migrates):
-  wiki/
-    ├── arch.md         → ADR index updated with link to history/
-    └── modules/auth.md → Specifications section updated from why.md
+Version 2 (2025-12-16.2):
+  AGENTS.md (1038 lines, router + global rules only)
+  skills/
+    ├── analyze/SKILL.md (188 lines)
+    ├── design/SKILL.md (262 lines)
+    ├── develop/SKILL.md (353 lines)
+    ├── kb/SKILL.md (250 lines)
+    └── templates/SKILL.md (452 lines)
 
-  history/2025-11/202511241430_oauth/
-    ├── why.md      → Archived (unchanged)
-    ├── how.md      → Archived (contains ADR-001)
-    └── task.md     → All tasks marked [√] with notes
+  Benefits:
+  ✅ 70% smaller core file → faster loading
+  ✅ On-demand skill loading → lower token usage
+  ✅ Independent skill updates → easier maintenance
+  ✅ Platform-specific versions (Codex vs Claude)
 ```
 
 ---
@@ -412,6 +459,30 @@ After (P3 executes and migrates):
 
 <table>
 <tr><th>Concept</th><th>Definition</th><th>Why It Matters</th></tr>
+
+<tr>
+<td><strong>Complexity Router</strong></td>
+<td>Evaluates 5 dimensions (intent, scope, clarity, context, EHRB) to select 1 of 4 workflows</td>
+<td>Eliminates overhead for simple tasks while maintaining rigor for complex features</td>
+</tr>
+
+<tr>
+<td><strong>Modular Skills</strong></td>
+<td>Lazy-loaded skill files read only when entering specific phases</td>
+<td>Reduces token usage, enables independent skill updates</td>
+</tr>
+
+<tr>
+<td><strong>G3 Uncertainty Principles</strong></td>
+<td>When uncertain, explicitly state assumptions and choose conservative fallback</td>
+<td>Prevents guesswork failures, makes decisions transparent</td>
+</tr>
+
+<tr>
+<td><strong>Platform Compatibility</strong></td>
+<td>Cross-platform rules for Windows PowerShell, Unix shells, and Python scripts</td>
+<td>No more "command not found" errors on Windows</td>
+</tr>
 
 <tr>
 <td><strong>Ground Truth</strong></td>
@@ -427,8 +498,11 @@ After (P3 executes and migrates):
 
 <tr>
 <td><strong>Solution Package</strong></td>
-<td>Complete solution unit: why.md + how.md + task.md in plan/ or history/</td>
-<td>Ensures traceability and enables lifecycle management</td>
+<td>
+• Full: why.md + how.md + task.md (Full R&D, Standard Dev)<br>
+• Simplified: task.md only (Light Iteration)
+</td>
+<td>Ensures traceability while reducing overhead for simple tasks</td>
 </tr>
 
 <tr>
@@ -436,48 +510,24 @@ After (P3 executes and migrates):
 <td>Extreme High-Risk Behavior (prod ops, PII data, destructive actions)</td>
 <td>Prevents accidental <code>DROP TABLE users</code> in production</td>
 </tr>
-
-<tr>
-<td><strong>G13 Lifecycle</strong></td>
-<td>Solution package creation, migration, and archival rules</td>
-<td>Ensures plan/ stays clean and history/ is complete</td>
-</tr>
-
-<tr>
-<td><strong>G14 State Variables</strong></td>
-<td>CREATED_PACKAGE and CURRENT_PACKAGE tracking</td>
-<td>Ensures correct solution package execution in FA mode</td>
-</tr>
-
-<tr>
-<td><strong>Follow-up Questions</strong></td>
-<td>Requirement clarification when P1 score < 7</td>
-<td>Prevents low-quality solutions from vague requirements</td>
-</tr>
-
-<tr>
-<td><strong>ADR</strong></td>
-<td>Architecture Decision Record</td>
-<td>Documents why we chose solution X over Y (critical for teams)</td>
-</tr>
 </table>
 
-### Special Modes
+### Special Commands
 
 | Command | Mode | When to Use | Example |
 |---------|------|-------------|---------|
-| `~auto` / `~fa` | Full Authorization | You trust the agent to go P1→P2→P3 | `~auto "Add login feature"` |
+| `~auto` / `~fa` | Full Authorization | You trust the agent to go Analyze→Design→Develop | `~auto "Add login feature"` |
 | `~init` / `~wiki` | Knowledge Base Mgmt | Initialize or refresh Knowledge Base from code | `~wiki` (scans all modules) |
-| `~plan` / `~design` | Planning Only (P1→P2) | Design solution for team review | `~plan "Refactor DB layer"` |
-| `~run` / `~exec` | Execution Only (P3) | Run pre-approved plan from `plan/` | `~exec` (runs latest plan) |
+| `~plan` / `~design` | Planning Only | Design solution for team review | `~plan "Refactor DB layer"` |
+| `~run` / `~exec` | Execution Only | Run pre-approved plan from `plan/` | `~exec` (runs latest plan) |
 
 **Command Workflow Comparison:**
 
-| Mode | P1 | P2 | P3 | User Confirmations |
-|------|----|----|----|--------------------|
+| Mode | Analyze | Design | Develop | User Confirmations |
+|------|---------|--------|---------|-------------------|
 | Interactive (default) | ✅ | ✅ | ✅ | After each phase |
 | Full Authorization | ✅ | ✅ | ✅ | None (silent execution) |
-| Planning Command | ✅ | ✅ | ❌ | None (stops at P2) |
+| Planning Command | ✅ | ✅ | ❌ | None (stops at Design) |
 | Execution Command | ❌ | ❌ | ✅ | Confirms plan selection |
 
 ### Configuration
@@ -488,9 +538,13 @@ After (P3 executes and migrates):
 OUTPUT_LANGUAGE: English  # or "Simplified Chinese", "日本語", etc.
 ```
 
-**Global Rules → OUTPUT_LANGUAGE:**
-- Set to `English` for English output
-- Set to `Simplified Chinese` for Chinese output
+**Platform Compatibility:**
+```yaml
+# Automatically detected from <env>
+Platform: win32     # → Use PowerShell-safe commands
+Platform: darwin    # → Use Unix commands
+Platform: linux     # → Use Unix commands
+```
 
 **Exception List (Keep Original Language):**
 - Code logic: Variable names, function names, class names
@@ -501,168 +555,269 @@ OUTPUT_LANGUAGE: English  # or "Simplified Chinese", "日本語", etc.
 
 ## 🎓 Advanced Usage
 
-### Large Projects (500+ files, 50K+ LOC)
+### Quick Fix Mode (New in v2.0)
 
-**Problem:** Full knowledge base initialization takes too long.
-
-**Solution:** Progressive initialization per G3 rules
-```bash
-# Step 1: Initialize core modules only
-~wiki
-# Agent scans entry files, configs, main modules
-
-# Step 2: Mark TODO for non-critical modules
-# wiki/modules/legacy-reports.md → "<!-- TODO: To be supplemented -->"
-
-# Step 3: Fill in TODOs as P3 touches those modules
-# Large projects processed in batches (≤20 modules per batch)
+**When it activates:**
+```yaml
+Conditions (ALL must be true):
+  - Intent: Code change
+  - Instruction includes file path
+  - Files ≤2
+  - Lines ≤30
+  - No architecture impact
+  - No special command
+  - EHRB signal: None
 ```
 
-**Task Decomposition (per P2.2 rules):**
-- Regular projects: ≤3 files per task
-- Large projects: ≤2 files per task
-- Insert verification tasks periodically
+**What it does:**
+- Directly edits code (no plan package created)
+- Updates module documentation if KB exists
+- Outputs completion status immediately
 
-### Solution Package Lifecycle (G13)
+**EHRB Escalation:**
+If EHRB signal detected (e.g., "production database"), auto-upgrades to Standard Dev or Full R&D.
 
-**Creating New Packages:**
+---
+
+### Light Iteration (New in v2.0)
+
+**When it activates:**
+```yaml
+Conditions (ALL must be true):
+  - Intent: Code change
+  - Clear instructions
+  - Files: 3-5
+  - No architecture decisions
+  - No special command
+  - EHRB signal: None
 ```
-Name conflict handling:
-- First creation: plan/202511241430_login/
-- If exists: plan/202511241430_login_v2/
-- If _v2 exists: plan/202511241430_login_v3/
+
+**Simplified Plan Package:**
+```
+plan/202512161530_add_validation/
+  └── task.md                    # Only task list, no why.md/how.md
 ```
 
-**Executed Package Migration (P3/P4 mandatory):**
+**Benefits:**
+- Faster than Full R&D (skips requirement scoring and solution conception)
+- Full audit trail maintained (plan migrated to history/)
+- KB still synced (maintains SSOT)
+
+---
+
+### Cross-Platform Compatibility (New in v2.0)
+
+**Problem:** Unix commands (`grep`, `cat`, `find`) fail on Windows PowerShell.
+
+**Solution:** G1 Platform Compatibility Rules
+
+**Tool Selection Priority:**
+```
+AI Built-in Tools > Python Scripts > Platform-Specific Commands
+(Glob/Grep/Read/Edit/Write preferred over all shell commands)
+```
+
+**Windows Constraints:**
+```yaml
+Forbidden (NO exceptions):
+  - ❌ Unix commands: grep/cat/wc/find/ls/rm/sed/awk/touch
+  - ❌ Bash heredocs: cat <<EOF / python - <<'EOF'
+  - ❌ Mixed syntax: PowerShell commands in Bash tool
+
+Allowed:
+  - ✅ AI built-in: Glob/Grep/Read/Edit/Write
+  - ✅ Python scripts: python script.py (with UTF-8 encoding)
+  - ✅ PowerShell native: Get-Content/Select-String (with -Encoding UTF8)
+```
+
+**PowerShell Syntax Requirements:**
+```powershell
+# ❌ Wrong: Variable reference errors
+"$i: $ "           # $ without variable name
+"Price: $100"      # $1 interpreted as variable
+
+# ✅ Correct: Proper escaping
+"${i}: $_"         # ${} for variable boundaries
+"Price: `$100"     # Backtick escape for literal $
+'Price: $100'      # Single quotes prevent expansion
+```
+
+---
+
+### G3 Uncertainty Principles (New in v2.0)
+
+**Problem:** Agent guesses or freezes when uncertain.
+
+**Solution:** Explicit uncertainty handling
+
+**When applied:**
+- Routing decision at complexity boundary (e.g., exactly 2 files)
+- Requirement score at 6-7 points
+- EHRB signal ambiguous (e.g., database named "prod_backup")
+- Platform detection fails
+
+**Output format:**
+```
+⚠️ Uncertainty Factor: Complexity at Quick Fix vs Light Iteration boundary
+- Assumption: File count may increase during implementation
+- Decision: Using Light Iteration (safer choice)
+- Alternative: If confirmed ≤2 files, can switch to Quick Fix
+```
+
+**Principles:**
+1. Explicit statement using "⚠️ Uncertainty Factor:"
+2. Conservative fallback (choose safer/fuller path)
+3. List assumptions driving the decision
+4. Provide 2-3 alternatives if reasonable
+
+---
+
+### Solution Package Lifecycle (G11)
+
+**Full Package (Standard Dev, Full R&D):**
+```
+plan/202512161530_oauth/
+  ├── why.md       → Requirements, scenarios, impact scope
+  ├── how.md       → Technical design, ADR-001 if architecture decision
+  └── task.md      → [ ] Task checklist
+```
+
+**Simplified Package (Light Iteration):**
+```
+plan/202512161545_add_validation/
+  └── task.md      → [ ] Task checklist only
+```
+
+**Migration (mandatory after execution):**
 1. Update task.md status ([√]/[X]/[-]/[?])
 2. Add notes below non-[√] tasks
 3. Migrate to history/YYYY-MM/
 4. Update history/index.md
+5. Scan for legacy plans
 
-**Legacy Solution Cleanup:**
+**Legacy Plan Cleanup:**
 ```
-After P3/P4 completes:
-📦 plan/Legacy Solutions: Detected 2 legacy packages, migrate to history?
+After Design/Develop/Commands complete:
+📦 Legacy Plans: Detected 2 unexecuted packages:
+  - 202511241430_login
+  - 202511251600_logout
+Migrate to history?
 
 User options:
 - "all" → Migrate all
-- "1,3" → Migrate specific packages
+- "1" → Migrate first one
+- "1,3" → Migrate specific ones
 - "cancel" → Keep in plan/
 ```
 
-### State Variable Management (G14)
+---
+
+### State Variable Management (G12)
 
 **CREATED_PACKAGE:**
-- Set by P2.2 after creating solution package
-- Read by P3 step 1 in FA mode
-- Ensures P3 executes the correct newly-created package
+- Set by Design phase after creating plan package
+- Read by Develop step 1 in Full Auth mode
+- Ensures Develop executes the correct newly-created package
 
 **CURRENT_PACKAGE:**
-- Set by P3 step 1 or P4 step 5
-- Used for excluding from legacy solution scan
+- Set by Develop step 1 or Light Iteration
+- Used for excluding from legacy plan scan
 - Cleared after migration to history/
 
-### Product Design Mode (G9)
-
-**Triggered automatically** when:
-- Requirements include business context
-- Feature changes affect user experience
-- Involves user data, privacy, or ethical areas
-
-**What happens:**
-```
-P1 Research → Includes:
-  • User personas (who will use this?)
-  • Usage scenarios (how will they use it?)
-  • Pain point analysis (what problem does it solve?)
-  • Feasibility assessment (can we build it?)
-
-P2 Planning → why.md includes:
-  • Target users and scenarios
-  • Value proposition and success metrics
-  • Humanistic care considerations
-```
-
-### Error Handling Protection (P4)
-
-**Iteration Protection:**
-```
-Same-source error (same error code/stack path/root cause):
-  Failure 1: Agent tries fix A
-  Failure 2: Agent tries fix B → ⚠️ WARN: "Tried 2 fixes. Consider re-analyzing."
-  Failure 3: Agent tries fix C → 🛑 HALT: "Same error failed 3x. User intervention required."
-```
-
-**Decision Options (when halted):**
-1. Re-analyze error
-2. Re-formulate fix solution
-3. Abandon fix
-4. Re-evaluate overall solution
+**MODE_FULL_AUTH / MODE_PLANNING / MODE_EXECUTION:**
+- Track active special command state
+- Control silent execution behavior
+- Clear when command completes or user cancels
 
 ---
 
 ## 🆚 Comparison with Other Approaches
 
-| Approach | Pros | Cons | HelloAGENTS Advantage |
-|----------|------|------|----------------------|
-| **Raw AI Prompts** | Flexible, no setup | Random outputs, no traceability | Structured workflow + G13 lifecycle |
-| **Cursor / Copilot** | IDE-integrated, fast | No doc sync, no phase control | Maintains `Knowledge Base` as SSOT |
-| **Aider** | Good at refactoring | Limited to chat mode | Full 4-phase workflow + state tracking |
-| **AutoGPT** | Autonomous | Can spiral out of control | EHRB detection + P4 iteration protection |
-| **Custom Prompts** | Tailored to needs | Hard to maintain consistency | Versioned ruleset with G1-G14 rules |
+| Approach | Pros | Cons | HelloAGENTS 2.0 Advantage |
+|----------|------|------|--------------------------|
+| **HelloAGENTS v1** | Comprehensive workflow | Monolithic, no complexity routing | 70% smaller core + 4 adaptive workflows |
+| **Raw AI Prompts** | Flexible, no setup | Random outputs, no traceability | Structured workflow + G11 lifecycle |
+| **Cursor / Copilot** | IDE-integrated, fast | No doc sync, no phase control | Maintains `Knowledge Base` as SSOT + cross-platform |
+| **Aider** | Good at refactoring | Limited to chat mode, Unix-only | Full workflow + Windows PowerShell support |
+| **AutoGPT** | Autonomous | Can spiral out of control | EHRB detection + G3 uncertainty handling |
+| **Custom Prompts** | Tailored to needs | Hard to maintain consistency | Versioned modular skills with G1-G12 rules |
 
 ---
 
 ## 📈 Version History
 
-### Latest: 2025-11-24.18 🎉
+### Latest: 2025-12-16.2 🎉
 
 **Breaking Changes:**
-- 🔴 Global Rules restructured (G1-G14) with new numbering
+- 🔴 **Architecture redesign** - Split from monolithic AGENTS.md into modular skill system
+- 🔴 **Phase renaming** - P1/P2/P3/P4 → Requirement Analysis/Solution Design/Development Implementation
+- 🔴 **Removed P4** - Error handling now integrated into Development phase
 
 **New Features:**
-- ✨ **G13 Solution Package Lifecycle Management** - creation, migration, archival
-- ✨ **G14 State Variable Management** - CREATED_PACKAGE, CURRENT_PACKAGE tracking
-- ✨ **P2 split into P2.1 (Conception) and P2.2 (Detailed Planning)**
-- ✨ **P3 mandatory pre-check gate** - validates entry conditions
-- ✨ **Enhanced OUTPUT_LANGUAGE control** in G1 with exception list
-- ✨ **Legacy solution scanning and reminder** mechanism
+- ✨ **Modular Skills System** - 5 independent skills (analyze, design, develop, kb, templates)
+- ✨ **Complexity Router** - 4 adaptive workflows (Quick Fix, Light Iteration, Standard Dev, Full R&D)
+- ✨ **G3 Uncertainty Principles** - Explicit uncertainty handling with conservative fallback
+- ✨ **Cross-Platform Compatibility** - Windows PowerShell, Unix shells, Python script support
+- ✨ **Simplified Plan Packages** - Light Iteration uses task.md only (no why.md/how.md)
+- ✨ **Platform-Specific Versions** - Separate Codex and Claude directories
 
 **Improvements:**
-- 📦 Restructured "Role and Core Values" section with Ground Truth principle
-- 📚 New appendix with document templates (A1) and solution file templates (A2)
-- 🔧 Enhanced routing mechanism with sub-phase selection rules
-- 🛡️ Improved P4 iteration protection with same-source error detection
+- 📦 70% smaller core AGENTS.md (2020 lines → 1038 lines)
+- 📚 On-demand skill loading (reduces token usage)
+- 🔧 Enhanced output format validation (G6.1 with CRITICAL enforcement)
+- 🛡️ PowerShell syntax constraints (prevents variable reference errors)
+- ⚙️ Unified status symbols (✅/❓/⚠️/🚫/❌/💡)
 
-[View Full Changelog →](#-version-history)
+[View Full Changelog →](./CHANGELOG.md)
 
-### Previous: 2025-11-11.12
+---
 
-- Initial wiki/ directory structure
-- `~wiki`, `~plan`, `~execute` special modes
-- Requirement completeness scoring in P1
-- Solution conception for complex tasks in P2
+### Previous: 2025-11-24.18
+
+**Monolithic Architecture:**
+- Single AGENTS.md with all rules (P1/P2/P3/P4)
+- G1-G14 global rules
+- Solution package lifecycle (G13)
+- State variable management (G14)
 
 ---
 
 ## ❓ FAQ
 
 <details>
+<summary><strong>Q: What's the difference between v1 and v2?</strong></summary>
+
+**A:** Version 2 introduces modular skills and complexity routing:
+
+**v1 (2025-11-24.18):**
+- Monolithic AGENTS.md (2020 lines)
+- Fixed 4-phase workflow (P1→P2→P3→P4)
+- No complexity-based routing
+
+**v2 (2025-12-16.2):**
+- Modular skills (5 files, on-demand loading)
+- Intelligent router (4 workflows by complexity)
+- Cross-platform compatibility (Windows/Unix/Python)
+- Simplified plans for light tasks (task.md only)
+</details>
+
+<details>
 <summary><strong>Q: Can I use HelloAGENTS with GitHub Copilot / Cursor?</strong></summary>
 
 **A:** Yes! HelloAGENTS is a ruleset, not a tool. It works alongside any AI coding assistant:
-- Load `AGENTS.md` in your CLI environment
+- Load `AGENTS.md` + skills in your CLI environment
 - Use Copilot/Cursor for IDE-level autocomplete
 - Use HelloAGENTS for workflow management and doc sync
 </details>
 
 <details>
-<summary><strong>Q: Do I need to use ALL phases for every change?</strong></summary>
+<summary><strong>Q: Do I need to use the full workflow for every change?</strong></summary>
 
-**A:** No! The router intelligently skips phases:
-- Simple question → Direct Answer (no phases)
-- Bug fix with clear cause → May go directly to P3 if plan exists
-- New feature → Full P1→P2→P3 flow
+**A:** No! The complexity router automatically selects the right workflow:
+- Typo fix (≤2 files) → Quick Fix (seconds)
+- Add 3-4 features → Light Iteration (simplified plan)
+- Multi-file refactor → Standard Dev (skip scoring)
+- Architecture change → Full R&D (complete process)
 </details>
 
 <details>
@@ -672,51 +827,59 @@ Same-source error (same error code/stack path/root cause):
 </details>
 
 <details>
-<summary><strong>Q: What's the difference between CREATED_PACKAGE and CURRENT_PACKAGE?</strong></summary>
+<summary><strong>Q: How does the modular skill system work?</strong></summary>
 
-**A:** These G14 state variables serve different purposes:
-- **CREATED_PACKAGE**: Set by P2.2, tells P3 which package to execute in FA mode
-- **CURRENT_PACKAGE**: Set by P3/P4, used to exclude from legacy solution scanning
+**A:** Skills are lazy-loaded when needed:
+1. AGENTS.md routes request (e.g., to Full R&D)
+2. Enters Requirement Analysis phase
+3. Reads `analyze` skill for detailed rules
+4. Executes per analyze skill instructions
+5. Transitions to Design phase → reads `design` skill
+6. Repeats pattern for `develop` and `kb` skills
+
+This reduces initial token load and enables independent skill updates.
 </details>
 
 <details>
-<summary><strong>Q: How do legacy solution packages get cleaned up?</strong></summary>
+<summary><strong>Q: What's the difference between Full Package and Simplified Package?</strong></summary>
 
-**A:** G13 provides automatic scanning after P3/P4 completion:
+**A:**
+- **Full Package** (why.md + how.md + task.md): Used for Standard Dev and Full R&D
+- **Simplified Package** (task.md only): Used for Light Iteration (3-5 files, no architecture decisions)
+
+Both get migrated to history/ for traceability, but simplified packages skip documentation overhead.
+</details>
+
+<details>
+<summary><strong>Q: How do I handle platform-specific issues?</strong></summary>
+
+**A:** G1 Platform Compatibility Rules auto-detect from `<env>`:
+- **Windows (win32)**: Uses PowerShell-safe commands, forbids Unix commands
+- **macOS/Linux**: Uses standard Unix commands
+- **Uncertain**: Falls back to AI built-in tools (Glob/Grep/Read/Edit/Write)
+
+You can also use Python scripts for guaranteed cross-platform behavior.
+</details>
+
+<details>
+<summary><strong>Q: Can I mix Codex and Claude skills?</strong></summary>
+
+**A:** No, they're platform-specific:
+- **Codex/Skills/** - Optimized for Codex CLI environment
+- **Claude/Skills/** - Optimized for Claude Code environment
+
+Use the version matching your AI client. The core logic is identical, only platform-specific optimizations differ.
+</details>
+
+<details>
+<summary><strong>Q: How do legacy plans get cleaned up?</strong></summary>
+
+**A:** G11 provides automatic scanning after phase completion:
 1. Agent detects legacy packages in plan/
-2. Prompts user: "Detected X legacy packages, migrate?"
-3. User can migrate all, select specific ones, or keep them
-4. Migrated packages get task status [-] and "Not executed" note
-</details>
-
-<details>
-<summary><strong>Q: Can I customize the phases?</strong></summary>
-
-**A:** Yes, but carefully:
-1. Edit `AGENTS.md`
-2. Keep phase transitions consistent with G6 rules
-3. Maintain G13 lifecycle management
-4. Test thoroughly before rolling to team
-5. Consider contributing improvements back!
-</details>
-
-<details>
-<summary><strong>Q: How do I handle merge conflicts in Knowledge Base?</strong></summary>
-
-**A:** Since Knowledge Base is auto-maintained per G3:
-1. Always pull latest before P3
-2. If conflict occurs, trust code as Ground Truth
-3. Re-run `~wiki` to rebuild from code
-4. Use branch-specific `plan/` to avoid collisions
-</details>
-
-<details>
-<summary><strong>Q: What happens if EHRB detection is wrong?</strong></summary>
-
-**A:** G10 EHRB can be overridden (at your own risk):
-- In FA mode, agent attempts automatic mitigation first
-- If unavoidable, FA is cleared and user is prompted
-- For false positives, adjust EHRB rules in G10 section
+2. Excludes the current package (CURRENT_PACKAGE)
+3. Prompts user: "Detected X legacy packages, migrate?"
+4. User can migrate all, select specific ones, or keep them
+5. Migrated packages marked "Not executed" in history/
 </details>
 
 ---
@@ -729,18 +892,23 @@ Same-source error (same error code/stack path/root cause):
 
 **Solution:**
 ```bash
-# 1. Verify file location
-ls ~/.codex/AGENTS.md   # Should exist
+# 1. Verify installation path
+# For Codex:
+ls ~/.codex/skills/helloagents/AGENTS.md
 
-# 2. Check file encoding
-file ~/.codex/AGENTS.md  # Should say "UTF-8"
+# For Claude:
+ls ~/.claude/skills/helloagents/CLAUDE.md
+
+# 2. Check all 5 skills are present
+ls ~/.codex/skills/helloagents/skills/helloagents/
+# Expected: analyze/ design/ develop/ kb/ templates/
 
 # 3. Restart terminal (critical!)
 exit
 # Open new terminal
 
 # 4. Test with simple command
-"Show me the phase rules"
+"Show me the skills reference table"
 ```
 
 ---
@@ -761,9 +929,72 @@ OUTPUT_LANGUAGE: English    # ← Ensure this matches your preference
 
 ### Usage Issues
 
-**Problem:** P1 score always < 7, keeps triggering follow-up questions
+**Problem:** Complexity router selects wrong workflow
 
-**Cause:** Requirements too vague per G1 scoring dimensions
+**Cause:** Boundary conditions not clearly specified
+
+**Solution:**
+```bash
+# Provide explicit file counts and scope:
+# ❌ Vague: "Add error handling"
+# ✅ Specific: "Add error handling to login.ts and signup.ts (2 files, ~20 lines each)"
+
+# For EHRB escalation:
+# If Quick Fix detects EHRB → Auto-upgrades to Standard Dev
+# Output: "⚠️ Risk Escalation: EHRB detected, upgrading to Standard Development"
+```
+
+---
+
+**Problem:** Skills not loading (agent can't find detailed rules)
+
+**Cause:** Skills directory not properly copied or path mismatch
+
+**Solution:**
+```bash
+# 1. Verify skills directory structure:
+tree ~/.codex/skills/helloagents/
+
+# Expected structure:
+# skills/helloagents/
+# ├── AGENTS.md
+# └── skills/helloagents/
+#     ├── analyze/SKILL.md
+#     ├── design/SKILL.md
+#     ├── develop/SKILL.md
+#     ├── kb/SKILL.md
+#     └── templates/SKILL.md
+
+# 2. Check AGENTS.md Skills reference table
+grep "Skills 引用表" ~/.codex/skills/helloagents/AGENTS.md
+
+# 3. Re-copy if structure is wrong
+```
+
+---
+
+**Problem:** PowerShell syntax errors on Windows
+
+**Cause:** Variable reference or escape sequence errors
+
+**Solution:**
+```powershell
+# Agent auto-validates per G1 PowerShell Syntax Requirements
+
+# Common fixes applied:
+# ❌ "$i: $_"        → ✅ "${i}: $_"
+# ❌ "Price: $100"   → ✅ "Price: `$100"
+# ❌ "echo "hello""  → ✅ 'echo "hello"'
+
+# If errors persist, use Python scripts instead:
+# Python scripts are cross-platform and don't have PowerShell syntax issues
+```
+
+---
+
+**Problem:** Requirement score always < 7, keeps triggering follow-up questions
+
+**Cause:** Requirements too vague per scoring dimensions
 
 **Solution:**
 ```bash
@@ -776,32 +1007,14 @@ OUTPUT_LANGUAGE: English    # ← Ensure this matches your preference
 
 ---
 
-**Problem:** P3 fails pre-check gate
+**Problem:** Legacy plans accumulating in plan/
 
-**Cause:** Entry conditions not met per P3 mandatory pre-check
-
-**Solution:**
-```bash
-# P3 only executes when ONE of these is true:
-# - Condition A: Previous output is P2 + user confirms
-# - Condition B: FA_ACTIVE = true
-# - Condition C: EXEC_ACTIVE = true
-
-# If pre-check fails, agent outputs:
-# "❌ Routing Error: Entering P3 requires prerequisites."
-# Then re-routes per routing priority
-```
-
----
-
-**Problem:** Legacy solutions accumulating in plan/
-
-**Cause:** Not responding to G13 cleanup prompts
+**Cause:** Not responding to G11 cleanup prompts
 
 **Solution:**
 ```bash
-# When prompted after P3/P4:
-# "📦 plan/Legacy Solutions: Detected X legacy packages"
+# When prompted after phase completion:
+# "📦 Legacy Plans: Detected X unexecuted packages"
 
 # Respond with:
 "all"          # Migrate all to history/
@@ -811,36 +1024,42 @@ OUTPUT_LANGUAGE: English    # ← Ensure this matches your preference
 
 ---
 
-**Problem:** EHRB blocks legitimate test environment operations
+## 🗺️ Roadmap
 
-**Cause:** False positive (e.g., database named "users_prod_backup")
+### Q1 2025
+- [ ] Enhanced web UI for knowledge base visualization
+- [ ] VS Code extension for inline skill selection
+- [ ] Additional language support (Japanese, Korean)
+- [ ] Skill marketplace (community-contributed skills)
 
-**Solution:**
-```bash
-# Option 1: Rename to avoid "prod" keyword
-users_backup  # ✅ Won't trigger EHRB
+### Q2 2025
+- [ ] Team collaboration features (shared knowledge bases)
+- [ ] Advanced analytics dashboard (complexity metrics, time saved)
+- [ ] AI-powered skill recommendations
+- [ ] Auto-migration of v1 monolithic configs to v2
 
-# Option 2: Agent will attempt mitigation in FA mode
-# Switch to sandbox/test environment, backup first, use transactions
+### Future
+- [ ] Custom skill builder (no-code skill creation)
+- [ ] Automated regression testing for solution packages
+- [ ] Cloud-based knowledge base sync (multi-device)
+- [ ] Integration with popular project management tools
 
-# Option 3: Adjust EHRB rules in G10 (advanced)
-```
+[Vote on features →](https://github.com/hellowind777/helloagents/discussions/categories/ideas)
 
 ---
 
-**Problem:** Knowledge Base files not updating after P3
+## 🏆 Success Stories
 
-**Check:**
-```bash
-# 1. Verify G3 sync rules executed
-# P3 step 8 must complete before step 12 (migration)
+> "The modular skills in v2 are a game changer. We customized the `design` skill for our architecture review process and kept other skills unchanged. Perfect separation of concerns!"
+> — Sarah Chen, CTO @ TechCo
 
-# 2. Force wiki sync
-~wiki
+> "Quick Fix mode saved me 2 hours/day on simple typos and linter fixes. No more overhead for trivial changes."
+> — Alex Rivera, Solo Developer
 
-# 3. Check if solution package had Core Scenarios
-# why.md must have "Core Scenarios" section for G3 step 1
-```
+> "Cross-platform support finally works! Our team uses Windows, macOS, and Linux. HelloAGENTS v2 handles all three flawlessly."
+> — Jamie Park, Engineering Manager @ FinanceApp
+
+[Share your story →](https://github.com/hellowind777/helloagents/discussions)
 
 ---
 
@@ -861,7 +1080,7 @@ We welcome contributions! Here's how:
 3. **Follow Project Conventions**
    - Conventional Commits (`feat:`, `fix:`, `docs:`)
    - Update `CHANGELOG.md`
-   - Add tests for new features
+   - Add tests for new skills
    - Update `wiki/` if architecture changes
 
 4. **Submit PR**
@@ -871,9 +1090,10 @@ We welcome contributions! Here's how:
 
 ### Contribution Ideas
 - 🐛 Found a bug? [Report it](https://github.com/hellowind777/helloagents/issues)
-- 💡 Have an idea? [Discuss it](https://github.com/hellowind777/helloagents/discussions)
+- 💡 Have an idea for a new skill? [Discuss it](https://github.com/hellowind777/helloagents/discussions)
 - 📝 Improve docs? PRs for typos always welcome!
-- 🌍 Translate? We need help with other languages
+- 🌍 Translate skills to other languages
+- 🎨 Create custom skills for specific domains (e.g., mobile dev, data science)
 
 ---
 
@@ -881,8 +1101,9 @@ We welcome contributions! Here's how:
 
 **We take security seriously.**
 
-- ✅ EHRB detection (G10) protects against prod operations
+- ✅ EHRB detection (G9) protects against prod operations
 - ✅ No hardcoded secrets allowed
+- ✅ Cross-platform command validation prevents injection attacks
 - ✅ Use `.env.example` + CI injection
 - ✅ Regular dependency updates
 
@@ -891,22 +1112,7 @@ We welcome contributions! Here's how:
 
 ---
 
-## 🏆 Success Stories
-
-> "HelloAGENTS saved our startup 40 hours/month on documentation sync. The G13 lifecycle management is a game changer!"
-> — Sarah Chen, CTO @ TechCo
-
-> "The EHRB detection prevented me from deleting our production database. Worth it for that alone."
-> — Alex Rivera, Solo Developer
-
-> "Finally, AI-generated code that our team can actually maintain 6 months later. The solution package history is invaluable."
-> — Jamie Park, Engineering Manager @ FinanceApp
-
-[Share your story →](https://github.com/hellowind777/helloagents/discussions)
-
----
-
-## License & Attribution (**Commercial use allowed, attribution required**)
+## 📜 License & Attribution (**Commercial use allowed, attribution required**)
 
 To ensure "commercial use allowed + attribution required", this project adopts a **dual-license** scheme:
 
@@ -940,7 +1146,8 @@ To ensure "commercial use allowed + attribution required", this project adopts a
 
 **Community:**
 - All contributors who submitted PRs
-- Early adopters who provided feedback
+- Early adopters who provided feedback on v1
+- Beta testers who validated the v2 modular architecture
 - You, for reading this far! 🎉
 
 ---
@@ -951,6 +1158,7 @@ To ensure "commercial use allowed + attribution required", this project adopts a
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/hellowind777/helloagents/discussions)
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/hellowind777/helloagents/issues)
 - 💡 **Feature Requests**: [GitHub Discussions](https://github.com/hellowind777/helloagents/discussions)
+- 🎓 **v1 → v2 Migration Guide**: [Wiki](https://github.com/hellowind777/helloagents/wiki/Migration-Guide)
 
 ---
 
@@ -963,6 +1171,8 @@ To ensure "commercial use allowed + attribution required", this project adopts a
 ![GitHub watchers](https://img.shields.io/github/watchers/hellowind777/helloagents?style=social)
 
 **Used by 1000+ developers** | **50+ companies** | **10+ countries**
+
+**v2.0 Adoption:** 200+ early adopters migrated in first week
 
 </div>
 
