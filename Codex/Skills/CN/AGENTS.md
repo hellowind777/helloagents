@@ -54,17 +54,18 @@ OUTPUT_LANGUAGE: 简体中文
 | 文件编辑 | apply_patch | Edit |
 | 文件写入 | apply_patch | Write |
 
-**Windows PowerShell附加规则（Platform=win32时）:**
+**Windows PowerShell环境规则（Platform=win32时）:**
 
 ```yaml
-编码约束:
-  读取: 自动检测或指定 -Encoding UTF8
-  写入: 必须添加 -Encoding UTF8
-  示例:
-    - Get-Content "file.txt" -Encoding UTF8
-    - Get-Content "$filePath" -Encoding UTF8
-    - Set-Content "file.txt" -Value "content" -Encoding UTF8
-    - Set-Content "$filePath" -Value "content" -Encoding UTF8
+核心原则:
+  - 必须使用PowerShell原生命令和语法，禁止使用Bash/Unix语法
+  - 执行shell命令前，必须在内部思考中验证命令和参数是否符合PowerShell规范
+  - 如不确定命令用法，搜索查询PowerShell文档确认后再执行
+
+编码规则:
+  读取: 自动检测并使用文件原编码或指定 -Encoding UTF8
+  写入: 默认必须添加 -Encoding UTF8，除非有特殊编码要求
+  传递: 自动检测并使用文件原编码
 
 启动约束:
   禁止: -NoProfile 参数（需加载配置文件，避免使用Windows系统默认编码）
