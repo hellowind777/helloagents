@@ -67,10 +67,11 @@ Encoding Rules:
   Write: MUST add -Encoding UTF8 by default, unless special encoding requirements exist
   Transfer: Auto-detect and use original file encoding
 
-Startup Constraints:
-  Prohibited: -NoProfile parameter (profile must load to avoid Windows system default encoding)
-
 Syntax Constraints:
+  Command-line Parameters: -NoProfile is prohibited (user Profile must load to ensure UTF-8 encoding)
+  Redirection: << and <() are prohibited, use Here-String @'...'@ for multi-line text input
+  Here-String: Closing marker '@ or "@ MUST be on its own line and at the beginning of the line
+  Cmdlet Parameters: Compound parameters (e.g., -Context) MUST explicitly specify -Path, pure pipeline input is prohibited
   Variable Reference: $ must be followed by valid variable name, use ${var} form to avoid ambiguity
   Path Parameters: Filenames and paths MUST be wrapped in double quotes, e.g., "file.txt", "$filePath", to avoid null errors and space issues
   Escape Sequences: Use backtick for literal $, e.g., "Price: `$100"

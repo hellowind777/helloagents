@@ -67,10 +67,11 @@ OUTPUT_LANGUAGE: 简体中文
   写入: 默认必须添加 -Encoding UTF8，除非有特殊编码要求
   传递: 自动检测并使用文件原编码
 
-启动约束:
-  禁止: -NoProfile 参数（需加载配置文件，避免使用Windows系统默认编码）
-
 语法约束:
+  命令行参数: 禁止 -NoProfile（必须加载用户Profile，确保UTF-8编码）
+  重定向: 禁止 << 和 <()，用 Here-String @'...'@ 传递多行文本
+  Here-String: 结束标记 '@ 或 "@ 须独占一行且在行首
+  cmdlet参数: 复合参数（如-Context）须显式指定 -Path，禁止纯管道输入
   变量引用: $ 后须为合法变量名，使用 ${var} 形式避免歧义
   路径参数: 文件名和路径须用双引号包裹，如 "file.txt"、"$filePath"，避免null错误和空格问题
   转义序列: 字面 $ 用反引号，如 "Price: `$100"
