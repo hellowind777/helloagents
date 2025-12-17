@@ -397,6 +397,8 @@ flowchart TD
 
 ### Modular Skills Architecture
 
+**Source Repository Structure:**
+
 ```
 helloagents/
 ├── Codex/Skills/                # For Codex CLI
@@ -422,6 +424,30 @@ helloagents/
     ├── wiki/                    # Core documentation
     ├── plan/                    # Active solution packages
     └── history/                 # Completed changes archive
+```
+
+**After Installation (User Directory):**
+
+```
+# For Codex CLI:
+~/.codex/
+├── AGENTS.md                    # Copied from Codex/Skills/CN/AGENTS.md
+└── skills/helloagents/          # Copied from Codex/Skills/CN/skills/helloagents/
+    ├── analyze/SKILL.md
+    ├── design/SKILL.md
+    ├── develop/SKILL.md
+    ├── kb/SKILL.md
+    └── templates/SKILL.md
+
+# For Claude Code:
+~/.claude/
+├── CLAUDE.md                    # Copied from Claude/Skills/CN/CLAUDE.md
+└── skills/helloagents/          # Copied from Claude/Skills/CN/skills/helloagents/
+    ├── analyze/SKILL.md
+    ├── design/SKILL.md
+    ├── develop/SKILL.md
+    ├── kb/SKILL.md
+    └── templates/SKILL.md
 ```
 
 **Real Example: Evolution from v1 to v2**
@@ -889,13 +915,13 @@ Use the version matching your AI client. The core logic is identical, only platf
 ```bash
 # 1. Verify installation path
 # For Codex:
-ls ~/.codex/skills/helloagents/AGENTS.md
+ls ~/.codex/AGENTS.md
 
 # For Claude:
-ls ~/.claude/skills/helloagents/CLAUDE.md
+ls ~/.claude/CLAUDE.md
 
 # 2. Check all 5 skills are present
-ls ~/.codex/skills/helloagents/skills/helloagents/
+ls ~/.codex/skills/helloagents/
 # Expected: analyze/ design/ develop/ kb/ templates/
 
 # 3. Restart terminal (critical!)
@@ -948,11 +974,15 @@ OUTPUT_LANGUAGE: English    # ← Ensure this matches your preference
 **Solution:**
 ```bash
 # 1. Verify skills directory structure:
-tree ~/.codex/skills/helloagents/
+# For Codex:
+tree ~/.codex/
 
-# Expected structure:
-# skills/helloagents/
-# ├── AGENTS.md
+# For Claude:
+tree ~/.claude/
+
+# Expected structure (same for both):
+# ~/.codex/ (or ~/.claude/)
+# ├── AGENTS.md (or CLAUDE.md for Claude)
 # └── skills/helloagents/
 #     ├── analyze/SKILL.md
 #     ├── design/SKILL.md
@@ -961,7 +991,11 @@ tree ~/.codex/skills/helloagents/
 #     └── templates/SKILL.md
 
 # 2. Check AGENTS.md Skills reference table
-grep "Skills 引用表" ~/.codex/skills/helloagents/AGENTS.md
+# For Codex:
+grep "Skills 引用表" ~/.codex/AGENTS.md
+
+# For Claude:
+grep "Skills 引用表" ~/.claude/CLAUDE.md
 
 # 3. Re-copy if structure is wrong
 ```

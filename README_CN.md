@@ -397,6 +397,8 @@ flowchart TD
 
 ### 模块化技能架构
 
+**源代码仓库结构：**
+
 ```
 helloagents/
 ├── Codex/Skills/                # Codex CLI 使用
@@ -422,6 +424,30 @@ helloagents/
     ├── wiki/                    # 核心文档
     ├── plan/                    # 活跃方案包
     └── history/                 # 已完成变更归档
+```
+
+**安装后的目录结构（用户目录）：**
+
+```
+# Codex CLI 用户：
+~/.codex/
+├── AGENTS.md                    # 从 Codex/Skills/CN/AGENTS.md 复制
+└── skills/helloagents/          # 从 Codex/Skills/CN/skills/helloagents/ 复制
+    ├── analyze/SKILL.md
+    ├── design/SKILL.md
+    ├── develop/SKILL.md
+    ├── kb/SKILL.md
+    └── templates/SKILL.md
+
+# Claude Code 用户：
+~/.claude/
+├── CLAUDE.md                    # 从 Claude/Skills/CN/CLAUDE.md 复制
+└── skills/helloagents/          # 从 Claude/Skills/CN/skills/helloagents/ 复制
+    ├── analyze/SKILL.md
+    ├── design/SKILL.md
+    ├── develop/SKILL.md
+    ├── kb/SKILL.md
+    └── templates/SKILL.md
 ```
 
 **真实示例：从 v1 到 v2 的演进**
@@ -889,13 +915,13 @@ plan/202512161545_add_validation/
 ```bash
 # 1. 验证安装路径
 # Codex：
-ls ~/.codex/skills/helloagents/AGENTS.md
+ls ~/.codex/AGENTS.md
 
 # Claude：
-ls ~/.claude/skills/helloagents/CLAUDE.md
+ls ~/.claude/CLAUDE.md
 
 # 2. 检查5个技能是否都存在
-ls ~/.codex/skills/helloagents/skills/helloagents/
+ls ~/.codex/skills/helloagents/
 # 预期：analyze/ design/ develop/ kb/ templates/
 
 # 3. 重启终端（关键！）
@@ -948,11 +974,15 @@ OUTPUT_LANGUAGE: 简体中文    # ← 确保这与你的偏好匹配
 **解决方案：**
 ```bash
 # 1. 验证技能目录结构：
-tree ~/.codex/skills/helloagents/
+# Codex：
+tree ~/.codex/
 
-# 预期结构：
-# skills/helloagents/
-# ├── AGENTS.md
+# Claude：
+tree ~/.claude/
+
+# 预期结构（两者相同）：
+# ~/.codex/（或 ~/.claude/）
+# ├── AGENTS.md（Claude 为 CLAUDE.md）
 # └── skills/helloagents/
 #     ├── analyze/SKILL.md
 #     ├── design/SKILL.md
@@ -961,7 +991,11 @@ tree ~/.codex/skills/helloagents/
 #     └── templates/SKILL.md
 
 # 2. 检查AGENTS.md技能引用表
-grep "Skills 引用表" ~/.codex/skills/helloagents/AGENTS.md
+# Codex：
+grep "Skills 引用表" ~/.codex/AGENTS.md
+
+# Claude：
+grep "Skills 引用表" ~/.claude/CLAUDE.md
 
 # 3. 如果结构错误，重新复制
 ```
