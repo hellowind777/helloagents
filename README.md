@@ -128,25 +128,20 @@ Multi-layer protection:
 
 ### Prerequisites
 - CLI environment with file system access (Codex CLI, Claude Code, or custom AI client)
-- Basic Git knowledge (for version control)
 
 ### Installation
 
-**Step 1: Copy the ruleset for your platform**
+**Step 1: Copy the ruleset to your directory**
 
-```bash
-# For Codex CLI - Chinese version
-cp -r Codex/Skills/CN ~/.codex/skills/
+Choose your platform and copy the corresponding folder to the directory:
 
-# For Codex CLI - English version
-cp -r Codex/Skills/EN ~/.codex/skills/
+- **For Codex CLI**: Copy `Codex/Skills/CN` or `Codex/Skills/EN` to `~/.codex/`
+  - Chinese version: Copy `Codex/Skills/CN` → `~/.codex/`
+  - English version: Copy `Codex/Skills/EN` → `~/.codex/`
 
-# For Claude Code - Chinese version
-cp -r Claude/Skills/CN ~/.claude/skills/
-
-# For Claude Code - English version
-cp -r Claude/Skills/EN ~/.claude/skills/
-```
+- **For Claude Code**: Copy `Claude/Skills/CN` or `Claude/Skills/EN` to `~/.claude/`
+  - Chinese version: Copy `Claude/Skills/CN` → `~/.claude/`
+  - English version: Copy `Claude/Skills/EN` → `~/.claude/`
 
 **Step 2: Configure language**
 
@@ -160,16 +155,16 @@ Set **Global Rules → OUTPUT_LANGUAGE** to `English` in the AGENTS.md G1 sectio
 
 **Step 3: Verify installation**
 
-```bash
-# Restart terminal and ask:
-"Show me the skills reference table"
-
-# Expected: Agent should list 5 skills (analyze, design, develop, kb, templates)
+Restart your terminal and ask the agent:
 ```
+"Show me the skills reference table"
+```
+
+Expected: The agent should list 5 skills (analyze, design, develop, kb, templates)
 
 ### First Use Example
 
-```bash
+```
 # 1. Quick fix (routes to Quick Fix mode)
 "Fix the typo in src/utils/helper.ts line 42: 'respose' should be 'response'"
 
@@ -1024,45 +1019,6 @@ grep "Skills 引用表" ~/.codex/skills/helloagents/AGENTS.md
 
 ---
 
-## 🗺️ Roadmap
-
-### Q1 2025
-- [ ] Enhanced web UI for knowledge base visualization
-- [ ] VS Code extension for inline skill selection
-- [ ] Additional language support (Japanese, Korean)
-- [ ] Skill marketplace (community-contributed skills)
-
-### Q2 2025
-- [ ] Team collaboration features (shared knowledge bases)
-- [ ] Advanced analytics dashboard (complexity metrics, time saved)
-- [ ] AI-powered skill recommendations
-- [ ] Auto-migration of v1 monolithic configs to v2
-
-### Future
-- [ ] Custom skill builder (no-code skill creation)
-- [ ] Automated regression testing for solution packages
-- [ ] Cloud-based knowledge base sync (multi-device)
-- [ ] Integration with popular project management tools
-
-[Vote on features →](https://github.com/hellowind777/helloagents/discussions/categories/ideas)
-
----
-
-## 🏆 Success Stories
-
-> "The modular skills in v2 are a game changer. We customized the `design` skill for our architecture review process and kept other skills unchanged. Perfect separation of concerns!"
-> — Sarah Chen, CTO @ TechCo
-
-> "Quick Fix mode saved me 2 hours/day on simple typos and linter fixes. No more overhead for trivial changes."
-> — Alex Rivera, Solo Developer
-
-> "Cross-platform support finally works! Our team uses Windows, macOS, and Linux. HelloAGENTS v2 handles all three flawlessly."
-> — Jamie Park, Engineering Manager @ FinanceApp
-
-[Share your story →](https://github.com/hellowind777/helloagents/discussions)
-
----
-
 ## 🤝 Contributing
 
 We welcome contributions! Here's how:
@@ -1169,10 +1125,6 @@ To ensure "commercial use allowed + attribution required", this project adopts a
 ![GitHub stars](https://img.shields.io/github/stars/hellowind777/helloagents?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/hellowind777/helloagents?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/hellowind777/helloagents?style=social)
-
-**Used by 1000+ developers** | **50+ companies** | **10+ countries**
-
-**v2.0 Adoption:** 200+ early adopters migrated in first week
 
 </div>
 
