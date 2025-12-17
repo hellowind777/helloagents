@@ -37,93 +37,45 @@ OUTPUT_LANGUAGE: 简体中文
 
 **编码规则:**
 
-通用原则（适用所有工具和操作）:
-- 读取: 使用尝试-降级策略（UTF-8→系统默认编码）
-- 写入: 优先UTF-8，除非用户明确要求其他编码
-- 传递: 保持原编码不变（如文件复制、移动）
-- 输出: 控制台输出统一UTF-8（Platform=win32时需显式配置）
+通用原则:
+- 读取: 自动检测文件编码
+- 写入: 统一UTF-8
+- 传递: 保持原编码不变
 
-具体工具规则:
-- AI内置工具（Glob/Grep/Read/Edit/Write）:
-  - Read: 自动检测编码
-  - Write/Edit: 默认UTF-8，除非明确要求其他编码
-  - Grep: 输出保持原文件编码
-- Windows PowerShell 5.x:
-  - 读取: Get-Content 使用系统默认编码
-  - 写入: 须指定 -Encoding UTF8
-- PowerShell 7+/Git Bash/WSL: 默认UTF-8，无需特殊处理
+**工具使用规则:**
 
-**跨平台命令规范:**
+优先使用AI内置工具（无需区分，按可用性自动选择）:
 
-<platform_compatibility_rules>
+| 操作类型 | Codex CLI | Claude Code |
+|----------|-----------|-------------|
+| 文件读取 | cat | Read |
+| 内容搜索 | grep | Grep |
+| 文件查找 | find / ls | Glob |
+| 文件编辑 | apply_patch | Edit |
+| 文件写入 | apply_patch | Write |
 
-⚠️ **CRITICAL - 强制执行规则:**
+**Windows PowerShell附加规则（Platform=win32时）:**
 
-**STEP 1: 平台检测验证**
-- 调用Bash工具前，MUST在 <thinking> 中确认: "Platform={value} from <env>"
-- 如果 Platform 缺失或不明确 → 假设为受限环境，只使用AI内置工具
+```yaml
+编码约束:
+  读取: 自动检测或指定 -Encoding UTF8
+  写入: 必须添加 -Encoding UTF8
+  示例:
+    - Get-Content "file.txt" -Encoding UTF8
+    - Get-Content "$filePath" -Encoding UTF8
+    - Set-Content "file.txt" -Value "content" -Encoding UTF8
+    - Set-Content "$filePath" -Value "content" -Encoding UTF8
 
-**STEP 2: 工具选择优先级**
+启动约束:
+  禁止: -NoProfile 参数（需加载配置文件，避免使用Windows系统默认编码）
+
+语法约束:
+  变量引用: $ 后须为合法变量名，使用 ${var} 形式避免歧义
+  路径参数: 文件名和路径须用双引号包裹，如 "file.txt"、"$filePath"，避免null错误和空格问题
+  转义序列: 字面 $ 用反引号，如 "Price: `$100"
+  引号嵌套: 双引号内双引号须转义 ""，或改用单引号包裹
+  转义字符: `n(换行) `t(制表符) `$(字面$)
 ```
-AI内置工具 > Python脚本 > 平台特定命令
-(Glob/Grep/Read/Edit/Write优先于所有shell命令)
-```
-
-**STEP 3: Windows环境约束（Platform=win32）**
-
-禁止操作（NO exceptions）:
-- ❌ Unix命令: grep/cat/wc/find/ls/rm/sed/awk/touch
-- ❌ Bash heredoc: cat <<EOF / python - <<'EOF'
-- ❌ 混用语法: 在Bash工具中使用PowerShell命令
-
-允许操作:
-- ✅ AI内置工具: Glob/Grep/Read/Edit/Write
-- ✅ Python脚本: python script.py
-  - 文件读取: 使用尝试-降级策略（UTF-8→系统默认编码）
-  - 控制台输出: MUST添加 sys.stdout 重配置（encoding='utf-8', errors='replace'）
-- ✅ Windows PowerShell原生: Get-Content/Select-String（仅当AI工具不适用时）
-  - 编码规则：读取使用系统默认编码，写入须指定-Encoding UTF8
-  - **PowerShell语法强制约束（MUST遵守）：**
-
-    **核心概念：** PowerShell 使用反引号 ` 作为转义字符（非反斜杠 \）
-
-    1. **变量引用**：字符串中的 $ 后MUST紧跟合法变量名，使用 ${} 可明确变量边界
-       - ❌ 错误：`"$i: $ "`（$ 后无变量名）
-       - ❌ 错误：`"$i: $_"`（PowerShell 将 `$i:` 误解为驱动器变量）
-       - ✅ 正确：`"${i}: $_"`、`"$var1 $var2"`
-
-    2. **转义序列**：需要字面显示 $ 或使用转义序列时MUST使用反引号或单引号
-       - ❌ 错误：`"Price: $100"`（$1 被解释为变量）
-       - ✅ 正确：`` "Price: `$100" `` 或 `'Price: $100'`
-       - 常用转义：`` `n ``（换行）、`` `t ``（制表符）、`` `$ ``（字面$）
-
-    3. **引号嵌套**：双引号字符串内的双引号MUST转义或用单引号包裹
-       - ❌ 错误：`"echo "hello""`（引号未转义）
-       - ✅ 正确：`"echo ""hello"""` 或 `'echo "hello"'`
-
-    4. **命令参数**：作为命令参数的路径/字符串若包含空格MUST用引号包裹
-       - ❌ 错误：`Get-Content C:\My Documents\file.txt`（空格导致参数分割）
-       - ✅ 正确：`Get-Content "C:\My Documents\file.txt"`
-       - 说明：字符串内部的空格无需特殊处理
-
-    **验证方法**：生成PowerShell命令后，检查是否存在上述4类语法错误
-
-**验证要求:**
-- 文件读写操作，MUST优先使用 Read/Write/Edit 工具，禁止使用 python -c / cat / Get-Content
-- 使用Bash工具后，MUST重述: "已执行[命令]，平台兼容性已验证"
-- 生成Python脚本时，MUST确认: 已添加 sys.stdout 编码处理
-- 使用Windows PowerShell写入文件时，MUST确认: 已指定 -Encoding UTF8
-
-</platform_compatibility_rules>
-
-<uncertainty_handling>
-
-**平台无法检测时:**
-- 明确说明: "⚠️ 平台信息缺失，假设为受限环境"
-- 只使用AI内置工具（Glob/Grep/Read/Edit/Write）
-- 不使用任何shell命令
-
-</uncertainty_handling>
 
 ### G2 | 核心术语
 

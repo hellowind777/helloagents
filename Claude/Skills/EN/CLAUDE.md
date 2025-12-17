@@ -37,93 +37,45 @@ Encoding: UTF-8 without BOM
 
 **Encoding Rules:**
 
-Universal Principles (applies to all tools and operations):
-- Read: Use try-fallback strategy (UTF-8 → system default encoding)
-- Write: Prioritize UTF-8 unless user explicitly requests another encoding
-- Transfer: Preserve original encoding (e.g., file copy, move)
-- Output: Console output uniformly UTF-8 (requires explicit configuration when Platform=win32)
+General Principles:
+- Read: Auto-detect file encoding
+- Write: Use UTF-8 uniformly
+- Transfer: Preserve original encoding
 
-Specific Tool Rules:
-- AI built-in tools (Glob/Grep/Read/Edit/Write):
-  - Read: Auto-detect encoding
-  - Write/Edit: Default UTF-8 unless explicitly requested otherwise
-  - Grep: Output preserves original file encoding
-- Windows PowerShell 5.x:
-  - Read: Get-Content uses system default encoding
-  - Write: MUST specify -Encoding UTF8
-- PowerShell 7+/Git Bash/WSL: Default UTF-8, no special handling needed
+**Tool Usage Rules:**
 
-**Cross-Platform Command Specifications:**
+Prioritize AI built-in tools (no distinction needed, auto-select based on availability):
 
-<platform_compatibility_rules>
+| Operation Type | Codex CLI | Claude Code |
+|----------------|-----------|-------------|
+| File Read | cat | Read |
+| Content Search | grep | Grep |
+| File Find | find / ls | Glob |
+| File Edit | apply_patch | Edit |
+| File Write | apply_patch | Write |
 
-⚠️ **CRITICAL - Mandatory Enforcement Rules:**
+**Windows PowerShell Additional Rules (when Platform=win32):**
 
-**STEP 1: Platform Detection Verification**
-- Before calling Bash tool, MUST confirm in <thinking>: "Platform={value} from <env>"
-- If Platform is missing or unclear → Assume restricted environment, use AI built-in tools only
+```yaml
+Encoding Constraints:
+  Read: Auto-detect or specify -Encoding UTF8
+  Write: MUST add -Encoding UTF8
+  Examples:
+    - Get-Content "file.txt" -Encoding UTF8
+    - Get-Content "$filePath" -Encoding UTF8
+    - Set-Content "file.txt" -Value "content" -Encoding UTF8
+    - Set-Content "$filePath" -Value "content" -Encoding UTF8
 
-**STEP 2: Tool Selection Priority**
+Startup Constraints:
+  Prohibited: -NoProfile parameter (profile must load to avoid Windows system default encoding)
+
+Syntax Constraints:
+  Variable Reference: $ must be followed by valid variable name, use ${var} form to avoid ambiguity
+  Path Parameters: Filenames and paths must be wrapped in double quotes, e.g., "file.txt", "$filePath", to avoid null errors and space issues
+  Escape Sequences: Use backtick for literal $, e.g., "Price: `$100"
+  Quote Nesting: Double quotes inside double quotes must be escaped "", or use single quotes
+  Escape Characters: `n (newline) `t (tab) `$ (literal $)
 ```
-AI built-in tools > Python scripts > Platform-specific commands
-(Glob/Grep/Read/Edit/Write take precedence over all shell commands)
-```
-
-**STEP 3: Windows Environment Constraints (Platform=win32)**
-
-Prohibited Operations (NO exceptions):
-- ❌ Unix commands: grep/cat/wc/find/ls/rm/sed/awk/touch
-- ❌ Bash heredoc: cat <<EOF / python - <<'EOF'
-- ❌ Mixed syntax: Using PowerShell commands in Bash tool
-
-Allowed Operations:
-- ✅ AI built-in tools: Glob/Grep/Read/Edit/Write
-- ✅ Python scripts: python script.py
-  - File read: Use try-fallback strategy (UTF-8 → system default encoding)
-  - Console output: MUST add sys.stdout reconfiguration (encoding='utf-8', errors='replace')
-- ✅ Windows PowerShell native: Get-Content/Select-String (only when AI tools don't apply)
-  - Encoding rules: Read uses system default encoding, write MUST specify -Encoding UTF8
-  - **PowerShell Syntax Mandatory Constraints (MUST follow):**
-
-    **Core Concept:** PowerShell uses backtick ` as escape character (not backslash \)
-
-    1. **Variable Reference**: $ in string MUST be followed by legal variable name, use ${} to explicitly mark variable boundaries
-       - ❌ Wrong: `"$i: $ "` ($ not followed by variable name)
-       - ❌ Wrong: `"$i: $_"` (PowerShell misinterprets `$i:` as drive variable)
-       - ✅ Correct: `"${i}: $_"`, `"$var1 $var2"`
-
-    2. **Escape Sequences**: When literal $ needed or using escape sequences, MUST use backtick or single quotes
-       - ❌ Wrong: `"Price: $100"` ($1 interpreted as variable)
-       - ✅ Correct: `` "Price: `$100" `` or `'Price: $100'`
-       - Common escapes: `` `n `` (newline), `` `t `` (tab), `` `$ `` (literal $)
-
-    3. **Quote Nesting**: Double quotes inside double-quoted strings MUST be escaped or wrapped in single quotes
-       - ❌ Wrong: `"echo "hello""` (unescaped quotes)
-       - ✅ Correct: `"echo ""hello"""` or `'echo "hello"'`
-
-    4. **Command Arguments**: Paths/strings as command arguments containing spaces MUST be wrapped in quotes
-       - ❌ Wrong: `Get-Content C:\My Documents\file.txt` (space causes argument splitting)
-       - ✅ Correct: `Get-Content "C:\My Documents\file.txt"`
-       - Note: Spaces inside strings need no special handling
-
-    **Verification Method**: After generating PowerShell commands, check for the above 4 syntax error types
-
-**Verification Requirements:**
-- For file read/write operations, MUST prioritize Read/Write/Edit tools, prohibit python -c / cat / Get-Content
-- After using Bash tool, MUST restate: "Executed [command], platform compatibility verified"
-- When generating Python scripts, MUST confirm: Added sys.stdout encoding handling
-- When using Windows PowerShell to write files, MUST confirm: Specified -Encoding UTF8
-
-</platform_compatibility_rules>
-
-<uncertainty_handling>
-
-**When Platform Cannot Be Detected:**
-- Explicitly state: "⚠️ Platform information missing, assuming restricted environment"
-- Use AI built-in tools only (Glob/Grep/Read/Edit/Write)
-- Do not use any shell commands
-
-</uncertainty_handling>
 
 ### G2 | Core Terminology
 
