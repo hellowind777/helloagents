@@ -400,30 +400,27 @@ flowchart TD
 **Source Repository Structure:**
 
 ```
-helloagents/
-├── Codex/Skills/                # For Codex CLI
-│   ├── CN/                      # Chinese version
-│   │   ├── AGENTS.md            # Core router + global rules (compact)
-│   │   └── skills/helloagents/
-│   │       ├── analyze/SKILL.md    # Requirement analysis (scoring, follow-ups)
-│   │       ├── design/SKILL.md     # Solution planning (conception, task breakdown)
-│   │       ├── develop/SKILL.md    # Implementation (execution, KB sync, migration)
-│   │       ├── kb/SKILL.md         # Knowledge base ops (create, sync, audit)
-│   │       └── templates/SKILL.md  # Document templates (A1-A3)
-│   └── EN/                      # English version (same structure)
-│
-├── Claude/Skills/               # For Claude Code
-│   ├── CN/
-│   │   ├── CLAUDE.md            # Claude-specific adaptations
-│   │   └── skills/helloagents/ (same 5 skills)
-│   └── EN/
-│
-└── helloagents/                 # Knowledge Base (SSOT)
-    ├── CHANGELOG.md             # Version history
-    ├── project.md               # Tech conventions
-    ├── wiki/                    # Core documentation
-    ├── plan/                    # Active solution packages
-    └── history/                 # Completed changes archive
+helloagents/                     # Project root
+├── Archive/                     # Historical versions
+├── Claude/
+│   └── Skills/                  # For Claude Code
+│       ├── CN/                  # Chinese version
+│       │   ├── CLAUDE.md        # Claude-specific adaptations
+│       │   └── skills/helloagents/
+│       │       ├── analyze/SKILL.md    # Requirement analysis (scoring, follow-ups)
+│       │       ├── design/SKILL.md     # Solution planning (conception, task breakdown)
+│       │       ├── develop/SKILL.md    # Implementation (execution, KB sync, migration)
+│       │       ├── kb/SKILL.md         # Knowledge base ops (create, sync, audit)
+│       │       └── templates/SKILL.md  # Document templates (A1-A3)
+│       └── EN/                  # English version (same structure)
+├── Codex/
+│   └── Skills/                  # For Codex CLI
+│       ├── CN/                  # Chinese version
+│       │   ├── AGENTS.md        # Core router + global rules (compact)
+│       │   └── skills/helloagents/ (same 5 skills)
+│       └── EN/                  # English version (same structure)
+├── README.md                    # English documentation
+└── README_CN.md                 # Chinese documentation
 ```
 
 **After Installation (User Directory):**

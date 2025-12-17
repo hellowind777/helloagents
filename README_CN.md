@@ -400,30 +400,27 @@ flowchart TD
 **源代码仓库结构：**
 
 ```
-helloagents/
-├── Codex/Skills/                # Codex CLI 使用
-│   ├── CN/                      # 中文版
-│   │   ├── AGENTS.md            # 核心路由器 + 全局规则（紧凑）
-│   │   └── skills/helloagents/
-│   │       ├── analyze/SKILL.md    # 需求分析（评分、追问）
-│   │       ├── design/SKILL.md     # 方案设计（构思、任务拆解）
-│   │       ├── develop/SKILL.md    # 开发实施（执行、知识库同步、迁移）
-│   │       ├── kb/SKILL.md         # 知识库操作（创建、同步、审计）
-│   │       └── templates/SKILL.md  # 文档模板（A1-A3）
-│   └── EN/                      # 英文版（相同结构）
-│
-├── Claude/Skills/               # Claude Code 使用
-│   ├── CN/
-│   │   ├── CLAUDE.md            # Claude 特定适配
-│   │   └── skills/helloagents/ (相同的5个技能)
-│   └── EN/
-│
-└── helloagents/                 # 知识库（SSOT）
-    ├── CHANGELOG.md             # 版本历史
-    ├── project.md               # 技术约定
-    ├── wiki/                    # 核心文档
-    ├── plan/                    # 活跃方案包
-    └── history/                 # 已完成变更归档
+helloagents/                     # 项目根目录
+├── Archive/                     # 历史版本
+├── Claude/
+│   └── Skills/                  # Claude Code 使用
+│       ├── CN/                  # 中文版
+│       │   ├── CLAUDE.md        # Claude 特定适配
+│       │   └── skills/helloagents/
+│       │       ├── analyze/SKILL.md    # 需求分析（评分、追问）
+│       │       ├── design/SKILL.md     # 方案设计（构思、任务拆解）
+│       │       ├── develop/SKILL.md    # 开发实施（执行、知识库同步、迁移）
+│       │       ├── kb/SKILL.md         # 知识库操作（创建、同步、审计）
+│       │       └── templates/SKILL.md  # 文档模板（A1-A3）
+│       └── EN/                  # 英文版（相同结构）
+├── Codex/
+│   └── Skills/                  # Codex CLI 使用
+│       ├── CN/                  # 中文版
+│       │   ├── AGENTS.md        # 核心路由器 + 全局规则（紧凑）
+│       │   └── skills/helloagents/ (相同的5个技能)
+│       └── EN/                  # 英文版（相同结构）
+├── README.md                    # 英文文档
+└── README_CN.md                 # 中文文档
 ```
 
 **安装后的目录结构（用户目录）：**
