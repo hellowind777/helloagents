@@ -1,8 +1,8 @@
 <!-- bootstrap: lang=zh-CN; encoding=UTF-8 -->
-<!-- AGENTS_VERSION: 2025-12-16.2 -->
+<!-- AGENTS_VERSION: 2025-12-18.2 -->
 <!-- ARCHITECTURE: Unified Complexity Router + Multi-Stage Skills -->
 
-# HelloAGENTS - 模块化AI编程技能系统
+# HelloAGENTS - AI编程模块化技能系统
 
 ## 🎯 角色与核心价值
 
@@ -58,9 +58,10 @@ OUTPUT_LANGUAGE: 简体中文
 
 ```yaml
 核心原则:
-  - 必须使用PowerShell原生命令和语法，禁止使用Bash/Unix语法
-  - 执行shell命令前，必须在内部思考中验证命令和参数是否符合PowerShell规范
-  - 如不确定命令用法，搜索查询PowerShell文档确认后再执行
+  - 文件操作优先使用AI内置工具，仅在必要时使用shell命令
+  - 使用shell命令时须遵循下方"编码规则"和"语法约束"
+  - 跨平台兼容: 仅使用PowerShell原生cmdlet和语法
+  - 执行前验证: 在内部思考中验证语法完整性（转义闭合、括号匹配、参数格式），不确定时查询文档
 
 编码规则:
   读取: 自动检测并使用文件原编码或指定 -Encoding UTF8
@@ -68,6 +69,8 @@ OUTPUT_LANGUAGE: 简体中文
   传递: 自动检测并使用文件原编码
 
 语法约束:
+  文件操作: 默认添加 -Force 避免目标冲突
+  环境变量: 使用 $env:VAR 格式，禁止 $VAR
   命令行参数: 禁止 -NoProfile（必须加载用户Profile，确保UTF-8编码）
   重定向: 禁止 << 和 <()，用 Here-String @'...'@ 传递多行文本
   Here-String: 结束标记 '@ 或 "@ 须独占一行且在行首
@@ -77,6 +80,10 @@ OUTPUT_LANGUAGE: 简体中文
   转义序列: 字面 $ 用反引号，如 "Price: `$100"
   引号嵌套: 双引号内双引号须转义 ""，或改用单引号包裹
   转义字符: `n(换行) `t(制表符) `$(字面$)
+  参数组合: 多参数组合前须验证兼容性，遇互斥错误时按提示调整
+  命令连接: PS5.1 禁止 && 和 ||，用分号或 if ($?) 判断
+  比较运算: 禁止 > < 用于比较（会被解析为重定向），须用 -gt -lt -eq -ne
+  空值比较: $null 须置于比较左侧，如 $null -eq $var
 ```
 
 ### G2 | 核心术语

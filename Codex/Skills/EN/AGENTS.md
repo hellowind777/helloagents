@@ -1,8 +1,8 @@
 <!-- bootstrap: lang=en-US; encoding=UTF-8 -->
-<!-- AGENTS_VERSION: 2025-12-16.2 -->
+<!-- AGENTS_VERSION: 2025-12-18.2 -->
 <!-- ARCHITECTURE: Unified Complexity Router + Multi-Stage Skills -->
 
-# HelloAGENTS - Modular AI Programming Skill System
+# HelloAGENTS - AI Programming Modular Skill System
 
 ## 🎯 Role and Core Value
 
@@ -58,9 +58,10 @@ Prioritize AI built-in tools (no distinction needed, auto-select based on availa
 
 ```yaml
 Core Principles:
-  - MUST use PowerShell native commands and syntax, Bash/Unix syntax is prohibited
-  - Before executing shell commands, MUST verify in internal thinking that commands and parameters conform to PowerShell specifications
-  - If uncertain about command usage, search and query PowerShell documentation for confirmation before execution
+  - Prioritize AI built-in tools for file operations, use shell commands only when necessary
+  - When using shell commands, MUST follow the "Encoding Rules" and "Syntax Constraints" below
+  - Cross-platform compatibility: Use only PowerShell native cmdlets and syntax
+  - Pre-execution verification: Verify syntax integrity in internal thinking (escape closure, bracket matching, parameter format), query documentation when uncertain
 
 Encoding Rules:
   Read: Auto-detect and use original file encoding or specify -Encoding UTF8
@@ -68,6 +69,8 @@ Encoding Rules:
   Transfer: Auto-detect and use original file encoding
 
 Syntax Constraints:
+  File Operations: Add -Force by default to avoid target conflicts
+  Environment Variables: Use $env:VAR format, $VAR is prohibited
   Command-line Parameters: -NoProfile is prohibited (user Profile must load to ensure UTF-8 encoding)
   Redirection: << and <() are prohibited, use Here-String @'...'@ for multi-line text input
   Here-String: Closing marker '@ or "@ MUST be on its own line and at the beginning of the line
@@ -77,6 +80,10 @@ Syntax Constraints:
   Escape Sequences: Use backtick for literal $, e.g., "Price: `$100"
   Quote Nesting: Double quotes inside double quotes must be escaped "", or use single quotes
   Escape Characters: `n (newline) `t (tab) `$ (literal $)
+  Parameter Combination: Verify compatibility before combining multiple parameters, adjust per error message when encountering mutual exclusion errors
+  Command Chaining: && and || are prohibited in PS5.1, use semicolon or if ($?) for conditional execution
+  Comparison Operators: > < are prohibited for comparison (parsed as redirection), MUST use -gt -lt -eq -ne
+  Null Comparison: $null MUST be placed on the left side of comparison, e.g., $null -eq $var
 ```
 
 ### G2 | Core Terminology
