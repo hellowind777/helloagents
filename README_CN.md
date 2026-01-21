@@ -1,11 +1,18 @@
+<div align="center">
+  <img src="./readme_images/01-hero-banner.svg" alt="HelloAGENTS" width="800">
+</div>
+
 # HelloAGENTS
 
 <div align="center">
 
-**智能工作流系统 - 您的自主高级智能伙伴，自动分析、实现并验证直至完成。**
+**一个会把事情“做完并验证”的智能工作流系统：评估 → 实现 → 验证。**
 
-[![Version](https://img.shields.io/badge/version-2.0-orange.svg)](./helloagents/CHANGELOG.md)
+[![Router](https://img.shields.io/badge/router-2026--01--16-6366F1)](./Codex%20CLI/AGENTS.md)
+[![Version](https://img.shields.io/badge/version-2.0-orange.svg)](./Codex%20CLI/skills/helloagents/SKILL.md)
+[![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20CC%20BY%204.0-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+![GitHub last commit](https://img.shields.io/github/last-commit/hellowind777/helloagents)
 
 </div>
 
@@ -21,651 +28,463 @@
 <details>
 <summary><strong>点击展开</strong></summary>
 
-- [🎯 为什么选择 HelloAGENTS？](#-为什么选择-helloagents)
-- [✨ 功能特性](#-功能特性)
-- [🚀 快速开始](#-快速开始)
-- [🔧 工作原理](#-工作原理)
-- [📖 文档](#-文档)
-- [❓ FAQ](#-faq)
-- [🛠️ 故障排除](#-故障排除)
-- [🆚 与其他方案对比](#-与其他方案对比)
-- [📈 版本历史](#-版本历史)
-- [🔒 安全](#-安全)
-- [🙏 致谢](#-致谢)
+- [🎯 为什么选择 HelloAGENTS？](#why)
+- [📊 数据说话](#data)
+- [🔁 前后对比](#before-after)
+- [✨ 功能特性](#features)
+- [🚀 快速开始](#quick-start)
+- [🔧 工作原理](#how-it-works)
+- [📖 文档](#documentation)
+- [❓ FAQ](#faq)
+- [🛠️ 故障排除](#troubleshooting)
+- [📈 版本历史](#version-history)
+- [🔒 安全](#security)
+- [🙏 致谢](#acknowledgments)
+- [📜 许可证](#license)
 
 </details>
 
 ---
 
+<a id="why"></a>
+
 ## 🎯 为什么选择 HelloAGENTS？
 
-**问题：** AI 编程助手通常止步于分析阶段，或在缺乏结构化工作流管理的情况下生成不一致的输出。
+你应该见过这种情况：助手分析得很好……然后就停了。或者把代码改了，却忘了同步文档。又或者“完成了”，但从没跑过一次测试。
 
-**解决方案：** HelloAGENTS 提供智能工作流系统，通过 3 层路由、4 阶段工作流和 3 层验收机制确保生产就绪的结果。
+**HelloAGENTS 是一套结构化的工作流系统**（路由 + 阶段 + 验收闸门），目标是把事情推进到一个可验证的终点。
 
 | 挑战 | 没有 HelloAGENTS | 有 HelloAGENTS |
-|------|------------------|----------------|
-| **输出不一致** | 取决于提示词质量 | G3 输出规则统一格式 |
-| **过早终止** | 停在分析或部分实现阶段 | 完整执行直到验证完成 |
-| **缺乏质量控制** | 需要人工审查 | 3 层验收（阶段/关卡/流程） |
-| **上下文丢失** | 遗忘之前的决策 | 状态变量 + 知识库同步 |
-| **风险管理** | 无安全检查 | EHRB 检测 + 2 层分析 |
+|---|---|---|
+| **输出不稳定** | 受提示词质量影响大 | 统一输出壳 + 确定性阶段流程 |
+| **过早终止** | “你应该这样做……” | 持续推进：实现 → 测试 → 验证 |
+| **缺少质量闸门** | 需要人工兜底 | 阶段 / 关卡 / 流程三级验收 |
+| **上下文漂移** | 决策容易丢 | 状态变量 + 方案包 |
+| **高风险操作** | 容易误伤 | EHRB 检测 + 风险升级 |
 
 ### 💡 最适合
 
-- ✅ **开发者** 寻求结构化的 AI 辅助开发工作流
-- ✅ **团队** 需要一致的代码生成和文档
-- ✅ **项目** 需要质量保证和风险管理
-- ✅ **AI 辅助工作流** 不仅限于编码（文档、分析、规划）
+- ✅ **希望“交付=验证通过”的开发者**
+- ✅ **需要一致输出与可追溯变更的团队**
+- ✅ **把文档也视为交付物的项目**
 
 ### ⚠️ 不适合
 
-- ❌ 简单的一次性代码片段（直接使用 AI 提示）
-- ❌ 没有结构化需求的非技术任务
-- ❌ 没有版本控制的项目
+- ❌ 只要一次性代码片段（普通对话更快）
+- ❌ 无法把输出纳入 Git 管理的项目
+- ❌ 需要“硬保证”的高风险场景（仍建议人工审查再上生产）
 
----
+<div align="center">
+  <img src="./readme_images/06-divider.svg" width="420" alt="divider">
+</div>
+
+<a id="data"></a>
+
+## 📊 数据说话
+
+不写“性能提升 50%”这种无法核验的数字，只列出你能在仓库里直接验证的事实：
+
+| 项目 | 数值 | 如何验证 |
+|---|---:|---|
+| 路由层级 | 3 | `AGENTS.md` / `CLAUDE.md`（上下文 → 工具 → 意图） |
+| 工作流阶段 | 4 | Evaluate（需求评估）→ Analyze（项目分析）→ Design（方案设计）→ Develop（开发实施） |
+| 执行模式 | 3 | Tweak / Lite / Standard |
+| 命令数量 | 12 | `Codex CLI/skills/helloagents/SKILL.md`（或 Claude 版本对应路径） |
+| 参考模块 | 23 | `Codex CLI/skills/helloagents/references/`（或 Claude 版本对应路径） |
+| 自动化脚本 | 7 | `Codex CLI/skills/helloagents/scripts/`（或 Claude 版本对应路径） |
+| 本仓库内置版本 | 2 | `Codex CLI/` 与 `Claude Code/` |
+
+<a id="before-after"></a>
+
+## 🔁 前后对比
+
+有些差异用文字讲很费劲，但我们也可以用一张“前后对照表”把要点讲清楚：
+
+| | 未使用 HelloAGENTS | 使用 HelloAGENTS |
+|---|---|---|
+| 起步方式 | 往往直接开写 | 先做需求评分，把缺口补齐 |
+| 交付推进 | 需要你自己一路盯着 | 工作流持续把事情推到“可验证完成” |
+| 文档同步 | 常被忘掉 | 文档是交付物的一部分 |
+| 风险控制 | 高风险操作容易漏掉 | EHRB 检测触发风险升级/确认 |
+| 可复用性 | 取决于提示词 | 固定阶段 + 固定闸门，更稳定 |
+
+再看一下 **需求评估（Evaluate）** 阶段的真实样子：它会先把“平台/交付形式/控制方式/验收标准”这些关键问题问清楚，再进入实现。
+
+它会输出类似下面这种“追问清单”（为便于阅读做了精简）：
+
+```text
+当前需求完整性评分：4/10
+
+请补全下面关键信息（回答编号即可）：
+1) 运行平台
+2) 交付方式
+3) 操作方式
+4) 规则/难度偏好
+5) 画面与尺寸 / 是否需要分数、音效、障碍物
+```
+
+<a id="features"></a>
 
 ## ✨ 功能特性
 
-### 🎯 核心能力
+不绕弯子，直接说你能拿到什么。
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-**🧭 3 层智能路由**
+<img src="./readme_images/02-feature-icon-routing.svg" width="48" align="left" alt="routing icon">
 
-- 上下文感知的对话延续
-- 工具层支持 SKILL/MCP/Plugin 集成
-- 意图分析与复杂度评估
+**🧭 三层智能路由**
 
-**您的收益：** 自动路由到正确的工作流
+- 支持“同一任务跨轮次续航”
+- 能识别外部工具（SKILL/MCP/plugins）vs 内部工作流
+- 基于复杂度自动选择 tweak / lite / standard
+
+**你的收益：** 少操心提示词，少反复拉扯
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
-**📚 4 阶段工作流引擎**
+<img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left" alt="workflow icon">
 
-- 评估 → 分析 → 设计 → 开发
-- 结构化推进与质量关卡
-- 自动知识库同步
+**📚 四阶段工作流引擎**
 
-**您的收益：** 每次都能得到生产就绪的结果
+- Evaluate（需求评估）→ Analyze（项目分析）→ Design（方案设计）→ Develop（开发实施）
+- 入口/出口闸门清晰
+- 以“方案包”沉淀过程与产物
+
+**你的收益：** 交付更可复用，不靠运气
 
 </td>
 </tr>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-**⚡ 3 层验收系统**
+<img src="./readme_images/04-feature-icon-acceptance.svg" width="48" align="left" alt="acceptance icon">
 
-- 阶段级验证
-- 阶段间质量关卡
-- 流程级综合审查
+**⚡ 三层验收**
 
-**您的收益：** 一致的质量保证
+- 阶段内验收
+- 阶段间闸门（例如方案包校验）
+- 流程级验收摘要
+
+**你的收益：** 结果更可信，返工更少
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
-**🛡️ EHRB 安全检测**
+<img src="./readme_images/05-feature-icon-security.svg" width="48" align="left" alt="security icon">
 
-- 基于关键词的第一层扫描
-- 语义分析第二层
-- 风险时自动升级工作流
+**🛡️ EHRB 高风险行为检测**
 
-**您的收益：** 防范高风险操作
+- 关键词扫描 + 语义分析
+- 触发风险时强制确认/升级流程
+- 标注破坏性操作（例如 `rm -rf`、强制推送）
+
+**你的收益：** 少一些“手滑事故”
 
 </td>
 </tr>
 </table>
 
-### 📊 数据说话
-
-- **3 层路由** — 上下文 → 工具 → 意图 分层处理
-- **4 个工作流阶段** — 完整的开发生命周期覆盖
-- **12 个命令** — 完整的命令集覆盖所有操作
-- **44 个文件** — 模块化架构与参考库
-
----
+<a id="quick-start"></a>
 
 ## 🚀 快速开始
 
-### 前置条件
+本仓库提供**两套可直接复制的版本**：
 
-- 支持 AGENTS.md/CLAUDE.md 配置的 AI CLI 工具（Claude Code、Codex CLI 等）
-- 已安装并配置 Git
+- `Codex CLI/` → 给 **Codex CLI** 用户（使用 `AGENTS.md`）
+- `Claude Code/` → 给 **Claude Code** 用户（使用 `CLAUDE.md`）
 
-### 安装
-
-**步骤 1：获取 HelloAGENTS**
+### 1) 克隆仓库
 
 ```bash
 git clone https://github.com/hellowind777/helloagents.git
 cd helloagents
 ```
 
-**步骤 2：复制文件到 CLI 配置目录**
+### 2) 安装对应版本
 
-本项目包含两部分，需要放置到不同位置：
+选择你的 CLI，并复制 **配置文件 + `skills/helloagents/` 目录**（两者都需要）。
 
-| 源文件 | 目标位置 | 说明 |
-|--------|----------|------|
-| `helloagents/AGENTS.md` | `<CLI配置目录>/` | 主配置文件，放在配置根目录 |
-| `helloagents/skills/helloagents/` | `<CLI配置目录>/skills/helloagents/` | 技能包，放在 skills 子目录 |
+#### 选项 A：Codex CLI
 
-**如何确定 CLI 配置目录：**
-- Claude Code: `~/.claude/`
-- Codex CLI: `~/.codex/`
-- 其他工具：请参考其文档
-
-**示例（macOS/Linux 上的 Claude Code）：**
+**macOS / Linux**
 
 ```bash
-cp helloagents/AGENTS.md ~/.claude/
-cp -r helloagents/skills/helloagents ~/.claude/skills/
+mkdir -p ~/.codex/skills
+cp -f "Codex CLI/AGENTS.md" ~/.codex/AGENTS.md
+cp -R "Codex CLI/skills/helloagents" ~/.codex/skills/helloagents
 ```
 
-**示例（Windows PowerShell 上的 Claude Code）：**
+**Windows（PowerShell）**
 
 ```powershell
-Copy-Item helloagents\AGENTS.md $env:USERPROFILE\.claude\
-Copy-Item -Recurse helloagents\skills\helloagents $env:USERPROFILE\.claude\skills\
+New-Item -ItemType Directory -Force "$env:USERPROFILE\\.codex\\skills" | Out-Null
+Copy-Item -Force "Codex CLI\\AGENTS.md" "$env:USERPROFILE\\.codex\\AGENTS.md"
+Copy-Item -Recurse -Force "Codex CLI\\skills\\helloagents" "$env:USERPROFILE\\.codex\\skills\\helloagents"
 ```
 
-**步骤 3：验证安装**
+#### 选项 B：Claude Code
 
-重启 AI CLI 并运行：
-
-```
-~help
-```
-
-**预期输出：**
-
-```
-💡【HelloAGENTS】- 帮助
-
-### 可用命令
-
-| 命令 | 功能 |
-|------|------|
-| ~auto | 全授权模式 |
-| ~plan | 执行到设计阶段 |
-| ~exec | 执行方案包 |
-...
-
-────
-🔄 下一步: 输入命令或描述你的需求
-```
-
-### 首次使用示例
+**macOS / Linux**
 
 ```bash
-# 1. 获取帮助并查看可用命令
-"~help"
-
-# 2. 使用全授权模式开始
-"~auto 实现用户认证功能"
-
-# 3. 或者先使用规划模式
-"~plan 添加深色模式支持"
+mkdir -p ~/.claude/skills
+cp -f "Claude Code/CLAUDE.md" ~/.claude/CLAUDE.md
+cp -R "Claude Code/skills/helloagents" ~/.claude/skills/helloagents
 ```
 
----
+**Windows（PowerShell）**
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\\.claude\\skills" | Out-Null
+Copy-Item -Force "Claude Code\\CLAUDE.md" "$env:USERPROFILE\\.claude\\CLAUDE.md"
+Copy-Item -Recurse -Force "Claude Code\\skills\\helloagents" "$env:USERPROFILE\\.claude\\skills\\helloagents"
+```
+
+### 3) 验证安装
+
+在你的 CLI 中执行：
+
+- `/helloagents` **或** `$helloagents`
+
+预期：看到类似下面开头的欢迎信息：
+
+```
+💡【HelloAGENTS】- 技能已激活
+```
+
+### 4) 开始使用
+
+- 输入 `~help` 查看全部命令
+- 或直接描述需求，由路由器选择合适流程
+
+<a id="how-it-works"></a>
 
 ## 🔧 工作原理
 
-### 架构概览
-
 <details>
-<summary><strong>📊 点击查看完整架构图</strong></summary>
+<summary><strong>📊 点击查看架构图</strong></summary>
 
 ```mermaid
 flowchart TD
-    Start([用户输入]) --> L1{第 1 层：上下文}
+  Start([用户输入]) --> L1{Layer 1: 上下文}
+  L1 -->|继续历史任务| Continue[继续当前任务]
+  L1 -->|新请求| L2{Layer 2: 工具}
 
-    L1 -->|"继续外部工具"| ExtTool[🟣 外部工具]
-    L1 -->|"继续 HelloAGENTS 任务"| Resume[恢复任务]
-    L1 -->|"新请求"| L2{第 2 层：工具}
+  L2 -->|外部工具调用| Tool[执行工具 + Shell 包装输出]
+  L2 -->|无工具| L3{Layer 3: 意图}
 
-    L2 -->|"CLI 命令"| CLI[执行 CLI]
-    L2 -->|"HelloAGENTS 命令"| Cmd[处理命令]
-    L2 -->|"匹配外部工具"| ExtTool
-    L2 -->|"无匹配"| L3{第 3 层：意图}
+  L3 -->|问答/追问| Answer[直接回答]
+  L3 -->|改动请求| Eval[需求评估]
 
-    L3 -->|"问题/聊天"| Direct[💡 直接回答]
-    L3 -->|"变更请求"| Eval[评估阶段]
+  Eval -->|评分 >= 7| Complexity{复杂度判定}
+  Eval -->|评分 < 7| Clarify[追问补充信息]
 
-    Eval --> Score{评分 ≥ 7？}
-    Score -->|"否"| Ask[❓ 询问澄清]
-    Ask --> Eval
-    Score -->|"是"| Complex{复杂度？}
+  Complexity -->|微调| Tweak[微调模式]
+  Complexity -->|轻量迭代| Analyze[项目分析]
+  Complexity -->|标准开发| Analyze
 
-    Complex -->|"简单"| Tweak[⚡ 微调模式]
-    Complex -->|"中等"| Light[🔄 轻量迭代]
-    Complex -->|"复杂"| Standard[📋 标准开发]
+  Analyze --> Design[方案设计（创建方案包）]
+  Design --> Develop[开发实施（实现 + 测试）]
+  Develop --> Done[✅ 完成 + 流程级验收摘要]
 
-    Tweak --> Done[✅ 完成]
-    Light --> Analyze[分析] --> DesignL[设计] --> DevL[开发] --> Done
-    Standard --> AnalyzeS[分析] --> DesignS[完整设计] --> DevS[开发] --> Done
-
-    style Start fill:#e3f2fd
-    style ExtTool fill:#ce93d8
-    style Done fill:#4caf50,color:#fff
-    style Tweak fill:#fff3e0
-    style Light fill:#e8f5e9
-    style Standard fill:#e3f2fd
+  style Eval fill:#e3f2fd
+  style Analyze fill:#fff3e0
+  style Design fill:#ede9fe
+  style Develop fill:#dcfce7
+  style Done fill:#16a34a,color:#fff
 ```
 
 </details>
 
-### 工作流阶段详解
+你在真实项目里会看到的关键产物：
 
-<table>
-<tr><th>阶段</th><th>功能</th><th>触发时机</th><th>输出</th></tr>
+- `plan/YYYYMMDDHHMM_<feature>/` 方案包（proposal + tasks）
+- `helloagents/` 知识库工作区（INDEX/context/CHANGELOG/modules…）
 
-<tr>
-<td><strong>评估</strong></td>
-<td>
-• 评估需求完整度<br>
-• 询问澄清问题<br>
-• 评估复杂度
-</td>
-<td>任何变更请求</td>
-<td>
-• 需求评分（≥7 才继续）<br>
-• 复杂度评估<br>
-• 工作流模式选择
-</td>
-</tr>
-
-<tr>
-<td><strong>分析</strong></td>
-<td>
-• 扫描项目结构<br>
-• 识别技术栈<br>
-• 检查知识库
-</td>
-<td>评分 ≥ 7</td>
-<td>
-• 项目上下文<br>
-• 模块依赖<br>
-• KB 状态
-</td>
-</tr>
-
-<tr>
-<td><strong>设计</strong></td>
-<td>
-• 创建方案包<br>
-• 定义任务分解<br>
-• 风险评估
-</td>
-<td>分析完成</td>
-<td>
-• proposal.md<br>
-• tasks.md<br>
-• 方案包
-</td>
-</tr>
-
-<tr>
-<td><strong>开发</strong></td>
-<td>
-• 执行任务<br>
-• 生成代码<br>
-• 运行验证
-</td>
-<td>设计通过</td>
-<td>
-• 代码变更<br>
-• 测试结果<br>
-• KB 同步
-</td>
-</tr>
-
-</table>
-
-> **注意：** 微调模式是简单变更的执行模式，不是工作流阶段。它绕过完整的 4 阶段工作流，用于快速单点修改。
-
----
+<a id="documentation"></a>
 
 ## 📖 文档
 
-### 核心概念
+这个仓库刻意做成“两套版本共存”：
 
-<table>
-<tr><th>概念</th><th>定义</th><th>重要性</th></tr>
+- **Codex CLI 规则：** `Codex CLI/AGENTS.md`
+- **Claude Code 规则：** `Claude Code/CLAUDE.md`
 
-<tr>
-<td><strong>方案包</strong></td>
-<td>包含 proposal.md 和 tasks.md 的文件夹，用于功能开发</td>
-<td>工作跟踪的核心单元</td>
-</tr>
+技能包目录在：
 
-<tr>
-<td><strong>知识库</strong></td>
-<td>helloagents/ 目录下的项目文档</td>
-<td>项目知识的唯一真相来源</td>
-</tr>
+- `Codex CLI/skills/helloagents/`
+- `Claude Code/skills/helloagents/`
 
-<tr>
-<td><strong>EHRB 检测</strong></td>
-<td>极高风险行为检测系统</td>
-<td>防止危险操作</td>
-</tr>
+建议从这里开始读（任选一套版本路径即可）：
 
-<tr>
-<td><strong>3 层验收</strong></td>
-<td>阶段/关卡/流程 验证层级</td>
-<td>每个层级的质量保证</td>
-</tr>
+- `Codex CLI/skills/helloagents/SKILL.md`（命令列表 + 入口行为）
+- `Codex CLI/skills/helloagents/references/`（阶段、规则、服务）
+- `Codex CLI/skills/helloagents/scripts/`（自动化脚本）
 
-</table>
+### 你真正需要复制的内容
 
-### 命令参考
+实际只需要两部分：
 
-| 命令 | 模式 | 使用场景 | 示例 |
-|------|------|----------|------|
-| `~auto` | 全授权 | 端到端执行 | `~auto 添加登录功能` |
-| `~plan` | 规划模式 | 仅设计，不执行 | `~plan 重构认证模块` |
-| `~exec` | 直接执行 | 执行已有方案包 | `~exec` |
-| `~init` | KB 管理 | 初始化知识库 | `~init` |
-| `~upgrade` | KB 管理 | 升级知识库 | `~upgrade` |
-| `~clean` | 维护 | 清理遗留方案包 | `~clean` |
-| `~commit` | Git 操作 | 带检测的提交 | `~commit` |
-| `~test` | 验证 | 运行项目测试 | `~test` |
-| `~review` | 质量 | 代码审查 | `~review` |
-| `~validate` | 质量 | 验证 KB 结构 | `~validate` |
-| `~rollback` | 恢复 | 智能回滚 | `~rollback` |
-| `~help` | 信息 | 显示帮助菜单 | `~help` |
+- 配置文件：Codex CLI 用 `AGENTS.md`；Claude Code 用 `CLAUDE.md`
+- 技能目录：`skills/helloagents/`（包含 `SKILL.md`、`references/`、`scripts/`、`assets/`）
 
-### 配置
+### 配置（最常改的几个开关）
 
-**全局设置（在 AGENTS.md 中）：**
+通常只会改动少数几个全局设置：
 
 ```yaml
-OUTPUT_LANGUAGE: zh-CN          # 输出语言
-ENCODING: UTF-8                 # 文件编码
-KB_CREATE_MODE: 2               # KB 模式：0=关闭, 1=按需, 2=编码任务自动创建, 3=始终
-BILINGUAL_COMMIT: 1             # 双语提交：0=单语, 1=双语
+OUTPUT_LANGUAGE: zh-CN
+ENCODING: UTF-8
+KB_CREATE_MODE: 2
+BILINGUAL_COMMIT: 1
 ```
 
-**KB 创建模式：**
+**KB_CREATE_MODE** 用来控制知识库写入行为：
+
 - `0 (OFF)`：跳过所有 KB 操作
 - `1 (ON_DEMAND)`：仅在明确请求时创建 KB
-- `2 (ON_DEMAND_AUTO_FOR_CODING)`：编码任务自动创建（默认）
+- `2 (ON_DEMAND_AUTO_FOR_CODING)`：编程任务自动创建（默认）
 - `3 (ALWAYS)`：始终创建/更新 KB
 
----
+<a id="faq"></a>
 
 ## ❓ FAQ
 
 <details>
-<summary><strong>Q：HelloAGENTS 与直接使用 AI 提示有何不同？</strong></summary>
+<summary><strong>Q：我应该安装哪个版本？</strong></summary>
 
-**A：** HelloAGENTS 提供：
-- 结构化 4 阶段工作流 vs. 临时响应
-- 3 层路由智能处理请求
-- 质量关卡和验收标准
-- 知识库实现上下文持久化
-- EHRB 安全检测
+**A：** 按你使用的 CLI 选择：
+- Codex CLI → `Codex CLI/`
+- Claude Code → `Claude Code/`
 </details>
 
 <details>
-<summary><strong>Q：HelloAGENTS 可以与任何 AI CLI 工具一起使用吗？</strong></summary>
+<summary><strong>Q：两套都能装吗？</strong></summary>
 
-**A：** 是的，HelloAGENTS 设计为与任何支持 agent/skill 加载的 AI CLI 配合使用：
-- Claude Code
-- Codex CLI
-- Gemini CLI
-- 以及其他兼容工具
+**A：** 可以。它们分别在不同配置根目录（`~/.codex/` 与 `~/.claude/`）。注意不要把文件混到同一个根目录里。
 </details>
 
 <details>
-<summary><strong>Q：~auto 和 ~plan 有什么区别？</strong></summary>
+<summary><strong>Q：怎么显式激活 HelloAGENTS？</strong></summary>
 
-**A：**
-- `~auto`：全授权模式 - 静默执行所有阶段直到完成
-- `~plan`：规划模式 - 在设计阶段后停止，等待审查后再执行
+**A：** 输入 `/helloagents` 或 `$helloagents`。激活后可以用 `~help`，或直接描述需求。
 </details>
 
 <details>
-<summary><strong>Q：需要先初始化知识库吗？</strong></summary>
+<summary><strong>Q：知识库写到哪里？</strong></summary>
 
-**A：** 不一定。使用 `KB_CREATE_MODE: 2`（默认），知识库会在编码任务时自动创建。您也可以使用 `~init` 显式创建。
+**A：** 会写到你当前正在操作的项目目录下的 `helloagents/`（除非关闭）。工作流把它作为项目知识的唯一集中存储。
 </details>
 
 <details>
-<summary><strong>Q：如何处理遗留的方案包？</strong></summary>
+<summary><strong>Q：怎么关闭知识库写入？</strong></summary>
 
-**A：** 使用 `~clean` 扫描并清理 plan/ 目录中不完整或已废弃的方案包。
+**A：** 在你安装后的 `AGENTS.md` / `CLAUDE.md` 中设置 `KB_CREATE_MODE: 0`。
 </details>
 
 <details>
-<summary><strong>Q：什么会触发 EHRB 检测？</strong></summary>
+<summary><strong>Q：我只想做很小的改动怎么办？</strong></summary>
 
-**A：** EHRB 检测触发条件：
-- 生产环境关键词（prod、production、live、master）
-- 破坏性操作（rm -rf、DROP TABLE 等）
-- 不可逆操作（--force、--hard）
-- 权限变更（chmod 777、sudo）
-- 敏感数据模式（password、api_key 等）
+**A：** 对于需求清晰、影响面小的修改，路由器可能会自动走微调模式；你也可以显式说“微调模式 / 最小改动”。
 </details>
 
 <details>
-<summary><strong>Q：可以自定义工作流吗？</strong></summary>
+<summary><strong>Q：有哪些常用命令？</strong></summary>
 
-**A：** 可以，您可以修改 `references/` 中的参考模块来自定义阶段、规则和行为以满足特定需求。
+**A：** 输入 `~help` 查看。常用的有：`~plan`、`~exec`、`~test`、`~commit`、`~validate`。
 </details>
 
-<details>
-<summary><strong>Q：v1 和 v2 有什么区别？</strong></summary>
-
-**A：** 主要区别：
-
-| 方面 | v1 (2025-12) | v2 (2026-01) |
-|------|--------------|--------------|
-| 定位 | AI 编程伙伴 | 智能工作流系统 |
-| 阶段 | 3 阶段 | 4 阶段（+ 评估） |
-| 路由 | 简单 | 3 层（上下文→工具→意图） |
-| 验收 | 基础 | 3 层（阶段/关卡/流程） |
-| 文件 | 6 个文件 | 44 个文件 |
-| 命令 | 4 个命令 | 12 个命令 |
-</details>
-
----
+<a id="troubleshooting"></a>
 
 ## 🛠️ 故障排除
 
-### 路由问题
+### 卡在需求评估（评分 &lt; 7）
 
-**问题：** 请求没有正确路由
-
-**解决方案：**
-```bash
-# 检查 HelloAGENTS 是否已加载
-"~help"
-
-# 如果未加载，验证安装路径
-# 检查 AI CLI 的 skill/agent 配置
-```
+**处理方式：** 用更具体的信息回答追问（输入/输出、要改哪些文件、验收标准是什么）。
 
 ---
 
-**问题：** 外部工具未被识别
+### 方案包校验失败
 
-**原因：** 工具未正确注册或与 HelloAGENTS 命令冲突
+**处理方式：** 确保方案包里至少有：
 
-**解决方案：**
-```bash
-# 使用显式工具调用语法
-"/skill-name" 或 "$skill-name" 用于 SKILLs
-"mcp://server" 用于 MCP
-"@agent-name" 用于子代理
-```
+- `proposal.md`
+- `tasks.md`
 
-### 工作流问题
-
-**问题：** 卡在评估阶段
-
-**原因：** 需求评分低于 7
-
-**解决方案：**
-```bash
-# 提供更具体的需求
-# 回答澄清问题
-# 或者覆盖：
-"跳过评估继续执行"
-```
+然后执行 `~validate`（或按工具提示修复）。
 
 ---
 
-**问题：** 方案包验证失败
+### 复制后提示找不到技能
 
-**原因：** 缺少必需文件或格式错误
+**处理方式：**
 
-**解决方案：**
-```bash
-# 手动验证方案包
-"~validate"
-
-# 检查方案包结构：
-# plan/YYYYMMDDHHMM_feature/
-#   ├── proposal.md
-#   └── tasks.md
-```
-
-### 知识库问题
-
-**问题：** KB 没有被创建
-
-**原因：** KB_CREATE_MODE 设置为 OFF 或模式错误
-
-**解决方案：**
-```bash
-# 检查 AGENTS.md 中的当前模式
-# KB_CREATE_MODE: 2 用于编码任务自动创建
-
-# 或者显式初始化：
-"~init"
-```
+- 确认你的配置根目录下存在 `skills/helloagents/SKILL.md`（复制完成后）
+- 再执行一次 `/helloagents` 或 `$helloagents`
 
 ---
 
-**问题：** 执行了错误的方案包
+### Windows 路径/编码问题
 
-**原因：** 状态变量未正确设置/清除
-
-**解决方案：**
-```bash
-# 通过询问检查当前状态：
-"当前的 CREATED_PACKAGE 和 CURRENT_PACKAGE 是什么？"
-
-# 如果卡住，通过以下方式重置：
-"取消当前操作并重新开始"
-```
+**处理方式：** 保持文件为 UTF-8；复制带空格目录（例如 `Codex CLI/`）时优先使用带引号的路径。
 
 ---
 
-## 🆚 与其他方案对比
+### Mermaid 图在你的阅读器里不显示
 
-| 方案 | 优点 | 缺点 | HelloAGENTS 优势 |
-|------|------|------|------------------|
-| **原始 AI 提示** | 灵活 | 无结构，不一致 | 3 层路由 + 统一格式 |
-| **Cursor / Copilot** | IDE 集成 | 无需求验证 | 10 分评分 + 3 层验收 |
-| **自定义提示** | 量身定制 | 无状态管理 | 状态变量 + 方案包生命周期 |
-| **AutoGPT** | 自主 | 黑盒决策 | 模块化参考 + 透明路由 |
-| **Aider** | 重构好 | 仅 Unix，无阶段 | 跨平台 + 4 阶段工作流 |
+**处理方式：** GitHub 默认支持 README 的 Mermaid 渲染，但一些本地 Markdown 阅读器不支持。建议在 GitHub 上查看，或使用支持 Mermaid 的阅读器。
 
----
+<a id="version-history"></a>
 
 ## 📈 版本历史
 
-### 最新版本：v2.0 (2026-01-16) 🎉
+### 最新：v2.0（2026-01）
 
-**定位演进：**
-- 🔴 **系统重命名**：从"AI 编程模块化技能系统"到 **"智能工作流系统"**
-- 🔴 **角色转变**：从"高级编程伙伴"到 **"高级智能伙伴"**
-- 🔴 **范围扩展**：从编码扩展到通用 AI 辅助工作流
+- 定位：从「AI 编程伙伴」→ **智能工作流系统**
+- 工作流：3 阶段 → 4 阶段（新增 **Evaluate（需求评估）**）
+- 路由：简单路由 → **三层路由**（上下文 → 工具 → 意图）
+- 验收：基础检查 → **阶段 / 关卡 / 流程** 三级验收
+- 分发：同时支持 **Codex CLI** 与 **Claude Code** 等CLI工具
 
-**重大架构升级：**
-- 🔴 **模块化架构**：从 6 个文件扩展到 44 个文件，配有参考库
-- 🔴 **4 阶段工作流**：新增评估阶段（微调是执行模式）
-- 🔴 **3 层路由**：上下文 → 工具 → 意图 分层处理
-- 🔴 **3 层验收**：阶段/关卡/流程 质量保证
-- 🔴 **6 大核心原则**：新增"审慎验证"和"保守修改"
-- ✨ **12 个命令**：完整命令集（~auto、~plan、~exec、~init、~upgrade、~clean、~commit、~test、~review、~validate、~rollback、~help）
-- ✨ **23 个参考模块**：功能、阶段、规则、服务
-- ✨ **7 个 Python 脚本**：方案包/KB 管理自动化工具
-- ✨ **外部工具支持**：SKILL、MCP、plugins 集成
-- ✨ **4 种 KB 创建模式**：灵活的知识库管理
-- ✨ **两层 EHRB 检测**：关键词 + 语义分析
-- ✨ **新目录结构**：skills/helloagents/ 包含 SKILL.md 和 SKILL.toml
+🆚 v1 vs v2 快照：
 
-**上一版本：v1.x (2025-12-18)**
-- 初始发布为 AI 编程模块化技能系统
-- 3 阶段工作流（分析 → 设计 → 开发）
-- 4 个命令（~auto、~plan、~exec、~init）
-- 6 个技能文件
+| 方面 | v1（2025-12） | v2（2026-01） |
+|---|---|---|
+| 定位 | AI 编程伙伴 | 智能工作流系统 |
+| 阶段 | 3 阶段 | 4 阶段（+ 评估） |
+| 路由 | 简单 | 3 层（上下文 → 工具 → 意图） |
+| 验收 | 基础 | 3 层（阶段/关卡/流程） |
+| 文件 | 6 个文件 | 44 个文件 |
+| 命令 | 4 个命令 | 12 个命令 |
 
-[查看完整更新日志 →](./helloagents/CHANGELOG.md)
-
----
+<a id="security"></a>
 
 ## 🔒 安全
 
-**我们非常重视安全。**
+- EHRB 检测用于在真正执行前拦截破坏性/高风险操作。
+- 即便如此，涉及重要系统时仍建议**人工审查命令与 diff**。
 
-- ✅ EHRB 检测防范高风险操作
-- ✅ 两层分析（关键词 + 语义）
-- ✅ 检测到风险时自动升级工作流
-- ✅ 禁止硬编码密钥
-- ✅ 跨平台命令验证
+如果你认为发现了安全问题，优先使用 GitHub 的私密报告（Security Advisories，若仓库已开启）。否则，请通过维护者的 GitHub 主页联系。
 
-**发现漏洞？**
-- 邮箱：security@helloagents.dev（私密披露）
-- 请勿为安全漏洞创建公开 issue
-
----
+<a id="acknowledgments"></a>
 
 ## 🙏 致谢
 
-**灵感来源：**
-- AI CLI 生态系统（Claude Code、Codex CLI 等）
-- Model Context Protocol (MCP)
-- Keep a Changelog 格式
+- AI CLI 生态（Codex CLI、Claude Code 等）
+- Keep a Changelog 约定（工作流知识库使用）
+- MCP 与更广泛的工具集成社区
 
-**社区：**
-- 所有提交 PR 的贡献者
-- 提供反馈的早期用户
-- 以及您，感谢您阅读至此！🎉
-
----
-
-## 📞 支持与社区
-
-- 📖 **文档**：您正在阅读！
-- 💬 **讨论**：[GitHub Discussions](https://github.com/hellowind777/helloagents/discussions)
-- 🐛 **Bug 报告**：[GitHub Issues](https://github.com/hellowind777/helloagents/issues)
-- 💡 **功能建议**：[GitHub Discussions](https://github.com/hellowind777/helloagents/discussions)
-
----
+<a id="license"></a>
 
 ## 📜 许可证
 
-本项目基于 [Apache-2.0 许可证](./LICENSE) 授权。
+本项目采用**双许可证**：
 
-详见 [LICENSE](./LICENSE)。
+- **代码：** Apache-2.0
+- **文档：** CC BY 4.0
 
----
-
-<div align="center">
-
-**Made with ❤️ by [Hellowind](https://github.com/hellowind777/helloagents)**
-
-[⬆ 返回顶部](#helloagents)
-
-</div>
+详情见 `LICENSE`。
