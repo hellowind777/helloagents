@@ -8,16 +8,15 @@
 
 **一个会把事情“做完并验证”的智能工作流系统：评估 → 实现 → 验证。**
 
-[![Router](https://img.shields.io/badge/router-2026--01--16-6366F1)](./Codex%20CLI/AGENTS.md)
-[![Version](https://img.shields.io/badge/version-2.0-orange.svg)](./Codex%20CLI/skills/helloagents/SKILL.md)
-[![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20CC%20BY%204.0-blue.svg)](./LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
-![GitHub last commit](https://img.shields.io/github/last-commit/hellowind777/helloagents)
+[![路由](https://img.shields.io/badge/%E8%B7%AF%E7%94%B1-2026--01--22-6366F1)](./Codex%20CLI/AGENTS.md)
+[![版本](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-2.0.1-orange.svg)](./Codex%20CLI/AGENTS.md)
+[![许可证](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-Apache--2.0%20%7C%20CC%20BY%204.0-blue.svg)](./LICENSE)
+[![欢迎PR](https://img.shields.io/badge/%E6%AC%A2%E8%BF%8EPR-yes-brightgreen.svg)](./CONTRIBUTING.md)
 
 </div>
 
 <p align="center">
-  <a href="./README.md"><img src="https://img.shields.io/badge/English-blue?style=for-the-badge" alt="English"></a>
+  <a href="./README.md"><img src="https://img.shields.io/badge/%E8%8B%B1%E6%96%87-blue?style=for-the-badge" alt="英文"></a>
   <a href="./README_CN.md"><img src="https://img.shields.io/badge/中文-blue?style=for-the-badge" alt="中文"></a>
 </p>
 
@@ -35,7 +34,7 @@
 - [🚀 快速开始](#quick-start)
 - [🔧 工作原理](#how-it-works)
 - [📖 文档](#documentation)
-- [❓ FAQ](#faq)
+- [❓ 常见问题（FAQ）](#faq)
 - [🛠️ 故障排除](#troubleshooting)
 - [📈 版本历史](#version-history)
 - [🔒 安全](#security)
@@ -75,7 +74,7 @@
 - ❌ 需要“硬保证”的高风险场景（仍建议人工审查再上生产）
 
 <div align="center">
-  <img src="./readme_images/06-divider.svg" width="420" alt="divider">
+  <img src="./readme_images/06-divider.svg" width="420" alt="分隔线">
 </div>
 
 <a id="data"></a>
@@ -89,10 +88,10 @@
 | 路由层级 | 3 | `AGENTS.md` / `CLAUDE.md`（上下文 → 工具 → 意图） |
 | 工作流阶段 | 4 | Evaluate（需求评估）→ Analyze（项目分析）→ Design（方案设计）→ Develop（开发实施） |
 | 执行模式 | 3 | Tweak / Lite / Standard |
-| 命令数量 | 12 | `Codex CLI/skills/helloagents/SKILL.md`（或 Claude 版本对应路径） |
-| 参考模块 | 23 | `Codex CLI/skills/helloagents/references/`（或 Claude 版本对应路径） |
-| 自动化脚本 | 7 | `Codex CLI/skills/helloagents/scripts/`（或 Claude 版本对应路径） |
-| 本仓库内置版本 | 2 | `Codex CLI/` 与 `Claude Code/` |
+| 命令数量 | 12 | `{BUNDLE_DIR}/skills/helloagents/SKILL.md` |
+| 参考模块 | 23 | `{BUNDLE_DIR}/skills/helloagents/references/` |
+| 自动化脚本 | 7 | `{BUNDLE_DIR}/skills/helloagents/scripts/` |
+| 本仓库内置版本 | 5 | `Codex CLI/`、`Claude Code/`、`Gemini CLI/`、`Grok CLI/`、`Qwen CLI/` |
 
 <a id="before-after"></a>
 
@@ -108,20 +107,46 @@
 | 风险控制 | 高风险操作容易漏掉 | EHRB 检测触发风险升级/确认 |
 | 可复用性 | 取决于提示词 | 固定阶段 + 固定闸门，更稳定 |
 
+再把它落到一个真实例子上：下面是“有/没有结构化工作流”时生成同类成果（贪吃蛇小游戏）的对照截图。
+
+<table>
+<tr>
+<td width="50%" valign="top" align="center">
+
+<strong>未使用 HelloAGENTS</strong>
+<br>
+<img src="./readme_images/08-demo-snake-without-helloagents.png" alt="未使用 HelloAGENTS 的贪吃蛇示例" width="520">
+<br>
+<em>能跑，但流程需要你自己一路盯着推进。</em>
+
+</td>
+<td width="50%" valign="top" align="center">
+
+<strong>使用 HelloAGENTS</strong>
+<br>
+<img src="./readme_images/07-demo-snake-with-helloagents.png" alt="使用 HelloAGENTS 的贪吃蛇示例" width="520">
+<br>
+<em>交付更完整、控制更清晰，并且把验证步骤也“写进流程”。</em>
+
+</td>
+</tr>
+</table>
+
 再看一下 **需求评估（Evaluate）** 阶段的真实样子：它会先把“平台/交付形式/控制方式/验收标准”这些关键问题问清楚，再进入实现。
 
-它会输出类似下面这种“追问清单”（为便于阅读做了精简）：
+<div align="center">
+  <img src="./readme_images/09-ui-evaluate-stage.png" alt="需求评估阶段截图" width="900">
+  <br>
+  <em>需求评估：评分 + 针对性追问。</em>
+</div>
 
-```text
-当前需求完整性评分：4/10
+直白一点，通常会先确认这些要点：
 
-请补全下面关键信息（回答编号即可）：
-1) 运行平台
-2) 交付方式
-3) 操作方式
-4) 规则/难度偏好
-5) 画面与尺寸 / 是否需要分数、音效、障碍物
-```
+- 运行平台（浏览器 / 桌面 / 命令行）
+- 交付方式（单文件 / 项目目录 / 打包产物）
+- 操作方式（键盘/鼠标等）
+- 规则与难度偏好
+- 验收标准（尺寸、分数、音效、障碍物等）
 
 <a id="features"></a>
 
@@ -192,10 +217,9 @@
 
 ## 🚀 快速开始
 
-本仓库提供**两套可直接复制的版本**：
+本仓库提供**多套可直接复制的版本**（每种 AI CLI 一套）：
 
-- `Codex CLI/` → 给 **Codex CLI** 用户（使用 `AGENTS.md`）
-- `Claude Code/` → 给 **Claude Code** 用户（使用 `CLAUDE.md`）
+Codex CLI、Claude Code、Gemini CLI、Grok CLI、Qwen CLI。
 
 ### 1) 克隆仓库
 
@@ -204,44 +228,44 @@ git clone https://github.com/hellowind777/helloagents.git
 cd helloagents
 ```
 
-### 2) 安装对应版本
+### 2) 安装（用占位符表达）
 
-选择你的 CLI，并复制 **配置文件 + `skills/helloagents/` 目录**（两者都需要）。
+因为不同 CLI 的配置目录不一样，这里统一用占位符表达。
 
-#### 选项 A：Codex CLI
+先选定参数：
 
-**macOS / Linux**
+| 你的 CLI | `BUNDLE_DIR` | `CONFIG_FILE` |
+|---|---|---|
+| Codex CLI | `Codex CLI` | `AGENTS.md` |
+| Claude Code | `Claude Code` | `CLAUDE.md` |
+| Gemini CLI | `Gemini CLI` | `GEMINI.md` |
+| Grok CLI | `Grok CLI` | `GROK.md` |
+| Qwen CLI | `Qwen CLI` | `QWEN.md` |
+
+然后把 **配置文件 + `skills/helloagents/` 目录** 复制到你的 CLI 配置根目录。
+
+**macOS / Linux (bash)**
 
 ```bash
-mkdir -p ~/.codex/skills
-cp -f "Codex CLI/AGENTS.md" ~/.codex/AGENTS.md
-cp -R "Codex CLI/skills/helloagents" ~/.codex/skills/helloagents
+CLI_CONFIG_ROOT="..."
+BUNDLE_DIR="Codex CLI"
+CONFIG_FILE="AGENTS.md"
+
+mkdir -p "$CLI_CONFIG_ROOT/skills"
+cp -f "$BUNDLE_DIR/$CONFIG_FILE" "$CLI_CONFIG_ROOT/$CONFIG_FILE"
+cp -R "$BUNDLE_DIR/skills/helloagents" "$CLI_CONFIG_ROOT/skills/helloagents"
 ```
 
 **Windows（PowerShell）**
 
 ```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\\.codex\\skills" | Out-Null
-Copy-Item -Force "Codex CLI\\AGENTS.md" "$env:USERPROFILE\\.codex\\AGENTS.md"
-Copy-Item -Recurse -Force "Codex CLI\\skills\\helloagents" "$env:USERPROFILE\\.codex\\skills\\helloagents"
-```
+$CLI_CONFIG_ROOT = "..."
+$BUNDLE_DIR = "Codex CLI"
+$CONFIG_FILE = "AGENTS.md"
 
-#### 选项 B：Claude Code
-
-**macOS / Linux**
-
-```bash
-mkdir -p ~/.claude/skills
-cp -f "Claude Code/CLAUDE.md" ~/.claude/CLAUDE.md
-cp -R "Claude Code/skills/helloagents" ~/.claude/skills/helloagents
-```
-
-**Windows（PowerShell）**
-
-```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\\.claude\\skills" | Out-Null
-Copy-Item -Force "Claude Code\\CLAUDE.md" "$env:USERPROFILE\\.claude\\CLAUDE.md"
-Copy-Item -Recurse -Force "Claude Code\\skills\\helloagents" "$env:USERPROFILE\\.claude\\skills\\helloagents"
+New-Item -ItemType Directory -Force "$CLI_CONFIG_ROOT\\skills" | Out-Null
+Copy-Item -Force "$BUNDLE_DIR\\$CONFIG_FILE" "$CLI_CONFIG_ROOT\\$CONFIG_FILE"
+Copy-Item -Recurse -Force "$BUNDLE_DIR\\skills\\helloagents" "$CLI_CONFIG_ROOT\\skills\\helloagents"
 ```
 
 ### 3) 验证安装
@@ -270,14 +294,14 @@ Copy-Item -Recurse -Force "Claude Code\\skills\\helloagents" "$env:USERPROFILE\\
 
 ```mermaid
 flowchart TD
-  Start([用户输入]) --> L1{Layer 1: 上下文}
-  L1 -->|继续历史任务| Continue[继续当前任务]
-  L1 -->|新请求| L2{Layer 2: 工具}
+  Start([用户输入]) --> L1{第 1 层：上下文}
+  L1 -->|继续任务| Continue[继续任务]
+  L1 -->|新请求| L2{第 2 层：工具}
 
   L2 -->|外部工具调用| Tool[执行工具 + Shell 包装输出]
-  L2 -->|无工具| L3{Layer 3: 意图}
+  L2 -->|无工具| L3{第 3 层：意图}
 
-  L3 -->|问答/追问| Answer[直接回答]
+  L3 -->|问答/咨询| Answer[直接回答]
   L3 -->|改动请求| Eval[需求评估]
 
   Eval -->|评分 >= 7| Complexity{复杂度判定}
@@ -309,27 +333,24 @@ flowchart TD
 
 ## 📖 文档
 
-这个仓库刻意做成“两套版本共存”：
+这个仓库刻意做成“多套版本共存”。
 
-- **Codex CLI 规则：** `Codex CLI/AGENTS.md`
-- **Claude Code 规则：** `Claude Code/CLAUDE.md`
+每套版本都包含：
 
-技能包目录在：
+- 入口配置：`{BUNDLE_DIR}/{CONFIG_FILE}`
+- 技能包目录：`{BUNDLE_DIR}/skills/helloagents/`
 
-- `Codex CLI/skills/helloagents/`
-- `Claude Code/skills/helloagents/`
+建议从这里开始读（把 `{BUNDLE_DIR}` 替换成你选择的版本目录）：
 
-建议从这里开始读（任选一套版本路径即可）：
-
-- `Codex CLI/skills/helloagents/SKILL.md`（命令列表 + 入口行为）
-- `Codex CLI/skills/helloagents/references/`（阶段、规则、服务）
-- `Codex CLI/skills/helloagents/scripts/`（自动化脚本）
+- `{BUNDLE_DIR}/skills/helloagents/SKILL.md`（命令列表 + 入口行为）
+- `{BUNDLE_DIR}/skills/helloagents/references/`（阶段、规则、服务）
+- `{BUNDLE_DIR}/skills/helloagents/scripts/`（自动化脚本）
 
 ### 你真正需要复制的内容
 
 实际只需要两部分：
 
-- 配置文件：Codex CLI 用 `AGENTS.md`；Claude Code 用 `CLAUDE.md`
+- 配置文件：`{CONFIG_FILE}`（按上表选择）
 - 技能目录：`skills/helloagents/`（包含 `SKILL.md`、`references/`、`scripts/`、`assets/`）
 
 ### 配置（最常改的几个开关）
@@ -352,7 +373,7 @@ BILINGUAL_COMMIT: 1
 
 <a id="faq"></a>
 
-## ❓ FAQ
+## ❓ 常见问题（FAQ）
 
 <details>
 <summary><strong>Q：我应该安装哪个版本？</strong></summary>
@@ -360,6 +381,9 @@ BILINGUAL_COMMIT: 1
 **A：** 按你使用的 CLI 选择：
 - Codex CLI → `Codex CLI/`
 - Claude Code → `Claude Code/`
+- Gemini CLI → `Gemini CLI/`
+- Grok CLI → `Grok CLI/`
+- Qwen CLI → `Qwen CLI/`
 </details>
 
 <details>
@@ -431,12 +455,6 @@ BILINGUAL_COMMIT: 1
 ### Windows 路径/编码问题
 
 **处理方式：** 保持文件为 UTF-8；复制带空格目录（例如 `Codex CLI/`）时优先使用带引号的路径。
-
----
-
-### Mermaid 图在你的阅读器里不显示
-
-**处理方式：** GitHub 默认支持 README 的 Mermaid 渲染，但一些本地 Markdown 阅读器不支持。建议在 GitHub 上查看，或使用支持 Mermaid 的阅读器。
 
 <a id="version-history"></a>
 

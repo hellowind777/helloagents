@@ -1,11 +1,14 @@
 # Contributing to HelloAGENTS
 
-Thanks for your interest in contributing! This repo is a **dual-bundle distribution** of HelloAGENTS:
+Thanks for your interest in contributing! This repo is a **multi-bundle distribution** of HelloAGENTS:
 
 - `Codex CLI/` (for Codex CLI users)
 - `Claude Code/` (for Claude Code users)
+- `Gemini CLI/` (for Gemini CLI users)
+- `Grok CLI/` (for Grok CLI users)
+- `Qwen CLI/` (for Qwen CLI users)
 
-Please keep changes consistent across both bundles unless there is a CLI-specific reason not to.
+Please keep changes consistent across all bundles unless there is a CLI-specific reason not to.
 
 ## Documentation
 
@@ -41,8 +44,14 @@ Please keep changes consistent across both bundles unless there is a CLI-specifi
 
 If you change any workflow rules:
 
-- Update both `Codex CLI/AGENTS.md` and `Claude Code/CLAUDE.md` (when applicable)
-- Update both skill packages under `Codex CLI/skills/helloagents/` and `Claude Code/skills/helloagents/`
+- Update the entry config files (when applicable):
+  - `Codex CLI/AGENTS.md`
+  - `Claude Code/CLAUDE.md`
+  - `Gemini CLI/GEMINI.md`
+  - `Grok CLI/GROK.md`
+  - `Qwen CLI/QWEN.md`
+- Update the skill packages under each bundle:
+  - `{BUNDLE_DIR}/skills/helloagents/`
 
 ## Commit Message Format
 
