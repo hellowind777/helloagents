@@ -8,8 +8,8 @@
 
 **An intelligent workflow system that keeps going: evaluate → implement → verify.**
 
-[![Router](https://img.shields.io/badge/router-2026--01--16-6366F1)](./Codex%20CLI/AGENTS.md)
-[![Version](https://img.shields.io/badge/version-2.0-orange.svg)](./Codex%20CLI/skills/helloagents/SKILL.md)
+[![Router](https://img.shields.io/badge/router-2026--01--22-6366F1)](./Codex%20CLI/AGENTS.md)
+[![Version](https://img.shields.io/badge/version-2.0.1-orange.svg)](./Codex%20CLI/AGENTS.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20CC%20BY%204.0-blue.svg)](./LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 ![GitHub last commit](https://img.shields.io/github/last-commit/hellowind777/helloagents)
@@ -89,10 +89,10 @@ No made-up “50% faster” claims here—just things you can verify in this rep
 | Routing layers | 3 | `AGENTS.md` / `CLAUDE.md` (Context → Tools → Intent) |
 | Workflow stages | 4 | Evaluate → Analyze → Design → Develop |
 | Execution modes | 3 | Tweak / Lite / Standard |
-| Commands | 12 | `Codex CLI/skills/helloagents/SKILL.md` (or the Claude bundle equivalent) |
-| Reference modules | 23 | `Codex CLI/skills/helloagents/references/` (or the Claude bundle equivalent) |
-| Automation scripts | 7 | `Codex CLI/skills/helloagents/scripts/` (or the Claude bundle equivalent) |
-| Bundles in this repo | 2 | `Codex CLI/` and `Claude Code/` |
+| Commands | 12 | `{BUNDLE_DIR}/skills/helloagents/SKILL.md` |
+| Reference modules | 23 | `{BUNDLE_DIR}/skills/helloagents/references/` |
+| Automation scripts | 7 | `{BUNDLE_DIR}/skills/helloagents/scripts/` |
+| Bundles in this repo | 5 | `Codex CLI/`, `Claude Code/`, `Gemini CLI/`, `Grok CLI/`, `Qwen CLI/` |
 
 <a id="before-after"></a>
 
@@ -108,20 +108,46 @@ Sometimes the difference is easier to *feel* than to explain. Here’s a concret
 | Safety | Risky ops can slip through | EHRB detection escalates risky actions |
 | Repeatability | Depends on the prompt | Same stages + gates, every time |
 
+Now let’s make it tangible. Below is a real “before/after” demo snapshot (Snake game generated with/without a structured workflow):
+
+<table>
+<tr>
+<td width="50%" valign="top" align="center">
+
+<strong>Without HelloAGENTS</strong>
+<br>
+<img src="./readme_images/08-demo-snake-without-helloagents.png" alt="Snake demo without HelloAGENTS" width="520">
+<br>
+<em>It works, but you’re still manually driving the process.</em>
+
+</td>
+<td width="50%" valign="top" align="center">
+
+<strong>With HelloAGENTS</strong>
+<br>
+<img src="./readme_images/07-demo-snake-with-helloagents.png" alt="Snake demo with HelloAGENTS" width="520">
+<br>
+<em>More complete delivery, clearer controls, and verification steps baked in.</em>
+
+</td>
+</tr>
+</table>
+
 And here’s what the **Evaluate** stage looks like in practice: it asks the “boring but necessary” questions (platform, delivery form, controls, acceptance criteria) *before* writing code.
 
-Example prompt it produces (trimmed for readability):
+<div align="center">
+  <img src="./readme_images/09-ui-evaluate-stage.png" alt="Evaluate stage screenshot" width="900">
+  <br>
+  <em>Evaluate stage: requirement scoring + targeted clarifying questions.</em>
+</div>
 
-```text
-当前需求完整性评分：4/10
+In plain words, you’ll typically be asked to clarify:
 
-请补全下面关键信息（回答编号即可）：
-1) 运行平台
-2) 交付方式
-3) 操作方式
-4) 规则/难度偏好
-5) 画面与尺寸 / 是否需要分数、音效、障碍物
-```
+- runtime target (browser / desktop / CLI)
+- delivery form (single file / repo / packaged build)
+- control scheme
+- rules and difficulty preferences
+- acceptance criteria (screen size, scoring, audio, obstacles, etc.)
 
 <a id="features"></a>
 
@@ -192,10 +218,9 @@ Let’s be practical—here’s what you get.
 
 ## 🚀 Quick Start
 
-This repo ships **two ready-to-copy bundles**:
+This repo ships **multiple ready-to-copy bundles** (one per AI CLI):
 
-- `Codex CLI/` → for **Codex CLI** users (`AGENTS.md`)
-- `Claude Code/` → for **Claude Code** users (`CLAUDE.md`)
+Codex CLI, Claude Code, Gemini CLI, Grok CLI, Qwen CLI.
 
 ### 1) Clone the repo
 
@@ -204,44 +229,44 @@ git clone https://github.com/hellowind777/helloagents.git
 cd helloagents
 ```
 
-### 2) Install the correct bundle
+### 2) Install (placeholder-based)
 
-Pick your CLI and copy **both** the config file and the `skills/helloagents/` folder.
+Because every CLI stores its config in a different place, the README uses placeholders.
 
-#### Option A: Codex CLI
+First, pick your bundle parameters:
 
-**macOS / Linux**
+| Your CLI | `BUNDLE_DIR` | `CONFIG_FILE` |
+|---|---|---|
+| Codex CLI | `Codex CLI` | `AGENTS.md` |
+| Claude Code | `Claude Code` | `CLAUDE.md` |
+| Gemini CLI | `Gemini CLI` | `GEMINI.md` |
+| Grok CLI | `Grok CLI` | `GROK.md` |
+| Qwen CLI | `Qwen CLI` | `QWEN.md` |
+
+Then copy **both** the config file and the `skills/helloagents/` folder into your CLI config root.
+
+**macOS / Linux (bash)**
 
 ```bash
-mkdir -p ~/.codex/skills
-cp -f "Codex CLI/AGENTS.md" ~/.codex/AGENTS.md
-cp -R "Codex CLI/skills/helloagents" ~/.codex/skills/helloagents
+CLI_CONFIG_ROOT="..."
+BUNDLE_DIR="Codex CLI"
+CONFIG_FILE="AGENTS.md"
+
+mkdir -p "$CLI_CONFIG_ROOT/skills"
+cp -f "$BUNDLE_DIR/$CONFIG_FILE" "$CLI_CONFIG_ROOT/$CONFIG_FILE"
+cp -R "$BUNDLE_DIR/skills/helloagents" "$CLI_CONFIG_ROOT/skills/helloagents"
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\\.codex\\skills" | Out-Null
-Copy-Item -Force "Codex CLI\\AGENTS.md" "$env:USERPROFILE\\.codex\\AGENTS.md"
-Copy-Item -Recurse -Force "Codex CLI\\skills\\helloagents" "$env:USERPROFILE\\.codex\\skills\\helloagents"
-```
+$CLI_CONFIG_ROOT = "..."
+$BUNDLE_DIR = "Codex CLI"
+$CONFIG_FILE = "AGENTS.md"
 
-#### Option B: Claude Code
-
-**macOS / Linux**
-
-```bash
-mkdir -p ~/.claude/skills
-cp -f "Claude Code/CLAUDE.md" ~/.claude/CLAUDE.md
-cp -R "Claude Code/skills/helloagents" ~/.claude/skills/helloagents
-```
-
-**Windows (PowerShell)**
-
-```powershell
-New-Item -ItemType Directory -Force "$env:USERPROFILE\\.claude\\skills" | Out-Null
-Copy-Item -Force "Claude Code\\CLAUDE.md" "$env:USERPROFILE\\.claude\\CLAUDE.md"
-Copy-Item -Recurse -Force "Claude Code\\skills\\helloagents" "$env:USERPROFILE\\.claude\\skills\\helloagents"
+New-Item -ItemType Directory -Force "$CLI_CONFIG_ROOT\\skills" | Out-Null
+Copy-Item -Force "$BUNDLE_DIR\\$CONFIG_FILE" "$CLI_CONFIG_ROOT\\$CONFIG_FILE"
+Copy-Item -Recurse -Force "$BUNDLE_DIR\\skills\\helloagents" "$CLI_CONFIG_ROOT\\skills\\helloagents"
 ```
 
 ### 3) Verify it works
@@ -270,26 +295,26 @@ Expected: a welcome message that starts with something like:
 
 ```mermaid
 flowchart TD
-  Start([User input]) --> L1{Layer 1: Context}
-  L1 -->|Continue previous task| Continue[Continue task]
-  L1 -->|New request| L2{Layer 2: Tools}
+  Start([User input / 用户输入]) --> L1{Layer 1: Context / 上下文}
+  L1 -->|Continue / 继续| Continue[Continue task / 继续任务]
+  L1 -->|New request / 新请求| L2{Layer 2: Tools / 工具}
 
-  L2 -->|External tool call| Tool[Run tool + shell wrapping]
-  L2 -->|No tool| L3{Layer 3: Intent}
+  L2 -->|External tool / 外部工具| Tool[Run tool + shell wrap / 执行工具+Shell包装]
+  L2 -->|No tool / 无工具| L3{Layer 3: Intent / 意图}
 
-  L3 -->|Q&A / ask| Answer[Direct answer]
-  L3 -->|Change request| Eval[Evaluate]
+  L3 -->|Q&A / 问答| Answer[Direct answer / 直接回答]
+  L3 -->|Change / 改动| Eval[Evaluate / 需求评估]
 
-  Eval -->|Score >= 7| Complexity{Complexity}
-  Eval -->|Score < 7| Clarify[Ask clarifying questions]
+  Eval -->|Score >= 7 / >=7| Complexity{Complexity / 复杂度}
+  Eval -->|Score < 7 / <7| Clarify[Clarify / 追问补充]
 
-  Complexity -->|Tweak| Tweak[Tweak mode]
-  Complexity -->|Lite| Analyze[Analyze]
-  Complexity -->|Standard| Analyze
+  Complexity -->|Tweak / 微调| Tweak[Tweak mode / 微调模式]
+  Complexity -->|Lite / 轻量| Analyze[Analyze / 项目分析]
+  Complexity -->|Standard / 标准| Analyze
 
-  Analyze --> Design[Design (solution package)]
-  Design --> Develop[Develop (implement + test)]
-  Develop --> Done[✅ Done + acceptance summary]
+  Analyze --> Design[Design / 方案设计（方案包）]
+  Design --> Develop[Develop / 开发实施（实现+测试）]
+  Develop --> Done[✅ Done / 完成 + acceptance / 验收摘要]
 
   style Eval fill:#e3f2fd
   style Analyze fill:#fff3e0
@@ -309,27 +334,24 @@ Key artifacts you’ll see in real projects:
 
 ## 📖 Documentation
 
-This repo is intentionally “two-bundles-in-one”:
+This repo is intentionally a “multi-bundle distribution”.
 
-- **Codex CLI rules:** `Codex CLI/AGENTS.md`
-- **Claude Code rules:** `Claude Code/CLAUDE.md`
+Each bundle contains:
 
-The skill package lives under:
+- Entry config: `{BUNDLE_DIR}/{CONFIG_FILE}`
+- Skill package: `{BUNDLE_DIR}/skills/helloagents/`
 
-- `Codex CLI/skills/helloagents/`
-- `Claude Code/skills/helloagents/`
+Start here (replace `{BUNDLE_DIR}` with your chosen bundle folder):
 
-Start here (pick either bundle path):
-
-- `Codex CLI/skills/helloagents/SKILL.md` (command list + entry behavior)
-- `Codex CLI/skills/helloagents/references/` (stages, rules, services)
-- `Codex CLI/skills/helloagents/scripts/` (automation scripts)
+- `{BUNDLE_DIR}/skills/helloagents/SKILL.md` (command list + entry behavior)
+- `{BUNDLE_DIR}/skills/helloagents/references/` (stages, rules, services)
+- `{BUNDLE_DIR}/skills/helloagents/scripts/` (automation scripts)
 
 ### What you actually copy
 
 You copy a **config file** plus a **skill folder**:
 
-- Config: `AGENTS.md` (Codex CLI) or `CLAUDE.md` (Claude Code)
+- Config: `{CONFIG_FILE}` (picked from the table above)
 - Skill: `skills/helloagents/` (includes `SKILL.md`, `references/`, `scripts/`, `assets/`)
 
 ### Configuration (the knobs you’ll actually touch)
@@ -360,6 +382,9 @@ BILINGUAL_COMMIT: 1
 **A:** Match the CLI you’re using:
 - Codex CLI → `Codex CLI/`
 - Claude Code → `Claude Code/`
+- Gemini CLI → `Gemini CLI/`
+- Grok CLI → `Grok CLI/`
+- Qwen CLI → `Qwen CLI/`
 </details>
 
 <details>
@@ -431,12 +456,6 @@ Then run `~validate` (or follow the tool output).
 ### Windows path/encoding issues
 
 **Fix:** keep files in UTF-8, and prefer quoted paths when copying folders with spaces (like `Codex CLI/`).
-
----
-
-### Mermaid diagram not rendering in your viewer
-
-**Fix:** GitHub renders Mermaid in README by default, but some Markdown viewers don’t. If your viewer can’t render it, open the README on GitHub or use a Mermaid-capable viewer.
 
 <a id="version-history"></a>
 
