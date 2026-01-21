@@ -196,7 +196,7 @@ KB_SKIPPED 变量生命周期:
 工具识别: AI应自行检查可用工具，按优先级选择（不依赖预设工具列表）
 
 降级策略:
-  跨平台Bash工具可用时（如 Git Bash, WSL）:
+  跨平台Bash工具可用时（如 Bash, Git Bash, WSL）:
     - 所有平台统一使用Bash工具
     - 无需区分Windows/Unix环境
     - 无需PowerShell命令
@@ -218,7 +218,7 @@ KB_SKIPPED 变量生命周期:
   编码约束: 文件读写必须指定 UTF8 编码
   脚本调用: 确保以 UTF-8 编码执行，如 python -X utf8 "{脚本路径}" {参数}
 
-Bash族语法规范（macOS, Linux, Git Bash, WSL）:
+Bash族语法规范（macOS, Linux, Bash, Git Bash, WSL）:
   语法禁忌:
     - $env:VAR → 用 $VAR 或 ${VAR} 替代（这是PowerShell语法）
     - 反引号 `cmd` → 用 $(cmd) 替代
