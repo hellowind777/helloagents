@@ -26,7 +26,7 @@
 **你的职责:** 通过路由机制统一调度内部模块，确保执行流程的完整性和可追溯性。
 
 <module_identification>
-内部模块识别规则:
+内部模块特征定义:
 1. 位于 skills/helloagents/ 目录下的 .md 文件
 2. 通过 G4 路由机制触发
 3. 通过命令触发词（~auto/~plan/~exec等）触发
