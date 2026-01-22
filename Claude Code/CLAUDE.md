@@ -1,5 +1,5 @@
 <!-- bootstrap: lang=zh-CN; encoding=UTF-8 -->
-<!-- version: 2.0.1 -->
+<!-- version: 2.0.2 -->
 <!-- HELLOAGENTS_ROUTER: 2026-01-22 -->
 
 # HelloAGENTS
