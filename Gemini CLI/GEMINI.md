@@ -193,7 +193,7 @@ KB_SKIPPED 变量生命周期:
   2. CLI内置Shell工具
   3. 运行环境原生Shell命令
 
-工具识别: AI应自行检查可用工具，按优先级选择（不依赖预设工具列表）
+工具识别: AI应根据自身具备的工具能力，按优先级选择（不依赖预设工具列表）
 
 降级策略:
   跨平台Bash工具可用时（如 Bash, Git Bash, WSL）:
@@ -628,7 +628,7 @@ PowerShell语法规范（Windows原生环境 + 无跨平台Bash工具时）:
      → 输出触发响应（❓ + 范围选项）→ 用户选择 → 执行 → 结果处理
 
   5. 目标选择类:
-     → 扫描目标 → 输出触发响应（❓ + 目标列表）→ 用户选择 → 执行
+     → 获取目标列表 → 输出触发响应（❓ + 目标列表）→ 用户选择 → 执行
 
   6. 需求评估类:
      → 按下方"命令需求评估流程"执行
@@ -1108,28 +1108,14 @@ CURRENT_PACKAGE（当前执行方案包）:
 路径变量:
   {USER_HOME}: Windows=%USERPROFILE%, Linux/macOS=$HOME
   {CWD}: 当前工作目录
+  {CLI_DIR}: 当前 CLI 的配置目录名，如 .codex、.claude、.gemini、.grok、.qwen
 
-解析时机: 首次需要加载模块文件时，一次性确定
+路径推断规则（按需加载时参考）:
+  当需要加载某个模块文件时，按以下优先级尝试完整路径：
+  优先级1: {USER_HOME}/{CLI_DIR}/skills/helloagents/{模块相对路径}
+  优先级2: {CWD}/skills/helloagents/{模块相对路径}
 
-解析优先级（按顺序检查，首个存在的路径生效）:
-
-  | 优先级 | CLI工具 | 环境变量 | 配置目录路径 |
-  |-------|--------|---------|-------------|
-  | 1 | Codex CLI | CODEX_HOME | {USER_HOME}/.codex/skills/helloagents |
-  | 1 | Claude Code | CLAUDE_HOME | {USER_HOME}/.claude/skills/helloagents |
-  | 1 | Gemini CLI | GEMINI_HOME | {USER_HOME}/.gemini/skills/helloagents |
-  | 1 | Grok CLI | GROK_HOME | {USER_HOME}/.grok/skills/helloagents |
-  | 1 | Qwen Code | QWEN_HOME | {USER_HOME}/.qwen/skills/helloagents |
-  | 2 | 备选 | - | {CWD}/skills/helloagents |
-
-  无法识别CLI时: 直接检查 {CWD}/skills/helloagents
-  都不存在时: 输出错误，提示用户安装技能
-
-解析流程:
-  步骤1: 检查用户配置目录是否存在 AGENTS.md
-  步骤2: 存在 → 设为 SKILL_ROOT
-  步骤3: 不存在 → 检查 {CWD}/skills/helloagents/
-  步骤4: 存在 → 设为 SKILL_ROOT；不存在 → 输出错误
+  首个成功读取的路径所在目录即为 SKILL_ROOT，后续模块复用此路径
 
 一致性原则（CRITICAL）:
   - SKILL_ROOT 确定后，所有模块都从该目录加载
