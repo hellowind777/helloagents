@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://helloagents.dev/schemas/agent_result.json",
+  "title": "AgentResult",
+  "description": "RLM 子代理执行结果的标准格式",
+  "type": "object",
+  "required": ["status", "key_findings"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["completed", "failed", "partial", "in_progress"],
+      "description": "代理执行状态"
+    },
+    "key_findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "关键发现列表，至少包含1条"
+    },
+    "changes_made": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "type", "description"],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "文件路径"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["create", "modify", "delete"],
+            "description": "变更类型"
+          },
+          "description": {
+            "type": "string",
+            "description": "变更描述"
+          }
+        }
+      },
+      "description": "文件变更记录"
+    },
+    "issues_found": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "description"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "问题严重程度"
+          },
+          "description": {
+            "type": "string",
+            "description": "问题描述"
+          },
+          "location": {
+            "type": "string",
+            "description": "问题位置（文件:行号）"
+          },
+          "suggestion": {
+            "type": "string",
+            "description": "修复建议"
+          }
+        }
+      },
+      "description": "发现的问题列表"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "后续建议列表"
+    },
+    "needs_followup": {
+      "type": "boolean",
+      "default": false,
+      "description": "是否需要后续跟进"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "description": "代理唯一标识"
+        },
+        "role": {
+          "type": "string",
+          "description": "代理角色"
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "递归深度"
+        },
+        "parent_id": {
+          "type": "string",
+          "description": "父代理ID"
+        },
+        "start_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "开始时间"
+        },
+        "end_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "结束时间"
+        },
+        "token_usage": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "integer",
+              "description": "输入token数"
+            },
+            "output": {
+              "type": "integer",
+              "description": "输出token数"
+            }
+          }
+        }
+      },
+      "description": "执行元数据"
+    }
+  },
+  "examples": [
+    {
+      "status": "completed",
+      "key_findings": [
+        "项目采用模块化架构，共有12个核心模块",
+        "发现3处潜在的性能瓶颈",
+        "测试覆盖率为78%"
+      ],
+      "changes_made": [
+        {
+          "file": "src/api/routes.py",
+          "type": "modify",
+          "description": "优化了数据库查询逻辑"
+        }
+      ],
+      "issues_found": [
+        {
+          "severity": "medium",
+          "description": "缺少输入验证",
+          "location": "src/api/routes.py:45",
+          "suggestion": "添加参数验证装饰器"
+        }
+      ],
+      "recommendations": [
+        "建议添加缓存层提升性能",
+        "考虑将大型函数拆分为更小的单元"
+      ],
+      "needs_followup": false,
+      "metadata": {
+        "agent_id": "agent_001",
+        "role": "analyzer",
+        "depth": 1,
+        "parent_id": "root",
+        "start_time": "2026-01-23T10:00:00Z",
+        "end_time": "2026-01-23T10:05:00Z",
+        "token_usage": {
+          "input": 2500,
+          "output": 800
+        }
+      }
+    }
+  ]
+}
