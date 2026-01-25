@@ -1,6 +1,6 @@
-# 知识库服务
+# 知识库服务 (KnowledgeService)
 
-本模块定义知识库的创建、更新、同步等服务规则。
+本模块定义知识库服务的完整规范，包括服务接口、执行者、数据所有权和同步规则。
 
 ---
 
@@ -9,14 +9,24 @@
 > 📌 规则引用: 知识库开关检查规则详见 G1 "KB开关检查规则"
 
 ```yaml
-服务名称: 知识库服务
+服务名称: KnowledgeService（知识库服务）
+服务类型: 领域服务 (Domain Service)
 适用范围: 所有涉及知识库操作的命令和阶段
+
 核心职责:
-  - 知识库开关前置检查
-  - 项目上下文获取策略
-  - 知识库同步规则
-  - CHANGELOG更新管理
-  - 大型项目扩展性支持
+  - 知识库创建和初始化
+  - 项目上下文获取
+  - 知识库同步（代码变更后）
+  - CHANGELOG 更新管理
+  - 知识库一致性验证
+
+专用执行者: kb_keeper（服务绑定型角色）
+数据所有权:
+  - helloagents/INDEX.md
+  - helloagents/context.md
+  - helloagents/CHANGELOG.md
+  - helloagents/modules/（所有模块文档）
+  注意: 不包含 helloagents/plan/ 和 helloagents/archive/（属于 PackageService）
 ```
 
 **执行时机:** 本模块被引用时首先执行知识库开关前置检查
@@ -25,9 +35,208 @@
 
 ---
 
+## 服务接口定义
+
+> 📌 所有知识库操作必须通过服务接口，禁止直接操作文件
+
+<service_interfaces>
+
+### 接口1: create()
+
+```yaml
+功能: 创建新的知识库
+触发时机: ~init 命令
+
+参数: 无（使用当前工作目录）
+
+执行流程:
+  1. 检查 helloagents/ 目录是否存在
+  2. 调用 init.py 脚本创建目录结构
+  3. kb_keeper 扫描项目，填充文档内容
+  4. 验证知识库完整性
+
+返回值:
+  success: boolean
+  kb_path: 知识库路径
+  files_created: 创建的文件列表
+  errors: 错误列表（如有）
+
+保证:
+  - 知识库结构完整（见 G1 "知识库完整结构"）
+  - 文档内容反映项目实际状态
+```
+
+### 接口2: sync(changes)
+
+```yaml
+功能: 同步知识库与代码变更
+触发时机: develop 阶段代码变更后（步骤10）
+
+参数:
+  changes: 变更信息
+    - files: 变更的文件列表
+    - modules: 涉及的模块
+    - type: 变更类型（add | modify | delete）
+
+执行流程:
+  1. 检查 KB_SKIPPED 状态
+  2. 调用 synthesizer 检查代码与文档一致性
+  3. kb_keeper 执行实际同步操作
+  4. 验证同步结果
+
+同步内容:
+  必须同步:
+    - modules/{模块名}.md: 更新职责、接口、行为规范
+    - modules/_index.md: 更新模块索引
+  按需同步:
+    - context.md: 技术栈变化时
+    - INDEX.md: 项目结构重大变化时
+
+返回值:
+  success: boolean
+  synced_files: 同步的文件列表
+  skipped: boolean（KB_SKIPPED = true 时）
+  errors: 错误列表（如有）
+
+保证:
+  - 文档与代码一致
+  - 最小变更原则
+```
+
+### 接口3: query(scope)
+
+```yaml
+功能: 查询项目上下文
+触发时机: 任何需要项目上下文的场景
+
+参数:
+  scope: 查询范围
+    - full: 完整上下文
+    - modules: 仅模块信息
+    - tech_stack: 仅技术栈
+    - specific: 指定文件/模块
+
+执行流程:
+  1. 检查知识库是否存在
+  2. 存在: 从知识库读取
+  3. 不存在: 扫描代码库
+
+返回值:
+  context: 项目上下文信息
+  source: "knowledge_base" | "code_scan"
+
+执行者: 主代理（只读操作，无需 kb_keeper）
+```
+
+### 接口4: validate()
+
+```yaml
+功能: 验证知识库一致性
+触发时机: ~validate 命令、流程验收
+
+参数: 无
+
+执行流程:
+  1. kb_keeper 检查知识库结构
+  2. 对比代码与文档
+  3. 识别不一致项
+
+返回值:
+  valid: boolean
+  issues: 问题列表
+    - type: structure | content | outdated
+    - file: 相关文件
+    - message: 问题描述
+```
+
+### 接口5: updateChangelog(entry)
+
+```yaml
+功能: 更新 CHANGELOG
+触发时机: 方案包归档后（由 PackageService 联动调用）
+
+参数:
+  entry: 变更记录
+    - version: 版本号
+    - date: 日期
+    - type: 变更类型（新增/修复/变更/移除/微调/文档）
+    - module: 模块名
+    - description: 变更描述
+    - package_link: 方案包链接
+    - decisions: 决策ID列表（可选）
+
+执行流程:
+  1. 读取当前 CHANGELOG.md
+  2. 按格式规范追加记录
+  3. 写回文件
+
+返回值:
+  success: boolean
+  version: 最终版本号
+
+格式规范: 见下方 "CHANGELOG更新规则"
+```
+
+</service_interfaces>
+
+---
+
+## 执行者: kb_keeper
+
+```yaml
+角色定位: 服务绑定型角色（非通用能力型）
+绑定服务: KnowledgeService
+角色预设: rlm/roles/kb_keeper.md
+
+职责范围:
+  - 知识库创建和初始化填充
+  - 代码与文档一致性同步
+  - CHANGELOG 格式化更新
+  - 知识库结构验证
+
+调用方式:
+  - 只能通过 KnowledgeService 接口调用
+  - 禁止阶段模块直接调用 kb_keeper
+
+协作关系:
+  - 调用前: synthesizer 检查代码与文档一致性
+  - 调用后: kb_keeper 执行实际同步操作
+  - 接收 PackageService 的归档通知 → 更新 CHANGELOG
+```
+
+---
+
+## 数据所有权
+
+```yaml
+独占写权限:
+  helloagents/:
+    - INDEX.md
+    - context.md
+    - CHANGELOG.md
+    - CHANGELOG_{YYYY}.md（大型项目分片）
+    - modules/_index.md
+    - modules/*.md
+
+排除（属于 PackageService）:
+  - helloagents/plan/
+  - helloagents/archive/
+
+共享读权限:
+  - 所有阶段模块可读取知识库内容
+  - PackageService 可读取 CHANGELOG 格式
+
+写入规则:
+  - 只有 KnowledgeService 可以修改知识库文件
+  - PackageService 通过 updateChangelog 接口请求 CHANGELOG 更新
+  - 直接修改将破坏数据一致性
+```
+
+---
+
 ## 核心术语补充说明
 
-> 📌 规则引用: 基础术语定义见主配置（G1: 知识库结构、G2: EHRB、G7: 方案包类型）
+> 📌 规则引用: 基础术语定义见主配置（G1: 知识库结构、G2: EHRB、G6: 方案包类型）
 
 <terminology_supplement>
 本节补充知识库服务特有的细节术语:
@@ -402,7 +611,7 @@ CHANGELOG格式异常:
   - G1 目录/文件自动创建规则
   - G1 知识库结构
   - G2 EHRB规则
-  - G7 方案包类型
+  - G6 方案包类型
   - references/rules/scaling.md（大型项目扩展规则）
   - references/services/templates.md（模板服务）
 ```

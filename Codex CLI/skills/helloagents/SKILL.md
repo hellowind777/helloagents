@@ -40,6 +40,7 @@ metadata:
 | `~review` | 代码审查 |
 | `~validate` | 验证知识库 |
 | `~rollback` | 智能回滚 |
+| `~rlm` | RLM 递归语言模型 |
 | `~help` | 显示帮助 |
 
 ### 使用方式
@@ -87,4 +88,71 @@ assets/templates/
   - plan/proposal.md      # 变更提案
   - plan/tasks.md         # 任务清单
   - archive/_index.md     # 归档索引
+```
+
+---
+
+## RLM 递归语言模型
+
+> 基于 MIT RLM 论文和 Context Folding 研究实现的递归执行框架
+
+RLM 模块位于 `rlm/` 目录，提供递归执行和上下文折叠能力：
+
+```yaml
+核心架构:
+  关键理解: AI CLI 本身就是 RLM 的 REPL 环境
+    - Working Context = CLI 内存中的对话上下文（非文件）
+    - Session Events = %TEMP%/helloagents_rlm/{session_id}/
+    - Memory = helloagents/ 知识库（共享）
+
+  递归调用: Task 工具 = llm.completion() 递归
+  Session 隔离: 每个 CLI 实例独立 Session ID
+
+核心能力:
+  - 递归子代理调用（最大5层深度）
+  - 三层上下文管理（Working/Session/Memory）
+  - 智能上下文折叠（压缩至10-25%）
+  - 四种编排模式（顺序/并行/分治/专家咨询）
+  - 六种角色预设（explorer/analyzer/implementer/reviewer/tester/synthesizer）
+  - Manus 借鉴（注意力锚定/KV Cache优化/阈值压缩）
+
+目录结构:
+  rlm/
+  ├── __init__.py          # 包初始化
+  ├── session.py           # Session 隔离管理（核心）
+  ├── engine.py            # RLM核心引擎
+  ├── context_manager.py   # 三层上下文管理
+  ├── agent_orchestrator.py # 代理编排器
+  ├── folding.py           # 上下文折叠
+  ├── repl.py              # REPL交互环境
+  ├── schemas/             # JSON Schema
+  │   └── agent_result.json
+  └── roles/               # 角色预设
+      ├── explorer.md
+      ├── analyzer.md
+      ├── implementer.md
+      ├── reviewer.md
+      ├── tester.md
+      └── synthesizer.md
+
+脚本调用:
+  Session 管理:
+    python -X utf8 "{SKILL_ROOT}/rlm/session.py" --info     # 当前 Session 信息
+    python -X utf8 "{SKILL_ROOT}/rlm/session.py" --list     # 列出所有 Sessions
+    python -X utf8 "{SKILL_ROOT}/rlm/session.py" --cleanup 24  # 清理旧 Sessions
+    python -X utf8 "{SKILL_ROOT}/rlm/session.py" --events 10   # 最近10条事件
+    python -X utf8 "{SKILL_ROOT}/rlm/session.py" --history 20  # 最近20条代理历史
+
+命令入口:
+  ~rlm status    # 显示RLM状态
+  ~rlm spawn     # 启动子代理
+  ~rlm fold      # 手动折叠上下文
+  ~rlm context   # 查看上下文状态
+  ~rlm history   # 查看执行历史
+  ~rlm session   # 当前 Session 信息
+  ~rlm sessions  # 列出所有 Sessions
+  ~rlm cleanup   # 清理旧 Sessions
+  ~rlm reset     # 重置RLM状态
+
+详细规则: 见 G9/G10/G11 和 references/functions/rlm.md
 ```

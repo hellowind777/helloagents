@@ -9,7 +9,7 @@
 ```yaml
 命令: ~exec [<方案包名称>]
 类型: 目标选择类
-功能: 直接执行 plan/ 目录中的方案包，跳过需求评估和方案设计
+功能: 直接执行 plan/ 目录中的方案包，跳过需求评估和方案规划
 模式: STAGE_ENTRY_MODE = DIRECT
 ```
 
@@ -25,7 +25,39 @@
 2. 默认保持 INTERACTIVE 工作流模式
 3. 直接从方案包进入开发实施阶段
 4. Overview 类型方案包需特殊处理（归档而非执行）
+5. develop 阶段自动按需调用子代理（按 G8/G9 规则）
 </mode_adaptation>
+
+---
+
+## 子代理自动调用
+
+> 📌 规则引用: 按 G8 "子代理编排" + G9 "跨CLI兼容规则" 执行
+
+```yaml
+调用原则:
+  - 满足触发条件时自动调用，无需用户干预
+  - 子代理结果自动折叠后返回阶段继续流程
+
+develop 阶段调用规则:
+  implementer:
+    - 单任务预估 > 50 行代码
+    - 涉及 ≥ 3 个文件
+    - tasks.md 标记为 complexity: high
+  reviewer:
+    - 修改核心模块
+    - 涉及安全相关代码
+    - 涉及 EHRB
+  tester:
+    - 新增公共 API
+    - 修改现有测试覆盖的代码
+    - tasks.md 要求测试
+
+执行方式:
+  - 通过 Task 工具启动子代理
+  - 子代理独立上下文执行
+  - 结果折叠后返回主流程
+```
 
 ---
 
@@ -92,7 +124,7 @@
 ```yaml
 读取: proposal.md 判断类型
 
-implementation 类型: 继续执行开发实施
+implementation 类型: 继续执行开发实施阶段
 overview 类型: 按"Overview 类型处理"规则执行
 ```
 
@@ -105,23 +137,23 @@ overview 类型: 按"Overview 类型处理"规则执行
 ### 步骤6: 流程级验收
 
 ```yaml
-执行规则: 按 G9 "流程级验收规则" 执行（验收内容详见 G9）
+执行规则: 按 G7 "流程级验收规则" 执行（验收内容详见 G7）
 
 遗留方案包扫描:
-  执行规则: 按 G7 "遗留方案包扫描" 执行
+  执行规则: 按 G6 "遗留方案包扫描" 执行
   扫描时机: 流程即将结束时
   显示条件: 检测到≥1个遗留方案包
-  详细规则: 参考 references/rules/package.md "遗留方案包处理"
+  详细规则: 参考 references/services/package.md "遗留方案包处理"
 
 完成后: 按 G3 场景内容规则（完成）输出执行命令结果（含验收报告）
-执行: 按 G7 状态重置协议执行
+执行: 按 G6 状态重置协议执行
 ```
 
 ---
 
 ## Overview 类型处理
 
-> 📌 规则引用: 按 references/rules/package.md "Overview 类型方案包生命周期" 规则执行
+> 📌 规则引用: 按 references/services/package.md "Overview 类型方案包生命周期" 规则执行
 
 ```yaml
 检测到 overview 类型方案包时:
@@ -132,7 +164,7 @@ overview 类型: 按"Overview 类型处理"规则执行
   用户选择处理:
     归档: 执行方案包迁移至 archive/
     查看: 显示 proposal.md 内容，再次询问
-    取消: 按 G7 状态重置协议执行
+    取消: 按 G6 状态重置协议执行
 ```
 
 ---
@@ -158,12 +190,12 @@ overview 类型: 按"Overview 类型处理"规则执行
 
 选项:
   选择方案包N: 选择对应序号的方案包执行
-  取消: 按 G7 状态重置协议执行
+  取消: 按 G6 状态重置协议执行
 ```
 
 ### 场景: Overview类型方案包处理
 
-> 📌 规则引用: 按 references/rules/package.md "用户选择处理 - Overview类型方案包处理" 执行
+> 📌 规则引用: 按 references/services/package.md "用户选择处理 - Overview类型方案包处理" 执行
 
 ### 场景: 流程级验收完成
 
