@@ -338,7 +338,7 @@ STAGE_ENTRY_MODE:
 KB_SKIPPED: true/未设置
 
 方案包相关:
-  CREATED_PACKAGE: 方案规划阶段创建后设置
+  CREATED_PACKAGE: 方案设计阶段创建后设置
   CURRENT_PACKAGE: 开发实施阶段选定后设置
 
 外部工具相关:
@@ -369,7 +369,7 @@ SILENCE_BROKEN: 静默模式是否已被打破（默认false）
 ### 遗留方案包扫描
 
 ```yaml
-触发时机: 开发实施、方案规划、轻量迭代、规划命令、执行命令完成时
+触发时机: 开发实施、方案设计、轻量迭代、规划命令、执行命令完成时
 扫描范围: plan/ 目录，排除 CURRENT_PACKAGE
 显示条件: 检测到≥1个遗留方案包
 显示位置: 底部操作栏（📦 遗留方案包）
@@ -424,7 +424,7 @@ SKILL_ROOT 确定规则（仅用于子模块）:
 |----------|----------|
 | 进入项目分析 | references/stages/analyze.md, references/services/knowledge.md |
 | 进入微调模式 | references/stages/tweak.md, references/services/package.md |
-| 进入方案规划 | references/stages/design.md, references/services/package.md, references/services/templates.md |
+| 进入方案设计 | references/stages/design.md, references/services/package.md, references/services/templates.md |
 | 进入开发实施 | references/stages/develop.md, references/services/package.md, references/services/attention.md |
 | ~auto 命令 | references/functions/auto.md |
 | ~plan 命令 | references/functions/plan.md |

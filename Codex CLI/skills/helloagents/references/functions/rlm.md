@@ -541,7 +541,7 @@ reset 确认:
     - 使用Sequential Chain模式
 
   ~plan:
-    - 方案规划阶段可用analyzer角色
+    - 方案设计阶段可用analyzer角色
     - 多方案对比可用Parallel模式
 
   ~review:

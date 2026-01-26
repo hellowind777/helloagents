@@ -360,7 +360,7 @@ validate_package.py:
   - ~validate 命令（validate_package.py）
   - ~init/~upgrade 命令（upgradewiki.py）
   - 项目分析阶段（project_stats.py）
-  - 方案规划阶段（create_package.py）
+  - 方案设计阶段（create_package.py）
   - 开发实施阶段（migrate_package.py）
 
 引用:

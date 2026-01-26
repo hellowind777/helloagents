@@ -33,7 +33,7 @@
 </execution_unit_types>
 
 ```yaml
-内部阶段: 需求评估、项目分析、方案规划、开发实施、微调模式、轻量迭代、标准开发
+内部阶段: 需求评估、项目分析、方案设计、开发实施、微调模式、轻量迭代、标准开发
 内部命令: ~auto, ~plan, ~exec, ~init, ~upgrade, ~clean, ~help...
 外部工具: MCP服务器、子代理、插件、第三方Skill等
 原子操作: 对话、咨询问答
@@ -102,18 +102,18 @@
 
 ```yaml
 微调模式: CURRENT_STAGE = TWEAK
-轻量迭代: CURRENT_STAGE = ANALYZE → 项目分析 → 方案规划 → 开发实施
-标准开发: CURRENT_STAGE = ANALYZE → 项目分析 → 方案规划 → 开发实施
+轻量迭代: CURRENT_STAGE = ANALYZE → 项目分析 → 方案设计 → 开发实施
+标准开发: CURRENT_STAGE = ANALYZE → 项目分析 → 方案设计 → 开发实施
 ```
 
-### 项目分析 → 方案规划
+### 项目分析 → 方案设计
 
 ```yaml
 条件: 项目上下文获取完成
 动作: CURRENT_STAGE = DESIGN，读取并执行 references/stages/design.md
 ```
 
-### 方案规划 → 开发实施
+### 方案设计 → 开发实施
 
 ```yaml
 条件: 方案包创建完成（选择方案即确认执行，无需二次确认）
