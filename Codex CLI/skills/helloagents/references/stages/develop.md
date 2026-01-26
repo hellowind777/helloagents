@@ -12,11 +12,11 @@
 
 ```yaml
 前置条件:
-  NATURAL入口: 方案规划阶段完成（选择方案后自动流转）
+  NATURAL入口: 方案设计阶段完成（选择方案后自动流转）
   DIRECT入口: 用户执行 ~exec 命令
 
 加载时机:
-  NATURAL: 方案规划完成后流转
+  NATURAL: 方案设计完成后流转
   DIRECT: ~exec 命令触发
 
 特点: 执行方案包中的任务清单，修改代码，同步知识库
@@ -28,7 +28,7 @@
 设置时机: 本模块被加载时
 设置内容:
   - CURRENT_STAGE = DEVELOP
-  - STAGE_ENTRY_MODE = NATURAL（从方案规划流转）或 DIRECT（~exec命令）
+  - STAGE_ENTRY_MODE = NATURAL（从方案设计流转）或 DIRECT（~exec命令）
 ```
 
 ---
@@ -44,7 +44,7 @@
 
 # === 入口方式判定 ===
 
-STAGE_ENTRY_MODE = NATURAL（从方案规划流转）:
+STAGE_ENTRY_MODE = NATURAL（从方案设计流转）:
   方案包来源: 读取 CREATED_PACKAGE 变量
   单个方案包: 直接执行
 
@@ -121,7 +121,7 @@ STAGE_ENTRY_MODE = DIRECT（~exec命令直接进入）:
 
 ```yaml
 全授权命令（WORKFLOW_MODE=AUTO_FULL）:
-  - 读取 CREATED_PACKAGE 变量（方案规划阶段设置的方案包路径）
+  - 读取 CREATED_PACKAGE 变量（方案设计阶段设置的方案包路径）
   - 检查该方案包是否存在且完整
     - 存在且完整 → 使用该方案包，设置 CURRENT_PACKAGE = CREATED_PACKAGE
     - 不存在或不完整 → 按 G3 场景内容规则（错误）输出并停止
@@ -167,7 +167,7 @@ ELSE (类型 = implementation):
 
 ```yaml
 KB_SKIPPED 状态来源:
-  STAGE_ENTRY_MODE = NATURAL（从方案规划流转）:
+  STAGE_ENTRY_MODE = NATURAL（从方案设计流转）:
     - 由 analyze.md 步骤1 已设置，本阶段直接使用
   STAGE_ENTRY_MODE = DIRECT（~exec命令直接进入）:
     - 本阶段首次设置 KB_SKIPPED

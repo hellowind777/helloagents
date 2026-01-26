@@ -411,7 +411,7 @@ archive/_index.md:
 ```yaml
 被引用:
   - ~init 命令（知识库模板使用）
-  - 方案规划阶段（方案包模板使用）
+  - 方案设计阶段（方案包模板使用）
   - ~exec 命令（方案包验证）
   - scripts/create_package.py（模板加载）
   - scripts/migrate_package.py（_index.md 模板）
