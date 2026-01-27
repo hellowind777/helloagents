@@ -24,14 +24,6 @@
 
 ### 执行单元类型
 
-<execution_unit_types>
-执行单元分类:
-1. 内部阶段: 完整工作流中的各个执行阶段
-2. 内部命令: 通过~前缀触发的系统命令
-3. 外部工具: 独立运行的第三方工具和服务
-4. 原子操作: 不改变状态的简单交互
-</execution_unit_types>
-
 ```yaml
 内部阶段: 需求评估、项目分析、方案设计、开发实施、微调模式、轻量迭代、标准开发
 内部命令: ~auto, ~plan, ~exec, ~init, ~upgrade, ~clean, ~help...
@@ -41,21 +33,12 @@
 
 ### 命令触发状态设置协议
 
-<command_state_protocol>
-命令状态设置推理过程:
-1. 识别用户输入的命令类型
-2. 查找命令对应的状态设置动作
-3. 设置相应的状态变量
-4. 按 G6 加载规则加载对应模块
-5. 执行命令操作
-</command_state_protocol>
-
 用户输入~命令后，通过路由机制执行对应操作：
 
 | 命令 | 状态设置动作 | 命令类型 |
 |------|-------------|----------|
-| ~auto | WORKFLOW_MODE=AUTO_FULL, CURRENT_STAGE=EVALUATE | 需求评估类 |
-| ~plan | WORKFLOW_MODE=AUTO_PLAN, CURRENT_STAGE=EVALUATE | 需求评估类 |
+| ~auto | WORKFLOW_MODE=AUTO_FULL, CURRENT_STAGE=EVALUATE | 完整流程类 |
+| ~plan | WORKFLOW_MODE=AUTO_PLAN, CURRENT_STAGE=EVALUATE | 完整流程类 |
 | ~exec | STAGE_ENTRY_MODE=DIRECT, CURRENT_STAGE=DEVELOP | 目标选择类 |
 | ~init | 无状态变量 | 场景确认类 |
 | ~upgrade | 无状态变量 | 场景确认类 |
@@ -81,15 +64,6 @@
 ## 阶段流转规则
 
 > 📌 规则引用: 处理路径详情见 G5，本节仅定义状态变量设置
-
-<transition_logic>
-阶段流转推理过程:
-1. 检测当前阶段完成条件是否满足
-2. 确定目标阶段
-3. 设置目标阶段的状态变量
-4. 加载目标阶段对应模块
-5. 开始执行目标阶段
-</transition_logic>
 
 ### 需求评估 → 复杂度判定
 
@@ -152,14 +126,6 @@
 
 ### 切换规则
 
-<mode_switch_protocol>
-模式切换推理过程:
-1. 检测当前 WORKFLOW_MODE 值
-2. 识别用户选择的执行方式
-3. 执行对应的状态变更
-4. 按新模式继续后续流程
-</mode_switch_protocol>
-
 ```yaml
 用户选择"确认执行（静默）":
   动作: 保持当前 WORKFLOW_MODE 不变
@@ -217,42 +183,12 @@
 
 ### 连续命令场景
 
-<consecutive_scenarios>
-连续命令场景推理:
-1. 识别前一命令是否已完成
-2. 确认状态重置是否已执行
-3. 新命令按独立执行单元处理
-4. 从初始状态开始设置新命令的状态
-</consecutive_scenarios>
-
 ```yaml
-场景1 - 命令完成后执行新命令:
-  示例: ~auto 完成 → 用户输入 ~exec
-  状态流程:
-    ~auto 完成 → 状态重置协议执行 → 系统进入 IDLE 状态
-    用户输入 ~exec → 按命令触发协议设置新状态 → 执行 ~exec
-  关键点: ~exec 不继承 ~auto 的任何临时状态
-
-场景2 - 命令取消后执行新命令:
-  示例: ~plan 进行中 → 用户取消 → 用户输入 ~auto
-  状态流程:
-    用户取消 → 状态重置协议执行 → 系统进入 IDLE 状态
-    用户输入 ~auto → 按命令触发协议设置新状态 → 执行 ~auto
-  关键点: 取消和完成对后续命令的影响相同
-
-场景3 - 命令进行中用户输入新命令:
-  示例: ~auto 执行中 → 用户中途输入 ~help
-  处理规则:
-    原子命令（~help等）: 直接响应，不影响当前命令状态
-    流程命令（~auto/~plan/~exec等）: 视为取消当前命令，执行新命令
-  关键点: 流程命令互斥，原子命令可嵌入
-
-场景4 - 自然对话后执行命令:
-  示例: 用户提问 → 得到回答 → 用户输入 ~auto
-  状态流程:
-    对话交互: 系统处于 IDLE 状态，无临时状态变量
-    用户输入 ~auto → 从 IDLE 状态开始，设置命令状态
-  关键点: 对话不产生需要重置的状态
+核心规则:
+  - 命令完成/取消后: 状态重置 → IDLE → 新命令从干净状态开始
+  - 流程命令互斥: ~auto/~plan/~exec 同时只能执行一个
+  - 原子命令可嵌入: ~help/~validate 不影响当前流程状态
+  - 对话不产生状态: 自然对话后系统处于 IDLE 状态
 ```
 
 ### 命令互斥规则

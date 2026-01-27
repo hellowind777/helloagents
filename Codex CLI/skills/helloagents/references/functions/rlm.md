@@ -475,8 +475,7 @@ python -X utf8 "{SKILL_ROOT}/rlm/session.py" --cleanup {hours}
 ## 错误处理
 
 ```yaml
-常见错误:
-
+RLM 核心错误:
   角色不存在:
     错误: "Unknown role: {role}"
     处理: 显示可用角色列表
@@ -492,6 +491,23 @@ python -X utf8 "{SKILL_ROOT}/rlm/session.py" --cleanup {hours}
   上下文溢出:
     错误: "Context overflow in {layer}"
     处理: 自动触发折叠，继续执行
+
+协作模式错误:
+  未启用协作模式:
+    错误: "当前为隔离模式"
+    处理: 提示设置环境变量并重启
+
+  任务不存在:
+    错误: "Task not found: {task_id}"
+    处理: 显示可用任务列表
+
+  并发写入冲突:
+    错误: "Failed to acquire lock"
+    处理: 自动重试 3 次，间隔 100ms
+
+  权限不足:
+    错误: "Cannot complete task: not the owner"
+    处理: 显示当前负责人信息
 ```
 
 ---
@@ -832,54 +848,17 @@ python -X utf8 "{SKILL_ROOT}/rlm/shared_tasks.py" --add "{subject}"
 ```yaml
 场景: 两个终端协作完成认证迁移
 
-终端 A (负责代码修改):
-  启动: hellotasks=auth-migration <AI CLI>
-  # 例: hellotasks=auth-migration codex 或 claude
-  操作:
-    1. ~rlm tasks add "迁移用户表 schema"
-    2. ~rlm tasks add "更新 API 端点" --blocked-by t1_xxx
-    3. ~rlm tasks add "编写迁移脚本"
-    4. ~rlm tasks claim t1_xxx
-    5. (执行迁移)
-    6. ~rlm tasks complete t1_xxx
+终端 A: hellotasks=auth-migration codex
+  ~rlm tasks add "迁移用户表 schema"  # 创建任务
+  ~rlm tasks claim t1_xxx             # 认领任务
+  (执行迁移)
+  ~rlm tasks complete t1_xxx          # 完成任务
 
-终端 B (负责测试和文档):
-  启动: hellotasks=auth-migration <AI CLI>
-  # 可以和终端 A 使用不同的 CLI，只要 hellotasks ID 相同即可
-  操作:
-    1. ~rlm tasks  # 查看 A 创建的任务
-    2. ~rlm tasks add "编写集成测试" --blocked-by t1_xxx
-    3. ~rlm tasks add "更新 API 文档" --blocked-by t2_xxx
-    4. ~rlm tasks available  # 等待 t1 完成
-    5. (t1 完成后自动解锁)
-    6. ~rlm tasks claim t4_xxx  # 开始测试任务
+终端 B: hellotasks=auth-migration claude
+  ~rlm tasks                          # 查看任务列表
+  ~rlm tasks available                # 等待可认领任务
+  ~rlm tasks claim t4_xxx             # 认领解锁的任务
 
-同步机制:
-  - A 完成 t1 后，B 立即看到 t4 变为可认领
-  - 任务状态实时同步（基于文件）
-  - 无需手动刷新
+同步机制: 任务状态基于文件实时同步，无需手动刷新
 ```
 
----
-
-## 协作模式错误处理
-
-```yaml
-常见错误:
-
-  未启用协作模式:
-    错误: "当前为隔离模式"
-    处理: 提示设置环境变量并重启
-
-  任务不存在:
-    错误: "Task not found: {task_id}"
-    处理: 显示可用任务列表
-
-  并发写入冲突:
-    错误: "Failed to acquire lock"
-    处理: 自动重试 3 次，间隔 100ms
-
-  权限不足:
-    错误: "Cannot complete task: not the owner"
-    处理: 显示当前负责人信息
-```

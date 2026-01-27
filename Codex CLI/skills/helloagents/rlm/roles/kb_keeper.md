@@ -84,82 +84,19 @@
 
 ## 文档格式规范
 
-### INDEX.md 结构
+> 📌 详细模板见 references/services/templates.md
 
-```markdown
-# {项目名称}
-
-## 项目概述
-{一句话描述}
-
-## 快速导航
-- [项目上下文](context.md)
-- [模块索引](modules/_index.md)
-- [变更日志](CHANGELOG.md)
-
-## 核心模块
-| 模块 | 职责 | 文档 |
-|------|------|------|
-| {模块名} | {职责描述} | [链接](modules/{模块名}.md) |
+```yaml
+INDEX.md: 项目入口（项目概述、快速导航、核心模块表）
+context.md: 项目上下文（基本信息、架构概述、开发约定、当前约束）
+modules/{module}.md: 模块文档（职责、接口定义、行为规范、依赖关系）
 ```
 
-### context.md 结构
+## CHANGELOG 格式
 
-```markdown
-# 项目上下文
+> 📌 详细格式见 references/services/knowledge.md "CHANGELOG更新规则"
 
-## 基本信息
-- 项目名称:
-- 技术栈:
-- 主要框架:
-
-## 架构概述
-{架构描述}
-
-## 开发约定
-{约定内容}
-
-## 当前约束
-{约束条件}
-```
-
-### modules/{module}.md 结构
-
-```markdown
-# {模块名}
-
-## 职责
-{模块职责描述}
-
-## 接口定义
-{公共API、数据结构}
-
-## 行为规范
-{关键场景描述}
-
-## 依赖关系
-{依赖的其他模块}
-```
-
-## CHANGELOG 格式（必须严格遵循）
-
-```markdown
-## [X.Y.Z] - YYYY-MM-DD
-
-### 新增
-- **[{模块名}]**: {变更描述}
-  - 方案: [{YYYYMMDDHHMM}_{feature}](archive/{YYYY-MM}/{YYYYMMDDHHMM}_{feature}/)
-  - 决策: {feature}#D001({决策摘要})
-
-### 修复
-- **[{模块名}]**: {修复描述}
-  - 方案: [{YYYYMMDDHHMM}_{fix}](archive/{YYYY-MM}/{YYYYMMDDHHMM}_{fix}/)
-
-### 微调
-- **[{模块名}]**: {微调描述}
-  - 类型: 微调（无方案包）
-  - 文件: {文件路径}:{行号范围}
-```
+必须严格遵循格式规范，包含：版本号、日期、分类、模块名、变更描述、方案链接、决策引用
 
 ## 输出格式
 
