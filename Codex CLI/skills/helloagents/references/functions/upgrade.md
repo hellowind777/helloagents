@@ -22,9 +22,10 @@
 <mode_adaptation>
 ~upgrade 模式适配规则:
 1. 本命令为独立工具命令，不受 WORKFLOW_MODE 影响
-2. KB_CREATE_MODE=0 时需用户确认后执行
-3. 升级前强制备份，确保可恢复
-4. AI 负责内容分析，脚本负责文件操作
+2. 评估深度: 轻量评估（无评分追问）
+3. KB_CREATE_MODE=0 时需用户确认后执行
+4. 升级前强制备份，确保可恢复
+5. AI 负责内容分析，脚本负责文件操作
 </mode_adaptation>
 
 ---
@@ -56,46 +57,38 @@
 
 ## 执行流程
 
-### 步骤1: 知识库开关检查
-
-<kb_switch_analysis>
-知识库开关检查推理过程:
-1. 读取 KB_CREATE_MODE 当前值
-2. 若为 0 (OFF)，提示用户确认是否继续
-3. 若为 1/2/3，直接继续执行
-</kb_switch_analysis>
+### 步骤1: 轻量评估
 
 ```yaml
-IF KB_CREATE_MODE = 0 (OFF):
-  按 G3 场景内容规则（确认）输出
-
-  用户选择处理:
-    继续执行: 继续执行下方流程
-    取消: 按 G6 状态重置协议执行，流程终止
-
-ELSE (开关=1/2/3):
-  直接继续执行下方流程（无需额外确认）
+执行规则: 按 G4 "需求评估规则"执行（轻量评估），按 G3 场景内容规则（需求评估）输出
 ```
 
-### 步骤2: 准备
+### 步骤2: 扫描与分析
 
 ```yaml
-步骤2.1 - 读取模板文件:
-  读取以下模板文件，理解目标结构和格式:
-    - assets/templates/INDEX.md
-    - assets/templates/context.md
-    - assets/templates/CHANGELOG.md
-    - assets/templates/modules/_index.md
-    - assets/templates/archive/_index.md
-    - assets/templates/plan/proposal.md
-    - assets/templates/plan/tasks.md
+知识库开关检查:
+  IF KB_CREATE_MODE = 0 (OFF):
+    按 G3 场景内容规则（确认）输出
+    用户选择处理:
+      继续执行: 继续执行下方流程
+      取消: 按 G6 状态重置协议执行，流程终止
+  ELSE (开关=1/2/3):
+    直接继续执行下方流程（无需额外确认）
 
-步骤2.2 - 扫描知识库:
+读取模板文件:
+  读取以下模板文件，理解目标结构和格式:
+    - {TEMPLATE_DIR}/INDEX.md
+    - {TEMPLATE_DIR}/context.md
+    - {TEMPLATE_DIR}/CHANGELOG.md
+    - {TEMPLATE_DIR}/modules/_index.md
+    - {TEMPLATE_DIR}/archive/_index.md
+    - {TEMPLATE_DIR}/plan/proposal.md
+    - {TEMPLATE_DIR}/plan/tasks.md
+
+扫描知识库:
   脚本调用: upgradewiki.py --scan
   获取: 知识库目录结构和文件列表（JSON格式）
 ```
-
-### 步骤3: AI 内容分析
 
 <upgrade_content_analysis>
 AI 内容分析推理过程:
@@ -124,8 +117,6 @@ AI 内容分析推理过程:
    - 评估风险和注意事项
 </upgrade_content_analysis>
 
-### 步骤4: 用户确认
-
 ```yaml
 展示升级计划:
   按 G3 场景内容规则（确认）输出
@@ -136,30 +127,30 @@ AI 内容分析推理过程:
     - 注意事项（需要人工确认的内容）
 
   选项:
-    执行升级: 继续执行步骤5
+    执行升级: 继续执行步骤3
     查看详情: 展示更多细节后再确认
     取消: 按 G6 状态重置协议执行
 ```
 
-### 步骤5: 执行升级
+### 步骤3: 执行升级
 
 ```yaml
-步骤5.1 - 备份:
+备份:
   脚本调用: upgradewiki.py --backup
   确保: 备份成功后再继续
 
-步骤5.2 - 创建目录结构:
+创建目录结构:
   脚本调用: upgradewiki.py --init
   创建: modules/, archive/, plan/ 目录
 
-步骤5.3 - AI 生成目标内容:
+AI 生成目标内容:
   根据升级计划，AI 执行以下操作:
     - 读取源文件内容
     - 按模板格式重新组织内容
     - 填充模板占位符
     - 生成目标文件内容
 
-步骤5.4 - 写入文件:
+写入文件:
   方式A - 直接使用 Write 工具:
     AI 使用 Write 工具直接写入每个目标文件
 
@@ -168,30 +159,33 @@ AI 内容分析推理过程:
     2. 脚本调用: upgradewiki.py --write plan.json
     3. 检查执行结果
 
-步骤5.5 - 清理（可选）:
+清理（可选）:
   用户确认后，删除已迁移的源文件
+```
 
-步骤5.6 - 升级后验收:
-  按 G7 命令级验收标准（~upgrade）执行
+### 步骤4: 后续操作
 
-  验收项:
-    - 知识库结构符合目标版本 (阻断性)
-    - 核心文件完整 (阻断性): INDEX.md, context.md 存在且非空
-    - 内容无丢失 (警告性): 对比源文件和目标文件内容
+```yaml
+执行规则: 按 G8 命令级验收标准（~upgrade）执行
 
-  验收方式:
-    调用 ~validate 仅知识库模式，检查验收结果
+验收项:
+  - 知识库结构符合目标版本 (阻断性)
+  - 核心文件完整 (阻断性): INDEX.md, context.md 存在且非空
+  - 内容无丢失 (警告性): 对比源文件和目标文件内容
 
-  验收失败处理:
-    阻断性失败:
-      - 按 G3 场景内容规则（警告）输出
-      - 建议用户从备份恢复
-    警告性失败:
-      - 记录到升级报告
-      - 提示用户检查相关内容
+验收方式:
+  调用 ~validate 仅知识库模式，检查验收结果
 
-  完成后: 按 G3 场景内容规则（完成）输出升级结果（含验收报告）
-  执行: 按 G6 状态重置协议执行
+验收失败处理:
+  阻断性失败:
+    - 按 G3 场景内容规则（警告）输出
+    - 建议用户从备份恢复
+  警告性失败:
+    - 记录到升级报告
+    - 提示用户检查相关内容
+
+完成后: 按 G3 场景内容规则（完成）输出升级结果（含验收报告）
+执行: 按 G6 状态重置协议执行
 ```
 
 ---
@@ -313,8 +307,6 @@ AI 内容分析推理过程:
 ---
 
 ## 用户选择处理
-
-> 本章节定义 ~upgrade 命令需要用户确认的场景，供 G3 输出格式统一提取。
 
 ### 场景: 知识库开关确认（KB_CREATE_MODE=0）
 

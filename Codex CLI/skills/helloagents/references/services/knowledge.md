@@ -238,13 +238,6 @@
 
 > 📌 规则引用: 基础术语定义见主配置（G1: 知识库结构、G2: EHRB、G6: 方案包类型）
 
-<terminology_supplement>
-本节补充知识库服务特有的细节术语:
-1. SSOT 冲突处理: 代码为准原则
-2. 方案包完整性: proposal.md + tasks.md 必须存在且非空
-3. 决策ID: 全局唯一可追溯的技术决策标识
-</terminology_supplement>
-
 ```yaml
 SSOT 冲突处理:
   - 当知识库与代码不一致时，以代码为准（执行事实）
@@ -265,14 +258,6 @@ SSOT 冲突处理:
 
 <context_acquisition_rules>
 ## 项目上下文获取策略
-
-<context_strategy>
-项目上下文获取推理过程:
-1. 优先检查知识库是否存在
-2. 知识库存在时从中读取核心文件
-3. 知识库不存在或信息不足时扫描代码库
-4. 获取架构、技术栈、模块结构、技术约束
-</context_strategy>
 
 ### 步骤1: 检查知识库（如存在）
 
@@ -311,14 +296,6 @@ SSOT 冲突处理:
 
 ### 执行规则
 
-<sync_execution>
-知识库同步执行推理过程:
-1. 检查 KB_SKIPPED 状态
-2. 跳过时标注警告信息
-3. 不跳过时执行同步内容
-4. 按最小变更原则更新文档
-</sync_execution>
-
 ```yaml
 执行时机: 开发实施阶段完成代码改动后（步骤10）
 前置检查: KB_SKIPPED = true 时跳过，标注"⚠️ 知识库同步已跳过"
@@ -350,13 +327,6 @@ SSOT 冲突处理:
 
 ### 同步原则
 
-<sync_principles>
-知识库同步原则:
-1. 真实性基准: 代码是唯一来源
-2. 最小变更: 只更新相关内容
-3. 保持一致: 术语与代码对应
-</sync_principles>
-
 ```yaml
 真实性基准:
   - 代码是执行真实性的唯一来源（Ground Truth）
@@ -379,14 +349,6 @@ SSOT 冲突处理:
 ## CHANGELOG更新规则
 
 ### 格式强制要求
-
-<changelog_format_rules>
-CHANGELOG格式校验规则:
-1. 必须严格按照格式模板
-2. 必须包含所有必填字段
-3. 方案包链接使用相对路径
-4. 决策ID格式正确
-</changelog_format_rules>
 
 ```yaml
 更新CHANGELOG时必须:
@@ -493,15 +455,6 @@ KB_CREATE_MODE 影响:
 
 ### 版本号管理
 
-<version_management>
-版本号管理推理过程:
-1. 优先使用用户明确指定的版本号
-2. 其次从主模块解析版本号
-3. 再次从Git标签解析
-4. 最后使用已有CHANGELOG版本号递增
-5. 校验格式合法性
-</version_management>
-
 ```yaml
 版本号格式: X.Y.Z（语义化版本）
   X(Major): 破坏性变更
@@ -550,23 +503,12 @@ KB_CREATE_MODE 影响:
 
 > 📌 规则引用: 详细规则见 references/rules/scaling.md
 
-<scaling_summary>
-大型项目扩展性要点:
-1. 判定条件: 源文件>500 或 代码行>50000 或 模块>30
-2. 触发时机: 项目分析阶段
-3. 主要策略: CHANGELOG/modules/archive分片
-</scaling_summary>
-
 ```yaml
 核心要点:
-  判定条件: 源文件>500 或 代码行>50000 或 模块>30
+  判定条件: 按 G9 "大型项目判定" 条件执行
   触发时机: 项目分析阶段时自动评估
   主要策略: CHANGELOG按年份分片、modules按类型分类、archive按年份索引
-
-读取策略:
-  - 先读索引文件快速定位
-  - 按需加载具体文档
-  - 避免一次性读取所有文件
+  详细规则: 见 references/rules/scaling.md
 ```
 </large_project_scaling>
 

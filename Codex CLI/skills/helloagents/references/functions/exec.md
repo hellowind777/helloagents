@@ -22,53 +22,25 @@
 <mode_adaptation>
 ~exec 模式适配规则:
 1. 本命令使用 DIRECT 入口模式，跳过评估和设计阶段
-2. 默认保持 INTERACTIVE 工作流模式
-3. 直接从方案包进入开发实施阶段
-4. Overview 类型方案包需特殊处理（归档而非执行）
-5. develop 阶段自动按需调用子代理（按 G8/G9 规则）
+2. 评估深度: 轻量评估（无评分追问）
+3. 默认保持 INTERACTIVE 工作流模式
+4. 直接从方案包进入开发实施阶段
+5. Overview 类型方案包需特殊处理（归档而非执行）
+6. develop 阶段自动按需调用子代理（按 G9/G10 规则）
 </mode_adaptation>
-
----
-
-## 子代理自动调用
-
-> 📌 规则引用: 按 G8 "子代理编排" + G9 "跨CLI兼容规则" 执行
-
-```yaml
-调用原则:
-  - 满足触发条件时自动调用，无需用户干预
-  - 子代理结果自动折叠后返回阶段继续流程
-
-develop 阶段调用规则:
-  implementer:
-    - 单任务预估 > 50 行代码
-    - 涉及 ≥ 3 个文件
-    - tasks.md 标记为 complexity: high
-  reviewer:
-    - 修改核心模块
-    - 涉及安全相关代码
-    - 涉及 EHRB
-  tester:
-    - 新增公共 API
-    - 修改现有测试覆盖的代码
-    - tasks.md 要求测试
-
-执行方式:
-  - 通过 Task 工具启动子代理
-  - 子代理独立上下文执行
-  - 结果折叠后返回主流程
-```
 
 ---
 
 ## 执行流程
 
-### 步骤1: 设置状态变量
+### 步骤1: 轻量评估
 
 ```yaml
-执行内容:
+设置状态变量:
   - STAGE_ENTRY_MODE = DIRECT
   - WORKFLOW_MODE = INTERACTIVE（保持默认）
+
+执行规则: 按 G4 "需求评估规则"执行（轻量评估），按 G3 场景内容规则（需求评估）输出
 ```
 
 ### 步骤2: 扫描方案包
@@ -76,13 +48,6 @@ develop 阶段调用规则:
 > 脚本路径、存在性检查、错误恢复规则见 references/rules/tools.md
 
 **脚本调用:** `list_packages.py`
-
-<package_scan_analysis>
-方案包扫描推理过程:
-1. 扫描 helloagents/plan/ 目录
-2. 统计有效方案包数量
-3. 根据数量和命令参数决定选择策略
-</package_scan_analysis>
 
 ```yaml
 扫描范围: helloagents/plan/ 目录
@@ -93,51 +58,31 @@ develop 阶段调用规则:
   多个方案包:
     - 如命令指定了方案包名称: 匹配并选择
     - 如未指定: 按 G3 场景内容规则（确认）输出，等待用户选择
+
+验证方案包完整性:
+  检查必需文件:
+    - proposal.md（存在且非空）
+    - tasks.md（存在且至少1个任务项）
+  验证失败: 按 G3 场景内容规则（错误）输出，流程终止
+
+检查方案包类型:
+  读取: proposal.md 判断类型
+  implementation 类型: 继续执行开发实施阶段
+  overview 类型: 按 G6 "overview类型处理" 规则执行
 ```
 
-### 步骤3: 验证方案包完整性
+> 📌 规则引用: 按 G6 "方案包类型" 规则执行
 
-<package_validation_analysis>
-方案包验证推理过程:
-1. 检查 proposal.md 存在性和非空性
-2. 检查 tasks.md 存在性和任务项数量
-3. 判定方案包是否满足执行条件
-</package_validation_analysis>
-
-```yaml
-检查必需文件:
-  - proposal.md（存在且非空）
-  - tasks.md（存在且至少1个任务项）
-
-验证失败: 按 G3 场景内容规则（错误）输出，流程终止
-```
-
-### 步骤4: 检查方案包类型
-
-<package_type_analysis>
-方案包类型判定推理过程:
-1. 读取 proposal.md 内容
-2. 识别方案包类型（implementation/overview）
-3. 根据类型决定后续处理路径
-</package_type_analysis>
-
-```yaml
-读取: proposal.md 判断类型
-
-implementation 类型: 继续执行开发实施阶段
-overview 类型: 按"Overview 类型处理"规则执行
-```
-
-### 步骤5: 开发实施
+### 步骤3: 开发实施
 
 ```yaml
 执行规则: 读取并执行 references/stages/develop.md
 ```
 
-### 步骤6: 流程级验收
+### 步骤4: 后续操作
 
 ```yaml
-执行规则: 按 G7 "流程级验收规则" 执行（验收内容详见 G7）
+执行规则: 按 G8 "流程级验收规则" 执行（验收内容详见 G8）
 
 遗留方案包扫描:
   执行规则: 按 G6 "遗留方案包扫描" 执行
@@ -178,8 +123,6 @@ overview 类型: 按"Overview 类型处理"规则执行
 ---
 
 ## 用户选择处理
-
-> 本章节定义 ~exec 命令需要用户确认的场景，供 G3 输出格式统一提取。
 
 ### 场景: 方案包选择（多个方案包）
 

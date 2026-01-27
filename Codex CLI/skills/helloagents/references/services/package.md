@@ -80,12 +80,7 @@
   6. 追加执行日志（最近5条）
   7. 写回 tasks.md
 
-状态符号映射:
-  pending: [ ]
-  completed: [√]
-  failed: [X]
-  skipped: [-]
-  needs_confirm: [?]
+状态符号: 按 G6 "任务状态符号" 定义
 
 返回值:
   success: boolean
@@ -113,11 +108,7 @@
   4. 更新 LIVE_STATUS 区域
   5. 追加执行日志（最近5条）
 
-LIVE_STATUS 区域格式:
-  <!-- LIVE_STATUS_BEGIN -->
-  状态: {running|paused|completed|failed} | 进度: {完成数}/{总数} ({百分比}%) | 更新: {HH:MM:SS}
-  当前: {正在执行的任务描述}
-  <!-- LIVE_STATUS_END -->
+LIVE_STATUS 区域格式: 按 G11 "活状态区格式" 定义
 
 返回值:
   success: boolean

@@ -62,7 +62,7 @@ IF WORKFLOW_MODE = INTERACTIVE:
     用户选择方案后:
       IF 方案包类型 = overview:
         说明: overview类型方案包不进入开发实施阶段
-        执行: 按 references/services/package.md "Overview类型方案包生命周期" 处理
+        处理: 直接归档（交互模式询问用户，静默模式自动归档）
         后续: 归档方案包 → 输出完成 → 状态重置
       ELSE:
         设置: CURRENT_STAGE = DEVELOP
@@ -134,29 +134,17 @@ IF WORKFLOW_MODE = AUTO_PLAN:
 ```yaml
 知识库检查: 使用 analyze.md 已设置的 KB_SKIPPED 值（按 G1 "KB_SKIPPED 变量生命周期" 传递）
 项目上下文获取:
-  - KB_SKIPPED = false: 按 references/services/knowledge.md "项目上下文获取策略" 读取
+  - KB_SKIPPED = false: 从知识库读取（INDEX.md, context.md, modules/）
   - KB_SKIPPED = true: 直接扫描代码库
 ```
 
 **2.2 项目规模判定**
 
-<project_scale_rules>
-
-按 references/rules/scaling.md 规则判定，影响任务拆分粒度、文档创建策略、处理批次大小。
-
-</project_scale_rules>
+> 📌 规则引用: 按 G9 "大型项目判定" 条件执行，影响任务拆分粒度、文档创建策略、处理批次大小。
 
 ### 步骤3: 分析判定
 
 **3.1 项目场景判定**
-
-<project_context_analysis>
-
-**推理过程（在 thinking 中完成）:**
-1. 判断是新项目还是现有项目
-2. 确定执行原则和填充深度
-
-</project_context_analysis>
 
 ```yaml
 项目场景:
@@ -192,16 +180,6 @@ IF WORKFLOW_MODE = AUTO_PLAN:
 
 **3.3 任务复杂度判定**
 
-<task_complexity_analysis>
-
-**推理过程（在 thinking 中完成）:**
-1. 检查是否为新项目初始化或重大功能重构
-2. 分析是否涉及架构决策或技术选型
-3. 评估是否存在多种实现路径
-4. 判断影响范围（模块数、文件数）
-
-</task_complexity_analysis>
-
 ```yaml
 满足任一条件为复杂任务（标准开发）:
   - 新项目初始化或重大功能重构
@@ -213,55 +191,9 @@ IF WORKFLOW_MODE = AUTO_PLAN:
 
 ### 步骤4: 方案构思与评估（仅标准开发/复杂任务）
 
-**子代理调用规则（按 G8 "子代理编排" + G9 "跨CLI兼容规则"）:**
-
-```yaml
-# ===== 强制调用 (MUST) =====
-# 标准开发模式下的方案设计必须调用子代理
-
-调用规则分类: 强制调用 (MUST)
-
-条件: 标准开发 + 候选方案 >= 2
-规则: 必须并行调用多个 analyzer，每个方案一个
-目的: 确保方案经过深度分析，避免草率决策
-
-调用方式:
-  1. 为每个候选方案创建独立的 analyzer 子代理
-  2. 并行执行可行性分析
-  3. 收集所有分析结果后进行对比
-
-调用 synthesizer 条件（按需调用）:
-  - 需要综合 3+ 维度对比方案
-  - 多个 analyzer 结果需要合并
-  调用方式: 在所有 analyzer 完成后调用
-
-降级处理:
-  子代理调用失败时:
-    - 主代理降级为直接执行
-    - 在 tasks.md 中标注 "[降级执行]"
-    - 记录降级原因
-```
-
-<solution_design_reasoning>
-
-**推理过程（在 thinking 中完成）:**
-1. 理解核心问题: 明确要解决什么问题，约束条件是什么
-2. 探索技术路径: 列举所有可能的实现方式
-3. 评估可行性: 逐一分析每个路径的技术可行性
-4. 生成候选方案: 筛选出 2-3 个最可行的方案
-
-</solution_design_reasoning>
+> 📌 规则引用: 子代理调用按 G9 "子代理编排 - DESIGN" + G10 "跨CLI兼容规则" 执行
 
 **方案评估标准:** 优点、缺点、性能影响、可维护性、实现复杂度、风险评估（含EHRB）、成本估算、是否符合最佳实践
-
-<solution_comparison>
-
-**推理过程（在 thinking 中完成）:**
-1. 逐一评估每个方案的优缺点、风险、成本
-2. 横向对比各方案的关键差异
-3. 确定推荐方案及理由
-
-</solution_comparison>
 
 ```yaml
 标准开发（强制方案对比）:
@@ -301,14 +233,6 @@ IF WORKFLOW_MODE = AUTO_PLAN:
 
 **脚本执行报告处理:**
 
-<script_report_handling>
-脚本执行报告处理流程:
-1. 解析脚本输出的 JSON 执行报告
-2. success=true 时继续后续步骤
-3. success=false 时按 tools.md "AI降级接手流程" 执行
-4. 质量检查 completed 步骤后再继续
-</script_report_handling>
-
 ```yaml
 解析 create_package.py 输出:
   success=true:
@@ -337,7 +261,7 @@ IF WORKFLOW_MODE = AUTO_PLAN:
 
 ### 步骤6: 方案包验收
 
-> 按 G7 阶段验收标准（plan）执行
+> 按 G8 阶段验收标准（plan）执行
 > 脚本路径、存在性检查、错误恢复规则见 references/rules/tools.md
 
 ```yaml

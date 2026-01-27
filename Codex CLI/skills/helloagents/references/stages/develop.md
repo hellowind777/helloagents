@@ -93,7 +93,7 @@ STAGE_ENTRY_MODE = DIRECT（~exec命令直接进入）:
 执行阶段完成后:
   步骤1: 执行步骤15遗留方案包扫描（如有遗留方案包则显示提示）
   步骤2: 执行流程级验收
-    验收规则: 按 G7 "流程级验收规则" 执行
+    验收规则: 按 G8 "流程级验收规则" 执行
     验收内容: 交付物验收 + 需求符合性 + 问题汇总
   步骤3: 输出完成结果
     输出: 按 G3 场景内容规则（完成）输出
@@ -140,12 +140,13 @@ STAGE_ENTRY_MODE = DIRECT（~exec命令直接进入）:
 
 ### 步骤2: 检查方案包类型（CRITICAL）
 
-按 G6 "方案包类型" 和 references/services/package.md "Overview 类型方案包生命周期" 规则执行。
+按 G6 "方案包类型" 规则执行。
 
 ```yaml
 读取 CURRENT_PACKAGE/proposal.md 判断方案包类型
 
 IF 类型 = overview（概述文档）:
+  说明: overview类型方案包无执行任务，直接归档
   交互确认模式:
     按 G3 场景内容规则（确认）输出
 
@@ -182,15 +183,15 @@ KB_SKIPPED 状态来源:
 
 ```yaml
 前置条件: KB_SKIPPED = false
-执行: 按 G1 "KB开关检查规则" + references/services/knowledge.md 处理
+执行: 按 G1 "KB开关检查规则" 处理知识库状态
 ```
 
 ### 步骤5: 读取知识库并获取项目上下文
 
 ```yaml
 执行方式:
-  - 按 references/services/knowledge.md "项目上下文获取策略" 执行
-  - 先检查知识库 → 不足则扫描代码库
+  - KB_SKIPPED = false: 从知识库读取（INDEX.md, context.md, modules/）
+  - KB_SKIPPED = true 或知识库不足: 直接扫描代码库
 ```
 
 ### 步骤6: 读取当前方案包
@@ -202,34 +203,7 @@ KB_SKIPPED 状态来源:
 
 ### 步骤7: 按任务清单执行代码改动
 
-**子代理调用规则（按 G8 "子代理编排" + G9 "跨CLI兼容规则"）:**
-
-```yaml
-# ===== 强制调用 (MUST) =====
-# 代码修改必须通过子代理执行
-
-调用规则分类: 强制调用 (MUST)
-
-条件: 任何涉及代码文件的修改
-规则: 必须调用 implementer 执行代码修改
-禁止: 主代理直接使用 Edit/Write 修改代码文件
-
-调用 reviewer 条件（按需调用）:
-  - 变更涉及核心模块
-  - 安全敏感代码（认证、授权、加密等）
-  - 涉及 EHRB 相关操作
-
-调用 tester 条件（按需调用）:
-  - 需要设计新测试用例
-  - 测试覆盖率要求高
-  - 核心功能变更需要回归测试
-
-降级处理:
-  子代理调用失败时:
-    - 主代理降级为直接执行
-    - 在 tasks.md 中标注 "[降级执行]"
-    - 记录降级原因
-```
+> 📌 规则引用: 子代理调用按 G9 "子代理编排 - DEVELOP" + G10 "跨CLI兼容规则" 执行
 
 ```yaml
 执行规则:
@@ -295,7 +269,7 @@ LIVE_STATUS 区域格式（在 tasks.md 中）:
 
 ### 步骤9: 测试执行与验证
 
-> 测试分级按 G7 验收分级定义执行
+> 测试分级按 G8 验收分级定义执行
 
 ```yaml
 测试策略:
@@ -334,31 +308,17 @@ LIVE_STATUS 区域格式（在 tasks.md 中）:
 
 ### 步骤10: 同步更新知识库
 
-**子代理调用规则（按 G8 "子代理编排" + G9 "跨CLI兼容规则"）:**
+> 📌 规则引用: syncer 子代理调用按 G9 "子代理编排 - DEVELOP" + G10 "跨CLI兼容规则" 执行
 
 ```yaml
 前置检查: IF KB_SKIPPED = true → 跳过此步骤，标注"⚠️ 知识库同步已跳过"
 
-# ===== 按需调用 (SHOULD) =====
-# 知识库同步建议通过子代理执行
-
-调用 syncer 条件（满足任一时调用）:
-  - 变更涉及 > 3 个知识库文件
-  - 需要更新架构图或数据模型
-  - 变更涉及 API 文档
-
-调用方式:
-  满足条件: 通过子代理执行知识库同步
-  不满足条件: 主代理直接执行
-
-降级处理:
-  子代理调用失败时:
-    - 主代理降级为直接执行
-    - 在 tasks.md 执行日志中标注 "[降级执行]"
-
 重要: 必须在步骤14迁移方案包前完成方案包内容读取
 
-执行方式: 按 references/services/knowledge.md "知识库同步" 规则执行
+同步内容:
+  必须同步: modules/{模块名}.md（职责、接口、行为规范）、modules/_index.md
+  按需同步: context.md（技术栈变化时）、INDEX.md（结构重大变化时）
+同步原则: 代码是唯一真实来源，最小变更，术语与代码一致
 ```
 
 ### 步骤11: 更新 CHANGELOG.md（始终执行）
@@ -371,8 +331,13 @@ LIVE_STATUS 区域格式（在 tasks.md 中）:
   - KB_CREATE_MODE = 0 时: 仅创建 helloagents/ 和 CHANGELOG.md（不创建完整知识库）
   - KB_CREATE_MODE = 1/2/3 时: 正常创建
 
-格式规范: 按 references/services/knowledge.md "CHANGELOG更新规则" 执行
-版本号管理: 按 references/services/knowledge.md "CHANGELOG更新规则" 中的版本号管理规则执行
+格式规范:
+  记录格式: ## [X.Y.Z] - YYYY-MM-DD → ### 分类 → - **[模块名]**: 描述 + 方案链接 + 决策引用
+  分类: 新增/修复/变更/移除
+  方案链接: 使用相对路径指向 archive/ 中的方案包
+版本号管理:
+  获取优先级: 用户指定 > 主模块解析 > Git标签 > CHANGELOG递增
+  自动递增: 破坏性→Major+1, 新功能→Minor+1, 修复→Patch+1
 
 与微调模式的区别:
   开发实施阶段: 始终记录CHANGELOG（有方案包，必须有变更记录）
@@ -384,15 +349,6 @@ LIVE_STATUS 区域格式（在 tasks.md 中）:
 ```yaml
 前置检查: IF KB_SKIPPED = true → 跳过此步骤，标注"⚠️ 一致性审计已跳过"
 ```
-
-<consistency_audit>
-
-**推理过程（在 thinking 中完成）:**
-1. 检查完整性: 文档是否涵盖所有模块，必备文件和图表是否齐全
-2. 检查一致性: API/数据模型与代码是否一致，是否有遗漏、重复、死链
-3. 发现不一致时，判断修正方向（代码优先还是文档优先）
-
-</consistency_audit>
 
 **审计时机:** 执行阶段完成知识库操作后立即执行
 
@@ -454,14 +410,6 @@ LIVE_STATUS 区域格式（在 tasks.md 中）:
 **目录/文件创建:** 按 G1 "目录/文件自动创建规则" 执行。
 
 **脚本执行报告处理:**
-
-<script_report_handling>
-脚本执行报告处理流程:
-1. 解析脚本输出的 JSON 执行报告
-2. success=true 时继续后续步骤
-3. success=false 时按 tools.md "AI降级接手流程" 执行
-4. 质量检查 completed 步骤后再继续
-</script_report_handling>
 
 ```yaml
 解析 migrate_package.py 输出:

@@ -12,7 +12,7 @@ metadata:
 > 本文件在用户显式调用技能时加载（/helloagents 或 $helloagents）。
 > 核心规则在主配置中定义，本文件定义显式调用时的响应规则。
 
-**路径基准:** `SKILL_ROOT: skills/helloagents/` — 本文件及子模块中的相对路径（references/、scripts/、assets/）需添加此前缀。
+> 📌 路径基准: SKILL_ROOT、SCRIPT_DIR、TEMPLATE_DIR 由 G7 推断规则确定
 
 ---
 
@@ -60,25 +60,25 @@ metadata:
 
 > 脚本调用规范（路径变量、存在性检查、错误恢复）见 references/rules/tools.md
 
-脚本位于 scripts/ 目录，调用时使用 `-X utf8` 确保编码正确：
+脚本位于 `{SCRIPT_DIR}` 目录，调用时使用 `-X utf8` 确保编码正确：
 
 ```yaml
-知识库工具: python -X utf8 "scripts/upgradewiki.py" --scan | --init | --backup | --write <plan.json>
-方案包验证: python -X utf8 "scripts/validate_package.py" [<package-name>]
-方案包创建: python -X utf8 "scripts/create_package.py" "<feature>" [--type <implementation|overview>]
-方案包迁移: python -X utf8 "scripts/migrate_package.py" "<package-name>" [--status <completed|skipped>] [--all]
-方案包列表: python -X utf8 "scripts/list_packages.py" [--format <table|json>]
-项目统计: python -X utf8 "scripts/project_stats.py" [--path <项目路径>]
+知识库工具: python -X utf8 "{SCRIPT_DIR}/upgradewiki.py" --scan | --init | --backup | --write <plan.json>
+方案包验证: python -X utf8 "{SCRIPT_DIR}/validate_package.py" [<package-name>]
+方案包创建: python -X utf8 "{SCRIPT_DIR}/create_package.py" "<feature>" [--type <implementation|overview>]
+方案包迁移: python -X utf8 "{SCRIPT_DIR}/migrate_package.py" "<package-name>" [--status <completed|skipped>] [--all]
+方案包列表: python -X utf8 "{SCRIPT_DIR}/list_packages.py" [--format <table|json>]
+项目统计: python -X utf8 "{SCRIPT_DIR}/project_stats.py" [--path <项目路径>]
 ```
 
 ---
 
 ## 模板资源
 
-模板位于 assets/templates/ 目录，结构与知识库一致：
+模板位于 `{TEMPLATE_DIR}` 目录，结构与知识库一致：
 
 ```yaml
-assets/templates/
+{TEMPLATE_DIR}/
   - INDEX.md              # 知识库入口
   - context.md            # 项目上下文
   - CHANGELOG.md          # 变更日志

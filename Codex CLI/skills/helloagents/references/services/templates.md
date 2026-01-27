@@ -1,6 +1,6 @@
 # 知识库与方案包模板服务
 
-本模块定义模板使用规则，模板文件位于 assets/templates/ 目录。
+本模块定义模板使用规则，模板文件位于 `{TEMPLATE_DIR}` 目录。
 
 ---
 
@@ -22,14 +22,6 @@
 
 <template_validation>
 ## 模板存在性检查
-
-<validation_flow>
-模板存在性检查推理过程:
-1. 构建模板完整路径
-2. 验证模板文件是否存在
-3. 存在则读取内容继续流程
-4. 不存在则进入降级处理
-</validation_flow>
 
 **检查时机:** 使用模板前必须验证
 
@@ -117,7 +109,7 @@ tasks.md:
 
 ## 模板文件索引
 
-### 知识库模板 (assets/templates/)
+### 知识库模板 ({TEMPLATE_DIR})
 
 | 模板路径 | 生成路径 | 用途 |
 |---------|---------|------|
@@ -129,7 +121,7 @@ tasks.md:
 | modules/module.md | helloagents/modules/{模块名}.md | 模块文档 |
 | archive/_index.md | helloagents/archive/_index.md | 归档索引 |
 
-### 方案包模板 (assets/templates/plan/)
+### 方案包模板 ({TEMPLATE_DIR}/plan/)
 
 | 模板路径 | 生成路径 | 用途 |
 |---------|---------|------|
@@ -141,14 +133,6 @@ tasks.md:
 ## 模板章节结构
 
 > 标注"必须"的章节在填充时必须包含，标注"可选"的章节按需填充
-
-<chapter_structure>
-模板章节结构规范:
-1. proposal.md: 元信息+需求+方案为必须，技术设计/核心场景/技术决策为可选
-2. tasks.md: 执行状态+任务列表+执行备注全部必须
-3. module.md: 职责+行为规范+依赖关系为必须，接口定义为可选
-4. context.md: 前5章必须，技术债务可选
-</chapter_structure>
 
 ```yaml
 proposal.md:
@@ -271,16 +255,9 @@ archive/_index.md:
 
 ### 创建知识库
 
-<kb_creation_rules>
-知识库创建规则:
-1. 读取 assets/templates/ 下的模板文件
-2. 根据项目实际情况填充占位符
-3. 写入用户项目的 helloagents/ 目录
-</kb_creation_rules>
-
 ```yaml
 步骤:
-  1. 读取 assets/templates/ 下的模板文件
+  1. 读取 {TEMPLATE_DIR} 下的模板文件
   2. 根据项目实际情况填充占位符内容
   3. 写入用户项目的 helloagents/ 目录
 
@@ -289,16 +266,9 @@ archive/_index.md:
 
 ### 创建方案包
 
-<package_creation_rules>
-方案包创建规则:
-1. 读取 assets/templates/plan/ 下的模板文件
-2. 根据需求实际情况填充占位符
-3. 写入 helloagents/plan/{YYYYMMDDHHMM}_{feature}/ 目录
-</package_creation_rules>
-
 ```yaml
 步骤:
-  1. 读取 assets/templates/plan/ 下的模板文件
+  1. 读取 {TEMPLATE_DIR}/plan/ 下的模板文件
   2. 根据需求实际情况填充占位符内容
   3. 写入 helloagents/plan/{YYYYMMDDHHMM}_{feature}/ 目录
 
@@ -327,15 +297,6 @@ archive/_index.md:
 ```
 
 ### 技术决策章节（何时需要写）
-
-<decision_criteria>
-技术决策章节判定规则:
-1. 涉及架构变更时需要写
-2. 涉及技术选型时需要写
-3. 存在多种实现路径需权衡时需要写
-4. 有长期影响的技术约束时需要写
-5. 简单修复和明确实现不需要写
-</decision_criteria>
 
 ```yaml
 需要写:

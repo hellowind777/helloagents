@@ -8,9 +8,8 @@
 
 ```yaml
 规则名称: 工具调用规则
-适用范围: 所有涉及脚本调用和内部模块调用的场景
+适用范围: 所有涉及脚本调用的场景
 核心职责:
-  - 定义内部模块调用入口和识别规则
   - 规范脚本调用格式和路径
   - 管理脚本存在性检查和降级处理
   - 定义错误恢复机制
@@ -18,26 +17,9 @@
 
 ---
 
-<module_gate>
-## 内部模块调用门控
+## 模块加载
 
-**命名空间:** `helloagents`
-
-**你的职责:** 通过路由机制统一调度内部模块，确保执行流程的完整性和可追溯性。
-
-<module_identification>
-内部模块特征定义:
-1. 位于 skills/helloagents/ 目录下的 .md 文件
-2. 通过 G4 路由机制触发
-3. 通过命令触发词（~auto/~plan/~exec等）触发
-4. 通过模块间相互引用触发
-</module_identification>
-
-**内部模块识别:**
-- 位于 `skills/helloagents/` 目录下的 `.md` 文件
-
-**调用入口:** G4 路由机制、命令触发词（~auto/~plan/~exec等）、模块间相互引用
-</module_gate>
+> 📌 规则引用: 模块路径规则、SKILL_ROOT 推断规则、按需读取规则见 G7，始终生效
 
 ---
 
@@ -46,21 +28,9 @@
 
 ### 路径基准
 
-```yaml
-SKILL_ROOT: skills/helloagents/        # SKILL.md 所在目录
-SCRIPT_DIR: {SKILL_ROOT}/scripts/      # 脚本目录
-TEMPLATE_DIR: {SKILL_ROOT}/assets/templates/  # 模板目录
-```
+> 📌 SKILL_ROOT、SCRIPT_DIR、TEMPLATE_DIR 定义见 G7 路径拼接规则
 
 ### 调用格式
-
-<script_call_rules>
-脚本调用规则:
-1. 始终使用绝对路径
-2. 路径使用双引号包裹
-3. 项目路径为可选参数
-4. 不指定项目路径时使用当前工作目录
-</script_call_rules>
 
 ```yaml
 标准格式: python -X utf8 "{SCRIPT_DIR}/{脚本名}.py" [<项目路径>] [<其他参数>]
@@ -69,13 +39,6 @@ TEMPLATE_DIR: {SKILL_ROOT}/assets/templates/  # 模板目录
 ```
 
 ### 项目路径确定规则
-
-<path_determination>
-项目路径确定推理过程:
-1. 默认使用CLI当前打开的路径（cwd）
-2. 用户明确指定时使用用户指定的路径
-3. 上下文不明确时追问用户确认
-</path_determination>
 
 ```yaml
 优先级:
@@ -138,15 +101,6 @@ upgradewiki.py:
 
 **检查时机:** 调用脚本前必须验证
 
-<existence_check>
-脚本存在性检查流程:
-1. 构建完整脚本路径
-2. 验证脚本是否存在
-3. 存在则继续执行，不存在则进入降级处理
-4. 执行脚本并捕获输出
-5. 成功则继续流程，失败则进入错误恢复
-</existence_check>
-
 ```yaml
 步骤1 - 构建完整脚本路径:
   路径: {SCRIPT_DIR}/{脚本名}.py
@@ -208,15 +162,6 @@ upgradewiki.py:
 ```
 
 **AI 降级接手流程:**
-
-<ai_takeover_flow>
-AI降级接手推理过程:
-1. 解析脚本输出的 JSON 执行报告
-2. 识别 success=false 表示需要接手
-3. 质量检查 completed 中已完成的步骤
-4. 发现问题则修复
-5. 按 pending 列表继续完成剩余任务
-</ai_takeover_flow>
 
 ```yaml
 步骤1 - 解析执行报告:
@@ -283,14 +228,6 @@ validate_package.py:
 
 **脚本执行失败时:**
 
-<script_error_handling>
-脚本错误分类处理:
-1. 环境错误: 尝试python3替代，仍失败则降级
-2. 依赖错误: 降级为内置逻辑
-3. 路径错误: 创建目录重试或提示用户处理
-4. 运行时错误: 分析可恢复性，决定降级或暂停
-</script_error_handling>
-
 ```yaml
 错误分类与恢复策略:
   环境错误（Python未安装/版本不兼容）:
@@ -314,13 +251,6 @@ validate_package.py:
 ```
 
 **文件操作失败时:**
-
-<file_error_handling>
-文件操作错误处理:
-1. 写入失败: 检查目录、检查冲突、重试一次
-2. 读取失败: 检查路径、根据必要性决定处理方式
-3. 目录创建失败: 检查父目录和权限
-</file_error_handling>
 
 ```yaml
 写入失败:
