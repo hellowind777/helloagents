@@ -50,13 +50,13 @@
     直接继续执行下方流程（无需额外确认）
 ```
 
-<kb_status_analysis>
-知识库状态检测推理过程:
+<kb_status_check>
+知识库状态检测步骤:
 1. 检查 helloagents/ 目录是否存在
 2. 检查核心文件完整性
 3. 对比当前结构与框架标准
 4. 判定处理路径（全新创建/升级/补全/重建）
-</kb_status_analysis>
+</kb_status_check>
 
 ```yaml
 检测现有知识库状态:
@@ -82,7 +82,7 @@
 ```
 
 <techstack_detection>
-技术栈识别推理过程:
+技术栈识别步骤:
 1. 扫描根目录配置文件（package.json, pyproject.toml, pom.xml等）
 2. 分析源代码文件扩展名分布
 3. 检查框架特征文件（如 next.config.js, vite.config.ts）

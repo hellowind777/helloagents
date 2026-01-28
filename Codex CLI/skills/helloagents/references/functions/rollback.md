@@ -39,16 +39,16 @@
 
 ### 步骤2: 扫描回滚来源
 
-<rollback_source_analysis>
-回滚来源分析推理过程:
+<rollback_source_check>
+回滚来源分析步骤:
 1. 检测项目是否使用Git且有提交历史
 2. 检查archive/中是否存在可回滚的方案包
 3. 分析CHANGELOG.md中的版本历史记录
 4. 确定最佳回滚来源（优先Git，备选方案包/CHANGELOG）
-</rollback_source_analysis>
+</rollback_source_check>
 
 <rollback_impact_assessment>
-回滚影响评估推理过程:
+回滚影响评估步骤:
 1. 分析目标版本与当前版本的差异
 2. 识别将被覆盖的文件和变更
 3. 评估回滚对依赖模块的影响

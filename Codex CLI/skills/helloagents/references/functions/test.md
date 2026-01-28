@@ -54,14 +54,14 @@
 
 ### 步骤3: 执行测试
 
-<test_result_analysis>
-测试结果分析推理过程:
+<test_result_check>
+测试结果分析步骤:
 1. 解析测试输出获取通过/失败/跳过统计
 2. 提取失败测试的文件路径和行号
 3. 分析错误信息确定失败原因
 4. 判断是否为阻断性测试失败
 5. 生成修复建议
-</test_result_analysis>
+</test_result_check>
 
 ```yaml
 执行内容:

@@ -51,14 +51,14 @@
 
 ### 步骤3: 执行验证
 
-<validation_analysis>
-验证分析推理过程:
+<validation_check>
+验证分析步骤:
 1. 检查核心文件存在性和完整性
 2. 对比文档与代码的接口/数据模型一致性
 3. 扫描空文件、死链、格式问题
 4. 检测敏感信息泄露风险
 5. 按严重程度分级问题（Critical/Warning/Info）
-</validation_analysis>
+</validation_check>
 
 ```yaml
 验证知识库（如在范围内）:
