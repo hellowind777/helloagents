@@ -356,7 +356,7 @@ LIVE_STATUS 区域格式（在 tasks.md 中）:
 1. **完整性**: 文档涵盖所有模块，必备文件和图表齐全
 2. **一致性**: API/数据模型与代码一致，无遗漏、重复、死链
 
-<truth_priority_reasoning>
+<truth_priority_rules>
 
 **真实性优先级（冲突解决机制）:**
 ```
@@ -378,7 +378,7 @@ LIVE_STATUS 区域格式（在 tasks.md 中）:
    → 如需完整一致性保证，可在后续执行 ~validate 手动验证
 ```
 
-</truth_priority_reasoning>
+</truth_priority_rules>
 
 ### 步骤13: 代码质量分析（可选）
 

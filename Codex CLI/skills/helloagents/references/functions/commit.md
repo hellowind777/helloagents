@@ -65,13 +65,13 @@
     无变更: 按 G3 场景内容规则（完成）输出，提示无需提交
 ```
 
-<change_analysis>
-变更分析推理过程:
+<change_scope>
+变更分析步骤:
 1. 优先使用 git diff origin/{branch}...HEAD 获取与远程的完整差异
 2. 无远程时使用 git diff HEAD 获取本地变更
 3. 新文件(untracked)直接读取文件内容分析
 4. 提取核心改动点，过滤非核心文件
-</change_analysis>
+</change_scope>
 
 ```yaml
 变更分析:
@@ -82,7 +82,7 @@
 ```
 
 <commit_message_generation>
-提交信息生成推理过程:
+提交信息生成步骤:
 1. 基于 diff 内容识别变更类型（feat/fix/refactor等）
 2. 过滤非核心文件（README、LICENSE、配置文件等）
 3. 提取实质性变更作为 summary

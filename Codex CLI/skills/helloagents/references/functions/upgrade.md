@@ -90,8 +90,8 @@
   获取: 知识库目录结构和文件列表（JSON格式）
 ```
 
-<upgrade_content_analysis>
-AI 内容分析推理过程:
+<upgrade_content_check>
+AI 内容分析步骤:
 
 1. 读取源文件内容
    - 对扫描结果中的每个 Markdown 文件，读取其内容
@@ -115,7 +115,7 @@ AI 内容分析推理过程:
    - 列出所有需要的操作（创建、合并、重命名、删除）
    - 标注每个操作的源内容和目标位置
    - 评估风险和注意事项
-</upgrade_content_analysis>
+</upgrade_content_check>
 
 ```yaml
 展示升级计划:
