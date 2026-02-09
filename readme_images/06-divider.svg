@@ -1,13 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="520" height="28" viewBox="0 0 520 28" role="img" aria-label="Divider">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 24">
   <defs>
-    <linearGradient id="d" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#6366F1" stop-opacity="0"/>
-      <stop offset="0.2" stop-color="#6366F1" stop-opacity="0.8"/>
-      <stop offset="0.5" stop-color="#22D3EE" stop-opacity="0.9"/>
-      <stop offset="0.8" stop-color="#6366F1" stop-opacity="0.8"/>
-      <stop offset="1" stop-color="#6366F1" stop-opacity="0"/>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#cbd5e1" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#64748b" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <rect x="10" y="13" width="500" height="2" rx="1" fill="url(#d)"/>
-  <circle cx="260" cy="14" r="6" fill="#111827" stroke="#22D3EE" stroke-width="2"/>
+  <line x1="0" y1="12" x2="420" y2="12" stroke="url(#line)" stroke-width="2"/>
+  <circle cx="210" cy="12" r="4" fill="#2563eb"/>
 </svg>
