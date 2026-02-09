@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" role="img" aria-label="Acceptance icon">
-  <rect x="6" y="6" width="36" height="36" rx="10" fill="#111827"/>
-  <path d="M18 24l4 4 10-10" fill="none" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M16 16h16v16H16z" fill="none" stroke="#6366F1" stroke-width="2" opacity="0.8"/>
-</svg>
