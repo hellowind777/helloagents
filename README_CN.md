@@ -18,7 +18,7 @@
 
 <p align="center">
   <a href="./README.md"><img src="https://img.shields.io/badge/English-blue?style=for-the-badge" alt="English"></a>
-  <a href="./README_CN.md"><img src="https://img.shields.io/badge/中文-blue?style=for-the-badge" alt="中文"></a>
+  <a href="./README_CN.md"><img src="https://img.shields.io/badge/简体中文-blue?style=for-the-badge" alt="简体中文"></a>
 </p>
 
 ---
@@ -221,22 +221,6 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     helloagents clean
 
-### Beta 分支
-
-如需安装 `beta` 分支，在仓库 URL 后追加 `@beta`：
-
-    # 一键脚本
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
-
-    # Windows PowerShell
-    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
-
-    # UV
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
-
-    # pip
-    pip install git+https://github.com/hellowind777/helloagents.git@beta
-
 ### Codex CLI 示例
 
 **首次安装：**
@@ -276,6 +260,22 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 **后续更新（自动同步已安装目标）：**
 
     helloagents update
+
+### Beta 分支
+
+如需安装 `beta` 分支，在仓库 URL 后追加 `@beta`：
+
+    # 一键脚本
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
+
+    # Windows PowerShell
+    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
+
+    # UV
+    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git@beta
 
 ## 工作原理
 
