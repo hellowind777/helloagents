@@ -36,6 +36,18 @@ migrate_package.py:
 
 upgradewiki.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/upgradewiki.py' --scan|--init|--backup|--write <json-file> [--path <路径>]
+
+configure_codex.py:
+  用法: python -X utf8 '{SCRIPTS_DIR}/configure_codex.py' [--path <路径>]
+  说明: Codex CLI 环境配置，非 Codex 环境跳过
+
+session.py:
+  用法: python -X utf8 '{SCRIPTS_DIR}/session.py' --info|--list|--cleanup [<hours>]
+  说明: RLM Session 管理
+
+shared_tasks.py:
+  用法: python -X utf8 '{SCRIPTS_DIR}/shared_tasks.py' --status|--list|--available|--claim <id> --owner <sid>|--complete <id>|--add '<subject>' [--blocked-by <ids>]
+  说明: 多终端协作任务管理，需 hellotasks 环境变量
 ```
 
 ### 脚本存在性检查

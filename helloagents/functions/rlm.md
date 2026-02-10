@@ -50,7 +50,13 @@ RLM（Recursive Language Model）— 子代理编排与多终端协作。
 
 ```yaml
 触发: "context compacted" 提示 | 用户说"重新加载规则" | ~rlm reload
-流程: 重新读取规则文件 → 重新读取 tasks.md（如有）→ 输出确认
+
+输出: 确认（将重新加载规则文件+当前状态）
+⛔ END_TURN
+
+用户确认后:
+  继续: 重新读取规则文件 → 重新读取 tasks.md（如有）→ 输出完成
+  取消: → 状态重置
 ```
 
 ---
@@ -64,11 +70,13 @@ RLM（Recursive Language Model）— 子代理编排与多终端协作。
 
 流程:
   1. 验证角色名称有效性
-  2. 加载角色预设文件: {HELLOAGENTS_ROOT}/rlm/roles/{role}.md [阻塞式]
-  3. 按 G9/G10 规则选择子代理通道（原生优先，降级为主上下文执行）
-  4. 启动子代理 → 等待完成 → 返回结果
+  2. 角色无效时: 输出: 错误（可用角色列表+典型任务）
+  3. 输出: 确认（角色+任务描述+执行通道）
+     ⛔ END_TURN
+  4. 用户确认后:
+       继续: 加载角色预设 → 启动子代理 → 等待完成 → 返回结果
+       取消: → 状态重置
 
-角色无效时: 输出: 错误（可用角色列表+典型任务）
 输出: 完成（角色+任务+结果状态+关键发现+变更+建议）
 ```
 
@@ -103,8 +111,16 @@ RLM（Recursive Language Model）— 子代理编排与多终端协作。
 
 ```yaml
 参数: hours（清理超过N小时的Sessions，默认24）
-脚本: session.py --cleanup {hours}
-输出: 完成（已清理数量+保留当前Session）
+
+扫描: session.py --list → 获取 Sessions 总数和符合清理条件的数量
+
+输出: 确认（符合条件{N}个/共{M}个Sessions+清理范围: 超过{hours}小时）
+⛔ END_TURN
+
+用户确认后:
+  继续: 脚本 session.py --cleanup {hours} → 输出完成（已清理数量+保留当前Session）
+  取消: → 状态重置
+
 说明: 当前 Session 由 HELLOAGENTS_SESSION_ID 环境变量确定
 ```
 
@@ -117,8 +133,8 @@ RLM（Recursive Language Model）— 子代理编排与多终端协作。
   输出: 确认（重置影响+当前状态）
   ⛔ END_TURN
   用户确认后:
-    确认: 清除会话事件 → 恢复默认
-    取消: 无操作
+    继续: 清除会话事件 → 恢复默认
+    取消: → 状态重置
 输出: 完成（重置结果）
 ```
 

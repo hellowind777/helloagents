@@ -24,5 +24,5 @@
     - ~命令 需求描述 (例: ~auto 修复登录超时并补测试)
     - 或直接描述需求 (系统会自动判定 R0~R3 并执行)
 - 路由机制: 命令路径 (~xxx) / 外部工具路径 (Skill/MCP/插件) / 通用路径 (自动判级执行)
-- 子代理会按复杂度按需调用 (如 explorer、analyzer、implementer、reviewer、tester)
+- 子代理按 G9 复杂度判定强制/跳过调用 (explorer、analyzer、designer、implementer、reviewer、tester 等) [→ G9/G10]
 ```

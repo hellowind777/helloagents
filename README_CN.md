@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.0-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.1-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -57,15 +57,19 @@
 
 ## 与旧仓库相比有哪些变化
 
-相较于旧版多 bundle 发布形态，v2.x 已转为 package-first 形态。
+相较于旧版多 bundle 发布形态，v2.x 已转为 package-first 形态，架构也发生了根本性变化。
 
 | 维度 | 旧仓库 | 当前仓库 |
 |---|---|---|
-| 分发形态 | 多 bundle 目录，如 Codex CLI、Claude Code | 以 helloagents 包为核心，加安装器 CLI |
-| 安装方式 | 手工复制配置与技能目录 | UV 从 GitHub 安装 + helloagents update（分支感知）+ helloagents install &lt;target&gt; |
-| 目标 CLI | 5 个可见 bundle 目标 | 代码内 6 个目标：claude、codex、opencode、gemini、qwen、grok |
-| 安装安全性 | 手工覆盖有风险 | 标记识别、备份、陈旧文件清理 |
-| 工作流来源 | 各 bundle 重复维护 | helloagents/functions、stages、rules、services 单一来源 |
+| 分发形态 | 多 bundle 目录，每个 CLI 一份 | 统一 Python 包 + 安装器 CLI |
+| 安装方式 | 手工复制配置与技能目录 | npm/pip/uv 安装 + `helloagents install <target>` |
+| 路由系统 | 三层路由（Context → Tools → Intent） | 五维度评分路由（R0–R3） |
+| 工作流阶段 | 4 阶段（Evaluate、Analyze、Design、Develop） | 5 阶段（+Tweak），支持子代理调度 |
+| 代理系统 | 无 | RLM 12 个专业角色 + Session 隔离 |
+| 记忆系统 | 无持久化 | 三层记忆：L0 用户、L1 项目知识库、L2 会话 |
+| 安全检测 | 基础 EHRB | 三层 EHRB（关键词 + 语义 + 工具输出） |
+| 目标 CLI | 5 个 | 6 个：claude、codex、opencode、gemini、qwen、grok |
+| 工作流命令 | 12 个 | 15 个 |
 
 > ⚠️ **迁移提醒：** 由于 v2.x 的仓库结构与安装方式已调整，旧版本已迁移到归档仓库：**helloagents-archive**
 > https://github.com/hellowind777/helloagents-archive
@@ -77,40 +81,40 @@
 <td width="50%" valign="top">
 <img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
 
-**Package-first 安装**
+**RLM 子代理编排**
 
-使用 UV 从 GitHub 安装，再用安装命令部署到目标 CLI。
+12 个专业角色（explorer、analyzer、designer、implementer、reviewer、tester 等）按任务复杂度自动调度，每个 CLI 实例独立 Session 隔离。
 
-**收益：** 降低手工复制错误。
+**收益：** 复杂任务由对口专家角色分工处理。
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
 
-**结构化工作流执行**
+**五维度路由（R0–R3）**
 
-路由强制执行 R0 直接响应、R1 快速流程、R2 简化流程、R3 标准流程，并按阶段链推进。
+每条输入按动作需求、目标定位度、决策需求、影响范围、EHRB 风险五个维度评分，路由到 R0 直接响应、R1 快速、R2 简化或 R3 标准流程。
 
-**收益：** 任务不容易半途结束。
+**收益：** 简单问题秒回，复杂任务走完整流程。
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="./readme_images/04-feature-icon-safety.svg" width="48" align="left">
 
-**内置安全闸门（EHRB）**
+**三层安全检测（EHRB）**
 
-高风险操作会在改动前被检测。
+关键词扫描、语义分析、工具输出检测三层拦截破坏性操作，交互模式和委托模式均强制用户确认。
 
-**收益：** 默认更安全。
+**收益：** 零配置的默认安全保护。
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
 
-**多 CLI 兼容**
+**三层记忆模型**
 
-同一工作流核心支持多个 AI CLI。
+L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同步）、L2 会话摘要（阶段切换时自动持久化）。
 
-**收益：** 团队跨工具行为一致。
+**收益：** 上下文跨会话、跨项目延续。
 </td>
 </tr>
 </table>
@@ -119,9 +123,12 @@
 
 - 6 个 CLI 目标来自 helloagents/cli.py
 - 15 个工作流命令来自 helloagents/functions
-- 12 个角色配置来自 helloagents/rlm/roles
+- 12 个 RLM 角色来自 helloagents/rlm/roles
+- 5 个阶段定义来自 helloagents/stages
+- 5 个核心服务来自 helloagents/services
+- 4 个规则模块来自 helloagents/rules
 - 8 个辅助脚本来自 helloagents/scripts
-- 7 类核心模块：functions、stages、services、rules、rlm、scripts、templates
+- 8 个知识库/方案模板来自 helloagents/templates
 
 ## 前后对比（贪吃蛇示例）
 
@@ -148,29 +155,49 @@
 
 ## 快速开始
 
-### 1）使用 UV 从 GitHub 安装
+### 方式 A：一键安装脚本（推荐）
 
-**稳定版（main）：**
+**macOS / Linux：**
+
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
+**Windows PowerShell：**
+
+    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+> 脚本会自动检测 `uv` 或 `pip` 并安装 HelloAGENTS Python 包。重复执行等同于更新。
+
+### 方式 B：UV（隔离环境）
+
+**第 0 步 — 先安装 UV（已安装可跳过）：**
+
+    # Windows PowerShell
+    irm https://astral.sh/uv/install.ps1 | iex
+
+    # macOS / Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+> 安装 UV 后请重启终端，使 `uv` 命令生效。
+
+**安装：**
 
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents
 
-**Beta：**
-
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
-
-### 2）更新包（分支感知）
-
-helloagents update 会在当前分支内检查并更新。
+**更新：**
 
     helloagents update
 
-需要切换分支时：
+### 方式 C：pip（需要 Python >= 3.10）
 
-    helloagents update beta
+**安装：**
 
-    helloagents update main
+    pip install git+https://github.com/hellowind777/helloagents.git
 
-### 3）同步规则到目标 CLI
+**更新：**
+
+    pip install --upgrade git+https://github.com/hellowind777/helloagents.git
+
+### 同步规则到目标 CLI
 
     helloagents install codex
 
@@ -178,57 +205,92 @@ helloagents update 会在当前分支内检查并更新。
 
     helloagents install --all
 
-### 4）验证
+### 验证
 
     helloagents status
 
     helloagents version
 
+### 卸载
+
+    helloagents uninstall codex
+
+    helloagents uninstall --all
+
+### 清理缓存
+
+    helloagents clean
+
+### Beta 分支
+
+如需安装 `beta` 分支，在仓库 URL 后追加 `@beta`：
+
+    # 一键脚本
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | HELLOAGENTS_BRANCH=beta bash
+
+    # Windows PowerShell
+    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # UV
+    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git@beta
+
 ### Codex CLI 示例
 
-**稳定版（main）：**
+**首次安装：**
 
+    # 一键脚本（推荐）
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+    helloagents install codex
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git
+    helloagents install codex
+
+    # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents
     helloagents install codex
+
+**后续更新（自动同步已安装目标）：**
+
     helloagents update
-    helloagents install codex
-
-**Beta：**
-
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
-    helloagents install codex
-    helloagents update beta
-    helloagents install codex
 
 ### Claude Code 示例
 
-**稳定版（main）：**
+**首次安装：**
 
+    # 一键脚本（推荐）
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+    helloagents install claude
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git
+    helloagents install claude
+
+    # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents
     helloagents install claude
+
+**后续更新（自动同步已安装目标）：**
+
     helloagents update
-    helloagents install claude
-
-**Beta：**
-
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
-    helloagents install claude
-    helloagents update beta
-    helloagents install claude
 
 ## 工作原理
 
-1. 安装包并执行安装命令。
-2. 安装器定位目标 CLI 配置目录。
-3. 清理陈旧 HelloAGENTS 文件并复制最新模块。
-4. 创建或更新目标规则文件，并保护用户文件备份。
-5. 在 AI 聊天内由路由选择 R0 直接响应、R1 快速流程、R2 简化流程或 R3 标准流程。
-6. 按阶段链执行并返回可验证结果。
+1. 安装包（脚本/pip/uv）并执行 `helloagents install <target>` 部署规则到目标 CLI。
+2. 在 AI 聊天中，每条输入按五个维度评分并路由到 R0–R3。
+3. R2/R3 任务进入阶段链：EVALUATE → ANALYZE → DESIGN → DEVELOP → TWEAK。
+4. RLM 根据任务复杂度调度专业子代理（如 explorer、designer、implementer）。
+5. EHRB 在每个步骤扫描破坏性操作，高风险行为需用户明确确认。
+6. 三层记忆（用户 / 项目知识库 / 会话）跨会话保持上下文。
+7. 阶段链完成后输出可验证结果，并可选同步知识库。
 
 ## 仓库结构说明
 
 - AGENTS.md：路由与工作流协议
-- pyproject.toml：包元数据（v2.2.0）
+- pyproject.toml：包元数据（v2.2.1）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：analyze、design、develop、tweak
@@ -267,14 +329,14 @@ helloagents update 会在当前分支内检查并更新。
 - Q: 已有规则文件会怎样？
   A: 非 HelloAGENTS 文件会先备份再替换。
 
-- Q: 还需要手工复制 bundle 吗？
-  A: 不需要，v2.x 版本已用安装命令替代手工 bundle 复制。
+- Q: RLM 是什么？
+  A: Role Language Model — 子代理编排系统，12 个专业角色按任务复杂度自动调度。
 
 - Q: 工作流知识库存在哪里？
-  A: 默认在项目内 .helloagents 目录。
+  A: 项目内 `.helloagents/` 目录，代码变更时自动同步。
 
-- Q: 为什么保留贪吃蛇示例图？
-  A: 该示例图用于提供前后效果的稳定可视化对比基准。
+- Q: 记忆能跨会话保持吗？
+  A: 能。L0 用户记忆全局共享，L1 项目知识库按项目存储，L2 会话摘要在阶段切换时自动保存。
 
 ## 故障排除
 
@@ -286,18 +348,25 @@ helloagents update 会在当前分支内检查并更新。
 
 ## 版本历史
 
-### v2.2.0（当前 package 分支）
+### v2.2.1（当前版本）
 
-- 重构为以 helloagents 目录为中心的 package-first 结构
-- 新增安装器命令：install、update、status、version
-- 安装流程加入安全机制：标记检测、备份、陈旧清理
-- 工作流内容收敛到单一来源目录
-- v2 之前的旧版布局已迁移到 https://github.com/hellowind777/helloagents-archive
+- **RLM 子代理系统：** 12 个专业角色，自动调度 + Session 隔离
+- **五维度路由（R0–R3）：** 替代旧版三层路由
+- **五阶段工作流：** 新增 TWEAK 阶段用于迭代微调
+- **三层记忆：** L0 用户偏好、L1 项目知识库、L2 会话摘要
+- **三层 EHRB：** 关键词 + 语义 + 工具输出安全检测
+- **Package-first 安装器：** npm/pip/uv 安装 + `helloagents install <target>`
+- **15 个工作流命令：** 新增 ~rlm、~validate、~status
+- **6 个 CLI 目标：** 新增 OpenCode 支持
+- **知识库服务：** 结构化项目文档，代码变更自动同步
+- **注意力服务：** 活状态跟踪与进度快照
 
 ### v2.0.1（旧多 bundle 基线版本）
 
-- 多 bundle 分发基线版本，安装方式以手工复制为主
-- 各 CLI 目录独立维护
+- 多 bundle 分发，手工复制安装
+- 三层路由（Context → Tools → Intent）
+- 4 个工作流阶段、12 个命令、5 个 CLI 目标
+- 无子代理系统、无持久化记忆
 
 ## 参与贡献
 
@@ -312,5 +381,7 @@ helloagents update 会在当前分支内检查并更新。
 <div align="center">
 
 如果这个项目对你有帮助，欢迎点 Star。
+
+<sub>感谢 <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> 对本项目的支持</sub>
 
 </div>

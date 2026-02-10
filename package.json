@@ -1,0 +1,20 @@
+{
+  "name": "helloagents",
+  "version": "2.2.1",
+  "description": "HelloAGENTS - Multi-CLI AI agent workflow system",
+  "bin": {
+    "helloagents": "./bin/cli.mjs"
+  },
+  "files": [
+    "bin/"
+  ],
+  "keywords": ["ai", "agent", "claude", "codex", "cli", "workflow"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hellowind777/helloagents"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

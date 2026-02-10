@@ -46,22 +46,9 @@
 无独立输出，直接进入下一步
 ```
 
-### 步骤1.5: 执行前确认
-
-```yaml
-输出: 确认（执行前确认：当前目录+操作说明）
-⛔ END_TURN
-
-用户确认后:
-  继续: → 步骤2
-  取消: → 状态重置
-```
-
 ### 步骤2: 环境检测与变更分析
 
 ```yaml
-前置: 步骤1.5用户确认后执行
-
 环境检测:
   命令: git rev-parse --git-dir | git status --porcelain | git remote -v | git branch --show-current
   非 Git 仓库: 输出: 错误，建议 git init
@@ -127,6 +114,8 @@
 ### 步骤4: 后续操作
 
 ```yaml
+L2 会话摘要: 提交完成后写入 [→ services/memory.md L2 写入触发点]
+
 输出内容:
   本地提交: 提交信息摘要 + 提交哈希 + 变更文件数
   提交并推送: 提交信息摘要 + 已推送到 origin/{branch}

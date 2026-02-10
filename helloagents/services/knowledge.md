@@ -207,7 +207,7 @@ KB_CREATE_MODE=1/2/3 且有 {KB_ROOT}/: 更新 CHANGELOG.md
 > 详细规则见 {HELLOAGENTS_ROOT}/rules/scaling.md
 
 ```yaml
-核心: 判定条件按 G9 complex 级别，项目分析阶段评估
+核心: 判定条件按 G9 复杂度判定标准（TASK_COMPLEXITY=complex），项目分析阶段评估
 策略: CHANGELOG按年份分片、modules按类型分类、archive按年份索引
 ```
 
