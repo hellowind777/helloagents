@@ -22,6 +22,14 @@ venv/
 *.swp
 *.swo
 
+# Python caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -186,9 +186,8 @@ def detect_installed_clis() -> list[str]:
 def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
     """Remove stale files from previous HelloAGENTS versions.
 
-    Only removes files that are confirmed to be created by HelloAGENTS
-    (containing the HELLOAGENTS_MARKER). This prevents accidental deletion
-    of user-created files that happen to have the same name.
+    Handles both current-version stale files and legacy (pre-v2.2) remnants.
+    Only removes files confirmed to be HelloAGENTS-related.
 
     Args:
         dest_dir: CLI config directory (e.g. ~/.claude/).
@@ -199,20 +198,28 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
     """
     removed = []
 
-    # All possible rules file names from different CLI targets
+    # --- Legacy v1/v2.0 cleanup: skills/helloagents/ directory ---
+    legacy_skills_dir = dest_dir / "skills" / "helloagents"
+    if legacy_skills_dir.exists():
+        shutil.rmtree(legacy_skills_dir)
+        removed.append(f"{legacy_skills_dir} (legacy)")
+        # Remove skills/ parent if now empty
+        skills_parent = dest_dir / "skills"
+        if skills_parent.exists() and not any(skills_parent.iterdir()):
+            skills_parent.rmdir()
+            removed.append(f"{skills_parent} (empty parent)")
+
+    # --- Current-version stale rules files ---
     all_rules_files = {cfg["rules_file"] for cfg in CLI_TARGETS.values()}
-    # Check for stale rules files that don't belong to this target
     stale_rules = all_rules_files - {current_rules_file}
     for name in stale_rules:
         stale_path = dest_dir / name
         if stale_path.exists() and stale_path.is_file():
-            # Only delete if it's a HelloAGENTS-created file
             if is_helloagents_file(stale_path):
                 stale_path.unlink()
                 removed.append(str(stale_path))
 
-    # Remove __pycache__ directories ONLY under the helloagents plugin dir
-    # This is safe because the entire plugin directory belongs to HelloAGENTS
+    # --- __pycache__ under helloagents plugin dir ---
     plugin_dir = dest_dir / PLUGIN_DIR_NAME
     if plugin_dir.exists():
         for cache_dir in plugin_dir.rglob("__pycache__"):
@@ -250,12 +257,19 @@ def install(target: str) -> bool:
     print(f"Installing HelloAGENTS to {target}...")
     print(f"  Target directory: {dest_dir}")
 
-    # Clean stale files from previous versions
+    # Clean stale files from previous versions (including legacy skills/)
     removed = clean_stale_files(dest_dir, rules_file)
     if removed:
-        print(f"  Cleaned {len(removed)} stale file(s):")
-        for r in removed:
-            print(f"    - {r}")
+        legacy_items = [r for r in removed if "(legacy)" in r]
+        other_items = [r for r in removed if "(legacy)" not in r]
+        if legacy_items:
+            print(f"  Migrated from legacy version: cleaned {len(legacy_items)} old item(s)")
+            for r in legacy_items:
+                print(f"    - {r}")
+        if other_items:
+            print(f"  Cleaned {len(other_items)} stale file(s):")
+            for r in other_items:
+                print(f"    - {r}")
 
     # Remove old module directory completely before copying
     if plugin_dest.exists():
@@ -316,8 +330,129 @@ def install_all() -> bool:
     return True
 
 
+def uninstall(target: str) -> bool:
+    """Uninstall HelloAGENTS from a specific CLI target.
+
+    Removes plugin directory, rules file (if HelloAGENTS-created),
+    and legacy skills/helloagents/ remnants.
+    """
+    if target not in CLI_TARGETS:
+        print(f"Unknown target: {target}")
+        print(f"Available targets: {', '.join(CLI_TARGETS.keys())}")
+        return False
+
+    config = CLI_TARGETS[target]
+    dest_dir = Path.home() / config["dir"]
+    rules_file = config["rules_file"]
+    plugin_dest = dest_dir / PLUGIN_DIR_NAME
+    rules_dest = dest_dir / rules_file
+    removed = []
+
+    if not dest_dir.exists():
+        print(f"  {target}: directory {dest_dir} does not exist, skipping.")
+        return True
+
+    print(f"Uninstalling HelloAGENTS from {target}...")
+
+    # Remove plugin directory
+    if plugin_dest.exists():
+        shutil.rmtree(plugin_dest)
+        removed.append(str(plugin_dest))
+
+    # Remove rules file (only if HelloAGENTS-created)
+    if rules_dest.exists():
+        if is_helloagents_file(rules_dest):
+            rules_dest.unlink()
+            removed.append(str(rules_dest))
+        else:
+            print(f"  Kept {rules_dest} (user-created, not HelloAGENTS)")
+
+    # Remove legacy skills/helloagents/
+    legacy_dir = dest_dir / "skills" / "helloagents"
+    if legacy_dir.exists():
+        shutil.rmtree(legacy_dir)
+        removed.append(f"{legacy_dir} (legacy)")
+        skills_parent = dest_dir / "skills"
+        if skills_parent.exists() and not any(skills_parent.iterdir()):
+            skills_parent.rmdir()
+            removed.append(f"{skills_parent} (empty parent)")
+
+    if removed:
+        print(f"  Removed {len(removed)} item(s):")
+        for r in removed:
+            print(f"    - {r}")
+        print(f"Uninstall complete for {target}.")
+    else:
+        print(f"  {target}: nothing to remove.")
+
+    # Hint about package removal if no targets remain
+    remaining = _detect_installed_targets()
+    if not remaining:
+        method = _detect_install_method()
+        print()
+        print("No installed CLI targets remaining.")
+        print("To also remove the helloagents package itself, run:")
+        if method == "uv":
+            print("  uv tool uninstall helloagents")
+        else:
+            print("  pip uninstall helloagents")
+
+    return True
+
+
+def _detect_install_method() -> str:
+    """Detect whether helloagents was installed via uv or pip.
+
+    Returns:
+        'uv' if installed as a uv tool, 'pip' otherwise.
+    """
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["uv", "tool", "list"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and "helloagents" in result.stdout:
+            return "uv"
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return "pip"
+
+
+def uninstall_all() -> None:
+    """Uninstall HelloAGENTS from all detected CLI targets."""
+    targets = _detect_installed_targets()
+    if not targets:
+        print("No installed CLI targets detected.")
+        return
+
+    print(f"Targets to uninstall: {', '.join(targets)}")
+    for t in targets:
+        uninstall(t)
+        print()
+
+    method = _detect_install_method()
+    print("To also remove the helloagents package itself, run:")
+    if method == "uv":
+        print("  uv tool uninstall helloagents")
+    else:
+        print("  pip uninstall helloagents")
+
+
+def _detect_installed_targets() -> list[str]:
+    """Detect which CLI targets have HelloAGENTS installed (module + rules)."""
+    installed = []
+    for name, config in CLI_TARGETS.items():
+        cli_dir = Path.home() / config["dir"]
+        plugin_dir = cli_dir / PLUGIN_DIR_NAME
+        rules_file = cli_dir / config["rules_file"]
+        if plugin_dir.exists() and rules_file.exists():
+            installed.append(name)
+    return installed
+
+
 def update(switch_branch: str = None) -> None:
-    """Update HelloAGENTS to the latest version.
+    """Update HelloAGENTS to the latest version, then auto-sync installed targets.
 
     Args:
         switch_branch: If provided, switch to this branch (e.g. 'beta', 'main').
@@ -334,24 +469,59 @@ def update(switch_branch: str = None) -> None:
     print(f"Current version: {local_ver}")
     print(f"Branch: {branch}")
 
-    source = f"git+{REPO_URL}" + (f"@{branch}" if branch != "main" else "")
-    cmd = ["uv", "tool", "install", "--from", source, "helloagents", "--force"]
+    branch_suffix = f"@{branch}" if branch != "main" else ""
+    updated = False
+    method = _detect_install_method()
 
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            print(result.stdout.strip() if result.stdout.strip() else "Update complete.")
-            print("\nRun 'helloagents install --all' to sync CLI targets.")
-            return
-        else:
-            stderr = result.stderr.strip()
-            if stderr:
-                print(f"  Error: {stderr}")
-    except FileNotFoundError:
-        print("  Error: uv not found. Please install uv first.")
+    if method == "uv":
+        # Installed via uv → update with uv
+        uv_url = f"git+{REPO_URL}" + branch_suffix
+        uv_cmd = ["uv", "tool", "install", "--from", uv_url, "helloagents", "--force"]
+        try:
+            result = subprocess.run(uv_cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                print(result.stdout.strip() if result.stdout.strip() else "Update complete (uv).")
+                updated = True
+            else:
+                stderr = result.stderr.strip()
+                if stderr:
+                    print(f"  uv error: {stderr}")
+        except FileNotFoundError:
+            print("  Warning: uv not found, falling back to pip.")
 
-    print("Update failed. Try manually:")
-    print(f"  {' '.join(cmd)}")
+    if not updated:
+        # Installed via pip, or uv fallback
+        pip_url = f"git+{REPO_URL}.git" + branch_suffix
+        pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", pip_url]
+        if method == "uv":
+            print("Trying pip fallback...")
+        try:
+            result = subprocess.run(pip_cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                print("Update complete (pip).")
+                updated = True
+            else:
+                stderr = result.stderr.strip()
+                if stderr:
+                    print(f"  pip error: {stderr}")
+        except FileNotFoundError:
+            print("  Error: pip not found.")
+
+    if not updated:
+        pip_url = f"git+{REPO_URL}.git" + branch_suffix
+        print("Update failed. Try manually:")
+        print(f"  pip install --upgrade {pip_url}")
+        return
+
+    # Auto-sync installed targets
+    targets = _detect_installed_targets()
+    if targets:
+        print(f"\nAuto-syncing installed targets: {', '.join(targets)}")
+        for t in targets:
+            print()
+            install(t)
+    else:
+        print("\nNo installed CLI targets detected. Run 'helloagents install <target>' to sync.")
 
 
 def status() -> None:
@@ -381,16 +551,59 @@ def status() -> None:
             status_str = "not detected"
         elif plugin_exists and rules_exists:
             status_str = "installed"
-        elif cli_exists:
-            status_str = "not installed"
-        else:
+        elif plugin_exists or rules_exists:
             status_str = "partial"
+        else:
+            status_str = "not installed"
 
         print(f"  {name:10} [{status_str}]")
         if cli_exists:
             print(f"             Dir: {cli_dir}")
 
     print()
+
+
+def clean() -> None:
+    """Clean caches from all installed CLI targets.
+
+    Removes __pycache__ directories and .pyc files under each
+    CLI's helloagents plugin directory.
+    """
+    targets = _detect_installed_targets()
+    if not targets:
+        print("No installed CLI targets detected. Nothing to clean.")
+        return
+
+    total_removed = 0
+    for name in targets:
+        config = CLI_TARGETS[name]
+        cli_dir = Path.home() / config["dir"]
+        plugin_dir = cli_dir / PLUGIN_DIR_NAME
+        removed = 0
+
+        if not plugin_dir.exists():
+            continue
+
+        # Remove __pycache__ directories
+        for cache_dir in list(plugin_dir.rglob("__pycache__")):
+            if cache_dir.is_dir():
+                shutil.rmtree(cache_dir)
+                removed += 1
+
+        # Remove stray .pyc files
+        for pyc_file in list(plugin_dir.rglob("*.pyc")):
+            if pyc_file.is_file():
+                pyc_file.unlink()
+                removed += 1
+
+        if removed:
+            print(f"  {name}: cleaned {removed} cache item(s)")
+            total_removed += removed
+
+    if total_removed:
+        print(f"\nTotal: {total_removed} cache item(s) removed.")
+    else:
+        print("No caches found. Already clean.")
 
 
 def print_usage() -> None:
@@ -400,8 +613,11 @@ def print_usage() -> None:
     print("Usage:")
     print("  helloagents install <target>  Install to a specific CLI")
     print("  helloagents install --all     Install to all detected CLIs")
+    print("  helloagents uninstall <target>  Uninstall from a specific CLI")
+    print("  helloagents uninstall --all     Uninstall from all installed CLIs")
     print("  helloagents update            Update to latest version")
     print("  helloagents update <branch>   Switch to a specific branch")
+    print("  helloagents clean             Clean caches from installed targets")
     print("  helloagents status            Show installation status")
     print("  helloagents version           Show version")
     print()
@@ -434,9 +650,22 @@ def main() -> None:
         else:
             if not install(target):
                 sys.exit(1)
+    elif cmd == "uninstall":
+        if len(sys.argv) < 3:
+            print("Error: Missing target")
+            print_usage()
+            sys.exit(1)
+        target = sys.argv[2]
+        if target == "--all":
+            uninstall_all()
+        else:
+            if not uninstall(target):
+                sys.exit(1)
     elif cmd == "update":
         switch = sys.argv[2] if len(sys.argv) >= 3 else None
         update(switch)
+    elif cmd == "clean":
+        clean()
     elif cmd == "status":
         status()
     elif cmd == "version":

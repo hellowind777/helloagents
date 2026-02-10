@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.0-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.1-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -57,15 +57,19 @@ Many assistants can analyze tasks but often stop before real delivery. HelloAGEN
 
 ## What Changed vs Legacy Repo
 
-Compared with legacy multi-bundle releases, the v2.x line is now package-first.
+Compared with legacy multi-bundle releases, the v2.x line is now package-first with a fundamentally different architecture.
 
 | Area | Legacy repo | Current repo |
 |---|---|---|
-| Distribution shape | Multiple bundle folders such as Codex CLI and Claude Code | One Python package under helloagents plus installer CLI |
-| Installation model | Manual copy of config and skill folders | UV install from GitHub + helloagents update (branch-aware) + helloagents install &lt;target&gt; |
-| CLI targets | 5 visible bundle targets | 6 targets in code: claude, codex, opencode, gemini, qwen, grok |
-| Safety during install | Manual overwrite risk | Marker detection, backup, stale cleanup |
-| Workflow source | Duplicated across bundles | Single source in helloagents/functions, stages, rules, services |
+| Distribution | Multiple bundle folders per CLI | One Python package + installer CLI |
+| Installation | Manual copy of config and skill folders | npm/pip/uv install + `helloagents install <target>` |
+| Routing | Three-layer (Context → Tools → Intent) | Five-dimension scoring (R0–R3) |
+| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 5 stages (+Tweak) with sub-agent dispatch |
+| Agent system | None | RLM with 12 specialized roles and session isolation |
+| Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
+| Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
+| CLI targets | 5 visible bundle targets | 6 targets: claude, codex, opencode, gemini, qwen, grok |
+| Commands | 12 | 15 workflow commands |
 
 > ⚠️ **Migration notice:** Because repository structure and installation workflow changed in v2.x, legacy versions were moved to **helloagents-archive**: https://github.com/hellowind777/helloagents-archive
 
@@ -76,40 +80,40 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first.
 <td width="50%" valign="top">
 <img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
 
-**Package-first installation**
+**RLM sub-agent orchestration**
 
-Install with UV from GitHub, then deploy rules to target CLIs with installer commands.
+12 specialized roles (explorer, analyzer, designer, implementer, reviewer, tester, etc.) are dispatched automatically based on task complexity, with session isolation per CLI instance.
 
-**Your gain:** fewer manual copy mistakes.
+**Your gain:** complex tasks are broken down and handled by the right specialist.
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
 
-**Structured workflow execution**
+**Five-dimension routing (R0–R3)**
 
-Router enforces R0 direct response, R1 Fast Flow, R2 Simplified Flow, and R3 Standard Flow with stage progression.
+Every input is scored on action need, target clarity, decision scope, impact range, and EHRB risk — then routed to R0 direct, R1 fast, R2 simplified, or R3 standard flow.
 
-**Your gain:** work does not stop halfway.
+**Your gain:** proportional effort — simple queries stay fast, complex tasks get full process.
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="./readme_images/04-feature-icon-safety.svg" width="48" align="left">
 
-**Built-in safety gate (EHRB)**
+**Three-layer safety detection (EHRB)**
 
-High-risk operations are checked before modification steps continue.
+Keyword scan, semantic analysis, and tool-output inspection catch destructive operations before execution. Interactive and delegated modes enforce user confirmation.
 
-**Your gain:** safer defaults.
+**Your gain:** safer defaults with zero-config protection.
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
 
-**Multi-CLI compatibility**
+**Three-layer memory model**
 
-Same workflow core across multiple AI CLIs.
+L0 user memory (global preferences), L1 project knowledge base (structured docs synced from code), and L2 session summaries (auto-persisted at stage transitions).
 
-**Your gain:** consistent team behavior.
+**Your gain:** context survives across sessions and projects.
 </td>
 </tr>
 </table>
@@ -118,9 +122,12 @@ Same workflow core across multiple AI CLIs.
 
 - 6 CLI targets from helloagents/cli.py
 - 15 workflow commands from helloagents/functions
-- 12 role profiles from helloagents/rlm/roles
+- 12 RLM roles from helloagents/rlm/roles
+- 5 stage definitions from helloagents/stages
+- 5 core services from helloagents/services
+- 4 rule modules from helloagents/rules
 - 8 helper scripts from helloagents/scripts
-- 7 core module groups: functions, stages, services, rules, rlm, scripts, templates
+- 8 KB/plan templates from helloagents/templates
 
 ## Before and After (Snake Demo)
 
@@ -147,29 +154,49 @@ Per your request, the original snake images are preserved and other README visua
 
 ## Quick Start
 
-### 1) Install package from GitHub with UV
+### Method A: One-line install script (recommended)
 
-**Stable (main):**
+**macOS / Linux:**
+
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
+**Windows PowerShell:**
+
+    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+> The script auto-detects `uv` or `pip` and installs the HelloAGENTS Python package. Re-running performs an update.
+
+### Method B: UV (isolated environment)
+
+**Step 0 — Install UV first (skip if already installed):**
+
+    # Windows PowerShell
+    irm https://astral.sh/uv/install.ps1 | iex
+
+    # macOS / Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+> After installing UV, restart your terminal to make the `uv` command available.
+
+**Install:**
 
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents
 
-**Beta:**
-
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
-
-### 2) Update package (branch-aware)
-
-helloagents update keeps you on the current branch and checks updates accordingly.
+**Update:**
 
     helloagents update
 
-Switch branches explicitly when needed:
+### Method C: pip (Python >= 3.10)
 
-    helloagents update beta
+**Install:**
 
-    helloagents update main
+    pip install git+https://github.com/hellowind777/helloagents.git
 
-### 3) Sync rules to target CLI
+**Update:**
+
+    pip install --upgrade git+https://github.com/hellowind777/helloagents.git
+
+### Sync rules to target CLI
 
     helloagents install codex
 
@@ -177,57 +204,92 @@ Switch branches explicitly when needed:
 
     helloagents install --all
 
-### 4) Verify
+### Verify
 
     helloagents status
 
     helloagents version
 
+### Uninstall
+
+    helloagents uninstall codex
+
+    helloagents uninstall --all
+
+### Clean caches
+
+    helloagents clean
+
+### Beta branch
+
+To install from the `beta` branch, append `@beta` to the repository URL:
+
+    # One-line script
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | HELLOAGENTS_BRANCH=beta bash
+
+    # Windows PowerShell
+    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # UV
+    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git@beta
+
 ### Codex CLI example
 
-**Stable (main):**
+**First install:**
 
+    # One-line script (recommended)
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+    helloagents install codex
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git
+    helloagents install codex
+
+    # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents
     helloagents install codex
+
+**Update later (auto-syncs installed targets):**
+
     helloagents update
-    helloagents install codex
-
-**Beta:**
-
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
-    helloagents install codex
-    helloagents update beta
-    helloagents install codex
 
 ### Claude Code example
 
-**Stable (main):**
+**First install:**
 
+    # One-line script (recommended)
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+    helloagents install claude
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git
+    helloagents install claude
+
+    # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents
     helloagents install claude
+
+**Update later (auto-syncs installed targets):**
+
     helloagents update
-    helloagents install claude
-
-**Beta:**
-
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
-    helloagents install claude
-    helloagents update beta
-    helloagents install claude
 
 ## How It Works
 
-1. Install package and run installer command.
-2. Installer locates target CLI directory.
-3. Installer cleans stale HelloAGENTS files and copies the latest module.
-4. Target rules file is created or updated with backup protection.
-5. In AI chat, router selects R0 direct response, R1 Fast Flow, R2 Simplified Flow, or R3 Standard Flow.
-6. Stage chain runs and returns verified output.
+1. Install the package (script/pip/uv) and run `helloagents install <target>` to deploy rules to your CLI.
+2. In AI chat, every input is scored on five dimensions and routed to R0–R3.
+3. R2/R3 tasks enter the stage chain: EVALUATE → ANALYZE → DESIGN → DEVELOP → TWEAK.
+4. RLM dispatches specialized sub-agents (e.g. explorer, designer, implementer) based on task complexity.
+5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation.
+6. Three-layer memory (user / project KB / session) preserves context across sessions.
+7. Stage chain completes with verified output and optional knowledge base sync.
 
 ## Repository Guide
 
 - AGENTS.md: router and workflow protocol
-- pyproject.toml: package metadata (v2.2.0)
+- pyproject.toml: package metadata (v2.2.1)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: analyze, design, develop, tweak
@@ -266,14 +328,14 @@ These commands run inside AI chat, not your system shell.
 - Q: What if a rules file already exists?
   A: Non-HelloAGENTS files are backed up before replacement.
 
-- Q: Do I still need manual bundle copy?
-  A: No. In v2.x releases, use installer commands instead of manual bundle copy.
+- Q: What is RLM?
+  A: Role Language Model — a sub-agent orchestration system with 12 specialized roles dispatched based on task complexity.
 
-- Q: Where does workflow knowledge go?
-  A: By default, project-local .helloagents directory.
+- Q: Where does project knowledge go?
+  A: In the project-local `.helloagents/` directory, auto-synced when code changes.
 
-- Q: Why keep snake demo images?
-  A: They provide a stable visual benchmark to compare workflow quality before and after structured routing.
+- Q: Does memory persist across sessions?
+  A: Yes. L0 user memory is global, L1 project KB is per-project, L2 session summaries are auto-saved at stage transitions.
 
 ## Troubleshooting
 
@@ -285,18 +347,25 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.0 (current package branch)
+### v2.2.1 (current)
 
-- Refactored to package-first layout around helloagents directory
-- Added installer commands: install, update, status, version
-- Added install safety flow: marker check, backup, stale cleanup
-- Consolidated workflow source into one tree
-- Legacy pre-v2 layouts were moved to https://github.com/hellowind777/helloagents-archive
+- **RLM sub-agent system:** 12 specialized roles with automatic dispatch and session isolation
+- **Five-dimension routing (R0–R3):** replaces legacy three-layer routing
+- **Five-stage workflow:** added TWEAK stage for iterative refinement
+- **Three-layer memory:** L0 user preferences, L1 project knowledge base, L2 session summaries
+- **Three-layer EHRB:** keyword + semantic + tool-output safety detection
+- **Package-first installer:** npm/pip/uv install with `helloagents install <target>`
+- **15 workflow commands:** added ~rlm, ~validate, ~status
+- **6 CLI targets:** added OpenCode support
+- **Knowledge base service:** structured project docs auto-synced from code changes
+- **Attention service:** live status tracking and progress snapshots
 
 ### v2.0.1 (legacy multi-bundle baseline)
 
-- Multi-bundle distribution baseline with manual copy-based installation model
-- Separate bundle folders maintained per CLI
+- Multi-bundle distribution with manual copy-based installation
+- Three-layer routing (Context → Tools → Intent)
+- 4 workflow stages, 12 commands, 5 CLI targets
+- No sub-agent system, no persistent memory
 
 ## Contributing
 

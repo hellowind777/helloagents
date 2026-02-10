@@ -550,9 +550,9 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 | 阶段/类型 | 验收项 | 严重性 |
 |-----------|--------|------|
 | evaluate | 需求评分≥7分 | ⛔ 阻断性 |
-| analyze | 项目上下文已获取 | ℹ️ 信息性 |
+| analyze | 项目上下文已获取 + TASK_COMPLEXITY 已评估 | ℹ️ 信息性 |
 | design | 方案包结构完整+格式正确 | ⛔ 阻断性 |
-| develop | 阻断性测试通过+代码安全检查 | ⛔ 阻断性 |
+| develop | 阻断性测试通过+代码安全检查+子代理调用合规 [→ G9] | ⛔ 阻断性 |
 | tweak | 变更已应用 | ⚠️ 警告性 |
 | evaluate→analyze | 需求评分≥7 | ⛔ 闸门 |
 | analyze→design | 项目上下文已获取 | ⛔ 闸门 |
@@ -564,45 +564,140 @@ CURRENT_PACKAGE: 空  # develop阶段确定
   阻断性(⛔): 失败必须停止，自动模式打破静默
   警告性(⚠️): 记录但可继续
   信息性(ℹ️): 仅记录供参考
+
+子代理调用合规检查（阶段验收时执行）:
+  TASK_COMPLEXITY=moderate/complex 时:
+    ANALYZE 阶段:
+      检查: explorer 是否已调用（moderate/complex 强制）
+      检查: analyzer 是否已调用（complex+依赖>5模块 强制）
+    DESIGN 阶段:
+      检查: designer 是否已调用（R2 moderate/complex 强制）
+      检查: analyzer 是否已调用（R3+候选方案≥2 强制）
+      检查: synthesizer 是否已调用（complex+评估维度≥3 强制）
+      检查: pkg_keeper 是否已调用（方案包填充时强制）
+    DEVELOP 阶段:
+      检查: implementer 是否已调用（moderate/complex 强制）
+      检查: reviewer 是否已调用（complex+涉及核心/安全模块 强制）
+      检查: tester 是否已调用（需要新增测试用例时强制）
+      检查: kb_keeper 是否已调用（KB_SKIPPED=false 强制）
+      检查: pkg_keeper 是否已调用（归档前状态更新时强制）
+    未调用且未标记[降级执行] → ⚠️ 警告性（记录"子代理未按规则调用: {角色名}"）
+  TASK_COMPLEXITY=simple 时:
+    跳过检查
 ```
 
 ---
 
 ## G9 | 子代理编排（CRITICAL）
 
+### 复杂度判定标准
+
 ```yaml
-复杂度评估: simple(主代理直接) | moderate(可选1个子代理) | complex(子任务并行)
-调度策略: 探测CLI原生能力 → 匹配则原生通道 → 不匹配则主上下文降级执行
-角色: explorer, analyzer, designer, implementer, reviewer, tester, synthesizer, kb_keeper, pkg_keeper, researcher, writer, executor
-调用规则（所有路径均适用，按复杂度按需调用）:
-  EVALUATE/TWEAK: 主代理直接执行
-  ANALYZE: explorer(大型项目强制), analyzer(依赖>5模块时)
-  DESIGN: analyzer(R3 标准流程+候选≥2强制), designer(R2时), synthesizer(3+维度时)
-  DEVELOP: implementer(代码修改强制), reviewer(核心/安全时), tester(新测试时)
-  通用路径: 按任务复杂度和类型自动选择合适角色（如 researcher/writer/executor 等）
+判定时机: 进入 ANALYZE/DESIGN/DEVELOP 阶段时评估
+判定依据: 取以下维度最高级别
+
+| 维度 | simple | moderate | complex |
+|------|--------|----------|---------|
+| 涉及文件数 | ≤3 | 4-10 | >10 |
+| 涉及模块数 | 1 | 2-3 | >3 |
+| 任务数(tasks.md) | ≤3 | 4-8 | >8 |
+| 跨层级 | 单层(仅前端/仅后端) | 双层 | 三层+(前端+后端+数据) |
+| 新建vs修改 | 纯修改 | 混合 | 纯新建/重构 |
+
+结果: TASK_COMPLEXITY = simple | moderate | complex
+```
+
+### 调用协议（CRITICAL）
+
+```yaml
+角色清单: explorer, analyzer, designer, implementer, reviewer, tester, synthesizer, kb_keeper, pkg_keeper, researcher, writer, executor
+
+调用方式: 按 G10 定义的 CLI 通道执行，阶段文件中标注 [RLM:角色名] 的位置必须调用
+调用格式: [→ G10 调用通道]
+
+强制调用规则（标注"强制"的必须调用，标注"跳过"的可跳过）:
+  EVALUATE/TWEAK: 主代理直接执行，不调用子代理
+  ANALYZE:
+    explorer — moderate/complex 强制 | simple 跳过
+    analyzer — complex 强制（依赖>5模块时）| 其他跳过
+  DESIGN:
+    analyzer — R3+候选方案≥2 强制 | 其他跳过
+    designer — R2 moderate/complex 强制 | simple 跳过
+    synthesizer — complex+评估维度≥3 强制 | 其他跳过
+    pkg_keeper — 方案包内容填充时强制（通过 PackageService 调用）
+  DEVELOP:
+    implementer — moderate/complex 强制 | simple 主代理直接执行
+    reviewer — complex+涉及核心/安全模块 强制 | 其他跳过
+    tester — 需要新增测试用例时 强制 | 其他跳过
+    kb_keeper — KB_SKIPPED=false 时强制（通过 KnowledgeService 调用）
+    pkg_keeper — 归档前状态更新时强制（通过 PackageService 调用）
+  命令路径:
+    ~review: reviewer — 审查文件>5 强制 | 其他主代理直接
+    ~test: tester — 需设计新测试用例时 强制 | 其他主代理直接
+
+通用路径角色（不绑定特定阶段，按任务类型触发）:
+  researcher — 需要外部技术调研/方案对比/依赖安全检查时调用
+  writer — 需要生成独立文档（非知识库同步）时调用
+  executor — 需要运行构建/部署/环境配置等脚本任务时调用
+  触发方式: 阶段流程中遇到匹配场景时主代理判断调用 | 用户通过 ~rlm spawn 手动调用
+
+跳过条件: 仅当标注"跳过"的条件成立时可跳过，其余情况必须调用
+降级: 子代理调用失败 → 主上下文直接执行，在 tasks.md 标记 [降级执行]
 ```
 
 ---
 
-## G10 | 跨 CLI 兼容规则（CRITICAL）
+## G10 | 子代理调用通道（CRITICAL）
 
-| CLI | 子代理能力 |
-|-----|----------|
-| Claude Code | Task 工具 (Explore/Plan/general-purpose)，角色任务使用 prompt="[RLM:{角色}] {任务}" |
-| Codex CLI | Collab（实验性，MAX_DEPTH=1） |
-| OpenCode | —（降级为主上下文执行） |
-| Gemini/Qwen/Grok | 按 CLI 版本能力（无统一子代理API，降级为主上下文执行） |
+### 调用通道定义
+
+| CLI | 通道 | 调用方式 |
+|-----|------|----------|
+| Claude Code | Task 工具 | `Task(subagent_type="general-purpose", prompt="[RLM:{角色}] {任务描述}")` |
+| Codex CLI | Collab | 实验性，MAX_DEPTH=1 |
+| OpenCode | 降级 | 主上下文直接执行 |
+| Gemini/Qwen/Grok | 降级 | 主上下文直接执行 |
+
+### Claude Code 调用协议（CRITICAL）
 
 ```yaml
-CLI 会话目录（记忆服务 session ID 获取）:
-  Claude Code: ~/.claude/projects/{path_hash}/*.jsonl
-    检测: ~/.claude/ 目录存在
-    path_hash: 工作目录路径，将 : \ / 替换为 -
-  Codex CLI: ~/.codex/sessions/{YYYY}/{MM}/{DD}/*.jsonl
-    检测: ~/.codex/ 目录存在
-  其他 CLI: 定位会话存储目录 → 找最新 .jsonl → 提取文件名为 session ID
-  回退: HelloAGENTS 自生成 UUID
-降级: 子代理失败 → 主上下文直接执行，在 tasks.md 标记 [降级执行]
+执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+  1. 加载角色预设: 读取 rlm/roles/{角色}.md
+  2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+  3. 调用 Task 工具: subagent_type="general-purpose", prompt=上述内容
+  4. 接收结果: 解析子代理返回的结构化结果
+  5. 记录调用: 通过 SessionManager.record_agent() 记录
+
+并行调用: 多个子代理无依赖时，在同一消息中发起多个 Task 调用
+串行调用: 有依赖关系时，等待前一个完成后再调用下一个
+
+示例（DEVELOP 步骤6）:
+  Task(
+    subagent_type="general-purpose",
+    prompt="[RLM:implementer] 执行任务 1.1: 在 src/api/filter.py 中实现空白判定函数。
+            约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
+            返回: {status, changes_made, issues_found}"
+  )
+```
+
+### 降级处理
+
+```yaml
+降级触发: Task 工具调用失败 | CLI 不支持子代理
+降级执行: 主代理在当前上下文中直接完成任务
+降级标记: 在 tasks.md 对应任务后追加 [降级执行]
+```
+
+### CLI 会话目录
+
+```yaml
+Claude Code: ~/.claude/projects/{path_hash}/*.jsonl
+  检测: ~/.claude/ 目录存在
+  path_hash: 工作目录路径，将 : \ / 替换为 -
+Codex CLI: ~/.codex/sessions/{YYYY}/{MM}/{DD}/*.jsonl
+  检测: ~/.codex/ 目录存在
+其他 CLI: 定位会话存储目录 → 找最新 .jsonl → 提取文件名为 session ID
+回退: HelloAGENTS 自生成 UUID
 脚本执行: python -X utf8 '{脚本路径}'
 ```
 

@@ -9,7 +9,7 @@
 ```yaml
 触发时机: 项目分析阶段
 用途: 判断是否需要启用文档分片策略
-判定条件: 按 G9 complex 级别条件评估
+判定条件: 按 G9 复杂度判定标准（TASK_COMPLEXITY=complex 时触发）
 判定方式: 项目分析阶段扫描评估 | project_stats.py [--path <路径>]
 注意: 此判定与 ROUTING_LEVEL（R0/R1/R2/R3）无关
 ```
