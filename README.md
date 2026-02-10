@@ -62,7 +62,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 | Area | Legacy repo | Current repo |
 |---|---|---|
 | Distribution | Multiple bundle folders per CLI | One Python package + installer CLI |
-| Installation | Manual copy of config and skill folders | npm/pip/uv install + `helloagents install <target>` |
+| Installation | Manual copy of config and skill folders | pip/uv install + `helloagents install <target>` |
 | Routing | Three-layer (Context → Tools → Intent) | Five-dimension scoring (R0–R3) |
 | Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 5 stages (+Tweak) with sub-agent dispatch |
 | Agent system | None | RLM with 12 specialized roles and session isolation |
@@ -123,11 +123,11 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 - 6 CLI targets from helloagents/cli.py
 - 15 workflow commands from helloagents/functions
 - 12 RLM roles from helloagents/rlm/roles
-- 5 stage definitions from helloagents/stages
+- 4 stage definitions from helloagents/stages
 - 5 core services from helloagents/services
 - 4 rule modules from helloagents/rules
-- 8 helper scripts from helloagents/scripts
-- 8 KB/plan templates from helloagents/templates
+- 9 helper scripts from helloagents/scripts
+- 10 KB/plan templates from helloagents/templates
 
 ## Before and After (Snake Demo)
 
@@ -225,10 +225,10 @@ Per your request, the original snake images are preserved and other README visua
 To install from the `beta` branch, append `@beta` to the repository URL:
 
     # One-line script
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | HELLOAGENTS_BRANCH=beta bash
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
 
     # Windows PowerShell
-    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
@@ -354,7 +354,7 @@ These commands run inside AI chat, not your system shell.
 - **Five-stage workflow:** added TWEAK stage for iterative refinement
 - **Three-layer memory:** L0 user preferences, L1 project knowledge base, L2 session summaries
 - **Three-layer EHRB:** keyword + semantic + tool-output safety detection
-- **Package-first installer:** npm/pip/uv install with `helloagents install <target>`
+- **Package-first installer:** pip/uv install with `helloagents install <target>`
 - **15 workflow commands:** added ~rlm, ~validate, ~status
 - **6 CLI targets:** added OpenCode support
 - **Knowledge base service:** structured project docs auto-synced from code changes
@@ -380,5 +380,7 @@ This project is licensed under the MIT License. See LICENSE.
 <div align="center">
 
 If this project helps your workflow, a star is always appreciated.
+
+<sub>Thanks to <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> for supporting this project</sub>
 
 </div>

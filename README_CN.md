@@ -62,7 +62,7 @@
 | 维度 | 旧仓库 | 当前仓库 |
 |---|---|---|
 | 分发形态 | 多 bundle 目录，每个 CLI 一份 | 统一 Python 包 + 安装器 CLI |
-| 安装方式 | 手工复制配置与技能目录 | npm/pip/uv 安装 + `helloagents install <target>` |
+| 安装方式 | 手工复制配置与技能目录 | pip/uv 安装 + `helloagents install <target>` |
 | 路由系统 | 三层路由（Context → Tools → Intent） | 五维度评分路由（R0–R3） |
 | 工作流阶段 | 4 阶段（Evaluate、Analyze、Design、Develop） | 5 阶段（+Tweak），支持子代理调度 |
 | 代理系统 | 无 | RLM 12 个专业角色 + Session 隔离 |
@@ -124,11 +124,11 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - 6 个 CLI 目标来自 helloagents/cli.py
 - 15 个工作流命令来自 helloagents/functions
 - 12 个 RLM 角色来自 helloagents/rlm/roles
-- 5 个阶段定义来自 helloagents/stages
+- 4 个阶段定义来自 helloagents/stages
 - 5 个核心服务来自 helloagents/services
 - 4 个规则模块来自 helloagents/rules
-- 8 个辅助脚本来自 helloagents/scripts
-- 8 个知识库/方案模板来自 helloagents/templates
+- 9 个辅助脚本来自 helloagents/scripts
+- 10 个知识库/方案模板来自 helloagents/templates
 
 ## 前后对比（贪吃蛇示例）
 
@@ -226,10 +226,10 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 如需安装 `beta` 分支，在仓库 URL 后追加 `@beta`：
 
     # 一键脚本
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | HELLOAGENTS_BRANCH=beta bash
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
 
     # Windows PowerShell
-    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents
@@ -355,7 +355,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - **五阶段工作流：** 新增 TWEAK 阶段用于迭代微调
 - **三层记忆：** L0 用户偏好、L1 项目知识库、L2 会话摘要
 - **三层 EHRB：** 关键词 + 语义 + 工具输出安全检测
-- **Package-first 安装器：** npm/pip/uv 安装 + `helloagents install <target>`
+- **Package-first 安装器：** pip/uv 安装 + `helloagents install <target>`
 - **15 个工作流命令：** 新增 ~rlm、~validate、~status
 - **6 个 CLI 目标：** 新增 OpenCode 支持
 - **知识库服务：** 结构化项目文档，代码变更自动同步
