@@ -213,7 +213,10 @@ def check_update() -> None:
         remote_ver = ""
         if branch == "main":
             try:
-                req = Request(REPO_API_LATEST, headers={"Accept": "application/vnd.github.v3+json"})
+                req = Request(REPO_API_LATEST, headers={
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "helloagents-update-checker",
+                })
                 with urlopen(req, timeout=3) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     remote_ver = data.get("tag_name", "").lstrip("v")
@@ -396,7 +399,8 @@ def install(target: str) -> bool:
         print(_msg(f"  警告: 未找到 AGENTS.md ({agents_md_src})",
                    f"  Warning: AGENTS.md not found at {agents_md_src}"))
 
-    print(_msg(f"{target} 安装完成！", f"Installation complete for {target}!"))
+    print(_msg(f"{target} 安装完成！请重启终端以应用更改。",
+               f"Installation complete for {target}! Please restart your terminal to apply changes."))
     return True
 
 
@@ -513,8 +517,8 @@ def _interactive_install() -> bool:
         print(_msg(f"  共 {succeeded} 个成功，{failed_count} 个失败。",
                    f"  {succeeded} succeeded, {failed_count} failed."))
         return False
-    print(_msg(f"  共 {succeeded} 个目标安装成功。",
-               f"  All {succeeded} target(s) installed successfully."))
+    print(_msg(f"  共 {succeeded} 个目标安装成功。请重启终端以应用更改。",
+               f"  All {succeeded} target(s) installed successfully. Please restart your terminal to apply changes."))
     return True
 
 
@@ -587,8 +591,8 @@ def _interactive_uninstall() -> bool:
         print(f"  ✓ {t:10} {_msg('已卸载', 'removed')}")
 
     print()
-    print(_msg(f"  共卸载 {len(selected)} 个目标。",
-               f"  {len(selected)} target(s) uninstalled."))
+    print(_msg(f"  共卸载 {len(selected)} 个目标。请重启终端以应用更改。",
+               f"  {len(selected)} target(s) uninstalled. Please restart your terminal to apply changes."))
     return True
 
 
@@ -648,7 +652,8 @@ def uninstall(target: str) -> bool:
                    f"  Removed {len(removed)} item(s):"))
         for r in removed:
             print(f"    - {r}")
-        print(_msg(f"{target} 卸载完成。", f"Uninstall complete for {target}."))
+        print(_msg(f"{target} 卸载完成。请重启终端以应用更改。",
+                   f"Uninstall complete for {target}. Please restart your terminal to apply changes."))
     else:
         print(_msg(f"  {target}: 无需移除。", f"  {target}: nothing to remove."))
 

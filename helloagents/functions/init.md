@@ -47,6 +47,11 @@
   KB_CREATE_MODE=1/2/3: 直接继续
 
 知识库状态检测:
+  0. 旧目录名迁移检测:
+     脚本: upgradewiki.py --migrate-root
+     status=migrated → 提示已自动迁移 helloagents/ → .helloagents/，继续
+     status=conflict → 输出: 确认（新旧目录同时存在）→ 用户选择保留哪个 → ⛔ END_TURN
+     status=not_needed/not_found → 静默继续
   1. 检查 {KB_ROOT}/ 目录是否存在
   2. 检查核心文件完整性（INDEX.md, context.md, CHANGELOG.md, modules/_index.md）
   3. 对比当前结构与框架标准
@@ -56,7 +61,7 @@
 | 状态 | 处理 |
 |------|------|
 | 不存在 | 输出: 确认（项目信息+将创建知识库）→ 继续(→步骤3) / 取消(→状态重置) |
-| 存在但结构不匹配 | 输出: 确认 → 升级(→upgrade.md) / 重建(→步骤3) / 取消(→状态重置) |
+| 存在但结构不匹配 | 输出: 确认 → 升级(→upgradekb.md) / 重建(→步骤3) / 取消(→状态重置) |
 | 存在但不完整 | 输出: 确认（缺失文件列表）→ 补全 / 重建(→步骤3) / 取消(→状态重置) |
 | 存在且完整 | 输出: 确认（重建）→ 重建(删除后→步骤3) / 取消(→状态重置) |
 

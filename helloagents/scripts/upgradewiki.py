@@ -4,19 +4,21 @@
 HelloAGENTS 知识库工具（纯文件操作）
 
 本脚本仅负责文件系统操作，不做任何内容分析和转换。
-内容分析由 AI 通过 ~upgrade 命令执行。
+内容分析由 AI 通过 ~upgradekb 命令执行。
 
 Usage:
     python upgradewiki.py --scan [--path <base-path>]
     python upgradewiki.py --init [--path <base-path>]
     python upgradewiki.py --backup [--path <base-path>]
     python upgradewiki.py --write <json-file> [--path <base-path>]
+    python upgradewiki.py --migrate-root [--path <base-path>]
 
 Examples:
     python upgradewiki.py --scan                    # 扫描知识库目录，返回文件列表
     python upgradewiki.py --init                    # 创建标准目录结构
     python upgradewiki.py --backup                  # 备份现有知识库
     python upgradewiki.py --write plan.json         # 按计划写入文件
+    python upgradewiki.py --migrate-root            # 检测并迁移旧目录名 helloagents/ → .helloagents/
 """
 
 import argparse
@@ -31,9 +33,12 @@ from typing import Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).parent))
 from utils import get_workspace_path, setup_encoding, print_error, print_success, validate_base_path
 
+# 旧版知识库目录名（v2.2.2 之前使用 helloagents/，v2.2.3 起改为 .helloagents/）
+LEGACY_WORKSPACE = "helloagents"
+
 
 # V3 标准目录结构
-V3_DIRECTORIES = ['modules', 'archive', 'plan']
+V3_DIRECTORIES = ['modules', 'archive', 'plan', 'sessions']
 V3_ROOT_FILES = ['INDEX.md', 'context.md', 'CHANGELOG.md']
 
 
@@ -245,6 +250,64 @@ def write_files(workspace: Path, plan_file: Path) -> Dict:
     return result
 
 
+def migrate_root(base: Path) -> Dict:
+    """
+    检测并迁移旧版知识库目录名 helloagents/ → .helloagents/
+
+    Returns:
+        {
+            "status": "migrated"|"not_needed"|"conflict"|"not_found",
+            "legacy_path": str|None,
+            "new_path": str|None,
+            "error": str|None
+        }
+    """
+    legacy_path = base / LEGACY_WORKSPACE
+    new_path = base / ".helloagents"
+
+    # 新目录已存在，无需迁移
+    if new_path.exists():
+        if legacy_path.exists():
+            return {
+                "status": "conflict",
+                "legacy_path": str(legacy_path),
+                "new_path": str(new_path),
+                "error": "新旧目录同时存在，需用户决策"
+            }
+        return {
+            "status": "not_needed",
+            "legacy_path": None,
+            "new_path": str(new_path),
+            "error": None
+        }
+
+    # 旧目录不存在
+    if not legacy_path.exists():
+        return {
+            "status": "not_found",
+            "legacy_path": None,
+            "new_path": None,
+            "error": None
+        }
+
+    # 执行迁移：重命名 helloagents/ → .helloagents/
+    try:
+        legacy_path.rename(new_path)
+        return {
+            "status": "migrated",
+            "legacy_path": str(legacy_path),
+            "new_path": str(new_path),
+            "error": None
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "legacy_path": str(legacy_path),
+            "new_path": str(new_path),
+            "error": str(e)
+        }
+
+
 def main():
     setup_encoding()
     parser = argparse.ArgumentParser(
@@ -272,6 +335,11 @@ def main():
         "--write",
         metavar="JSON_FILE",
         help="按计划写入文件（JSON格式的操作计划）"
+    )
+    group.add_argument(
+        "--migrate-root",
+        action="store_true",
+        help="检测并迁移旧目录名 helloagents/ → .helloagents/"
     )
 
     parser.add_argument(
@@ -315,6 +383,12 @@ def main():
         result = write_files(workspace, plan_file)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         sys.exit(0 if result["success"] else 1)
+
+    elif args.migrate_root:
+        base = Path(args.path) if args.path else Path.cwd()
+        result = migrate_root(base)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0 if result["status"] in ("migrated", "not_needed", "not_found") else 1)
 
 
 if __name__ == "__main__":

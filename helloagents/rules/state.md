@@ -11,7 +11,7 @@
 ```yaml
 内部阶段: 需求评估、项目分析、方案设计、开发实施
 路由级别: R0 直接响应、R1 快速流程、R2 简化流程、R3 标准流程
-内部命令: ~auto, ~plan, ~exec, ~init, ~upgrade, ~cleanplan, ~help...
+内部命令: ~auto, ~plan, ~exec, ~init, ~upgradekb, ~clean, ~cleanplan, ~commit, ~test, ~review, ~validatekb, ~rollback, ~rlm, ~status, ~help
 外部工具: MCP服务器、子代理、插件、第三方Skill等
 原子操作: 对话、咨询问答
 ```
@@ -24,7 +24,7 @@
 
 **命令确认规则（CRITICAL）:**
 ```yaml
-适用: 除 ~help 外的所有命令
+适用: 除豁免命令外的所有命令
 时机: 可在命令输入后立即显示，也可在评估/分析后显示，但必须在实质性操作前
 要求: 输出确认信息 → ⛔ END_TURN → 用户确认后才执行
 最低选项: 继续 / 取消(→状态重置)
@@ -86,7 +86,7 @@
 | 类型 | 命令 | 规则 |
 |------|------|------|
 | 互斥 | ~auto, ~plan, ~exec, 自然语言工作流 | 同时只能执行一个 |
-| 非互斥 | 独立工具命令（~init, ~upgrade, ~clean, ~cleanplan, ~commit, ~test, ~review, ~validate, ~rollback, ~rlm）, ~help, ~status, 简单对话 | 可在流程中执行，不改变状态 |
+| 非互斥 | 独立工具命令（~init, ~upgradekb, ~clean, ~cleanplan, ~commit, ~test, ~review, ~validatekb, ~rollback, ~rlm）, ~help, ~status, 简单对话 | 可在流程中执行，不改变状态 |
 
 **互斥处理:** 新命令输入时检测活动流程 → 询问取消 → 确认则 → 状态重置 → 执行新命令
 
