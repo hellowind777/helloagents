@@ -41,13 +41,17 @@ configure_codex.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/configure_codex.py' [--path <路径>]
   说明: Codex CLI 环境配置，非 Codex 环境跳过
 
+check_update.py:
+  用法: python -X utf8 '{SCRIPTS_DIR}/check_update.py' [--helloagents-root <路径>]
+  说明: 更新检查（每日缓存），会话启动时静默调用，有更新时输出提示，失败时无输出
+
 session.py:
-  用法: python -X utf8 '{SCRIPTS_DIR}/session.py' --info|--list|--cleanup [<hours>]
-  说明: RLM Session 管理
+  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/session.py' --info|--list|--cleanup [<hours>]
+  说明: RLM Session 管理（位于 rlm/ 目录，非 scripts/）
 
 shared_tasks.py:
-  用法: python -X utf8 '{SCRIPTS_DIR}/shared_tasks.py' --status|--list|--available|--claim <id> --owner <sid>|--complete <id>|--add '<subject>' [--blocked-by <ids>]
-  说明: 多终端协作任务管理，需 hellotasks 环境变量
+  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/shared_tasks.py' --status|--list|--available|--claim <id> --owner <sid>|--complete <id>|--add '<subject>' [--blocked-by <ids>]
+  说明: 多终端协作任务管理，需 hellotasks 环境变量（位于 rlm/ 目录，非 scripts/）
 ```
 
 ### 脚本存在性检查

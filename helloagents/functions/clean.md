@@ -26,6 +26,8 @@
 ### 步骤2: 解析参数与扫描
 
 ```yaml
+前置迁移: upgradewiki.py --migrate-root（静默执行，确保旧目录名已迁移后再扫描）
+
 参数解析:
   ~clean              → 列出所有可清理项，让用户选择
   ~clean sessions     → 清理会话摘要（L2），展示列表供选择

@@ -69,7 +69,7 @@ LIVE_STATUS 格式: 按 G11 定义
 
 ```yaml
 触发: 阶段完成时（仅 plan/ 目录存在时执行）
-流程: 按 G6 "遗留方案包扫描" 规则
+流程: 扫描 plan/ 目录中的遗留方案包
 返回: packages[{path, name, created, type}]
 条件输出: ≥1个遗留方案包返回列表，否则空列表
 ```
@@ -107,7 +107,7 @@ LIVE_STATUS 格式: 按 G11 定义
 
 ```yaml
 判定: tasks.md 无执行任务
-归档: 按 G6 overview 类型处理规则
+归档: 按本服务 archive() 接口执行
 标记: archive/_index.md 中标注 "overview"
 ```
 

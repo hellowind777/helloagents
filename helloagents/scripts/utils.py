@@ -210,6 +210,9 @@ def get_workspace_path(base_path: Optional[str] = None) -> Path:
     """
     获取 HelloAGENTS 工作空间路径
 
+    如果 .helloagents/ 不存在但旧版 helloagents/ 存在，自动迁移目录名。
+    确保所有脚本在未经显式 --migrate-root 的情况下也能正确定位工作空间。
+
     Args:
         base_path: 项目根目录，默认当前目录
 
@@ -217,7 +220,22 @@ def get_workspace_path(base_path: Optional[str] = None) -> Path:
         工作空间路径 (.helloagents/)
     """
     base = Path(base_path) if base_path else Path.cwd()
-    return base / DEFAULT_WORKSPACE
+    new_path = base / DEFAULT_WORKSPACE
+    legacy_path = base / "helloagents"
+
+    if not new_path.exists() and legacy_path.exists() and legacy_path.is_dir():
+        # 检查是否为旧版知识库目录（含 INDEX.md 或 modules/ 等知识库特征文件）
+        is_kb = any(
+            (legacy_path / marker).exists()
+            for marker in ("INDEX.md", "context.md", "modules", "plan", "CHANGELOG.md")
+        )
+        if is_kb:
+            try:
+                legacy_path.rename(new_path)
+            except OSError:
+                pass  # 迁移失败时静默回退，由上层流程处理
+
+    return new_path
 
 
 def get_plan_path(base_path: Optional[str] = None) -> Path:

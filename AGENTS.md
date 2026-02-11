@@ -20,6 +20,7 @@ ENCODING: UTF-8 无BOM
 KB_CREATE_MODE: 2  # 0=OFF, 1=ON_DEMAND, 2=ON_DEMAND_AUTO_FOR_CODING, 3=ALWAYS
 BILINGUAL_COMMIT: 1  # 0=仅 OUTPUT_LANGUAGE, 1=OUTPUT_LANGUAGE + English
 EVAL_MODE: 1  # 1=PROGRESSIVE（渐进式追问，默认）, 2=ONESHOT（一次性追问）
+UPDATE_CHECK: 1  # 0=OFF（关闭更新检查）, 1=ON（每天检查一次，默认）
 ```
 
 **开关行为摘要:**
@@ -32,6 +33,8 @@ EVAL_MODE: 1  # 1=PROGRESSIVE（渐进式追问，默认）, 2=ONESHOT（一次�
 | KB_CREATE_MODE | 3 | 始终自动创建 |
 | EVAL_MODE | 1 | 渐进式追问（默认）：每轮追问1个最低分维度问题，最多5轮 |
 | EVAL_MODE | 2 | 一次性追问：一次性展示所有低分维度问题，用户回答后重新评分，最多3轮 |
+| UPDATE_CHECK | 0 | 关闭更新检查，会话启动时不执行 check_update.py |
+| UPDATE_CHECK | 1 | 会话启动时执行 check_update.py（每天最多检查一次远程版本，有更新时在首次输出中提示） |
 
 > 例外: ~init 显式调用时忽略 KB_CREATE_MODE 开关
 
@@ -153,6 +156,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 {空行}
 📁 文件变更:        ← 可选
 📦 遗留方案包:      ← 可选
+⬆️ 发现 HelloAGENTS 新版本 ...  ← 可选，check_update.py 有输出时在会话首次响应中显示，后续响应不再重复
 {空行}
 🔄 下一步: {引导}   ← 必有
 ```
@@ -310,7 +314,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 | 闸门等级 | 命令 | 评估行为 | 确认行为 |
 |----------|------|----------|----------|
 | 无 | ~help, ~rlm, ~status | 无评估 | 直接执行，无需确认（破坏性子命令内部自带确认） |
-| 轻量 | ~init, ~upgrade, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validate, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ 等待用户选择 |
+| 轻量 | ~init, ~upgradekb, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validatekb, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ 等待用户选择 |
 | 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<7→追问→⛔；评分≥7→确认信息（评分+级别+后续流程）→⛔ |
 
 **命令执行流程（CRITICAL）:**
@@ -528,26 +532,26 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 
 | 触发条件 | 读取文件 |
 |----------|----------|
-| 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
+| 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过；UPDATE_CHECK=1 时静默执行 `python -X utf8 '{HELLOAGENTS_ROOT}/scripts/check_update.py'`，有输出则在会话首次响应中包含（⬆️ 行），无输出或执行失败则跳过，后续响应不再重复 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md |
 | R2/R3 进入项目分析 | stages/analyze.md, services/knowledge.md, rules/state.md, rules/scaling.md |
 | R2/R3 进入方案设计 | stages/design.md, services/package.md, services/templates.md, rules/tools.md |
 | R2/R3 进入开发实施 | stages/develop.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md, rules/tools.md |
 | ~auto | functions/auto.md |
 | ~plan | functions/plan.md |
-| ~exec | functions/exec.md |
+| ~exec | functions/exec.md, rules/tools.md |
 | ~init | functions/init.md, services/templates.md, rules/tools.md |
-| ~upgrade | functions/upgrade.md, services/templates.md, rules/tools.md |
+| ~upgradekb | functions/upgradekb.md, services/templates.md, rules/tools.md |
 | ~cleanplan | functions/cleanplan.md, rules/tools.md |
 | ~commit | functions/commit.md |
 | ~test | functions/test.md |
 | ~review | functions/review.md |
-| ~validate | functions/validate.md |
+| ~validatekb | functions/validatekb.md |
 | ~rollback | functions/rollback.md, services/knowledge.md |
 | ~rlm | functions/rlm.md |
 | ~help | functions/help.md |
-| ~status | functions/status.md |
-| ~clean | functions/clean.md |
+| ~status | functions/status.md, services/memory.md |
+| ~clean | functions/clean.md, services/memory.md, rules/tools.md |
 | ~rlm spawn | rlm/roles/{role}.md |
 | 调用脚本时 | rules/tools.md（脚本执行规范与降级处理） |
 

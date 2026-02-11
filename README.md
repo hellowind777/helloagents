@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.3-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.4-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -298,7 +298,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 ## Repository Guide
 
 - AGENTS.md: router and workflow protocol
-- pyproject.toml: package metadata (v2.2.3)
+- pyproject.toml: package metadata (v2.2.4)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: analyze, design, develop
@@ -318,9 +318,9 @@ These commands run inside AI chat, not your system shell.
 | ~plan | planning and package generation |
 | ~exec | execute existing package |
 | ~init | initialize knowledge base |
-| ~upgrade | upgrade knowledge structure |
+| ~upgradekb | upgrade knowledge structure |
 | ~clean / ~cleanplan | cleanup workflow artifacts |
-| ~test / ~review / ~validate | quality checks |
+| ~test / ~review / ~validatekb | quality checks |
 | ~commit | generate commit message from context |
 | ~rollback | rollback workflow state |
 | ~rlm | role orchestration commands |
@@ -356,7 +356,7 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.3 (current)
+### v2.2.4 (current)
 
 - **RLM sub-agent system:** 12 specialized roles with automatic dispatch and session isolation
 - **Five-dimension routing (R0–R3):** replaces legacy three-layer routing
@@ -364,7 +364,7 @@ These commands run inside AI chat, not your system shell.
 - **Three-layer memory:** L0 user preferences, L1 project knowledge base, L2 session summaries
 - **Three-layer EHRB:** keyword + semantic + tool-output safety detection
 - **Package-first installer:** pip/uv install with `helloagents` interactive menu
-- **15 workflow commands:** added ~rlm, ~validate, ~status
+- **15 workflow commands:** added ~rlm, ~validatekb, ~status
 - **6 CLI targets:** added OpenCode support
 - **Interactive installation menu:** multi-select target CLIs with one command
 - **Auto locale detection:** CLI messages switch between Chinese and English based on system locale

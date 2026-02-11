@@ -74,7 +74,7 @@
 ### 4. 知识库验证（validate 接口）
 
 ```yaml
-触发: ~validate 命令
+触发: ~validatekb 命令
 任务:
   - 检查知识库结构完整性
   - 对比代码与文档

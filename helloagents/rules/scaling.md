@@ -22,8 +22,8 @@
 
 | 对象 | 触发条件 | 分片策略 | 触发场景 |
 |------|----------|----------|----------|
-| CHANGELOG | 条目>200 | 按年份分片到 CHANGELOG_{YYYY}.md，主文件保留当前年份 | ~init/~upgrade/开发实施 |
-| modules/ | 模块>30 | 按类型分类: core/, feature/, shared/，各下独立 _index.md | ~init/~upgrade |
+| CHANGELOG | 条目>200 | 按年份分片到 CHANGELOG_{YYYY}.md，主文件保留当前年份 | ~init/~upgradekb/开发实施 |
+| modules/ | 模块>30 | 按类型分类: core/, feature/, shared/，各下独立 _index.md | ~init/~upgradekb |
 | archive/_index | 归档>200或跨年 | 按年份分片: _index-{YYYY}.md | 方案包迁移时 |
 
 ---

@@ -25,6 +25,7 @@
 ## 知识库状态
 
 ```yaml
+kb_version: {HELLOAGENTS_VERSION}
 最后更新: {YYYY-MM-DD HH:MM}
 模块数量: {数量}
 待执行方案: {数量}
