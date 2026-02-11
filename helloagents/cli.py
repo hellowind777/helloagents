@@ -24,12 +24,12 @@ REPO_URL = "https://github.com/hellowind777/helloagents"
 REPO_API_LATEST = "https://api.github.com/repos/hellowind777/helloagents/releases/latest"
 
 CLI_TARGETS = {
-    "claude": {"dir": ".claude", "rules_file": "CLAUDE.md"},
     "codex": {"dir": ".codex", "rules_file": "AGENTS.md"},
-    "opencode": {"dir": ".opencode", "rules_file": "OpenCode.md"},
+    "claude": {"dir": ".claude", "rules_file": "CLAUDE.md"},
     "gemini": {"dir": ".gemini", "rules_file": "GEMINI.md"},
     "qwen": {"dir": ".qwen", "rules_file": "QWEN.md"},
     "grok": {"dir": ".grok", "rules_file": "GROK.md"},
+    "opencode": {"dir": ".opencode", "rules_file": "OpenCode.md"},
 }
 
 PLUGIN_DIR_NAME = "helloagents"
@@ -69,6 +69,17 @@ _LANG = _detect_locale()
 def _msg(zh: str, en: str) -> str:
     """Return message based on detected locale."""
     return zh if _LANG == "zh" else en
+
+
+def _divider(width: int = 40) -> None:
+    """Print a divider line."""
+    print("─" * width)
+
+
+def _header(title: str) -> None:
+    """Print a section header with divider."""
+    print(f"\n── {title} ──")
+    print()
 
 
 def is_helloagents_file(file_path: Path) -> bool:
@@ -381,25 +392,24 @@ def _interactive_install() -> bool:
     detected = detect_installed_clis()
     installed = _detect_installed_targets()
 
-    print()
-    print(_msg("可选的目标 CLI:", "Available CLI targets:"))
-    print()
+    # ── Phase 1: Select targets ──
+    _header(_msg("选择目标", "Select Targets"))
 
     for i, name in enumerate(targets, 1):
         config = CLI_TARGETS[name]
         dir_path = f"~/{config['dir']}/"
         if name in installed:
-            tag = _msg("[已安装]", "[installed]")
+            tag = _msg("[已安装 HelloAGENTS]", "[HelloAGENTS installed]")
         elif name in detected:
-            tag = _msg("[已检测]", "[detected]")
+            tag = _msg("[已检测到该工具]", "[tool found]")
         else:
             tag = ""
         print(f"  [{i}] {name:10} {dir_path:20} {tag}")
 
     print()
     prompt = _msg(
-        "请输入编号（如 1 3 5）或 all 全选，直接回车跳过: ",
-        "Enter numbers (e.g. 1 3 5) or 'all', press Enter to skip: ",
+        "  请输入编号，可多选（如 1 3 5）或 all 全选，直接回车跳过: ",
+        "  Enter numbers, multi-select supported (e.g. 1 3 5) or 'all', press Enter to skip: ",
     )
 
     try:
@@ -409,7 +419,7 @@ def _interactive_install() -> bool:
         return True
 
     if not choice:
-        print(_msg("已跳过安装。", "Skipped."))
+        print(_msg("  已跳过安装。", "  Skipped."))
         return True
 
     if choice.lower() == "all":
@@ -432,19 +442,38 @@ def _interactive_install() -> bool:
                 print(_msg(f"  忽略无效输入: {n}", f"  Ignoring invalid input: {n}"))
 
     if not selected:
-        print(_msg("未选择任何目标。", "No targets selected."))
+        print(_msg("  未选择任何目标。", "  No targets selected."))
         return True
 
-    print()
-    failed = []
-    for t in selected:
-        if not install(t):
-            failed.append(t)
+    # ── Phase 2: Execute installation ──
+    _header(_msg(f"开始安装（共 {len(selected)} 个目标）",
+                 f"Installing ({len(selected)} target(s))"))
+
+    results = {}
+    for i, t in enumerate(selected, 1):
+        print(_msg(f"  [{i}/{len(selected)}] {t}", f"  [{i}/{len(selected)}] {t}"))
+        if install(t):
+            results[t] = True
+        else:
+            results[t] = False
         print()
 
-    if failed:
-        print(_msg(f"失败: {', '.join(failed)}", f"Failed: {', '.join(failed)}"))
+    # ── Phase 3: Summary ──
+    _header(_msg("安装结果", "Installation Summary"))
+    for t, ok in results.items():
+        mark = "✓" if ok else "✗"
+        status_text = _msg("成功", "OK") if ok else _msg("失败", "FAILED")
+        print(f"  {mark} {t:10} {status_text}")
+
+    succeeded = sum(1 for v in results.values() if v)
+    failed_count = len(results) - succeeded
+    print()
+    if failed_count:
+        print(_msg(f"  共 {succeeded} 个成功，{failed_count} 个失败。",
+                   f"  {succeeded} succeeded, {failed_count} failed."))
         return False
+    print(_msg(f"  共 {succeeded} 个目标安装成功。",
+               f"  All {succeeded} target(s) installed successfully."))
     return True
 
 
@@ -452,12 +481,11 @@ def _interactive_uninstall() -> bool:
     """Show interactive menu for selecting CLI targets to uninstall."""
     installed = _detect_installed_targets()
     if not installed:
-        print(_msg("未检测到已安装的 CLI 目标。", "No installed CLI targets detected."))
+        print(_msg("  未检测到已安装的 CLI 目标。", "  No installed CLI targets detected."))
         return True
 
-    print()
-    print(_msg("已安装 HelloAGENTS 的 CLI:", "CLI targets with HelloAGENTS installed:"))
-    print()
+    # ── Phase 1: Select targets ──
+    _header(_msg("选择要卸载的目标", "Select Targets to Uninstall"))
 
     for i, name in enumerate(installed, 1):
         config = CLI_TARGETS[name]
@@ -466,8 +494,8 @@ def _interactive_uninstall() -> bool:
 
     print()
     prompt = _msg(
-        "请输入要卸载的编号（如 1 3）或 all 全选，直接回车跳过: ",
-        "Enter numbers (e.g. 1 3) or 'all', press Enter to skip: ",
+        "  请输入要卸载的编号，可多选（如 1 3）或 all 全选，直接回车跳过: ",
+        "  Enter numbers to uninstall, multi-select supported (e.g. 1 3) or 'all', press Enter to skip: ",
     )
 
     try:
@@ -477,7 +505,7 @@ def _interactive_uninstall() -> bool:
         return True
 
     if not choice:
-        print(_msg("已跳过。", "Skipped."))
+        print(_msg("  已跳过。", "  Skipped."))
         return True
 
     if choice.lower() == "all":
@@ -500,13 +528,27 @@ def _interactive_uninstall() -> bool:
                 print(_msg(f"  忽略无效输入: {n}", f"  Ignoring invalid input: {n}"))
 
     if not selected:
-        print(_msg("未选择任何目标。", "No targets selected."))
+        print(_msg("  未选择任何目标。", "  No targets selected."))
         return True
 
-    print()
-    for t in selected:
+    # ── Phase 2: Execute uninstall ──
+    _header(_msg(f"开始卸载（共 {len(selected)} 个目标）",
+                 f"Uninstalling ({len(selected)} target(s))"))
+
+    for i, t in enumerate(selected, 1):
+        print(_msg(f"  [{i}/{len(selected)}] {t}", f"  [{i}/{len(selected)}] {t}"))
         uninstall(t)
         print()
+
+    # ── Phase 3: Summary ──
+    _header(_msg("卸载结果", "Uninstall Summary"))
+    for t in selected:
+        print(f"  ✓ {t:10} {_msg('已卸载', 'removed')}")
+
+    print()
+    print(_msg(f"  共卸载 {len(selected)} 个目标。",
+               f"  {len(selected)} target(s) uninstalled."))
+    return True
     return True
 
 
@@ -642,12 +684,11 @@ def _detect_installed_targets() -> list[str]:
 
 
 def update(switch_branch: str = None) -> None:
-    """Update HelloAGENTS to the latest version, then auto-sync installed targets.
-
-    Args:
-        switch_branch: If provided, switch to this branch (e.g. 'beta', 'main').
-    """
+    """Update HelloAGENTS to the latest version, then auto-sync installed targets."""
     import subprocess
+
+    # ── Phase 1: Update package ──
+    _header(_msg("更新 HelloAGENTS 包", "Update HelloAGENTS Package"))
 
     local_ver = "unknown"
     try:
@@ -656,21 +697,21 @@ def update(switch_branch: str = None) -> None:
         pass
 
     branch = switch_branch or _detect_channel()
-    print(_msg(f"当前版本: {local_ver}", f"Current version: {local_ver}"))
-    print(_msg(f"分支: {branch}", f"Branch: {branch}"))
+    print(_msg(f"  当前版本: {local_ver}", f"  Current version: {local_ver}"))
+    print(_msg(f"  分支: {branch}", f"  Branch: {branch}"))
+    print()
 
     branch_suffix = f"@{branch}" if branch != "main" else ""
     updated = False
     method = _detect_install_method()
 
     if method == "uv":
-        # Installed via uv → update with uv
         uv_url = f"git+{REPO_URL}" + branch_suffix
         uv_cmd = ["uv", "tool", "install", "--from", uv_url, "helloagents", "--force"]
         try:
             result = subprocess.run(uv_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
             if result.returncode == 0:
-                print(result.stdout.strip() if result.stdout.strip() else _msg("更新完成 (uv)。", "Update complete (uv)."))
+                print(result.stdout.strip() if result.stdout.strip() else _msg("  ✓ 包更新完成 (uv)", "  ✓ Package updated (uv)"))
                 updated = True
             else:
                 stderr = result.stderr.strip()
@@ -680,15 +721,14 @@ def update(switch_branch: str = None) -> None:
             print(_msg("  警告: 未找到 uv，回退到 pip。", "  Warning: uv not found, falling back to pip."))
 
     if not updated:
-        # Installed via pip, or uv fallback
         pip_url = f"git+{REPO_URL}.git" + branch_suffix
         pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", pip_url]
         if method == "uv":
-            print(_msg("尝试 pip 回退...", "Trying pip fallback..."))
+            print(_msg("  尝试 pip 回退...", "  Trying pip fallback..."))
         try:
             result = subprocess.run(pip_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
             if result.returncode == 0:
-                print(_msg("更新完成 (pip)。", "Update complete (pip)."))
+                print(_msg("  ✓ 包更新完成 (pip)", "  ✓ Package updated (pip)"))
                 updated = True
             else:
                 stderr = result.stderr.strip()
@@ -699,34 +739,40 @@ def update(switch_branch: str = None) -> None:
 
     if not updated:
         pip_url = f"git+{REPO_URL}.git" + branch_suffix
-        print(_msg("更新失败。请手动执行:", "Update failed. Try manually:"))
-        print(f"  pip install --upgrade {pip_url}")
+        print(_msg("  ✗ 更新失败。请手动执行:", "  ✗ Update failed. Try manually:"))
+        print(f"    pip install --upgrade {pip_url}")
         return
 
-    # Auto-sync installed targets
+    # ── Phase 2: Sync installed targets ──
     targets = _detect_installed_targets()
     if targets:
-        print(_msg(f"\n自动同步已安装的目标: {', '.join(targets)}",
-                   f"\nAuto-syncing installed targets: {', '.join(targets)}"))
-        for t in targets:
-            print()
+        _header(_msg(f"同步已安装的 CLI 工具（共 {len(targets)} 个）",
+                     f"Syncing Installed CLI Targets ({len(targets)} target(s))"))
+        for i, t in enumerate(targets, 1):
+            print(_msg(f"  [{i}/{len(targets)}] {t}", f"  [{i}/{len(targets)}] {t}"))
             install(t)
+            print()
+
+        _header(_msg("更新完成", "Update Complete"))
+        for t in targets:
+            print(f"  ✓ {t:10} {_msg('已同步', 'synced')}")
+        print()
     else:
-        print(_msg("\n未检测到已安装的 CLI 目标。执行 'helloagents install <target>' 同步。",
-                   "\nNo installed CLI targets detected. Run 'helloagents install <target>' to sync."))
+        print()
+        print(_msg("  未检测到已安装的 CLI 目标。执行 'helloagents' 选择安装。",
+                   "  No installed CLI targets detected. Run 'helloagents' to install."))
 
 
 def status() -> None:
     """Show installation status for all CLIs."""
-    print(_msg("HelloAGENTS 安装状态", "HelloAGENTS Installation Status"))
-    print("=" * 40)
+    _header(_msg("安装状态", "Installation Status"))
 
     try:
         local_ver = get_version("helloagents")
         branch = _detect_channel()
-        print(_msg(f"包版本: {local_ver} ({branch})", f"Package version: {local_ver} ({branch})"))
+        print(_msg(f"  包版本: {local_ver} ({branch})", f"  Package version: {local_ver} ({branch})"))
     except Exception:
-        print(_msg("包版本: 未知", "Package version: unknown"))
+        print(_msg("  包版本: 未知", "  Package version: unknown"))
 
     print()
 
@@ -740,31 +786,31 @@ def status() -> None:
         rules_exists = rules_file.exists()
 
         if not cli_exists:
-            status_str = _msg("未检测", "not detected")
+            mark = "·"
+            status_str = _msg("未检测到该工具", "tool not found")
         elif plugin_exists and rules_exists:
-            status_str = _msg("已安装", "installed")
+            mark = "✓"
+            status_str = _msg("已安装 HelloAGENTS", "HelloAGENTS installed")
         elif plugin_exists or rules_exists:
-            status_str = _msg("不完整", "partial")
+            mark = "!"
+            status_str = _msg("安装不完整", "partial install")
         else:
-            status_str = _msg("未安装", "not installed")
+            mark = "·"
+            status_str = _msg("未安装 HelloAGENTS", "HelloAGENTS not installed")
 
-        print(f"  {name:10} [{status_str}]")
-        if cli_exists:
-            print(_msg(f"             目录: {cli_dir}", f"             Dir: {cli_dir}"))
+        print(f"  {mark} {name:10} {status_str}")
 
     print()
 
 
 def clean() -> None:
-    """Clean caches from all installed CLI targets.
+    """Clean caches from all installed CLI targets."""
+    _header(_msg("清理缓存", "Clean Caches"))
 
-    Removes __pycache__ directories and .pyc files under each
-    CLI's helloagents plugin directory.
-    """
     targets = _detect_installed_targets()
     if not targets:
-        print(_msg("未检测到已安装的 CLI 目标，无需清理。",
-                   "No installed CLI targets detected. Nothing to clean."))
+        print(_msg("  未检测到已安装的 CLI 目标，无需清理。",
+                   "  No installed CLI targets detected. Nothing to clean."))
         return
 
     total_removed = 0
@@ -777,55 +823,64 @@ def clean() -> None:
         if not plugin_dir.exists():
             continue
 
-        # Remove __pycache__ directories
         for cache_dir in list(plugin_dir.rglob("__pycache__")):
             if cache_dir.is_dir():
                 shutil.rmtree(cache_dir)
                 removed += 1
 
-        # Remove stray .pyc files
         for pyc_file in list(plugin_dir.rglob("*.pyc")):
             if pyc_file.is_file():
                 pyc_file.unlink()
                 removed += 1
 
         if removed:
-            print(_msg(f"  {name}: 清理了 {removed} 个缓存项",
-                       f"  {name}: cleaned {removed} cache item(s)"))
+            print(f"  ✓ {name:10} {_msg(f'清理了 {removed} 个缓存项', f'cleaned {removed} cache item(s)')}")
             total_removed += removed
+        else:
+            print(f"  · {name:10} {_msg('无缓存', 'no cache')}")
 
+    print()
     if total_removed:
-        print(_msg(f"\n共清理 {total_removed} 个缓存项。",
-                   f"\nTotal: {total_removed} cache item(s) removed."))
+        print(_msg(f"  共清理 {total_removed} 个缓存项。",
+                   f"  Total: {total_removed} cache item(s) removed."))
     else:
-        print(_msg("未发现缓存，已是干净状态。", "No caches found. Already clean."))
+        print(_msg("  已是干净状态。", "  Already clean."))
 
 
 def _interactive_main() -> None:
     """Show main interactive menu for all operations."""
+    _divider()
     try:
         ver = get_version("helloagents")
-        print(f"HelloAGENTS v{ver}")
+        print(f"  HelloAGENTS v{ver}")
     except Exception:
-        print("HelloAGENTS")
+        print("  HelloAGENTS")
+    _divider()
 
-    print()
     actions = [
-        (_msg("安装到 CLI 目标", "Install to CLI targets"), "install"),
-        (_msg("更新 HelloAGENTS", "Update HelloAGENTS"), "update"),
-        (_msg("卸载已安装的 CLI 目标", "Uninstall from CLI targets"), "uninstall"),
+        (_msg("安装到 CLI 工具", "Install to CLI targets"), "install"),
+        (_msg("卸载已安装的 CLI 工具", "Uninstall from CLI targets"), "uninstall"),
         (_msg("重新安装（覆盖已有目标）", "Reinstall (overwrite existing targets)"), "reinstall"),
+        (_msg("更新 HelloAGENTS 包", "Update HelloAGENTS package"), "update"),
+        None,  # separator
         (_msg("查看安装状态", "Show installation status"), "status"),
         (_msg("清理缓存", "Clean caches"), "clean"),
     ]
 
-    print(_msg("请选择操作:", "Select an action:"))
     print()
-    for i, (label, _) in enumerate(actions, 1):
-        print(f"  [{i}] {label}")
+    print(_msg("  请选择操作:", "  Select an action:"))
+    print()
+    num = 1
+    for item in actions:
+        if item is None:
+            print("  " + "─" * 30)
+            continue
+        label, _ = item
+        print(f"  [{num}] {label}")
+        num += 1
 
     print()
-    prompt = _msg("请输入编号: ", "Enter number: ")
+    prompt = _msg("  请输入编号: ", "  Enter number: ")
 
     try:
         choice = input(prompt).strip()
@@ -836,16 +891,19 @@ def _interactive_main() -> None:
     if not choice:
         return
 
+    # Build flat action list (without separators) for index mapping
+    flat_actions = [a for a in actions if a is not None]
+
     try:
         idx = int(choice)
-        if idx < 1 or idx > len(actions):
-            print(_msg("无效编号。", "Invalid number."))
+        if idx < 1 or idx > len(flat_actions):
+            print(_msg("  无效编号。", "  Invalid number."))
             return
     except ValueError:
-        print(_msg("无效输入。", "Invalid input."))
+        print(_msg("  无效输入。", "  Invalid input."))
         return
 
-    action = actions[idx - 1][1]
+    action = flat_actions[idx - 1][1]
 
     if action == "install":
         _interactive_install()
@@ -865,14 +923,12 @@ def _interactive_reinstall() -> bool:
     """Reinstall HelloAGENTS to selected CLI targets (overwrite)."""
     installed = _detect_installed_targets()
     if not installed:
-        print(_msg("未检测到已安装的 CLI 目标，请先使用安装功能。",
-                    "No installed CLI targets detected. Please install first."))
+        print(_msg("  未检测到已安装的 CLI 目标，请先使用安装功能。",
+                    "  No installed CLI targets detected. Please install first."))
         return True
 
-    print()
-    print(_msg("已安装的 CLI 目标（将覆盖重装）:",
-               "Installed CLI targets (will overwrite):"))
-    print()
+    # ── Phase 1: Select targets ──
+    _header(_msg("选择要重装的目标（将覆盖）", "Select Targets to Reinstall (overwrite)"))
 
     for i, name in enumerate(installed, 1):
         config = CLI_TARGETS[name]
@@ -881,8 +937,8 @@ def _interactive_reinstall() -> bool:
 
     print()
     prompt = _msg(
-        "请输入要重装的编号（如 1 3）或 all 全选，直接回车跳过: ",
-        "Enter numbers (e.g. 1 3) or 'all', press Enter to skip: ",
+        "  请输入要重装的编号，可多选（如 1 3）或 all 全选，直接回车跳过: ",
+        "  Enter numbers to reinstall, multi-select supported (e.g. 1 3) or 'all', press Enter to skip: ",
     )
 
     try:
@@ -892,7 +948,7 @@ def _interactive_reinstall() -> bool:
         return True
 
     if not choice:
-        print(_msg("已跳过。", "Skipped."))
+        print(_msg("  已跳过。", "  Skipped."))
         return True
 
     if choice.lower() == "all":
@@ -915,20 +971,38 @@ def _interactive_reinstall() -> bool:
                 print(_msg(f"  忽略无效输入: {n}", f"  Ignoring invalid input: {n}"))
 
     if not selected:
-        print(_msg("未选择任何目标。", "No targets selected."))
+        print(_msg("  未选择任何目标。", "  No targets selected."))
         return True
 
-    print()
-    failed = []
-    for t in selected:
-        if not install(t):
-            failed.append(t)
+    # ── Phase 2: Execute reinstall ──
+    _header(_msg(f"开始重装（共 {len(selected)} 个目标）",
+                 f"Reinstalling ({len(selected)} target(s))"))
+
+    results = {}
+    for i, t in enumerate(selected, 1):
+        print(_msg(f"  [{i}/{len(selected)}] {t}", f"  [{i}/{len(selected)}] {t}"))
+        if install(t):
+            results[t] = True
+        else:
+            results[t] = False
         print()
 
-    if failed:
-        print(_msg(f"失败: {', '.join(failed)}", f"Failed: {', '.join(failed)}"))
+    # ── Phase 3: Summary ──
+    _header(_msg("重装结果", "Reinstall Summary"))
+    for t, ok in results.items():
+        mark = "✓" if ok else "✗"
+        status_text = _msg("成功", "OK") if ok else _msg("失败", "FAILED")
+        print(f"  {mark} {t:10} {status_text}")
+
+    succeeded = sum(1 for v in results.values() if v)
+    failed_count = len(results) - succeeded
+    print()
+    if failed_count:
+        print(_msg(f"  共 {succeeded} 个成功，{failed_count} 个失败。",
+                   f"  {succeeded} succeeded, {failed_count} failed."))
         return False
-    print(_msg("重新安装完成。", "Reinstall complete."))
+    print(_msg(f"  共 {succeeded} 个目标重装成功。",
+               f"  All {succeeded} target(s) reinstalled successfully."))
     return True
 
 
