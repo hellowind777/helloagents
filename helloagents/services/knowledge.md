@@ -145,9 +145,9 @@
 - **[{模块名}]**: {修复描述}
   - 方案: [{YYYYMMDDHHMM}_{fix}](archive/{YYYY-MM}/{YYYYMMDDHHMM}_{fix}/)
 
-### 微调
-- **[{模块名}]**: {微调描述}
-  - 类型: 微调（无方案包）
+### 快速修改
+- **[{模块名}]**: {修改描述}
+  - 类型: 快速修改（无方案包）
   - 文件: {文件路径}:{行号范围}
 
 ### 回滚
@@ -163,11 +163,11 @@
 
 | 模式 | 触发 | 记录位置 | 特殊规则 |
 |------|------|----------|----------|
-| R2 适度/R3 标准 | 开发实施完成后 | CHANGELOG.md | 必填：版本号+日期+分类+模块+描述+方案链接 |
-| R1 微调 | ROUTING_LEVEL = R1 | CHANGELOG.md 微调分类 | KB_SKIPPED=true，不触发完整知识库创建 |
+| R2 简化流程/R3 标准流程 | 开发实施完成后 | CHANGELOG.md | 必填：版本号+日期+分类+模块+描述+方案链接 |
+| R1 快速流程 | ROUTING_LEVEL = R1 | CHANGELOG.md 快速修改分类 | KB_SKIPPED=true，不触发完整知识库创建 |
 | Overview 归档 | overview 方案包归档时 | CHANGELOG.md 文档分类 | Patch 版本递增 |
 
-**R1 微调 KB 行为:**
+**R1 快速流程 KB 行为:**
 ```yaml
 KB_CREATE_MODE=0 且无 {KB_ROOT}/: 跳过 CHANGELOG
 KB_CREATE_MODE=1/2/3 且无 {KB_ROOT}/: 仅创建 {KB_ROOT}/ 和 CHANGELOG.md
@@ -182,7 +182,7 @@ KB_CREATE_MODE=1/2/3 且有 {KB_ROOT}/: 更新 CHANGELOG.md
 
 获取优先级: 用户指定 → 主模块解析（已知项目类型时直接读取对应来源）→ Git标签 → CHANGELOG最新递增 → 0.1.0
 
-自动递增: 破坏性→Major+1 | 新功能→Minor+1 | 修复/优化/微调→Patch+1
+自动递增: 破坏性→Major+1 | 新功能→Minor+1 | 修复/优化/快速修改→Patch+1
 ```
 
 ### 多语言版本号来源

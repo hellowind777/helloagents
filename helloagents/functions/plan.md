@@ -46,11 +46,11 @@
 
   委托规划:
     WORKFLOW_MODE = DELEGATED_PLAN
-    按 R3 标准进入阶段链（见下方"阶段路由"）
+    按 R3 标准流程进入阶段链（见下方"阶段路由"）
 
   交互式规划:
     WORKFLOW_MODE = INTERACTIVE
-    按 R3 标准进入阶段链，每个阶段完成后 ⛔ END_TURN
+    按 R3 标准流程进入阶段链，每个阶段完成后 ⛔ END_TURN
 
   改需求:
     用户补充需求 → 回到回合A 重新评估
@@ -62,7 +62,7 @@
 ### 阶段路由
 
 ```yaml
-R3 标准阶段链:
+R3 标准流程阶段链:
   1. 加载 stages/analyze.md [阻塞式] → 项目分析
   2. 加载 stages/design.md [阻塞式] → 方案设计（含多方案对比）
   3. 验收: 按 G8 流程级验收规则执行
@@ -75,8 +75,8 @@ R3 标准阶段链:
 ```yaml
 当评估后发现任务实际为 R1 级别:
   输出提示 + 选项:
-    1. 直接执行（推荐）: WORKFLOW_MODE = INTERACTIVE → 加载 stages/tweak.md → 完成 → 状态重置
-    2. 强制规划: 升级为 R2 → 按 R3 阶段路由执行
+    1. 直接执行（推荐）: WORKFLOW_MODE = INTERACTIVE → 按 G4 R1 快速流程执行 → 完成 → 状态重置
+    2. 强制规划: 升级为 R2 简化流程 → 按阶段路由执行
     3. 取消: → 状态重置
 
   ⛔ END_TURN

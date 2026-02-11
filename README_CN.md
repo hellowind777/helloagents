@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.2-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.3-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -64,7 +64,7 @@
 | 分发形态 | 多 bundle 目录，每个 CLI 一份 | 统一 Python 包 + 安装器 CLI |
 | 安装方式 | 手工复制配置与技能目录 | pip/uv 安装 + `helloagents` 交互菜单 |
 | 路由系统 | 三层路由（Context → Tools → Intent） | 五维度评分路由（R0–R3） |
-| 工作流阶段 | 4 阶段（Evaluate、Analyze、Design、Develop） | 5 阶段（+Tweak），支持子代理调度 |
+| 工作流阶段 | 4 阶段（Evaluate、Analyze、Design、Develop） | 4 阶段 + R1 快速流程，支持子代理调度 |
 | 代理系统 | 无 | RLM 12 个专业角色 + Session 隔离 |
 | 记忆系统 | 无持久化 | 三层记忆：L0 用户、L1 项目知识库、L2 会话 |
 | 安全检测 | 基础 EHRB | 三层 EHRB（关键词 + 语义 + 工具输出） |
@@ -92,7 +92,7 @@
 
 **五维度路由（R0–R3）**
 
-每条输入按动作需求、目标定位度、决策需求、影响范围、EHRB 风险五个维度评分，路由到 R0 直接响应、R1 快速、R2 简化或 R3 标准流程。
+每条输入按动作需求、目标定位度、决策需求、影响范围、EHRB 风险五个维度评分，路由到 R0 直接响应、R1 快速流程、R2 简化流程或 R3 标准流程。
 
 **收益：** 简单问题秒回，复杂任务走完整流程。
 </td>
@@ -290,7 +290,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 1. 安装包（脚本/pip/uv）并执行 `helloagents` 弹出交互菜单选择目标 CLI（也可直接 `helloagents install <target>`）。
 2. 在 AI 聊天中，每条输入按五个维度评分并路由到 R0–R3。
-3. R2/R3 任务进入阶段链：EVALUATE → ANALYZE → DESIGN → DEVELOP → TWEAK。
+3. R2/R3 任务进入阶段链：EVALUATE → ANALYZE → DESIGN → DEVELOP。R1 快速流程直接处理单点操作。
 4. RLM 根据任务复杂度调度专业子代理（如 explorer、designer、implementer）。
 5. EHRB 在每个步骤扫描破坏性操作，高风险行为需用户明确确认。
 6. 三层记忆（用户 / 项目知识库 / 会话）跨会话保持上下文。
@@ -299,10 +299,10 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 ## 仓库结构说明
 
 - AGENTS.md：路由与工作流协议
-- pyproject.toml：包元数据（v2.2.2）
+- pyproject.toml：包元数据（v2.2.3）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
-- helloagents/stages：analyze、design、develop、tweak
+- helloagents/stages：analyze、design、develop
 - helloagents/services：knowledge、package、memory 等服务
 - helloagents/rules：state、cache、tools、scaling 规则
 - helloagents/rlm：角色库与编排辅助
@@ -357,11 +357,11 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.2（当前版本）
+### v2.2.3（当前版本）
 
 - **RLM 子代理系统：** 12 个专业角色，自动调度 + Session 隔离
 - **五维度路由（R0–R3）：** 替代旧版三层路由
-- **五阶段工作流：** 新增 TWEAK 阶段用于迭代微调
+- **四阶段工作流 + R1 快速流程：** 阶段链（评估→分析→设计→开发）与 R1 快速流程并行
 - **三层记忆：** L0 用户偏好、L1 项目知识库、L2 会话摘要
 - **三层 EHRB：** 关键词 + 语义 + 工具输出安全检测
 - **Package-first 安装器：** pip/uv 安装 + `helloagents` 交互菜单
@@ -394,6 +394,6 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 如果这个项目对你有帮助，欢迎点 Star。
 
-<sub>感谢 <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> 对本项目的支持</sub>
+感谢 <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> 对本项目的支持
 
 </div>
