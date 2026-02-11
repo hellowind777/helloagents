@@ -234,6 +234,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # 一键脚本（推荐，装完自动弹出交互菜单）
     # macOS / Linux
     curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
@@ -254,6 +255,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # 一键脚本（推荐，装完自动弹出交互菜单）
     # macOS / Linux
     curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 

@@ -20,6 +20,11 @@ function Write-Ok    { param([string]$Msg) Write-Host "[ok]    $Msg" -Foreground
 function Write-Warn  { param([string]$Msg) Write-Host "[warn]  $Msg" -ForegroundColor Yellow }
 function Write-Err   { param([string]$Msg) Write-Host "[error] $Msg" -ForegroundColor Red; exit 1 }
 
+# ─── Step 0: Detect git ───
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Write-Err (Msg "需要 git，但未找到。请先安装 git。" "git is required but not found. Please install git first.")
+}
+
 # ─── Step 1: Detect Python ───
 Write-Info (Msg "检测 Python..." "Detecting Python...")
 
@@ -73,9 +78,9 @@ if ($HasUv) {
 } else {
     Write-Info (Msg "使用 pip 安装..." "Installing with pip...")
     if ($Branch -eq "main") {
-        & $PythonCmd -m pip install --upgrade "git+$Repo.git"
+        & $PythonCmd -m pip install --upgrade --force-reinstall "git+$Repo.git"
     } else {
-        & $PythonCmd -m pip install --upgrade "git+$Repo.git@$Branch"
+        & $PythonCmd -m pip install --upgrade --force-reinstall "git+$Repo.git@$Branch"
     }
 }
 
@@ -87,11 +92,9 @@ if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
 Write-Host ""
 Write-Info (Msg "验证安装..." "Verifying installation...")
 
-try {
-    & helloagents version 2>&1 | Out-Null
+if (Get-Command helloagents -ErrorAction SilentlyContinue) {
     Write-Ok (Msg "helloagents 包已就绪！" "helloagents package is ready!")
-    & helloagents version
-} catch {
+} else {
     Write-Warn (Msg "helloagents 命令未在 PATH 中找到。" "helloagents command not found in PATH.")
     Write-Warn (Msg "可能需要重启终端或将安装路径加入 PATH。" "You may need to restart your terminal or add the install location to PATH.")
 }
@@ -102,7 +105,6 @@ Write-Host (Msg "✅ 第一步完成：helloagents 包下载成功。" "✅ Step
 Write-Host (Msg "👉 第二步：选择要安装到的目标 CLI" "👉 Step 2: Select target CLIs to install to") -ForegroundColor White
 
 try {
-    & helloagents version 2>&1 | Out-Null
     Write-Host ""
     & helloagents
 } catch {

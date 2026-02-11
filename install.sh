@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -eu
 
 # ─── HelloAGENTS Installer (macOS / Linux) ───
 # Usage:
@@ -39,13 +39,18 @@ ok()    { printf "${GREEN}[ok]${RESET}    %s\n" "$*"; }
 warn()  { printf "${YELLOW}[warn]${RESET}  %s\n" "$*"; }
 error() { printf "${RED}[error]${RESET} %s\n" "$*"; exit 1; }
 
+# ─── Step 0: Detect git ───
+if ! command -v git >/dev/null 2>&1; then
+    error "$(msg "需要 git，但未找到。请先安装 git。" "git is required but not found. Please install git first.")"
+fi
+
 # ─── Step 1: Detect Python ───
 info "$(msg "检测 Python..." "Detecting Python...")"
 
 PYTHON_CMD=""
 for cmd in python3 python; do
     if command -v "$cmd" >/dev/null 2>&1; then
-        version=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+')
+        version=$("$cmd" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
         major=$(echo "$version" | cut -d. -f1)
         minor=$(echo "$version" | cut -d. -f2)
         if [ "$major" -gt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -ge 10 ]; }; then
@@ -85,9 +90,9 @@ if [ "$HAS_UV" = true ]; then
 else
     info "$(msg "使用 pip 安装..." "Installing with pip...")"
     if [ "$BRANCH" = "main" ]; then
-        "$PYTHON_CMD" -m pip install --upgrade "git+${REPO}.git"
+        "$PYTHON_CMD" -m pip install --upgrade --force-reinstall "git+${REPO}.git"
     else
-        "$PYTHON_CMD" -m pip install --upgrade "git+${REPO}.git@${BRANCH}"
+        "$PYTHON_CMD" -m pip install --upgrade --force-reinstall "git+${REPO}.git@${BRANCH}"
     fi
 fi
 
@@ -97,7 +102,6 @@ info "$(msg "验证安装..." "Verifying installation...")"
 
 if command -v helloagents >/dev/null 2>&1; then
     ok "$(msg "helloagents 包已就绪！" "helloagents package is ready!")"
-    helloagents version 2>/dev/null || true
 else
     warn "$(msg "helloagents 命令未在 PATH 中找到。" "helloagents command not found in PATH.")"
     warn "$(msg "可能需要重启终端或将安装路径加入 PATH。" "You may need to restart your terminal or add the install location to PATH.")"

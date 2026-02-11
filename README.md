@@ -233,6 +233,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     # One-line script (recommended, auto-launches interactive menu after install)
     # macOS / Linux
     curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
@@ -253,6 +254,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     # One-line script (recommended, auto-launches interactive menu after install)
     # macOS / Linux
     curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
