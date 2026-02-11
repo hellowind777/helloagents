@@ -68,7 +68,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 | Agent system | None | RLM with 12 specialized roles and session isolation |
 | Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
 | Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
-| CLI targets | 5 visible bundle targets | 6 targets: claude, codex, opencode, gemini, qwen, grok |
+| CLI targets | 5 visible bundle targets | 6 targets: codex, claude, gemini, qwen, grok, opencode |
 | Commands | 12 | 15 workflow commands |
 
 > ⚠️ **Migration notice:** Because repository structure and installation workflow changed in v2.x, legacy versions were moved to **helloagents-archive**: https://github.com/hellowind777/helloagents-archive
@@ -330,7 +330,7 @@ These commands run inside AI chat, not your system shell.
   A: Both. CLI manages installation; workflow behavior comes from AGENTS.md and helloagents docs.
 
 - Q: Which target should I install?
-  A: Use the CLI you run: codex, claude, opencode, gemini, qwen, or grok.
+  A: Use the CLI you run: codex, claude, gemini, qwen, grok, or opencode.
 
 - Q: What if a rules file already exists?
   A: Non-HelloAGENTS files are backed up before replacement.

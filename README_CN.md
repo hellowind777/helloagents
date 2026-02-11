@@ -68,7 +68,7 @@
 | 代理系统 | 无 | RLM 12 个专业角色 + Session 隔离 |
 | 记忆系统 | 无持久化 | 三层记忆：L0 用户、L1 项目知识库、L2 会话 |
 | 安全检测 | 基础 EHRB | 三层 EHRB（关键词 + 语义 + 工具输出） |
-| 目标 CLI | 5 个 | 6 个：claude、codex、opencode、gemini、qwen、grok |
+| 目标 CLI | 5 个 | 6 个：codex、claude、gemini、qwen、grok、opencode |
 | 工作流命令 | 12 个 | 15 个 |
 
 > ⚠️ **迁移提醒：** 由于 v2.x 的仓库结构与安装方式已调整，旧版本已迁移到归档仓库：**helloagents-archive**
@@ -331,7 +331,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
   A: 两者都是。CLI 管安装，工作流行为由 AGENTS.md 与 helloagents 文档定义。
 
 - Q: 应该安装哪个目标？
-  A: 按你使用的 CLI 选择：codex、claude、opencode、gemini、qwen、grok。
+  A: 按你使用的 CLI 选择：codex、claude、gemini、qwen、grok、opencode。
 
 - Q: 已有规则文件会怎样？
   A: 非 HelloAGENTS 文件会先备份再替换。

@@ -96,7 +96,7 @@ printf "\n"
 info "$(msg "验证安装..." "Verifying installation...")"
 
 if command -v helloagents >/dev/null 2>&1; then
-    ok "$(msg "helloagents 安装成功！" "helloagents installed successfully!")"
+    ok "$(msg "helloagents 包已就绪！" "helloagents package is ready!")"
     helloagents version 2>/dev/null || true
 else
     warn "$(msg "helloagents 命令未在 PATH 中找到。" "helloagents command not found in PATH.")"
@@ -104,7 +104,8 @@ else
 fi
 
 # ─── Step 5: Interactive target selection ───
-printf "\n${BOLD}${GREEN}$(msg "安装完成！" "Installation complete!")${RESET}\n"
+printf "\n${BOLD}${GREEN}$(msg "✅ 第一步完成：helloagents 包下载成功。" "✅ Step 1 done: helloagents package installed.")${RESET}\n"
+printf "${BOLD}$(msg "👉 第二步：选择要安装到的目标 CLI" "👉 Step 2: Select target CLIs to install to")${RESET}\n"
 
 if command -v helloagents >/dev/null 2>&1; then
     printf "\n"
