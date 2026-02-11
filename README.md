@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.2-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.3-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -64,7 +64,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 | Distribution | Multiple bundle folders per CLI | One Python package + installer CLI |
 | Installation | Manual copy of config and skill folders | pip/uv install + `helloagents` interactive menu |
 | Routing | Three-layer (Context → Tools → Intent) | Five-dimension scoring (R0–R3) |
-| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 5 stages (+Tweak) with sub-agent dispatch |
+| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 4 stages + R1 fast flow, with sub-agent dispatch |
 | Agent system | None | RLM with 12 specialized roles and session isolation |
 | Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
 | Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
@@ -91,7 +91,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 
 **Five-dimension routing (R0–R3)**
 
-Every input is scored on action need, target clarity, decision scope, impact range, and EHRB risk — then routed to R0 direct, R1 fast, R2 simplified, or R3 standard flow.
+Every input is scored on action need, target clarity, decision scope, impact range, and EHRB risk — then routed to R0 direct response, R1 fast flow, R2 simplified flow, or R3 standard flow.
 
 **Your gain:** proportional effort — simple queries stay fast, complex tasks get full process.
 </td>
@@ -289,7 +289,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`).
 2. In AI chat, every input is scored on five dimensions and routed to R0–R3.
-3. R2/R3 tasks enter the stage chain: EVALUATE → ANALYZE → DESIGN → DEVELOP → TWEAK.
+3. R2/R3 tasks enter the stage chain: EVALUATE → ANALYZE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
 4. RLM dispatches specialized sub-agents (e.g. explorer, designer, implementer) based on task complexity.
 5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation.
 6. Three-layer memory (user / project KB / session) preserves context across sessions.
@@ -298,10 +298,10 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 ## Repository Guide
 
 - AGENTS.md: router and workflow protocol
-- pyproject.toml: package metadata (v2.2.2)
+- pyproject.toml: package metadata (v2.2.3)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
-- helloagents/stages: analyze, design, develop, tweak
+- helloagents/stages: analyze, design, develop
 - helloagents/services: knowledge, package, memory and support services
 - helloagents/rules: state, cache, tools, scaling
 - helloagents/rlm: role library and orchestration helpers
@@ -356,11 +356,11 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.2 (current)
+### v2.2.3 (current)
 
 - **RLM sub-agent system:** 12 specialized roles with automatic dispatch and session isolation
 - **Five-dimension routing (R0–R3):** replaces legacy three-layer routing
-- **Five-stage workflow:** added TWEAK stage for iterative refinement
+- **Four-stage workflow + R1 fast flow:** stage chain (Evaluate → Analyze → Design → Develop) with R1 fast flow for single-point operations
 - **Three-layer memory:** L0 user preferences, L1 project knowledge base, L2 session summaries
 - **Three-layer EHRB:** keyword + semantic + tool-output safety detection
 - **Package-first installer:** pip/uv install with `helloagents` interactive menu
@@ -393,6 +393,6 @@ This project is licensed under the MIT License. See LICENSE.
 
 If this project helps your workflow, a star is always appreciated.
 
-<sub>Thanks to <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> for supporting this project</sub>
+Thanks to <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> for supporting this project
 
 </div>

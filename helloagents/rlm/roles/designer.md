@@ -89,7 +89,7 @@
   - implementer 按任务清单执行代码修改
 
 调用场景:
-  - DESIGN 阶段 R2 适度: moderate/complex 时强制调用，执行单方案设计
-  - DESIGN 阶段 R3 标准: 不调用 designer（由 analyzer 负责多方案评估）
+  - DESIGN 阶段 R2 简化流程: moderate/complex 时强制调用，执行单方案设计
+  - DESIGN 阶段 R3 标准流程: 不调用 designer（由 analyzer 负责多方案评估）
   - simple 任务: 主代理直接执行，不调用 designer
 ```

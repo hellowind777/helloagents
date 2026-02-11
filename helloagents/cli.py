@@ -1023,10 +1023,6 @@ def main() -> None:
         sys.exit(0)
 
     if cmd == "install":
-        print_usage()
-        sys.exit(0)
-
-    if cmd == "install":
         if len(sys.argv) < 3:
             if not _interactive_install():
                 sys.exit(1)

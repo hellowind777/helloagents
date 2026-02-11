@@ -277,7 +277,15 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
     适用: 目标可直接定位的单点操作（修改、运行、转换等）
     流程: EHRB 检测 → 执行 → 验证
     输出: ⚡ 状态栏 + 执行结果 + 变更/结果摘要 + 下一步引导
-    阶段链: 编码→加载 stages/tweak.md [阻塞式] / 非编码→直接执行
+    阶段链: 编码→R1 执行流程 / 非编码→直接执行
+    R1 执行流程（编码类任务）:
+      设置: KB_SKIPPED=true（R1 不触发完整知识库创建）
+      1. 定位: 文件查找 + 内容搜索定位修改位置（失败→INTERACTIVE 询问用户 | DELEGATED 输出错误终止）
+      2. 修改: 直接修改代码，不创建方案包；超出范围→升级判定
+      3. KB同步: CHANGELOG.md "快速修改"分类下记录（格式: - **[模块名]**: 描述 + 类型标注 + 文件:行号范围）
+      4. 遗留方案包扫描 [→ services/package.md]
+      5. 验收（均为警告性）: 变更已应用 + 快速测试（如有测试框架，无则跳过）
+    升级判定: 执行中发现超出预期（需分析后定位/涉及设计决策/跨模块影响/EHRB）→ 升级为 R2
   R2 简化流程:
     适用: 需要先分析再执行的局部任务，有局部决策
     流程: 快速评分（不追问）+EHRB → 简要确认（评分<7时标注信息不足） → ⛔ END_TURN → 用户确认后执行
@@ -291,7 +299,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 命令路径映射:
   ~auto: 强制 R3（全阶段自动推进）
   ~plan: 强制 R3（只到方案设计）
-  ~exec: 强制 R1（执行已有方案包）
+  ~exec: 直接执行（执行已有方案包）
   其他轻量闸门命令: 需求理解 + EHRB 检测（不评分不追问）
 ```
 
@@ -417,7 +425,7 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 
 | 命令模式 | 触发 | 流程 |
 |---------|------|------|
-| R1 快速流程 | 命令指定 | 评估→EHRB→定位→修改→KB同步(按开关)→完成 |
+| R1 快速流程 | 命令指定 | 评估→EHRB→定位→修改→KB同步(按开关)→验收→完成 |
 | R2 简化流程 | 命令指定 | 评估→确认→分析→规划(跳过多方案)→实施→KB同步(按开关)→完成 |
 | R3 标准流程 | ~auto/~plan 或命令指定 | 评估→确认→分析→完整规划→实施→KB同步(按开关)→完成 |
 | 直接执行 | ~exec（已有方案包） | 选包→实施→KB同步(按开关)→完成 |
@@ -442,12 +450,12 @@ DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止�
 # ─── 工作流变量 ───
 WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN  # 默认 INTERACTIVE
 ROUTING_LEVEL: R0 | R1 | R2 | R3  # 通用路径级别判定 或 命令路径强制指定
-CURRENT_STAGE: 空 | EVALUATE | ANALYZE | DESIGN | DEVELOP | TWEAK
+CURRENT_STAGE: 空 | EVALUATE | ANALYZE | DESIGN | DEVELOP
 STAGE_ENTRY_MODE: NATURAL | DIRECT  # 默认 NATURAL，~exec 设为 DIRECT
 DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分<7时 → true
 
 # ─── 知识库与方案包变量 ───
-KB_SKIPPED: 未设置 | true  # tweak强制true，analyze按KB_CREATE_MODE判定
+KB_SKIPPED: 未设置 | true  # R1强制true，analyze按KB_CREATE_MODE判定
 CREATED_PACKAGE: 空  # design阶段设置
 CURRENT_PACKAGE: 空  # develop阶段确定
 ```
@@ -521,10 +529,10 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 | 触发条件 | 读取文件 |
 |----------|----------|
 | 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
-| 进入项目分析 | stages/analyze.md, services/knowledge.md, rules/state.md, rules/scaling.md |
-| 进入微调模式 | stages/tweak.md, services/package.md, rules/state.md |
-| 进入方案设计 | stages/design.md, services/package.md, services/templates.md, rules/tools.md |
-| 进入开发实施 | stages/develop.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md, rules/tools.md |
+| R1 进入快速流程（编码类） | services/package.md, rules/state.md |
+| R2/R3 进入项目分析 | stages/analyze.md, services/knowledge.md, rules/state.md, rules/scaling.md |
+| R2/R3 进入方案设计 | stages/design.md, services/package.md, services/templates.md, rules/tools.md |
+| R2/R3 进入开发实施 | stages/develop.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md, rules/tools.md |
 | ~auto | functions/auto.md |
 | ~plan | functions/plan.md |
 | ~exec | functions/exec.md |
@@ -553,7 +561,7 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 | analyze | 项目上下文已获取 + TASK_COMPLEXITY 已评估 | ℹ️ 信息性 |
 | design | 方案包结构完整+格式正确 | ⛔ 阻断性 |
 | develop | 阻断性测试通过+代码安全检查+子代理调用合规 [→ G9] | ⛔ 阻断性 |
-| tweak | 变更已应用 | ⚠️ 警告性 |
+| R1 快速流程 | 变更已应用 | ⚠️ 警告性 |
 | evaluate→analyze | 需求评分≥7 | ⛔ 闸门 |
 | analyze→design | 项目上下文已获取 | ⛔ 闸门 |
 | design→develop | 方案包存在 + validate_package.py 通过 | ⛔ 闸门 |
@@ -616,7 +624,7 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 调用格式: [→ G10 调用通道]
 
 强制调用规则（标注"强制"的必须调用，标注"跳过"的可跳过）:
-  EVALUATE/TWEAK: 主代理直接执行，不调用子代理
+  EVALUATE: 主代理直接执行，不调用子代理
   ANALYZE:
     explorer — moderate/complex 强制 | simple 跳过
     analyzer — complex 强制（依赖>5模块时）| 其他跳过
