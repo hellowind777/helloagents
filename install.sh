@@ -90,9 +90,9 @@ if [ "$HAS_UV" = true ]; then
 else
     info "$(msg "使用 pip 安装..." "Installing with pip...")"
     if [ "$BRANCH" = "main" ]; then
-        "$PYTHON_CMD" -m pip install --upgrade --force-reinstall "git+${REPO}.git"
+        "$PYTHON_CMD" -m pip install --upgrade --no-cache-dir "git+${REPO}.git"
     else
-        "$PYTHON_CMD" -m pip install --upgrade --force-reinstall "git+${REPO}.git@${BRANCH}"
+        "$PYTHON_CMD" -m pip install --upgrade --no-cache-dir "git+${REPO}.git@${BRANCH}"
     fi
 fi
 

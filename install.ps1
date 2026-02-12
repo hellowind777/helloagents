@@ -78,9 +78,9 @@ if ($HasUv) {
 } else {
     Write-Info (Msg "使用 pip 安装..." "Installing with pip...")
     if ($Branch -eq "main") {
-        & $PythonCmd -m pip install --upgrade --force-reinstall "git+$Repo.git"
+        & $PythonCmd -m pip install --upgrade --no-cache-dir "git+$Repo.git"
     } else {
-        & $PythonCmd -m pip install --upgrade --force-reinstall "git+$Repo.git@$Branch"
+        & $PythonCmd -m pip install --upgrade --no-cache-dir "git+$Repo.git@$Branch"
     }
 }
 
