@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "HelloAGENTS - Multi-CLI AI agent workflow system",
   "bin": {
     "helloagents": "./bin/cli.mjs"

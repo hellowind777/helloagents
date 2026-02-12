@@ -20,7 +20,7 @@ ENCODING: UTF-8 无BOM
 KB_CREATE_MODE: 2  # 0=OFF, 1=ON_DEMAND, 2=ON_DEMAND_AUTO_FOR_CODING, 3=ALWAYS
 BILINGUAL_COMMIT: 1  # 0=仅 OUTPUT_LANGUAGE, 1=OUTPUT_LANGUAGE + English
 EVAL_MODE: 1  # 1=PROGRESSIVE（渐进式追问，默认）, 2=ONESHOT（一次性追问）
-UPDATE_CHECK: 1  # 0=OFF（关闭更新检查）, 1=ON（每天检查一次，默认）
+UPDATE_CHECK: 72  # 0=OFF（关闭更新检查），正整数=缓存有效小时数（默认 72）
 ```
 
 **开关行为摘要:**
@@ -33,8 +33,8 @@ UPDATE_CHECK: 1  # 0=OFF（关闭更新检查）, 1=ON（每天检查一次，�
 | KB_CREATE_MODE | 3 | 始终自动创建 |
 | EVAL_MODE | 1 | 渐进式追问（默认）：每轮追问1个最低分维度问题，最多5轮 |
 | EVAL_MODE | 2 | 一次性追问：一次性展示所有低分维度问题，用户回答后重新评分，最多3轮 |
-| UPDATE_CHECK | 0 | 关闭更新检查，会话启动时不执行 check_update.py |
-| UPDATE_CHECK | 1 | 会话启动时执行 check_update.py（每天最多检查一次远程版本，有更新时在首次输出中提示） |
+| UPDATE_CHECK | 0 | 关闭更新检查，不显示更新提示 |
+| UPDATE_CHECK | N (正整数) | 首次响应时按 G3 ⬆️ 生成规则检查更新，N 为缓存有效小时数（默认 72） |
 
 > 例外: ~init 显式调用时忽略 KB_CREATE_MODE 开关
 
@@ -156,10 +156,18 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 {空行}
 📁 文件变更:        ← 可选
 📦 遗留方案包:      ← 可选
-⬆️ 发现 HelloAGENTS 新版本 ...  ← 可选，check_update.py 有输出时在会话首次响应中显示，后续响应不再重复
+⬆️ New version {remote_version} available (current {local_version}, branch {branch}). Run 'helloagents update' to upgrade.  ← 可选，UPDATE_CHECK>0 时按下方规则生成
 {空行}
 🔄 下一步: {引导}   ← 必有
 ```
+
+**⬆️ 更新提示生成规则（UPDATE_CHECK>0 时生效）:**
+
+1. 仅在本次会话的首次响应中执行一次，后续响应跳过
+2. 静默读取 `~/.helloagents/.update_cache`（JSON 文件）
+3. 文件存在且 `expires_at`（ISO 日期）晚于当前时间 → `has_update=true` 则用缓存中 `remote_version`、`local_version`、`branch` 填充 ⬆️ 模板显示，`has_update=false` 则跳过
+4. 文件不存在或 `expires_at` 已过期 → 静默执行 `helloagents version --force --cache-ttl {UPDATE_CHECK}`，输出含 `New version` → 提取该行显示为 ⬆️ 行，否则跳过
+5. 任何环节失败均静默跳过，不影响正常响应
 
 **状态图标:**
 
@@ -532,7 +540,7 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 
 | 触发条件 | 读取文件 |
 |----------|----------|
-| 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过；UPDATE_CHECK=1 时静默执行 `python -X utf8 '{HELLOAGENTS_ROOT}/scripts/check_update.py'`，有输出则在会话首次响应中包含（⬆️ 行），无输出或执行失败则跳过，后续响应不再重复 |
+| 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md |
 | R2/R3 进入项目分析 | stages/analyze.md, services/knowledge.md, rules/state.md, rules/scaling.md |
 | R2/R3 进入方案设计 | stages/design.md, services/package.md, services/templates.md, rules/tools.md |

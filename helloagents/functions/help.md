@@ -25,5 +25,5 @@
     - 或直接描述需求 (系统会自动判定 R0~R3 并执行)
 - 路由机制: 命令路径 (~xxx) / 外部工具路径 (Skill/MCP/插件) / 通用路径 (自动判级执行)
 - 子代理按 G9 复杂度判定强制/跳过调用 (explorer、analyzer、designer、implementer、reviewer、tester 等) [→ G9/G10]
-- 全局开关 (G1): KB_CREATE_MODE(知识库) | EVAL_MODE(评估) | UPDATE_CHECK(更新检查，0=关闭/1=开启)
+- 全局开关 (G1): KB_CREATE_MODE(知识库) | EVAL_MODE(评估) | UPDATE_CHECK(更新检查，0=关闭/正整数=小时，默认72)
 ```
