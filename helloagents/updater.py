@@ -489,6 +489,9 @@ def update(switch_branch: str = None) -> None:
                 stderr = result.stderr.strip()
                 # Windows .exe locking — rename and retry
                 if sys.platform == "win32" and ("WinError" in stderr or "helloagents.exe" in stderr):
+                    # pip may have partially succeeded, clean up ~-prefixed remnants
+                    _cleanup_pip_remnants()
+
                     exe = _win_find_exe()
                     if exe:
                         bak = exe.with_suffix(".exe.bak")

@@ -45,6 +45,11 @@ def _self_uninstall() -> bool:
         # Windows .exe locking — rename and retry
         if sys.platform == "win32" and method == "pip" and (
                 "WinError" in stderr or "helloagents.exe" in stderr):
+            # pip may have partially succeeded (renamed dirs to ~-prefixed),
+            # clean up remnants regardless of outcome
+            from .updater import _cleanup_pip_remnants
+            _cleanup_pip_remnants()
+
             exe = shutil.which("helloagents")
             if exe:
                 exe_path = Path(exe)
