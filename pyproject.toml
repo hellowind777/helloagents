@@ -1,0 +1,31 @@
+[project]
+name = "helloagents"
+version = "2.2.5"
+description = "HelloAGENTS - 自主的高级智能伙伴"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "HelloWind"}]
+keywords = ["ai", "agent", "claude", "codex", "cli", "opencode", "gemini", "qwen", "grok"]
+dependencies = []
+
+[project.scripts]
+helloagents = "helloagents.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["helloagents"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"AGENTS.md" = "AGENTS.md"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "helloagents/**",
+    "AGENTS.md",
+    "README.md",
+    "pyproject.toml",
+]

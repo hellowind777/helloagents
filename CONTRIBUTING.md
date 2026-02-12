@@ -1,69 +1,66 @@
 # Contributing to HelloAGENTS
 
-Thanks for your interest in contributing! This repo is a **multi-bundle distribution** of HelloAGENTS:
+Thanks for your interest in contributing.
 
-- `Codex CLI/` (for Codex CLI users)
-- `Claude Code/` (for Claude Code users)
-- `Gemini CLI/` (for Gemini CLI users)
-- `Grok CLI/` (for Grok CLI users)
-- `Qwen CLI/` (for Qwen CLI users)
-
-Please keep changes consistent across all bundles unless there is a CLI-specific reason not to.
+This repository is now package-first (helloagents/) and ships workflow definitions for multiple AI CLIs.
 
 ## Documentation
 
-- Project doc (English): `README.md`
-- 中文文档: `README_CN.md`
-- License: `LICENSE`
+- English README: [README.md](./README.md)
+- 中文 README: [README_CN.md](./README_CN.md)
+- License: [LICENSE](./LICENSE.md)
+
+## Development Setup
+
+    # Clone and enter repo
+    git clone https://github.com/hellowind777/helloagents.git
+    cd helloagents
+
+    # Optional: editable install
+    pip install -e .
+
+    # Quick check
+    python -m helloagents.cli status
 
 ## How to Contribute
 
-### Report issues
+### 1) Open an issue first (recommended)
 
-- 🐛 **Bug reports:** open an issue with reproduction steps and your environment (OS + CLI)
-- 💡 **Feature requests:** open an issue or discussion describing the problem and the desired behavior
+- Bug report: include reproduction steps + OS + target CLI
+- Feature request: describe current pain and expected behavior
 
-### Submit changes
+### 2) Submit a Pull Request
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Verify the basics (see below)
-5. Commit with a clear message (Conventional Commits)
-6. Push to your fork and open a Pull Request
+2. Create a branch (git checkout -b feature/your-change)
+3. Implement changes
+4. Validate behavior locally
+5. Update documentation when behavior changes
+6. Commit and open PR
 
-## What to Verify Before a PR
+## Contribution Rules
 
-### Docs changes
+- Keep README.md and README_CN.md in sync (same structure and code snippets).
+- If you update workflow behavior, update the corresponding files in:
+  - helloagents/functions/
+  - helloagents/stages/
+  - helloagents/rules/
+  - helloagents/services/
+- Avoid hardcoding user-specific paths in templates and docs.
+- For safety-sensitive logic, include validation notes in PR description.
 
-- `README.md` and `README_CN.md` stay in sync (same structure and code blocks)
-- Links work (especially paths with spaces like `Codex CLI/`)
-- `readme_images/` exists and SVGs are small (aim &lt; 10KB each)
+## Commit Format
 
-### Bundle consistency
+We recommend Conventional Commits: feat, fix, docs, refactor, test, chore.
 
-If you change any workflow rules:
+## Pull Request Checklist
 
-- Update the entry config files (when applicable):
-  - `Codex CLI/AGENTS.md`
-  - `Claude Code/CLAUDE.md`
-  - `Gemini CLI/GEMINI.md`
-  - `Grok CLI/GROK.md`
-  - `Qwen CLI/QWEN.md`
-- Update the skill packages under each bundle:
-  - `{BUNDLE_DIR}/skills/helloagents/`
-
-## Commit Message Format
-
-We use [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` new features
-- `fix:` bug fixes
-- `docs:` documentation changes
-- `refactor:` refactors
-- `test:` tests
-- `chore:` maintenance
+- [ ] Changes are scoped and focused
+- [ ] Docs updated (if needed)
+- [ ] No accidental secrets or credentials
+- [ ] Basic command flow checked (install, status, version)
+- [ ] Workflow content still coherent across modules
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the terms described in `LICENSE`.
+By contributing, you agree that your contributions will be licensed under the terms described in [LICENSE](./LICENSE.md).
