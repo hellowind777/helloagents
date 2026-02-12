@@ -313,7 +313,8 @@ def main() -> None:
                 cache_ttl = int(sys.argv[idx + 1])
             except (ValueError, IndexError):
                 pass
-        has_update = check_update(force=force, cache_ttl_hours=cache_ttl)
+        has_update = check_update(force=force, cache_ttl_hours=cache_ttl,
+                                  show_version=(cmd == "version"))
 
     if not cmd:
         _interactive_main()
@@ -356,12 +357,7 @@ def main() -> None:
     elif cmd == "status":
         status()
     elif cmd == "version":
-        if not has_update:
-            try:
-                ver = get_version("helloagents")
-                print(f"HelloAGENTS v{ver}")
-            except Exception:
-                print("HelloAGENTS (version unknown)")
+        pass  # already handled by check_update(show_version=True)
     else:
         print(_msg(f"未知命令: {cmd}", f"Unknown command: {cmd}"))
         print_usage()

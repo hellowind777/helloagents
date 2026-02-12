@@ -156,7 +156,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 {空行}
 📁 文件变更:        ← 可选
 📦 遗留方案包:      ← 可选
-⬆️ New version {remote_version} available (current {local_version}, branch {branch}). Run 'helloagents update' to upgrade.  ← 可选，UPDATE_CHECK>0 时按下方规则生成
+⬆️ New version {remote_version} available (local {local_version}, branch {branch}). Run 'helloagents update' to upgrade.  ← 可选，UPDATE_CHECK>0 时按下方规则生成
 {空行}
 🔄 下一步: {引导}   ← 必有
 ```
