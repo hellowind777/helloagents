@@ -393,6 +393,6 @@ This project is dual-licensed: Code under Apache-2.0, Documentation under CC BY 
 
 If this project helps your workflow, a star is always appreciated.
 
-Thanks to <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> for supporting this project
+Thanks to <a href="https://codexzh.com/?ref=EEABC8">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> for supporting this project
 
 </div>
