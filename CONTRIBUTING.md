@@ -8,7 +8,7 @@ This repository is now package-first (helloagents/) and ships workflow definitio
 
 - English README: [README.md](./README.md)
 - 中文 README: [README_CN.md](./README_CN.md)
-- License: [LICENSE](./LICENSE)
+- License: [LICENSE](./LICENSE.md)
 
 ## Development Setup
 
@@ -63,4 +63,4 @@ We recommend Conventional Commits: feat, fix, docs, refactor, test, chore.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the terms described in [LICENSE](./LICENSE).
+By contributing, you agree that your contributions will be licensed under the terms described in [LICENSE](./LICENSE.md).
