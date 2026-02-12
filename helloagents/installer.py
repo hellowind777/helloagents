@@ -284,6 +284,7 @@ def _interactive_install() -> bool:
         choice = input(prompt).strip()
     except (EOFError, KeyboardInterrupt):
         print()
+        print(_msg("  已取消。", "  Cancelled."))
         return True
 
     if not choice:
@@ -482,8 +483,8 @@ def _interactive_uninstall() -> bool:
 
     print()
     prompt = _msg(
-        "  请输入要卸载的编号，可多选（如 1 3）或 all 全选，直接回车跳过: ",
-        "  Enter numbers to uninstall, multi-select supported (e.g. 1 3) "
+        "  请输入要卸载的编号，可多选（如 1 3 5）或 all 全选，直接回车跳过: ",
+        "  Enter numbers to uninstall, multi-select supported (e.g. 1 3 5) "
         "or 'all', press Enter to skip: ",
     )
 
@@ -491,6 +492,7 @@ def _interactive_uninstall() -> bool:
         choice = input(prompt).strip()
     except (EOFError, KeyboardInterrupt):
         print()
+        print(_msg("  已取消。", "  Cancelled."))
         return True
 
     if not choice:
@@ -522,12 +524,11 @@ def _interactive_uninstall() -> bool:
         print(_msg("  未选择任何目标。", "  No targets selected."))
         return True
 
-    # Determine total steps: 3 if no purge prompt needed, 4 if we'll ask
+    # Determine whether we'll offer to remove the package itself
     remaining_after = set(_detect_installed_targets()) - set(selected)
-    total_steps = 4 if not remaining_after else 3
 
-    _header(_msg(f"步骤 2/{total_steps}: 执行卸载（共 {len(selected)} 个目标）",
-                 f"Step 2/{total_steps}: Uninstalling ({len(selected)} target(s))"))
+    _header(_msg(f"步骤 2/3: 执行卸载（共 {len(selected)} 个目标）",
+                 f"Step 2/3: Uninstalling ({len(selected)} target(s))"))
 
     for i, t in enumerate(selected, 1):
         print(_msg(f"  [{i}/{len(selected)}] {t}",
@@ -535,8 +536,8 @@ def _interactive_uninstall() -> bool:
         uninstall(t, show_package_hint=False)
         print()
 
-    _header(_msg(f"步骤 3/{total_steps}: 卸载结果",
-                 f"Step 3/{total_steps}: Uninstall Summary"))
+    _header(_msg("步骤 3/3: 卸载结果",
+                 "Step 3/3: Uninstall Summary"))
     for t in selected:
         print(f"  ✓ {t:10} {_msg('已卸载', 'removed')}")
 
@@ -547,8 +548,8 @@ def _interactive_uninstall() -> bool:
 
     # If no CLI targets remain, offer to remove the package itself
     if not remaining_after:
-        _header(_msg(f"步骤 4/{total_steps}: 移除 helloagents 包",
-                     f"Step 4/{total_steps}: Remove helloagents Package"))
+        _header(_msg("附加: 移除 helloagents 包",
+                     "Extra: Remove helloagents Package"))
 
         print(_msg("  已无已安装的 CLI 目标。是否同时移除 helloagents 包本身？",
                    "  No installed CLI targets remaining. "
@@ -564,6 +565,7 @@ def _interactive_uninstall() -> bool:
         try:
             purge_choice = input(prompt).strip()
         except (EOFError, KeyboardInterrupt):
+            print()
             purge_choice = ""
 
         if purge_choice == "1":
