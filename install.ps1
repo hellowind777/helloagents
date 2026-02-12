@@ -97,6 +97,13 @@ if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
     Write-Err (Msg "安装失败（退出码 $LASTEXITCODE）。" "Installation failed (exit code $LASTEXITCODE).")
 }
 
+# Post-install cleanup: pip may create new remnants during upgrade
+if ($SitePackages -and (Test-Path $SitePackages)) {
+    Get-ChildItem -Path $SitePackages -Directory -Filter "~elloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
 # ─── Step 5: Verify ───
 Write-Host ""
 Write-Info (Msg "验证安装..." "Verifying installation...")

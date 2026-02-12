@@ -106,6 +106,14 @@ else
     fi
 fi
 
+# Post-install cleanup: pip may create new remnants during upgrade
+if [ -n "$SITE_PACKAGES" ] && [ -d "$SITE_PACKAGES" ]; then
+    for remnant in "$SITE_PACKAGES"/~elloagents*; do
+        [ -e "$remnant" ] || continue
+        rm -rf "$remnant"
+    done
+fi
+
 # ─── Step 5: Verify ───
 printf "\n"
 info "$(msg "验证安装..." "Verifying installation...")"
