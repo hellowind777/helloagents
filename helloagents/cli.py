@@ -3,7 +3,7 @@
 Supports installation to:
 - Claude Code (~/.claude/)
 - Codex CLI (~/.codex/)
-- OpenCode (~/.opencode/)
+- OpenCode (~/.config/opencode/)
 - Gemini CLI (~/.gemini/)
 - Qwen CLI (~/.qwen/)
 - Grok CLI (~/.grok/)
@@ -27,7 +27,7 @@ CLI_TARGETS = {
     "gemini": {"dir": ".gemini", "rules_file": "GEMINI.md"},
     "qwen": {"dir": ".qwen", "rules_file": "QWEN.md"},
     "grok": {"dir": ".grok", "rules_file": "GROK.md"},
-    "opencode": {"dir": ".opencode", "rules_file": "OpenCode.md"},
+    "opencode": {"dir": ".config/opencode", "rules_file": "AGENTS.md"},
 }
 
 PLUGIN_DIR_NAME = "helloagents"

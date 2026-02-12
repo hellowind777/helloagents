@@ -75,7 +75,16 @@ def _self_uninstall() -> bool:
                     pass
             # Rename-and-retry failed or not possible; schedule deferred uninstall
             from .updater import _win_deferred_pip
-            if _win_deferred_pip(cmd):
+            # Post-cmd: clean up ~prefixed pip remnants after deferred pip runs
+            cleanup_cmd = [
+                sys.executable, "-c",
+                "import shutil,pathlib,site;"
+                "[shutil.rmtree(p,ignore_errors=True) "
+                "for d in site.getsitepackages() if pathlib.Path(d).is_dir() "
+                "for p in pathlib.Path(d).iterdir() "
+                "if p.is_dir() and p.name.startswith('~')]",
+            ]
+            if _win_deferred_pip(cmd, post_cmds=[cleanup_cmd]):
                 print(_msg(
                     "  helloagents 包将在程序退出后自动移除。",
                     "  helloagents package will be removed after exit."))
@@ -151,6 +160,46 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Codex config helper
+# ---------------------------------------------------------------------------
+
+def _configure_codex_toml() -> None:
+    """Ensure ~/.codex/config.toml has project_doc_max_bytes >= 98304."""
+    import re
+    config_path = Path.home() / ".codex" / "config.toml"
+    content = ""
+    if config_path.exists():
+        content = config_path.read_text(encoding="utf-8")
+
+    # Already set and large enough — nothing to do
+    m = re.search(r'project_doc_max_bytes\s*=\s*(\d+)', content)
+    if m and int(m.group(1)) >= 98304:
+        return
+
+    if m:
+        # Exists but value is too small — replace it
+        content = re.sub(
+            r'project_doc_max_bytes\s*=\s*\d+',
+            'project_doc_max_bytes = 98304',
+            content)
+    else:
+        # Not present — insert before the first [section] or at the top
+        insert_pos = 0
+        section_match = re.search(r'^\[', content, re.MULTILINE)
+        if section_match:
+            insert_pos = section_match.start()
+        line = "project_doc_max_bytes = 98304\n"
+        if insert_pos > 0:
+            line += "\n"
+        content = content[:insert_pos] + line + content[insert_pos:]
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(content, encoding="utf-8")
+    print(_msg("  已配置 project_doc_max_bytes = 98304 (防止 AGENTS.md 被截断)",
+               "  Configured project_doc_max_bytes = 98304 (prevent AGENTS.md truncation)"))
+
+
+# ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
 
@@ -170,6 +219,22 @@ def install(target: str) -> bool:
         print(_msg(f"  警告: {dest_dir} 不存在，{target} CLI 可能未安装。",
                    f"  Warning: {dest_dir} does not exist. {target} CLI may not be installed."))
     dest_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clean up legacy OpenCode install path (~/.opencode/)
+    if target == "opencode":
+        old_dir = Path.home() / ".opencode"
+        old_plugin = old_dir / PLUGIN_DIR_NAME
+        old_rules = old_dir / "OpenCode.md"
+        cleaned = []
+        if old_plugin.exists():
+            shutil.rmtree(old_plugin)
+            cleaned.append(str(old_plugin))
+        if old_rules.exists() and is_helloagents_file(old_rules):
+            old_rules.unlink()
+            cleaned.append(str(old_rules))
+        if cleaned:
+            print(_msg(f"  已清理旧版安装路径（~/.opencode/）: {len(cleaned)} 项",
+                       f"  Cleaned old install path (~/.opencode/): {len(cleaned)} item(s)"))
 
     agents_md_src = get_agents_md_path()
     module_src = get_helloagents_module_path()
@@ -234,6 +299,14 @@ def install(target: str) -> bool:
 
     print(_msg(f"  {target} 安装完成！请重启终端以应用更改。",
                f"  Installation complete for {target}! Please restart your terminal to apply changes."))
+
+    # Target-specific post-install configuration
+    if target == "codex":
+        try:
+            _configure_codex_toml()
+        except Exception:
+            pass
+
     return True
 
 

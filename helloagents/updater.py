@@ -612,8 +612,19 @@ def update(switch_branch: str = None) -> None:
                     if not updated:
                         post = [[sys.executable, "-m", "helloagents.cli",
                                  "install", t] for t in pre_targets]
+                        # Clean up ~prefixed pip remnants after deferred pip
+                        cleanup_cmd = [
+                            sys.executable, "-c",
+                            "import shutil,pathlib,site;"
+                            "[shutil.rmtree(p,ignore_errors=True) "
+                            "for d in site.getsitepackages() "
+                            "if pathlib.Path(d).is_dir() "
+                            "for p in pathlib.Path(d).iterdir() "
+                            "if p.is_dir() and p.name.startswith('~')]",
+                        ]
+                        all_post = (post or []) + [cleanup_cmd]
                         if _win_deferred_pip(pip_cmd,
-                                            post_cmds=post or None):
+                                            post_cmds=all_post):
                             print(_msg(
                                 "  helloagents.exe 被当前进程锁定，"
                                 "更新将在退出后自动完成。",

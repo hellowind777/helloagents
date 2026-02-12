@@ -394,6 +394,6 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 如果这个项目对你有帮助，欢迎点 Star。
 
-感谢 <a href="https://codexzh.com">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> 对本项目的支持
+感谢 <a href="https://codexzh.com/?ref=EEABC8">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> 对本项目的支持
 
 </div>
