@@ -468,8 +468,80 @@ def update(switch_branch: str = None) -> None:
         pass
 
     branch = switch_branch or _detect_channel()
-    print(_msg(f"  当前版本: {local_ver}", f"  Current version: {local_ver}"))
+
+    # 获取远程版本
+    print(_msg("  正在检查远程版本...", "  Checking remote version..."))
+    remote_ver = ""
+    try:
+        if branch == "main":
+            try:
+                req = Request(REPO_API_LATEST, headers={
+                    "Accept": "application/vnd.github.v3+json",
+                    "User-Agent": "helloagents-update-checker",
+                })
+                with urlopen(req, timeout=5) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    remote_ver = data.get("tag_name", "").lstrip("v")
+            except Exception:
+                pass
+            if not remote_ver:
+                remote_ver = _fetch_remote_version("main")
+        else:
+            remote_ver = _fetch_remote_version(branch)
+    except Exception:
+        pass
+
+    # 展示版本信息
+    print(_msg(f"  本地版本: {local_ver}", f"  Local version: {local_ver}"))
+    print(_msg(f"  远程版本: {remote_ver or '未知'}", f"  Remote version: {remote_ver or 'unknown'}"))
     print(_msg(f"  分支: {branch}", f"  Branch: {branch}"))
+    print()
+
+    # 根据版本对比结果提示用户
+    if remote_ver and _version_newer(remote_ver, local_ver):
+        prompt = _msg(
+            f"  发现新版本 {remote_ver}，是否更新？(Y/n): ",
+            f"  New version {remote_ver} available. Update? (Y/n): ")
+        default_yes = True
+    elif remote_ver and remote_ver == local_ver:
+        local_sha = _local_commit_id()
+        remote_sha = ""
+        try:
+            remote_sha = _remote_commit_id(branch)
+        except Exception:
+            pass
+        if local_sha and remote_sha and local_sha == remote_sha:
+            prompt = _msg(
+                "  本地版本与远程仓库完全一致，是否强制覆盖更新？(y/N): ",
+                "  Local version matches remote. Force reinstall? (y/N): ")
+            default_yes = False
+        else:
+            prompt = _msg(
+                "  版本号相同但远程仓库可能有新提交，是否更新？(Y/n): ",
+                "  Same version but remote may have new commits. Update? (Y/n): ")
+            default_yes = True
+    else:
+        prompt = _msg(
+            "  无法确认远程版本，是否继续更新？(Y/n): ",
+            "  Cannot determine remote version. Continue? (Y/n): ")
+        default_yes = True
+
+    try:
+        answer = input(prompt).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        print(_msg("  已取消。", "  Cancelled."))
+        return
+
+    if default_yes:
+        if answer in ("n", "no"):
+            print(_msg("  已取消。", "  Cancelled."))
+            return
+    else:
+        if answer not in ("y", "yes"):
+            print(_msg("  已取消。", "  Cancelled."))
+            return
+
     print()
 
     branch_suffix = f"@{branch}" if branch != "main" else ""
@@ -512,9 +584,6 @@ def update(switch_branch: str = None) -> None:
                 stderr = result.stderr.strip()
                 # Windows .exe locking — rename and retry
                 if sys.platform == "win32" and ("WinError" in stderr or "helloagents.exe" in stderr):
-                    # pip may have partially succeeded, clean up ~-prefixed remnants
-                    _cleanup_pip_remnants()
-
                     exe = _win_find_exe()
                     if exe:
                         bak = exe.with_suffix(".exe.bak")
