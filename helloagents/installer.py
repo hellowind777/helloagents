@@ -28,19 +28,6 @@ def _self_uninstall() -> bool:
     else:
         cmd = [sys.executable, "-m", "pip", "uninstall", "helloagents", "-y"]
 
-    # On Windows, rename the locked .exe before pip uninstall
-    exe_bak = None
-    if sys.platform == "win32" and method == "pip":
-        exe = shutil.which("helloagents")
-        if exe:
-            exe_path = Path(exe)
-            bak_path = exe_path.with_suffix(".exe.bak")
-            try:
-                exe_path.rename(bak_path)
-                exe_bak = bak_path
-            except OSError:
-                pass
-
     print(_msg(f"  正在移除 helloagents 包 ({method})...",
                f"  Removing helloagents package ({method})..."))
     try:
@@ -49,26 +36,51 @@ def _self_uninstall() -> bool:
         if result.returncode == 0:
             print(_msg("  ✓ helloagents 包已移除。",
                        "  ✓ helloagents package removed."))
-            if exe_bak:
-                try:
-                    exe_bak.unlink()
-                except OSError:
-                    pass  # still locked by current process, harmless leftover
-            # Clean up pip remnants left by uninstall
             from .updater import _cleanup_pip_remnants
             _cleanup_pip_remnants()
             return True
-        else:
-            stderr = result.stderr.strip()
-            # Restore .exe if uninstall failed
-            if exe_bak:
+
+        stderr = result.stderr.strip()
+
+        # Windows .exe locking — rename and retry
+        if sys.platform == "win32" and method == "pip" and (
+                "WinError" in stderr or "helloagents.exe" in stderr):
+            exe = shutil.which("helloagents")
+            if exe:
+                exe_path = Path(exe)
+                bak_path = exe_path.with_suffix(".exe.bak")
                 try:
-                    exe_bak.rename(exe_bak.with_suffix(""))
+                    exe_path.rename(bak_path)
+                    print(_msg("  .exe 文件已锁定，重命名后重试...",
+                               "  .exe file locked, renamed and retrying..."))
+                    retry = subprocess.run(cmd, capture_output=True, text=True,
+                                           encoding="utf-8", errors="replace")
+                    if retry.returncode == 0:
+                        print(_msg("  ✓ helloagents 包已移除。",
+                                   "  ✓ helloagents package removed."))
+                        try:
+                            bak_path.unlink()
+                        except OSError:
+                            pass  # locked by current process, harmless
+                        from .updater import _cleanup_pip_remnants
+                        _cleanup_pip_remnants()
+                        return True
+                    else:
+                        # Restore .exe
+                        try:
+                            bak_path.rename(exe_path)
+                        except OSError:
+                            pass
+                        retry_err = retry.stderr.strip()
+                        if retry_err:
+                            print(f"  ✗ {retry_err}")
+                        return False
                 except OSError:
                     pass
-            if stderr:
-                print(f"  ✗ {stderr}")
-            return False
+
+        if stderr:
+            print(f"  ✗ {stderr}")
+        return False
     except FileNotFoundError:
         print(_msg(f"  ✗ 未找到 {method}。请手动执行:",
                    f"  ✗ {method} not found. Please run manually:"))

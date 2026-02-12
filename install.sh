@@ -78,9 +78,10 @@ else
 fi
 
 # ─── Step 3: Clean up corrupted pip remnants ───
-SITE_PACKAGES=$("$PYTHON_CMD" -c "import site; print(site.getsitepackages()[0])" 2>/dev/null || true)
-if [ -n "$SITE_PACKAGES" ] && [ -d "$SITE_PACKAGES" ]; then
-    for remnant in "$SITE_PACKAGES"/~*lloagents*; do
+# Scan ALL site-packages directories returned by getsitepackages().
+while IFS= read -r sp_dir; do
+    [ -d "$sp_dir" ] || continue
+    for remnant in "$sp_dir"/~*; do
         [ -e "$remnant" ] || continue
         if rm -rf "$remnant" 2>/dev/null; then
             info "$(msg "已清理 pip 残留目录: $(basename "$remnant")" "Cleaned up pip remnant: $(basename "$remnant")")"
@@ -88,7 +89,9 @@ if [ -n "$SITE_PACKAGES" ] && [ -d "$SITE_PACKAGES" ]; then
             warn "$(msg "无法删除残留目录: $remnant，请手动删除。" "Cannot remove remnant: $remnant, please delete manually.")"
         fi
     done
-fi
+done < <("$PYTHON_CMD" -c "import site
+for p in site.getsitepackages():
+    print(p)" 2>/dev/null)
 
 # ─── Step 4: Install ───
 printf "\n${BOLD}$(msg "正在从分支 ${CYAN}${BRANCH}${RESET}${BOLD} 安装 HelloAGENTS" "Installing HelloAGENTS from branch: ${CYAN}${BRANCH}")${RESET}\n\n"
@@ -110,14 +113,17 @@ else
 fi
 
 # Post-install cleanup: pip may create new remnants during upgrade
-if [ -n "$SITE_PACKAGES" ] && [ -d "$SITE_PACKAGES" ]; then
-    for remnant in "$SITE_PACKAGES"/~*lloagents*; do
+while IFS= read -r sp_dir; do
+    [ -d "$sp_dir" ] || continue
+    for remnant in "$sp_dir"/~*; do
         [ -e "$remnant" ] || continue
         if ! rm -rf "$remnant" 2>/dev/null; then
             warn "$(msg "无法删除残留目录: $remnant，请手动删除。" "Cannot remove remnant: $remnant, please delete manually.")"
         fi
     done
-fi
+done < <("$PYTHON_CMD" -c "import site
+for p in site.getsitepackages():
+    print(p)" 2>/dev/null)
 
 # ─── Step 5: Verify ───
 printf "\n"

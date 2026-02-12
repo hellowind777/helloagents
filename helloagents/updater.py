@@ -274,23 +274,71 @@ def check_update(force: bool = False,
 # ---------------------------------------------------------------------------
 
 def _cleanup_pip_remnants() -> None:
-    """Clean up corrupted pip remnant directories (~*lloagents*) in site-packages."""
-    import site
+    """Clean up corrupted pip remnant directories (~-prefixed) in site-packages.
+
+    Uses multiple strategies to locate site-packages directories:
+    1. Derive from this module's own __file__ (most reliable for installed packages)
+    2. Derive from sys.executable (covers standard Python layouts)
+    3. Fall back to site.getsitepackages()
+    """
+    import shutil
+
+    # Collect candidate site-packages paths from multiple sources
+    sp_paths: set[Path] = set()
+
+    # Strategy 1: this module's own location (most reliable when installed)
     try:
-        for sp in site.getsitepackages():
-            sp_path = Path(sp)
-            if not sp_path.is_dir():
-                continue
-            for remnant in sp_path.glob("~*lloagents*"):
-                if remnant.is_dir():
-                    import shutil
-                    try:
-                        shutil.rmtree(remnant)
-                    except OSError:
-                        print(_msg(f"  [warn] 无法删除残留目录: {remnant}，请手动删除。",
-                                   f"  [warn] Cannot remove remnant: {remnant}, please delete manually."))
+        sp_paths.add(Path(__file__).resolve().parent.parent)
     except Exception:
         pass
+
+    # Strategy 2: derive from sys.executable
+    try:
+        exe_dir = Path(sys.executable).resolve().parent
+        sp_paths.add(exe_dir / "Lib" / "site-packages")  # Windows
+        vi = sys.version_info
+        sp_paths.add(exe_dir / "lib" / f"python{vi.major}.{vi.minor}" / "site-packages")  # Unix
+    except Exception:
+        pass
+
+    # Strategy 3: site.getsitepackages()
+    try:
+        import site
+        for sp in site.getsitepackages():
+            sp_paths.add(Path(sp))
+    except Exception:
+        pass
+
+    # Filter to existing directories only
+    sp_paths = {p for p in sp_paths if p.is_dir()}
+
+    for sp_path in sp_paths:
+        try:
+            for remnant in sp_path.iterdir():
+                if not (remnant.is_dir() and remnant.name.startswith("~")):
+                    continue
+                try:
+                    shutil.rmtree(remnant)
+                except OSError:
+                    # Windows: try removing read-only attributes and retry
+                    if sys.platform == "win32":
+                        try:
+                            import os, stat
+                            for root, dirs, files in os.walk(remnant):
+                                for f in files:
+                                    fp = Path(root) / f
+                                    fp.chmod(stat.S_IWRITE)
+                            shutil.rmtree(remnant)
+                        except OSError:
+                            print(_msg(
+                                f"  [warn] 无法删除残留目录: {remnant}，请手动删除。",
+                                f"  [warn] Cannot remove remnant: {remnant}, please delete manually."))
+                    else:
+                        print(_msg(
+                            f"  [warn] 无法删除残留目录: {remnant}，请手动删除。",
+                            f"  [warn] Cannot remove remnant: {remnant}, please delete manually."))
+        except PermissionError:
+            pass  # No permission to list directory contents
 
 
 def _win_find_exe() -> Path | None:
