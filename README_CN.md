@@ -11,7 +11,7 @@
 [![Version](https://img.shields.io/badge/version-2.2.4-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 </div>
@@ -386,7 +386,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 许可证
 
-本项目采用 MIT License，详见 LICENSE。
+本项目采用双许可：代码遵循 Apache-2.0，文档遵循 CC BY 4.0。详见 [LICENSE.md](./LICENSE.md)。
 
 ---
 
