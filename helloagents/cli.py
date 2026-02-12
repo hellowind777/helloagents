@@ -172,7 +172,7 @@ def _detect_install_method() -> str:
 def _interactive_main() -> None:
     """Show main interactive menu for all operations (loops until exit)."""
     from .updater import update, status, clean
-    from .installer import _interactive_install, _interactive_uninstall
+    from .interactive import _interactive_install, _interactive_uninstall
 
     _divider()
     try:
@@ -297,10 +297,12 @@ def print_usage() -> None:
 
 def main() -> None:
     """Main entry point."""
-    from .updater import check_update, update, status, clean
+    from .version_check import check_update
+    from .updater import update, status, clean
+    from .interactive import _interactive_install, _interactive_uninstall
     from .installer import (
-        install, install_all, _interactive_install,
-        uninstall, uninstall_all, _interactive_uninstall,
+        install, install_all,
+        uninstall, uninstall_all,
         _self_uninstall,
     )
 
