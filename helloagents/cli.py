@@ -245,13 +245,14 @@ def _interactive_main() -> None:
         # 操作完成后暂停（update 已经 return，不会到这里）
         print()
         try:
-            pause = input(_msg("  按 Enter 返回主菜单，输入 0 退出: ",
-                               "  Press Enter to return, 0 to exit: ")).strip()
+            pause = input(_msg("按 Enter 返回主菜单，输入 0 退出: ",
+                               "Press Enter to return, 0 to exit: ")).strip()
             if pause == "0":
                 return
         except (EOFError, KeyboardInterrupt):
             print()
             return
+        _divider()
 
 
 # ---------------------------------------------------------------------------
