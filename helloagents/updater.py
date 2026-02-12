@@ -273,9 +273,36 @@ def check_update(force: bool = False,
 # update command
 # ---------------------------------------------------------------------------
 
+def _win_find_exe() -> Path | None:
+    """Find the helloagents.exe entry point on Windows."""
+    import shutil
+    exe = shutil.which("helloagents")
+    if exe:
+        return Path(exe)
+    # Fallback: same directory as python.exe
+    candidate = Path(sys.executable).parent / "Scripts" / "helloagents.exe"
+    return candidate if candidate.exists() else None
+
+
+def _win_cleanup_bak() -> None:
+    """Clean up leftover .exe.bak from a previous rename-based update."""
+    exe = _win_find_exe()
+    if exe:
+        bak = exe.with_suffix(".exe.bak")
+        try:
+            if bak.exists():
+                bak.unlink()
+        except OSError:
+            pass
+
+
 def update(switch_branch: str = None) -> None:
     """Update HelloAGENTS to the latest version, then auto-sync installed targets."""
     import subprocess
+
+    # Clean up leftover .exe.bak from a previous rename-based update
+    if sys.platform == "win32":
+        _win_cleanup_bak()
 
     pre_targets = _detect_installed_targets()
     total_steps = 3 if pre_targets else 1
@@ -320,7 +347,7 @@ def update(switch_branch: str = None) -> None:
     if not updated:
         pip_url = f"git+{REPO_URL}.git" + branch_suffix
         pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade",
-                   "--force-reinstall", pip_url]
+                   "--no-cache-dir", pip_url]
         if method == "uv":
             print(_msg("  尝试 pip 回退...", "  Trying pip fallback..."))
         try:
@@ -331,7 +358,39 @@ def update(switch_branch: str = None) -> None:
                 updated = True
             else:
                 stderr = result.stderr.strip()
-                if stderr:
+                # Windows .exe locking — rename and retry
+                if sys.platform == "win32" and ("WinError" in stderr or "helloagents.exe" in stderr):
+                    exe = _win_find_exe()
+                    if exe:
+                        bak = exe.with_suffix(".exe.bak")
+                        try:
+                            exe.rename(bak)
+                            print(_msg("  .exe 文件已锁定，重命名后重试...",
+                                       "  .exe file locked, renamed and retrying..."))
+                            retry = subprocess.run(pip_cmd, capture_output=True, text=True,
+                                                   encoding="utf-8", errors="replace")
+                            if retry.returncode == 0:
+                                print(_msg("  ✓ 包更新完成 (pip)", "  ✓ Package updated (pip)"))
+                                updated = True
+                                try:
+                                    bak.unlink()
+                                except OSError:
+                                    pass  # will be cleaned up on next run
+                            else:
+                                # Restore original exe
+                                try:
+                                    bak.rename(exe)
+                                except OSError:
+                                    pass
+                                retry_err = retry.stderr.strip()
+                                if retry_err:
+                                    print(f"  pip error: {retry_err}")
+                        except OSError:
+                            if stderr:
+                                print(f"  pip error: {stderr}")
+                    else:
+                        print(f"  pip error: {stderr}")
+                elif stderr:
                     print(f"  pip error: {stderr}")
         except FileNotFoundError:
             print(_msg("  错误: 未找到 pip。", "  Error: pip not found."))
@@ -339,7 +398,7 @@ def update(switch_branch: str = None) -> None:
     if not updated:
         pip_url = f"git+{REPO_URL}.git" + branch_suffix
         print(_msg("  ✗ 更新失败。请手动执行:", "  ✗ Update failed. Try manually:"))
-        print(f"    pip install --upgrade --force-reinstall {pip_url}")
+        print(f"    pip install --upgrade --no-cache-dir {pip_url}")
         return
 
     # Update succeeded — clear stale update cache
