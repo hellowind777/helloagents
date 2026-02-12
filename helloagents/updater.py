@@ -368,11 +368,14 @@ def _win_deferred_pip(pip_args: list[str],
                       post_cmds: list[list[str]] | None = None) -> bool:
     """Schedule a pip command to run after the current process exits (Windows).
 
-    Creates a temporary batch script that:
-    1. Waits for the current helloagents.exe process to exit (polls PID)
+    Creates a temporary .pyw script that:
+    1. Waits for the current process to exit (polls PID)
     2. Runs the specified pip command
     3. Optionally runs post-commands (e.g., re-sync CLI targets)
     4. Self-deletes
+
+    Uses pythonw.exe (GUI-mode Python, no console) to ensure completely
+    silent execution without any visible window or AV false positives.
 
     Returns True if the deferred command was scheduled successfully.
     """
@@ -381,41 +384,61 @@ def _win_deferred_pip(pip_args: list[str],
     import tempfile
 
     pid = os.getpid()
-    lines = [
-        "@echo off",
-        "chcp 65001 >nul 2>&1",
-        ":wait",
-        f'tasklist /fi "PID eq {pid}" 2>nul | find "{pid}" >nul',
-        "if not errorlevel 1 (",
-        "    timeout /t 1 /nobreak >nul",
-        "    goto wait",
-        ")",
+    python_exe = sys.executable
+
+    # Prefer pythonw.exe (GUI, no console window) over python.exe
+    pythonw = Path(python_exe).with_name(
+        "pythonw.exe" if python_exe.endswith("python.exe")
+        else Path(python_exe).name.replace("python", "pythonw")
+    )
+    if not pythonw.exists():
+        pythonw = Path(python_exe)  # fallback to python.exe
+
+    # Build the deferred Python script
+    no_window = "0x08000000"  # CREATE_NO_WINDOW
+    script_lines = [
+        "import subprocess, sys, os, time",
+        "",
+        f"pid = {pid}",
+        "",
+        "# Wait for parent process to exit",
+        "while True:",
+        "    r = subprocess.run(",
+        '        ["tasklist", "/fi", f"PID eq {pid}", "/nh"],',
+        f"        capture_output=True, text=True, creationflags={no_window},",
+        "    )",
+        "    if str(pid) not in r.stdout:",
+        "        break",
+        "    time.sleep(1)",
+        "",
+        "# Run pip command",
+        f"subprocess.run({pip_args!r}, creationflags={no_window})",
     ]
 
-    # Main pip command
-    lines.append(" ".join(f'"{a}"' for a in pip_args))
-
-    # Optional follow-up commands (e.g. sync CLI targets after update)
     if post_cmds:
+        script_lines.append("")
+        script_lines.append("# Post-commands (e.g. sync CLI targets)")
         for cmd in post_cmds:
-            lines.append(" ".join(f'"{a}"' for a in cmd))
+            script_lines.append(
+                f"subprocess.run({cmd!r}, creationflags={no_window})")
 
-    # Self-delete
-    lines.append('del "%~f0"')
-
-    bat_content = "\r\n".join(lines)
+    script_lines += [
+        "",
+        "# Self-delete",
+        "try:",
+        "    os.unlink(sys.argv[0])",
+        "except OSError:",
+        "    pass",
+    ]
 
     try:
-        fd, bat_path = tempfile.mkstemp(suffix=".bat", prefix="helloagents_")
+        fd, script_path = tempfile.mkstemp(suffix=".pyw", prefix="helloagents_")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(bat_content)
+            f.write("\n".join(script_lines))
 
-        # DETACHED_PROCESS=0x8, CREATE_NEW_PROCESS_GROUP=0x200
         subprocess.Popen(
-            ["cmd.exe", "/c", bat_path],
-            creationflags=0x00000008 | 0x00000200,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            [str(pythonw), script_path],
+            creationflags=0x08000000,  # CREATE_NO_WINDOW fallback for python.exe
         )
         return True
     except OSError:
