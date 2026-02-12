@@ -527,7 +527,7 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 
 子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/
 
-加载规则: 使用 CLI 内置文件读取工具直接读取（禁止通过 Shell 命令加载模块文件）；阻塞式完整读取，加载完成前禁止执行；加载失败时输出错误，不降级执行
+加载规则: 优先使用 CLI 内置文件读取工具直接读取；若当前 CLI 无独立文件读取工具则允许通过 Shell 静默读取（cat/type）；阻塞式完整读取，加载完成前禁止执行；加载失败时输出错误，不降级执行
 标准缩写:
   "→ 状态重置": 按 G6 状态重置协议执行完整重置
   "→ 任务重置": 按 G6 状态重置协议执行任务重置
