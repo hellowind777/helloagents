@@ -183,7 +183,8 @@ def _write_update_cache(has_update: bool, local_ver: str,
 # ---------------------------------------------------------------------------
 
 def check_update(force: bool = False,
-                 cache_ttl_hours: int | None = None) -> bool:
+                 cache_ttl_hours: int | None = None,
+                 show_version: bool = False) -> bool:
     """Check for newer version or commits on GitHub.
 
     Two-layer detection:
@@ -198,6 +199,8 @@ def check_update(force: bool = False,
         cache_ttl_hours: Cache validity in hours. Passed through to
             _write_update_cache to compute expires_at. None means
             cache expires immediately (direct CLI usage).
+        show_version: If True and no update found, print current
+            version with branch info (used by 'version' command).
 
     Returns True if a version update notice was printed.
     """
@@ -211,8 +214,14 @@ def check_update(force: bool = False,
             if cache is not None:
                 if cache.get("has_update"):
                     rv = cache.get("remote_version", "?")
-                    print(f"New version {rv} available (current {local_ver}, branch {branch}). Run 'helloagents update' to upgrade.")
+                    print(f"New version {rv} available (local {local_ver}, branch {branch}). Run 'helloagents update' to upgrade.")
                     return True
+                if show_version:
+                    rv = cache.get("remote_version", "")
+                    if rv:
+                        print(f"HelloAGENTS local v{local_ver} / remote v{rv} (branch {branch})")
+                    else:
+                        print(f"HelloAGENTS local v{local_ver} (branch {branch})")
                 return False  # fresh cache, no update
 
         # --- cache miss / stale — do network check ---
@@ -234,7 +243,7 @@ def check_update(force: bool = False,
             remote_ver = _fetch_remote_version(branch)
         if remote_ver and _version_newer(remote_ver, local_ver):
             _write_update_cache(True, local_ver, remote_ver, branch, cache_ttl_hours)
-            print(f"New version {remote_ver} available (current {local_ver}, branch {branch}). Run 'helloagents update' to upgrade.")
+            print(f"New version {remote_ver} available (local {local_ver}, branch {branch}). Run 'helloagents update' to upgrade.")
             return True
         # Version matches — check if remote has newer commits
         local_sha = _local_commit_id()
@@ -247,8 +256,16 @@ def check_update(force: bool = False,
             except Exception:
                 pass
         _write_update_cache(False, local_ver, remote_ver or "", branch, cache_ttl_hours)
+        if show_version:
+            if remote_ver:
+                print(f"HelloAGENTS local v{local_ver} / remote v{remote_ver} (branch {branch})")
+            else:
+                print(f"HelloAGENTS local v{local_ver} (branch {branch})")
     except Exception:
-        pass
+        if show_version:
+            ver = get_version("helloagents")
+            br = _detect_channel()
+            print(f"HelloAGENTS local v{ver} / branch {br} (update check failed)")
     return False
 
 
