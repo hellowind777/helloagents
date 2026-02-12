@@ -730,6 +730,53 @@ def status() -> None:
 
         print(f"  {mark} {name:10} {status_str}")
 
+        # Codex: check AGENTS.md size vs project_doc_max_bytes
+        if name == "codex" and rules_exists:
+            try:
+                rules_size = rules_file.stat().st_size
+                max_bytes = 32768  # Codex default
+                config_toml = cli_dir / "config.toml"
+                if config_toml.exists():
+                    import re
+                    ct = config_toml.read_text(encoding="utf-8")
+                    m = re.search(r'project_doc_max_bytes\s*=\s*(\d+)', ct)
+                    if m:
+                        max_bytes = int(m.group(1))
+                if rules_size > max_bytes:
+                    print(_msg(
+                        f"    ⚠ AGENTS.md ({rules_size} 字节) 超过 project_doc_max_bytes ({max_bytes})，内容会被截断",
+                        f"    ⚠ AGENTS.md ({rules_size} bytes) exceeds project_doc_max_bytes ({max_bytes}), content will be truncated"))
+                    print(_msg(
+                        "    → 执行 helloagents install codex 可自动修复此问题",
+                        "    → Run helloagents install codex to fix this automatically"))
+            except Exception:
+                pass
+
+    # WSL environment hint
+    try:
+        _is_wsl = False
+        if sys.platform != "win32":
+            try:
+                _is_wsl = "microsoft" in Path("/proc/version").read_text().lower()
+            except Exception:
+                pass
+        if _is_wsl:
+            print()
+            print(_msg("  ⚠ 当前运行在 WSL 环境中。WSL 与 Windows 宿主的配置路径互相独立，",
+                       "  ⚠ Running inside WSL. WSL and Windows host have separate config paths,"))
+            print(_msg("    若需在两侧使用 HelloAGENTS，需分别安装。",
+                       "    install HelloAGENTS on both sides if needed."))
+        elif sys.platform == "win32":
+            import shutil as _sh
+            if _sh.which("wsl"):
+                print()
+                print(_msg("  ⚠ 检测到 WSL。若在 VS Code 中以 WSL Remote 模式使用 HelloAGENTS，",
+                           "  ⚠ WSL detected. If using HelloAGENTS via VS Code WSL Remote,"))
+                print(_msg("    需在 WSL 内部单独执行 helloagents install，两侧配置路径互相独立。",
+                           "    run helloagents install inside WSL separately — config paths are independent."))
+    except Exception:
+        pass
+
     print()
 
 
