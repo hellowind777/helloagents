@@ -220,22 +220,6 @@ def install(target: str) -> bool:
                    f"  Warning: {dest_dir} does not exist. {target} CLI may not be installed."))
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    # Clean up legacy OpenCode install path (~/.opencode/)
-    if target == "opencode":
-        old_dir = Path.home() / ".opencode"
-        old_plugin = old_dir / PLUGIN_DIR_NAME
-        old_rules = old_dir / "OpenCode.md"
-        cleaned = []
-        if old_plugin.exists():
-            shutil.rmtree(old_plugin)
-            cleaned.append(str(old_plugin))
-        if old_rules.exists() and is_helloagents_file(old_rules):
-            old_rules.unlink()
-            cleaned.append(str(old_rules))
-        if cleaned:
-            print(_msg(f"  已清理旧版安装路径（~/.opencode/）: {len(cleaned)} 项",
-                       f"  Cleaned old install path (~/.opencode/): {len(cleaned)} item(s)"))
-
     agents_md_src = get_agents_md_path()
     module_src = get_helloagents_module_path()
     plugin_dest = dest_dir / PLUGIN_DIR_NAME
@@ -306,6 +290,8 @@ def install(target: str) -> bool:
             _configure_codex_toml()
         except Exception:
             pass
+        print(_msg("  提示: VS Code Codex 插件对 HelloAGENTS 系统的支持可能与 CLI 不同，建议优先在 Codex CLI 中使用。",
+                   "  Note: VS Code Codex plugin may not fully support HelloAGENTS. Codex CLI is recommended."))
 
     return True
 
