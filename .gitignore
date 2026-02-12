@@ -35,3 +35,5 @@ node_modules/
 Thumbs.db
 COMMIT_MESSAGE.md
 .claude/settings.local.json
+%TEMP%updater_committed.py
+nul

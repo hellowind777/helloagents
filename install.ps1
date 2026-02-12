@@ -65,9 +65,13 @@ try {
 }
 
 # ─── Step 3: Clean up corrupted pip remnants ───
-$SitePackages = & $PythonCmd -c "import site; print(site.getsitepackages()[0])" 2>$null
-if ($SitePackages -and (Test-Path $SitePackages)) {
-    Get-ChildItem -Path $SitePackages -Directory -Filter "~*lloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
+# Scan ALL site-packages directories (getsitepackages()[0] on Windows is the
+# Python root, not the actual site-packages dir).
+$SitePackagesList = & $PythonCmd -c "import site; print('\n'.join(site.getsitepackages()))" 2>$null
+foreach ($SitePackages in ($SitePackagesList -split "`n")) {
+    $SitePackages = $SitePackages.Trim()
+    if (-not $SitePackages -or -not (Test-Path $SitePackages)) { continue }
+    Get-ChildItem -Path $SitePackages -Directory -Filter "~*" -ErrorAction SilentlyContinue | ForEach-Object {
         try {
             Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
             Write-Info (Msg "已清理 pip 残留目录: $($_.Name)" "Cleaned up pip remnant: $($_.Name)")
@@ -102,8 +106,10 @@ if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
 }
 
 # Post-install cleanup: pip may create new remnants during upgrade
-if ($SitePackages -and (Test-Path $SitePackages)) {
-    Get-ChildItem -Path $SitePackages -Directory -Filter "~*lloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
+foreach ($SitePackages in ($SitePackagesList -split "`n")) {
+    $SitePackages = $SitePackages.Trim()
+    if (-not $SitePackages -or -not (Test-Path $SitePackages)) { continue }
+    Get-ChildItem -Path $SitePackages -Directory -Filter "~*" -ErrorAction SilentlyContinue | ForEach-Object {
         try {
             Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
         } catch {
