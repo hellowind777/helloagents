@@ -77,7 +77,17 @@ else
     warn "$(msg "未找到 uv，将使用 pip。" "uv not found, will fall back to pip.")"
 fi
 
-# ─── Step 3: Install ───
+# ─── Step 3: Clean up corrupted pip remnants ───
+SITE_PACKAGES=$("$PYTHON_CMD" -c "import site; print(site.getsitepackages()[0])" 2>/dev/null || true)
+if [ -n "$SITE_PACKAGES" ] && [ -d "$SITE_PACKAGES" ]; then
+    for remnant in "$SITE_PACKAGES"/~elloagents*; do
+        [ -e "$remnant" ] || continue
+        rm -rf "$remnant"
+        info "$(msg "已清理 pip 残留目录: $(basename "$remnant")" "Cleaned up pip remnant: $(basename "$remnant")")"
+    done
+fi
+
+# ─── Step 4: Install ───
 printf "\n${BOLD}$(msg "正在从分支 ${CYAN}${BRANCH}${RESET}${BOLD} 安装 HelloAGENTS" "Installing HelloAGENTS from branch: ${CYAN}${BRANCH}")${RESET}\n\n"
 
 if [ "$HAS_UV" = true ]; then
@@ -96,7 +106,7 @@ else
     fi
 fi
 
-# ─── Step 4: Verify ───
+# ─── Step 5: Verify ───
 printf "\n"
 info "$(msg "验证安装..." "Verifying installation...")"
 
@@ -107,7 +117,7 @@ else
     warn "$(msg "可能需要重启终端或将安装路径加入 PATH。" "You may need to restart your terminal or add the install location to PATH.")"
 fi
 
-# ─── Step 5: Interactive target selection ───
+# ─── Step 6: Interactive target selection ───
 printf "\n${BOLD}${GREEN}$(msg "✅ 第一步完成：helloagents 包下载成功。" "✅ Step 1 done: helloagents package installed.")${RESET}\n"
 printf "${BOLD}$(msg "👉 第二步：选择要安装到的目标 CLI" "👉 Step 2: Select target CLIs to install to")${RESET}\n"
 
