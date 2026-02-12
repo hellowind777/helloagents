@@ -64,7 +64,16 @@ try {
     Write-Warn (Msg "未找到 uv，将使用 pip。" "uv not found, will fall back to pip.")
 }
 
-# ─── Step 3: Install ───
+# ─── Step 3: Clean up corrupted pip remnants ───
+$SitePackages = & $PythonCmd -c "import site; print(site.getsitepackages()[0])" 2>$null
+if ($SitePackages -and (Test-Path $SitePackages)) {
+    Get-ChildItem -Path $SitePackages -Directory -Filter "~elloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Info (Msg "已清理 pip 残留目录: $($_.Name)" "Cleaned up pip remnant: $($_.Name)")
+    }
+}
+
+# ─── Step 4: Install ───
 Write-Host ""
 Write-Host (Msg "正在从分支 $Branch 安装 HelloAGENTS" "Installing HelloAGENTS from branch: $Branch") -ForegroundColor White
 
@@ -88,7 +97,7 @@ if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
     Write-Err (Msg "安装失败（退出码 $LASTEXITCODE）。" "Installation failed (exit code $LASTEXITCODE).")
 }
 
-# ─── Step 4: Verify ───
+# ─── Step 5: Verify ───
 Write-Host ""
 Write-Info (Msg "验证安装..." "Verifying installation...")
 
@@ -99,7 +108,7 @@ if (Get-Command helloagents -ErrorAction SilentlyContinue) {
     Write-Warn (Msg "可能需要重启终端或将安装路径加入 PATH。" "You may need to restart your terminal or add the install location to PATH.")
 }
 
-# ─── Step 5: Interactive target selection ───
+# ─── Step 6: Interactive target selection ───
 Write-Host ""
 Write-Host (Msg "✅ 第一步完成：helloagents 包下载成功。" "✅ Step 1 done: helloagents package installed.") -ForegroundColor Green
 Write-Host (Msg "👉 第二步：选择要安装到的目标 CLI" "👉 Step 2: Select target CLIs to install to") -ForegroundColor White
