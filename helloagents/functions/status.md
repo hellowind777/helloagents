@@ -44,9 +44,9 @@
    - 非 Git 仓库时显示"非 Git 仓库"
 
 6. 更新检查:
-   - UPDATE_CHECK 当前值（0=关闭/1=开启）
-   - 缓存状态（读取 {HELLOAGENTS_ROOT}/user/.update_cache，显示上次检查时间和结果）
-   - 缓存不存在时显示"未检查过"
+   - UPDATE_CHECK 当前值（0=关闭，正整数=缓存有效小时数，默认72）
+   - 读取 ~/.helloagents/.update_cache 缓存（expires_at 未过期则使用），超期时执行 `helloagents version --force --cache-ttl {UPDATE_CHECK}`
+   - 命令不可用时显示"未安装"
 ```
 
 ---
@@ -66,7 +66,7 @@
 
 🔀 Git: {分支名} | 未提交变更: {数量}
 
-⬆️ 更新检查: UPDATE_CHECK={值} | {上次检查时间及结果或"未检查过"}
+⬆️ 更新检查: UPDATE_CHECK={值} | {helloagents version 输出或"未安装"}
 
 🔄 下一步: 输入需求开始工作，或使用 ~help 查看可用命令
 ```

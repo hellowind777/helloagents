@@ -35,15 +35,11 @@ migrate_package.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/migrate_package.py' <package-name> [--status <completed|skipped>] [--all] [--path <路径>]
 
 upgradewiki.py:
-  用法: python -X utf8 '{SCRIPTS_DIR}/upgradewiki.py' --scan|--init|--backup|--write <json-file> [--path <路径>]
+  用法: python -X utf8 '{SCRIPTS_DIR}/upgradewiki.py' --scan|--init|--backup|--write <json-file>|--migrate-root [--path <路径>]
 
 configure_codex.py:
-  用法: python -X utf8 '{SCRIPTS_DIR}/configure_codex.py' [--path <路径>]
+  用法: python -X utf8 '{SCRIPTS_DIR}/configure_codex.py'
   说明: Codex CLI 环境配置，非 Codex 环境跳过
-
-check_update.py:
-  用法: python -X utf8 '{SCRIPTS_DIR}/check_update.py' [--helloagents-root <路径>]
-  说明: 更新检查（每日缓存），会话启动时静默调用，有更新时输出提示，失败时无输出
 
 session.py:
   用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/session.py' --info|--list|--cleanup [<hours>]
