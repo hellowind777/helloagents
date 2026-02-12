@@ -257,6 +257,8 @@ def print_usage() -> None:
                "  helloagents uninstall <target>  Uninstall from a specific CLI"))
     print(_msg("  helloagents uninstall --all     从所有已安装的 CLI 卸载",
                "  helloagents uninstall --all     Uninstall from all installed CLIs"))
+    print(_msg("  helloagents uninstall --all --purge  卸载所有 CLI 并移除包本身",
+               "  helloagents uninstall --all --purge  Uninstall all CLIs and remove package"))
     print(_msg("  helloagents update              更新到最新版本",
                "  helloagents update              Update to latest version"))
     print(_msg("  helloagents update <branch>     切换到指定分支",
@@ -284,6 +286,7 @@ def main() -> None:
     from .installer import (
         install, install_all, _interactive_install,
         uninstall, uninstall_all, _interactive_uninstall,
+        _self_uninstall,
     )
 
     # Ensure stdout/stderr can handle all characters
@@ -333,12 +336,18 @@ def main() -> None:
             if not _interactive_uninstall():
                 sys.exit(1)
         else:
-            target = sys.argv[2]
-            if target == "--all":
-                uninstall_all()
+            purge = "--purge" in sys.argv[2:]
+            args = [a for a in sys.argv[2:] if a != "--purge"]
+            target = args[0] if args else None
+            if target == "--all" or not target:
+                uninstall_all(purge=purge)
             else:
                 if not uninstall(target):
                     sys.exit(1)
+                if purge:
+                    remaining = _detect_installed_targets()
+                    if not remaining:
+                        _self_uninstall()
     elif cmd == "update":
         switch = sys.argv[2] if len(sys.argv) >= 3 else None
         update(switch)
