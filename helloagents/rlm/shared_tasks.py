@@ -2,13 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 HelloAGENTS-RLM Shared Tasks Manager
-多终端协作任务管理器
-
-核心设计:
-- 默认隔离模式: 每个终端独立任务列表
-- 协作模式: 通过环境变量指定共享任务列表 ID
-- 支持任务依赖: blocks/blocked_by 自动管理
-- 文件锁保护并发写入
+多终端协作任务管理器 — 默认隔离，协作模式通过 hellotasks 环境变量启用。
 """
 
 import json
@@ -29,34 +23,78 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+# ==================== 跨平台文件锁 ====================
+
+class _FileLock:
+    """Cross-platform file lock context manager with retry."""
+
+    _WIN_LOCK_SIZE = 1024 * 1024  # 1MB
+
+    def __init__(self, handle, exclusive: bool):
+        self.handle = handle
+        self.exclusive = exclusive
+        self.locked = False
+
+    def __enter__(self):
+        for _ in range(3):
+            if self._try_lock():
+                self.locked = True
+                return self
+            time.sleep(0.1)
+        return self
+
+    def __exit__(self, *args):
+        if not self.locked:
+            return
+        if platform.system() == "Windows":
+            if msvcrt is None:
+                return
+            try:
+                self.handle.seek(0)
+                msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, self._WIN_LOCK_SIZE)
+            except OSError:
+                pass
+        elif fcntl is not None:
+            try:
+                fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+
+    def _try_lock(self) -> bool:
+        if platform.system() == "Windows":
+            if msvcrt is None:
+                return True
+            mode = msvcrt.LK_NBLCK if self.exclusive else msvcrt.LK_NBRLCK
+            try:
+                self.handle.seek(0)
+                msvcrt.locking(self.handle.fileno(), mode, self._WIN_LOCK_SIZE)
+                return True
+            except OSError:
+                return False
+        if fcntl is None:
+            return True
+        try:
+            lock_type = fcntl.LOCK_EX if self.exclusive else fcntl.LOCK_SH
+            fcntl.flock(self.handle.fileno(), lock_type)
+            return True
+        except OSError:
+            return False
+
+
 class SharedTasksManager:
     """
     多终端协作任务管理器
 
-    使用方式:
-      隔离模式（默认）: 直接运行 AI CLI
-      协作模式: hellotasks=<任务列表ID> <AI CLI 命令>
+    隔离模式（默认）: 直接运行 AI CLI
+    协作模式: hellotasks=<任务列表ID> <AI CLI 命令>
 
-    支持的 AI CLI:
-      - Codex CLI: hellotasks=auth-migration codex
-      - Claude Code: hellotasks=auth-migration claude
-
-    任务存储位置:
-      协作模式: {项目目录}/.helloagents/tasks/{list_id}.json
-      隔离模式: 由 session.py 管理
+    任务存储: {项目目录}/.helloagents/tasks/{list_id}.json
     """
 
     def __init__(self, project_root: Optional[Path] = None):
-        """
-        初始化任务管理器
-
-        Args:
-            project_root: 项目根目录，默认为当前工作目录
-        """
         self.project_root = project_root or Path.cwd()
         self.tasks_dir = self.project_root / ".helloagents" / "tasks"
 
-        # 从环境变量获取任务列表 ID
         self.list_id = os.environ.get("hellotasks")
         self.is_collaborative = bool(self.list_id)
 
@@ -68,102 +106,54 @@ class SharedTasksManager:
     def _init_task_list(self):
         """初始化任务列表文件"""
         if not self.tasks_file.exists():
-            initial_data = {
+            self._write_tasks({
                 "list_id": self.list_id,
                 "created_at": datetime.now().isoformat(),
                 "last_updated": datetime.now().isoformat(),
                 "tasks": [],
-            }
-            self._write_tasks(initial_data)
+            })
 
-    # ==================== 文件锁操作 ====================
-    def _acquire_lock(self, handle, exclusive: bool) -> bool:
-        """获取文件锁（跨平台，带重试）"""
-        retries = 3
-        delay = 0.1
-        for _ in range(retries):
-            if self._try_lock(handle, exclusive):
-                return True
-            time.sleep(delay)
-        return False
-
-    # Windows 文件锁大小（锁定足够大的范围以覆盖整个文件）
-    _WIN_LOCK_SIZE = 1024 * 1024  # 1MB
-
-    def _try_lock(self, handle, exclusive: bool) -> bool:
-        """尝试获取文件锁（单次）"""
-        if platform.system() == "Windows":
-            if msvcrt is None:
-                return True
-            mode = msvcrt.LK_NBLCK if exclusive else msvcrt.LK_NBRLCK
-            try:
-                handle.seek(0)
-                msvcrt.locking(handle.fileno(), mode, self._WIN_LOCK_SIZE)
-                return True
-            except OSError:
-                return False
-        if fcntl is None:
-            return True
-        try:
-            lock_type = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
-            fcntl.flock(handle.fileno(), lock_type)
-            return True
-        except OSError:
-            return False
-
-    def _release_lock(self, handle) -> None:
-        """释放文件锁（跨平台）"""
-        if platform.system() == "Windows":
-            if msvcrt is None:
-                return
-            try:
-                handle.seek(0)
-                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, self._WIN_LOCK_SIZE)
-            except OSError:
-                return
-        elif fcntl is not None:
-            try:
-                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-            except OSError:
-                return
+    # ==================== 文件读写 ====================
 
     def _read_tasks(self) -> Dict[str, Any]:
         """读取任务列表（带共享锁）"""
         if not self.is_collaborative:
             return {"tasks": []}
-
         if not self.tasks_file.exists():
             return {"list_id": self.list_id, "tasks": []}
-
         try:
             with open(self.tasks_file, 'r', encoding='utf-8') as f:
-                if not self._acquire_lock(f, exclusive=False):
-                    return {"list_id": self.list_id, "tasks": [], "_error": "Failed to acquire lock"}
-                try:
+                with _FileLock(f, exclusive=False) as lock:
+                    if not lock.locked:
+                        return {"list_id": self.list_id, "tasks": [],
+                                "_error": "Failed to acquire lock"}
                     return json.load(f)
-                finally:
-                    self._release_lock(f)
         except Exception:
-            return {"list_id": self.list_id, "tasks": [], "_error": "Failed to read tasks"}
+            return {"list_id": self.list_id, "tasks": [],
+                    "_error": "Failed to read tasks"}
 
     def _write_tasks(self, data: Dict[str, Any]) -> bool:
         """写入任务列表（带排他锁）"""
         if not self.is_collaborative:
             return False
-
         data["last_updated"] = datetime.now().isoformat()
-
         try:
             with open(self.tasks_file, 'w', encoding='utf-8') as f:
-                if not self._acquire_lock(f, exclusive=True):
-                    return False
-                try:
+                with _FileLock(f, exclusive=True) as lock:
+                    if not lock.locked:
+                        return False
                     json.dump(data, f, ensure_ascii=False, indent=2)
                     return True
-                finally:
-                    self._release_lock(f)
         except Exception:
             return False
+
+    def _find_task(self, task_id: str) -> tuple:
+        """Find task by ID. Returns (data, task) or (data, None)."""
+        data = self._read_tasks()
+        for task in data.get("tasks", []):
+            if task["id"] == task_id:
+                return data, task
+        return data, None
 
     # ==================== 任务 CRUD ====================
 
@@ -174,18 +164,7 @@ class SharedTasksManager:
         blocks: Optional[List[str]] = None,
         blocked_by: Optional[List[str]] = None,
     ) -> Optional[str]:
-        """
-        添加任务
-
-        Args:
-            subject: 任务标题
-            description: 任务描述
-            blocks: 此任务完成后解锁的任务 ID 列表
-            blocked_by: 阻塞此任务的任务 ID 列表
-
-        Returns:
-            任务 ID，失败返回 None
-        """
+        """添加任务，返回任务 ID，失败返回 None"""
         if not self.is_collaborative:
             return None
 
@@ -215,66 +194,40 @@ class SharedTasksManager:
         status: Optional[str] = None,
         owner: Optional[str] = None,
     ) -> bool:
-        """
-        更新任务状态
-
-        Args:
-            task_id: 任务 ID
-            status: 新状态 (pending/in_progress/completed)
-            owner: 任务负责人（终端标识）
-
-        Returns:
-            是否成功
-        """
+        """更新任务状态 (pending/in_progress/completed)"""
         if not self.is_collaborative:
             return False
 
-        data = self._read_tasks()
+        data, task = self._find_task(task_id)
+        if not task:
+            return False
 
-        for task in data["tasks"]:
-            if task["id"] == task_id:
-                if status:
-                    task["status"] = status
-                if owner is not None:
-                    task["owner"] = owner
-                task["updated_at"] = datetime.now().isoformat()
+        if status:
+            task["status"] = status
+        if owner is not None:
+            task["owner"] = owner
+        task["updated_at"] = datetime.now().isoformat()
 
-                # 如果任务完成，更新依赖关系
-                if status == "completed":
-                    self._resolve_dependencies(data, task_id)
+        if status == "completed":
+            self._resolve_dependencies(data, task_id)
 
-                return self._write_tasks(data)
-
-        return False
+        return self._write_tasks(data)
 
     def complete_task(self, task_id: str, owner: str) -> bool:
-        """
-        标记任务完成（需负责人一致）
-
-        Args:
-            task_id: 任务 ID
-            owner: 当前终端标识
-
-        Returns:
-            是否成功
-        """
+        """标记任务完成（需负责人一致）"""
         if not self.is_collaborative:
             return False
 
-        data = self._read_tasks()
-        if data.get("_error"):
+        data, task = self._find_task(task_id)
+        if not task or data.get("_error"):
+            return False
+        if not task.get("owner") or task.get("owner") != owner:
             return False
 
-        for task in data["tasks"]:
-            if task["id"] == task_id:
-                if not task.get("owner") or task.get("owner") != owner:
-                    return False
-                task["status"] = "completed"
-                task["updated_at"] = datetime.now().isoformat()
-                self._resolve_dependencies(data, task_id)
-                return self._write_tasks(data)
-
-        return False
+        task["status"] = "completed"
+        task["updated_at"] = datetime.now().isoformat()
+        self._resolve_dependencies(data, task_id)
+        return self._write_tasks(data)
 
     def _resolve_dependencies(self, data: Dict[str, Any], completed_task_id: str):
         """解除依赖：将 completed_task_id 从其他任务的 blocked_by 中移除"""
@@ -284,72 +237,45 @@ class SharedTasksManager:
                 task["updated_at"] = datetime.now().isoformat()
 
     def claim_task(self, task_id: str, owner: str) -> bool:
-        """
-        认领任务
-
-        Args:
-            task_id: 任务 ID
-            owner: 认领者标识
-
-        Returns:
-            是否成功（已被他人认领则失败）
-        """
+        """认领任务（已被他人认领或被阻塞则失败）"""
         if not self.is_collaborative:
             return False
 
-        data = self._read_tasks()
+        data, task = self._find_task(task_id)
+        if not task:
+            return False
+        if task["owner"] and task["owner"] != owner:
+            return False  # 已被他人认领
+        if task.get("blocked_by"):
+            return False  # 还有未完成的依赖
 
-        for task in data["tasks"]:
-            if task["id"] == task_id:
-                # 检查是否已被认领
-                if task["owner"] and task["owner"] != owner:
-                    return False  # 已被他人认领
-
-                # 检查是否被阻塞
-                if task.get("blocked_by"):
-                    return False  # 还有未完成的依赖
-
-                task["owner"] = owner
-                task["status"] = "in_progress"
-                task["updated_at"] = datetime.now().isoformat()
-                return self._write_tasks(data)
-
-        return False
+        task["owner"] = owner
+        task["status"] = "in_progress"
+        task["updated_at"] = datetime.now().isoformat()
+        return self._write_tasks(data)
 
     def get_available_tasks(self) -> List[Dict[str, Any]]:
         """获取可认领的任务（无阻塞、未被认领）"""
         if not self.is_collaborative:
             return []
-
         data = self._read_tasks()
-        available = []
-
-        for task in data["tasks"]:
-            if (task["status"] == "pending" and
-                not task.get("owner") and
-                not task.get("blocked_by")):
-                available.append(task)
-
-        return available
+        return [t for t in data["tasks"]
+                if t["status"] == "pending"
+                and not t.get("owner")
+                and not t.get("blocked_by")]
 
     def get_task_list(self) -> List[Dict[str, Any]]:
         """获取完整任务列表"""
         if not self.is_collaborative:
             return []
-
-        data = self._read_tasks()
-        return data.get("tasks", [])
+        return self._read_tasks().get("tasks", [])
 
     def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """获取单个任务详情"""
         if not self.is_collaborative:
             return None
-
-        data = self._read_tasks()
-        for task in data["tasks"]:
-            if task["id"] == task_id:
-                return task
-        return None
+        _, task = self._find_task(task_id)
+        return task
 
     # ==================== 状态查询 ====================
 
@@ -363,7 +289,6 @@ class SharedTasksManager:
 
         data = self._read_tasks()
         tasks = data.get("tasks", [])
-        error = data.get("_error")
 
         pending = sum(1 for t in tasks if t["status"] == "pending")
         in_progress = sum(1 for t in tasks if t["status"] == "in_progress")
@@ -380,15 +305,11 @@ class SharedTasksManager:
             "completed": completed,
             "blocked": blocked,
             "last_updated": data.get("last_updated"),
-            "error": error,
+            "error": data.get("_error"),
         }
 
     def refresh(self) -> List[Dict[str, Any]]:
-        """
-        强制刷新任务列表（从文件重新读取）
-
-        用于检查其他终端的更新
-        """
+        """强制刷新任务列表（从文件重新读取）"""
         return self.get_task_list()
 
 
@@ -408,6 +329,19 @@ def is_collaborative_mode() -> bool:
 
 # ==================== CLI 入口 ====================
 
+def _resolve_owner() -> str:
+    """Resolve owner from env or session (for CLI usage)."""
+    owner = os.environ.get("HELLOAGENTS_SESSION_ID")
+    if owner:
+        return owner
+    try:
+        import importlib
+        return importlib.import_module(
+            "helloagents.rlm.session").get_current_session().session_id
+    except Exception:
+        return "cli"
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -425,29 +359,14 @@ if __name__ == "__main__":
     manager = SharedTasksManager()
 
     if args.owner is None:
-        # 尝试从 Session 获取默认 owner
-        default_owner = os.environ.get("HELLOAGENTS_SESSION_ID")
-        if not default_owner:
-            try:
-                # 直接运行时相对导入不可用，使用绝对导入
-                import importlib
-                session_mod = importlib.import_module("helloagents.rlm.session")
-                default_owner = session_mod.get_current_session().session_id
-            except Exception:
-                default_owner = "cli"
-        args.owner = default_owner
+        args.owner = _resolve_owner()
 
     if args.status:
         print(json.dumps(manager.get_status(), ensure_ascii=False, indent=2))
-
     elif args.list:
-        tasks = manager.get_task_list()
-        print(json.dumps(tasks, ensure_ascii=False, indent=2))
-
+        print(json.dumps(manager.get_task_list(), ensure_ascii=False, indent=2))
     elif args.available:
-        tasks = manager.get_available_tasks()
-        print(json.dumps(tasks, ensure_ascii=False, indent=2))
-
+        print(json.dumps(manager.get_available_tasks(), ensure_ascii=False, indent=2))
     elif args.add:
         blocked_by = None
         if args.blocked_by:
@@ -456,16 +375,13 @@ if __name__ == "__main__":
         if task_id:
             print(json.dumps({"success": True, "task_id": task_id}, ensure_ascii=False))
         else:
-            print(json.dumps({"success": False, "error": "添加失败或非协作模式"}, ensure_ascii=False))
-
+            print(json.dumps({"success": False, "error": "添加失败或非协作模式"},
+                             ensure_ascii=False))
     elif args.complete:
         success = manager.complete_task(args.complete, owner=args.owner)
         print(json.dumps({"success": success}, ensure_ascii=False))
-
     elif args.claim:
         success = manager.claim_task(args.claim, owner=args.owner)
         print(json.dumps({"success": success}, ensure_ascii=False))
-
     else:
-        # 默认显示状态
         print(json.dumps(manager.get_status(), ensure_ascii=False, indent=2))

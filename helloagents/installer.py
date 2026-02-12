@@ -14,6 +14,10 @@ from .cli import (
     get_agents_md_path, get_helloagents_module_path,
     detect_installed_clis, _detect_installed_targets, _detect_install_method,
 )
+from .win_helpers import (
+    _cleanup_pip_remnants, _win_deferred_pip,
+    build_pip_cleanup_cmd, win_exe_retry,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -36,60 +40,25 @@ def _self_uninstall() -> bool:
         if result.returncode == 0:
             print(_msg("  ✓ helloagents 包已移除。",
                        "  ✓ helloagents package removed."))
-            from .updater import _cleanup_pip_remnants
             _cleanup_pip_remnants()
             return True
 
         stderr = result.stderr.strip()
 
-        # Windows .exe locking — rename and retry
+        # Windows .exe locking — use shared retry helper
         if sys.platform == "win32" and method == "pip" and (
                 "WinError" in stderr or "helloagents.exe" in stderr):
-            exe = shutil.which("helloagents")
-            if exe:
-                exe_path = Path(exe)
-                bak_path = exe_path.with_suffix(".exe.bak")
-                try:
-                    exe_path.rename(bak_path)
-                    print(_msg("  .exe 文件已锁定，重命名后重试...",
-                               "  .exe file locked, renamed and retrying..."))
-                    retry = subprocess.run(cmd, capture_output=True, text=True,
-                                           encoding="utf-8", errors="replace")
-                    if retry.returncode == 0:
-                        print(_msg("  ✓ helloagents 包已移除。",
-                                   "  ✓ helloagents package removed."))
-                        try:
-                            bak_path.unlink()
-                        except OSError:
-                            pass  # locked by current process, harmless
-                        from .updater import _cleanup_pip_remnants
-                        _cleanup_pip_remnants()
-                        return True
-                    else:
-                        # Restore .exe
-                        try:
-                            bak_path.rename(exe_path)
-                        except OSError:
-                            pass
-                except OSError:
-                    pass
-            # Rename-and-retry failed or not possible; schedule deferred uninstall
-            from .updater import _win_deferred_pip
-            # Post-cmd: clean up ~prefixed pip remnants after deferred pip runs
-            cleanup_cmd = [
-                sys.executable, "-c",
-                "import shutil,pathlib,site;"
-                "[shutil.rmtree(p,ignore_errors=True) "
-                "for d in site.getsitepackages() if pathlib.Path(d).is_dir() "
-                "for p in pathlib.Path(d).iterdir() "
-                "if p.is_dir() and p.name.startswith('~')]",
-            ]
-            if _win_deferred_pip(cmd, post_cmds=[cleanup_cmd]):
+            ok, _ = win_exe_retry(cmd, label=method)
+            if ok:
+                _cleanup_pip_remnants()
+                return True
+            # Rename-and-retry failed; schedule deferred uninstall
+            if _win_deferred_pip(cmd, post_cmds=[build_pip_cleanup_cmd()]):
                 print(_msg(
                     "  helloagents 包将在程序退出后自动移除。",
                     "  helloagents package will be removed after exit."))
                 return True
-            # Deferred also failed; show manual instruction
+            # Deferred also failed
             print(_msg(
                 "  ✗ 无法自动移除。请退出后手动执行:",
                 "  ✗ Cannot auto-remove. Please exit and run manually:"))
@@ -320,101 +289,6 @@ def install_all() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Interactive install
-# ---------------------------------------------------------------------------
-
-def _interactive_install() -> bool:
-    """Show interactive menu for selecting CLI targets to install."""
-    targets = list(CLI_TARGETS.keys())
-    detected = detect_installed_clis()
-    installed = _detect_installed_targets()
-
-    _header(_msg("步骤 1/3: 选择目标", "Step 1/3: Select Targets"))
-
-    for i, name in enumerate(targets, 1):
-        config = CLI_TARGETS[name]
-        dir_path = f"~/{config['dir']}/"
-        if name in installed:
-            tag = _msg("[已安装 HelloAGENTS]", "[HelloAGENTS installed]")
-        elif name in detected:
-            tag = _msg("[已检测到该工具]", "[tool found]")
-        else:
-            tag = ""
-        print(f"  [{i}] {name:10} {dir_path:20} {tag}")
-
-    print()
-    prompt = _msg(
-        "  请输入编号，可多选（如 1 3 5）或 all 全选，直接回车跳过: ",
-        "  Enter numbers, multi-select supported (e.g. 1 3 5) or 'all', press Enter to skip: ",
-    )
-
-    try:
-        choice = input(prompt).strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        print(_msg("  已取消。", "  Cancelled."))
-        return True
-
-    if not choice:
-        print(_msg("  已跳过安装。", "  Skipped."))
-        return True
-
-    if choice.lower() == "all":
-        selected = targets
-    else:
-        nums = choice.replace(",", " ").split()
-        seen = set()
-        selected = []
-        for n in nums:
-            try:
-                idx = int(n)
-                if 1 <= idx <= len(targets):
-                    name = targets[idx - 1]
-                    if name not in seen:
-                        seen.add(name)
-                        selected.append(name)
-                else:
-                    print(_msg(f"  忽略无效编号: {n}",
-                               f"  Ignoring invalid number: {n}"))
-            except ValueError:
-                print(_msg(f"  忽略无效输入: {n}",
-                           f"  Ignoring invalid input: {n}"))
-
-    if not selected:
-        print(_msg("  未选择任何目标。", "  No targets selected."))
-        return True
-
-    _header(_msg(f"步骤 2/3: 执行安装（共 {len(selected)} 个目标）",
-                 f"Step 2/3: Installing ({len(selected)} target(s))"))
-
-    results = {}
-    for i, t in enumerate(selected, 1):
-        print(_msg(f"  [{i}/{len(selected)}] {t}",
-                   f"  [{i}/{len(selected)}] {t}"))
-        results[t] = install(t)
-        print()
-
-    _header(_msg("步骤 3/3: 安装结果", "Step 3/3: Installation Summary"))
-    for t, ok in results.items():
-        mark = "✓" if ok else "✗"
-        status_text = _msg("成功", "OK") if ok else _msg("失败", "FAILED")
-        print(f"  {mark} {t:10} {status_text}")
-
-    succeeded = sum(1 for v in results.values() if v)
-    failed_count = len(results) - succeeded
-    print()
-    if failed_count:
-        print(_msg(f"  共 {succeeded} 个成功，{failed_count} 个失败。",
-                   f"  {succeeded} succeeded, {failed_count} failed."))
-        return False
-    print(_msg(
-        f"  共 {succeeded} 个目标安装成功。请重启终端以应用更改。",
-        f"  All {succeeded} target(s) installed successfully. "
-        f"Please restart your terminal to apply changes."))
-    return True
-
-
-# ---------------------------------------------------------------------------
 # Uninstall
 # ---------------------------------------------------------------------------
 
@@ -527,124 +401,3 @@ def uninstall_all(purge: bool = False) -> None:
             print("    uv tool uninstall helloagents")
         else:
             print("    pip uninstall helloagents")
-
-
-# ---------------------------------------------------------------------------
-# Interactive uninstall
-# ---------------------------------------------------------------------------
-
-def _interactive_uninstall() -> bool:
-    """Show interactive menu for selecting CLI targets to uninstall."""
-    installed = _detect_installed_targets()
-    if not installed:
-        print(_msg("  未检测到已安装的 CLI 目标。",
-                   "  No installed CLI targets detected."))
-        return True
-
-    _header(_msg("步骤 1/3: 选择要卸载的目标",
-                 "Step 1/3: Select Targets to Uninstall"))
-
-    for i, name in enumerate(installed, 1):
-        config = CLI_TARGETS[name]
-        dir_path = f"~/{config['dir']}/"
-        print(f"  [{i}] {name:10} {dir_path}")
-
-    print()
-    prompt = _msg(
-        "  请输入要卸载的编号，可多选（如 1 3 5）或 all 全选，直接回车跳过: ",
-        "  Enter numbers to uninstall, multi-select supported (e.g. 1 3 5) "
-        "or 'all', press Enter to skip: ",
-    )
-
-    try:
-        choice = input(prompt).strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        print(_msg("  已取消。", "  Cancelled."))
-        return True
-
-    if not choice:
-        print(_msg("  已跳过。", "  Skipped."))
-        return True
-
-    if choice.lower() == "all":
-        selected = installed
-    else:
-        nums = choice.replace(",", " ").split()
-        seen = set()
-        selected = []
-        for n in nums:
-            try:
-                idx = int(n)
-                if 1 <= idx <= len(installed):
-                    name = installed[idx - 1]
-                    if name not in seen:
-                        seen.add(name)
-                        selected.append(name)
-                else:
-                    print(_msg(f"  忽略无效编号: {n}",
-                               f"  Ignoring invalid number: {n}"))
-            except ValueError:
-                print(_msg(f"  忽略无效输入: {n}",
-                           f"  Ignoring invalid input: {n}"))
-
-    if not selected:
-        print(_msg("  未选择任何目标。", "  No targets selected."))
-        return True
-
-    # Determine whether we'll offer to remove the package itself
-    remaining_after = set(_detect_installed_targets()) - set(selected)
-
-    _header(_msg(f"步骤 2/3: 执行卸载（共 {len(selected)} 个目标）",
-                 f"Step 2/3: Uninstalling ({len(selected)} target(s))"))
-
-    for i, t in enumerate(selected, 1):
-        print(_msg(f"  [{i}/{len(selected)}] {t}",
-                   f"  [{i}/{len(selected)}] {t}"))
-        uninstall(t, show_package_hint=False)
-        print()
-
-    _header(_msg("步骤 3/3: 卸载结果",
-                 "Step 3/3: Uninstall Summary"))
-    for t in selected:
-        print(f"  ✓ {t:10} {_msg('已卸载', 'removed')}")
-
-    print()
-    print(_msg(f"  共卸载 {len(selected)} 个目标。请重启终端以应用更改。",
-               f"  {len(selected)} target(s) uninstalled. "
-               f"Please restart your terminal to apply changes."))
-
-    # If no CLI targets remain, offer to remove the package itself
-    if not remaining_after:
-        _header(_msg("附加: 移除 helloagents 包",
-                     "Extra: Remove helloagents Package"))
-
-        print(_msg("  已无已安装的 CLI 目标。是否同时移除 helloagents 包本身？",
-                   "  No installed CLI targets remaining. "
-                   "Also remove the helloagents package itself?"))
-        print()
-        print(_msg("  [1] 是，彻底移除", "  [1] Yes, remove completely"))
-        print(_msg("  [2] 否，仅卸载 CLI 目标",
-                   "  [2] No, only uninstall CLI targets"))
-        print()
-
-        prompt = _msg("  请输入编号（直接回车跳过）: ",
-                      "  Enter number (press Enter to skip): ")
-        try:
-            purge_choice = input(prompt).strip()
-        except (EOFError, KeyboardInterrupt):
-            print()
-            purge_choice = ""
-
-        if purge_choice == "1":
-            _self_uninstall()
-        else:
-            method = _detect_install_method()
-            print(_msg("  如需稍后移除，请执行:",
-                       "  To remove later, run:"))
-            if method == "uv":
-                print("    uv tool uninstall helloagents")
-            else:
-                print("    pip uninstall helloagents")
-
-    return True

@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.4-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.5-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
@@ -298,7 +298,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 ## Repository Guide
 
 - AGENTS.md: router and workflow protocol
-- pyproject.toml: package metadata (v2.2.4)
+- pyproject.toml: package metadata (v2.2.5)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: analyze, design, develop
@@ -356,7 +356,7 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.4 (current)
+### v2.2.5 (current)
 
 - **RLM sub-agent system:** 12 specialized roles with automatic dispatch and session isolation
 - **Five-dimension routing (R0–R3):** replaces legacy three-layer routing

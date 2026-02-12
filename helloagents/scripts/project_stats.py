@@ -185,83 +185,62 @@ def detect_modules(project_root: Path) -> dict:
 
 def count_dependencies(project_root: Path) -> dict:
     """统计项目依赖项数量"""
+    import re
     deps = {
         "total": 0,
         "by_type": {},
         "details": []
     }
 
+    def _add(type_key: str, count: int, detail: str = None):
+        if count > 0:
+            deps["by_type"][type_key] = count
+            deps["total"] += count
+            if detail:
+                deps["details"].append(detail)
+
     # package.json (npm/yarn)
-    pkg_json = project_root / "package.json"
-    if pkg_json.exists():
-        try:
-            import json
-            with open(pkg_json, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            npm_deps = len(data.get("dependencies", {}))
-            npm_dev_deps = len(data.get("devDependencies", {}))
-            deps["by_type"]["npm"] = npm_deps + npm_dev_deps
-            deps["total"] += npm_deps + npm_dev_deps
-            deps["details"].append(f"npm: {npm_deps} deps + {npm_dev_deps} devDeps")
-        except Exception:
-            pass
+    try:
+        data = json.loads((project_root / "package.json").read_text(encoding="utf-8"))
+        nd = len(data.get("dependencies", {}))
+        dd = len(data.get("devDependencies", {}))
+        _add("npm", nd + dd, f"npm: {nd} deps + {dd} devDeps")
+    except Exception:
+        pass
 
     # requirements.txt (pip)
-    req_txt = project_root / "requirements.txt"
-    if req_txt.exists():
+    try:
+        lines = [l for l in (project_root / "requirements.txt")
+                 .read_text(encoding="utf-8").splitlines()
+                 if l.strip() and not l.startswith("#")]
+        _add("pip", len(lines), f"pip: {len(lines)} deps")
+    except Exception:
+        pass
+
+    # pyproject.toml (poetry/pip) — only if pip wasn't already detected
+    if "pip" not in deps["by_type"]:
         try:
-            with open(req_txt, "r", encoding="utf-8") as f:
-                lines = [l.strip() for l in f if l.strip() and not l.startswith("#")]
-            pip_deps = len(lines)
-            deps["by_type"]["pip"] = pip_deps
-            deps["total"] += pip_deps
-            deps["details"].append(f"pip: {pip_deps} deps")
+            content = (project_root / "pyproject.toml").read_text(encoding="utf-8")
+            matches = re.findall(r'^\s*[\w-]+\s*=', content, re.MULTILINE)
+            _add("poetry", len(matches) // 2)
         except Exception:
             pass
 
-    # pyproject.toml (poetry/pip)
-    pyproject = project_root / "pyproject.toml"
-    if pyproject.exists():
-        try:
-            with open(pyproject, "r", encoding="utf-8") as f:
-                content = f.read()
-            # 简单计数 dependencies 行
-            import re
-            deps_match = re.findall(r'^\s*[\w-]+\s*=', content, re.MULTILINE)
-            if deps_match and "pip" not in deps["by_type"]:
-                poetry_deps = len(deps_match) // 2  # 粗略估计
-                deps["by_type"]["poetry"] = poetry_deps
-                deps["total"] += poetry_deps
-        except Exception:
-            pass
+    # go.mod
+    try:
+        content = (project_root / "go.mod").read_text(encoding="utf-8")
+        count = len(re.findall(r'^\s+\S+\s+v', content, re.MULTILINE))
+        _add("go", count, f"go: {count} deps")
+    except Exception:
+        pass
 
-    # go.mod (go)
-    go_mod = project_root / "go.mod"
-    if go_mod.exists():
-        try:
-            with open(go_mod, "r", encoding="utf-8") as f:
-                content = f.read()
-            import re
-            go_deps = len(re.findall(r'^\s+\S+\s+v', content, re.MULTILINE))
-            deps["by_type"]["go"] = go_deps
-            deps["total"] += go_deps
-            deps["details"].append(f"go: {go_deps} deps")
-        except Exception:
-            pass
-
-    # Cargo.toml (rust)
-    cargo = project_root / "Cargo.toml"
-    if cargo.exists():
-        try:
-            with open(cargo, "r", encoding="utf-8") as f:
-                content = f.read()
-            import re
-            cargo_deps = len(re.findall(r'^\s*[\w-]+\s*=\s*["{]', content, re.MULTILINE))
-            deps["by_type"]["cargo"] = cargo_deps
-            deps["total"] += cargo_deps
-            deps["details"].append(f"cargo: {cargo_deps} deps")
-        except Exception:
-            pass
+    # Cargo.toml
+    try:
+        content = (project_root / "Cargo.toml").read_text(encoding="utf-8")
+        count = len(re.findall(r'^\s*[\w-]+\s*=\s*["{]', content, re.MULTILINE))
+        _add("cargo", count, f"cargo: {count} deps")
+    except Exception:
+        pass
 
     return deps
 

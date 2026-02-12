@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.4-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.5-orange.svg)](./pyproject.toml)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
@@ -299,7 +299,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 ## 仓库结构说明
 
 - AGENTS.md：路由与工作流协议
-- pyproject.toml：包元数据（v2.2.4）
+- pyproject.toml：包元数据（v2.2.5）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：analyze、design、develop
@@ -357,7 +357,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.4（当前版本）
+### v2.2.5（当前版本）
 
 - **RLM 子代理系统：** 12 个专业角色，自动调度 + Session 隔离
 - **五维度路由（R0–R3）：** 替代旧版三层路由
