@@ -70,9 +70,9 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
 def install(target: str) -> bool:
     """Install HelloAGENTS to a specific CLI."""
     if target not in CLI_TARGETS:
-        print(_msg(f"未知目标: {target}", f"Unknown target: {target}"))
-        print(_msg(f"可用目标: {', '.join(CLI_TARGETS.keys())}",
-                   f"Available targets: {', '.join(CLI_TARGETS.keys())}"))
+        print(_msg(f"  未知目标: {target}", f"  Unknown target: {target}"))
+        print(_msg(f"  可用目标: {', '.join(CLI_TARGETS.keys())}",
+                   f"  Available targets: {', '.join(CLI_TARGETS.keys())}"))
         return False
 
     config = CLI_TARGETS[target]
@@ -89,8 +89,8 @@ def install(target: str) -> bool:
     plugin_dest = dest_dir / PLUGIN_DIR_NAME
     rules_dest = dest_dir / rules_file
 
-    print(_msg(f"正在安装 HelloAGENTS 到 {target}...",
-               f"Installing HelloAGENTS to {target}..."))
+    print(_msg(f"  正在安装 HelloAGENTS 到 {target}...",
+               f"  Installing HelloAGENTS to {target}..."))
     print(_msg(f"  目标目录: {dest_dir}", f"  Target directory: {dest_dir}"))
 
     # Clean stale files
@@ -145,8 +145,8 @@ def install(target: str) -> bool:
         print(_msg(f"  警告: 未找到 AGENTS.md ({agents_md_src})",
                    f"  Warning: AGENTS.md not found at {agents_md_src}"))
 
-    print(_msg(f"{target} 安装完成！请重启终端以应用更改。",
-               f"Installation complete for {target}! Please restart your terminal to apply changes."))
+    print(_msg(f"  {target} 安装完成！请重启终端以应用更改。",
+               f"  Installation complete for {target}! Please restart your terminal to apply changes."))
     return True
 
 
@@ -154,13 +154,13 @@ def install_all() -> bool:
     """Install to all detected CLI directories."""
     detected = detect_installed_clis()
     if not detected:
-        print(_msg("未检测到 CLI 目录。", "No CLI directories detected."))
-        print(_msg(f"支持的 CLI: {', '.join(CLI_TARGETS.keys())}",
-                   f"Supported CLIs: {', '.join(CLI_TARGETS.keys())}"))
+        print(_msg("  未检测到 CLI 目录。", "  No CLI directories detected."))
+        print(_msg(f"  支持的 CLI: {', '.join(CLI_TARGETS.keys())}",
+                   f"  Supported CLIs: {', '.join(CLI_TARGETS.keys())}"))
         return False
 
-    print(_msg(f"检测到的 CLI: {', '.join(detected)}",
-               f"Detected CLIs: {', '.join(detected)}"))
+    print(_msg(f"  检测到的 CLI: {', '.join(detected)}",
+               f"  Detected CLIs: {', '.join(detected)}"))
     failed = []
     for target in detected:
         if not install(target):
@@ -168,7 +168,7 @@ def install_all() -> bool:
         print()
 
     if failed:
-        print(_msg(f"失败: {', '.join(failed)}", f"Failed: {', '.join(failed)}"))
+        print(_msg(f"  失败: {', '.join(failed)}", f"  Failed: {', '.join(failed)}"))
         return False
     return True
 
@@ -274,9 +274,9 @@ def _interactive_install() -> bool:
 def uninstall(target: str) -> bool:
     """Uninstall HelloAGENTS from a specific CLI target."""
     if target not in CLI_TARGETS:
-        print(_msg(f"未知目标: {target}", f"Unknown target: {target}"))
-        print(_msg(f"可用目标: {', '.join(CLI_TARGETS.keys())}",
-                   f"Available targets: {', '.join(CLI_TARGETS.keys())}"))
+        print(_msg(f"  未知目标: {target}", f"  Unknown target: {target}"))
+        print(_msg(f"  可用目标: {', '.join(CLI_TARGETS.keys())}",
+                   f"  Available targets: {', '.join(CLI_TARGETS.keys())}"))
         return False
 
     config = CLI_TARGETS[target]
@@ -291,8 +291,8 @@ def uninstall(target: str) -> bool:
                    f"  {target}: directory {dest_dir} does not exist, skipping."))
         return True
 
-    print(_msg(f"正在从 {target} 卸载 HelloAGENTS...",
-               f"Uninstalling HelloAGENTS from {target}..."))
+    print(_msg(f"  正在从 {target} 卸载 HelloAGENTS...",
+               f"  Uninstalling HelloAGENTS from {target}..."))
 
     if plugin_dest.exists():
         shutil.rmtree(plugin_dest)
@@ -320,8 +320,8 @@ def uninstall(target: str) -> bool:
                    f"  Removed {len(removed)} item(s):"))
         for r in removed:
             print(f"    - {r}")
-        print(_msg(f"{target} 卸载完成。请重启终端以应用更改。",
-                   f"Uninstall complete for {target}. Please restart your terminal to apply changes."))
+        print(_msg(f"  {target} 卸载完成。请重启终端以应用更改。",
+                   f"  Uninstall complete for {target}. Please restart your terminal to apply changes."))
     else:
         print(_msg(f"  {target}: 无需移除。",
                    f"  {target}: nothing to remove."))
@@ -330,14 +330,14 @@ def uninstall(target: str) -> bool:
     if not remaining:
         method = _detect_install_method()
         print()
-        print(_msg("已无已安装的 CLI 目标。",
-                   "No installed CLI targets remaining."))
-        print(_msg("如需同时移除 helloagents 包本身，请执行:",
-                   "To also remove the helloagents package itself, run:"))
+        print(_msg("  已无已安装的 CLI 目标。",
+                   "  No installed CLI targets remaining."))
+        print(_msg("  如需同时移除 helloagents 包本身，请执行:",
+                   "  To also remove the helloagents package itself, run:"))
         if method == "uv":
-            print("  uv tool uninstall helloagents")
+            print("    uv tool uninstall helloagents")
         else:
-            print("  pip uninstall helloagents")
+            print("    pip uninstall helloagents")
 
     return True
 
@@ -346,23 +346,23 @@ def uninstall_all() -> None:
     """Uninstall HelloAGENTS from all detected CLI targets."""
     targets = _detect_installed_targets()
     if not targets:
-        print(_msg("未检测到已安装的 CLI 目标。",
-                   "No installed CLI targets detected."))
+        print(_msg("  未检测到已安装的 CLI 目标。",
+                   "  No installed CLI targets detected."))
         return
 
-    print(_msg(f"将卸载的目标: {', '.join(targets)}",
-               f"Targets to uninstall: {', '.join(targets)}"))
+    print(_msg(f"  将卸载的目标: {', '.join(targets)}",
+               f"  Targets to uninstall: {', '.join(targets)}"))
     for t in targets:
         uninstall(t)
         print()
 
     method = _detect_install_method()
-    print(_msg("如需同时移除 helloagents 包本身，请执行:",
-               "To also remove the helloagents package itself, run:"))
+    print(_msg("  如需同时移除 helloagents 包本身，请执行:",
+               "  To also remove the helloagents package itself, run:"))
     if method == "uv":
-        print("  uv tool uninstall helloagents")
+        print("    uv tool uninstall helloagents")
     else:
-        print("  pip uninstall helloagents")
+        print("    pip uninstall helloagents")
 
 
 # ---------------------------------------------------------------------------
