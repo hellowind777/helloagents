@@ -273,6 +273,22 @@ def check_update(force: bool = False,
 # update command
 # ---------------------------------------------------------------------------
 
+def _cleanup_pip_remnants() -> None:
+    """Clean up corrupted pip remnant directories (~elloagents*) in site-packages."""
+    import site
+    try:
+        for sp in site.getsitepackages():
+            sp_path = Path(sp)
+            if not sp_path.is_dir():
+                continue
+            for remnant in sp_path.glob("~elloagents*"):
+                if remnant.is_dir():
+                    import shutil
+                    shutil.rmtree(remnant, ignore_errors=True)
+    except Exception:
+        pass
+
+
 def _win_find_exe() -> Path | None:
     """Find the helloagents.exe entry point on Windows."""
     import shutil
@@ -300,7 +316,8 @@ def update(switch_branch: str = None) -> None:
     """Update HelloAGENTS to the latest version, then auto-sync installed targets."""
     import subprocess
 
-    # Clean up leftover .exe.bak from a previous rename-based update
+    # Clean up corrupted pip remnants and leftover .exe.bak
+    _cleanup_pip_remnants()
     if sys.platform == "win32":
         _win_cleanup_bak()
 
@@ -325,6 +342,8 @@ def update(switch_branch: str = None) -> None:
     branch_suffix = f"@{branch}" if branch != "main" else ""
     updated = False
     method = _detect_install_method()
+    print(_msg("  正在从远程仓库下载并安装，请稍候...",
+               "  Downloading and installing from remote, please wait..."))
 
     if method == "uv":
         uv_url = f"git+{REPO_URL}" + branch_suffix
@@ -394,6 +413,9 @@ def update(switch_branch: str = None) -> None:
                     print(f"  pip error: {stderr}")
         except FileNotFoundError:
             print(_msg("  错误: 未找到 pip。", "  Error: pip not found."))
+
+    # Clean up pip remnants created during upgrade
+    _cleanup_pip_remnants()
 
     if not updated:
         pip_url = f"git+{REPO_URL}.git" + branch_suffix
