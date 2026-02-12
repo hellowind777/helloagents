@@ -170,7 +170,7 @@ def _detect_install_method() -> str:
 # ---------------------------------------------------------------------------
 
 def _interactive_main() -> None:
-    """Show main interactive menu for all operations."""
+    """Show main interactive menu for all operations (loops until exit)."""
     from .updater import update, status, clean
     from .installer import _interactive_install, _interactive_uninstall
 
@@ -190,54 +190,57 @@ def _interactive_main() -> None:
         (_msg("查看安装状态", "Show installation status"), "status"),
         (_msg("清理缓存", "Clean caches"), "clean"),
     ]
-
-    print()
-    print(_msg("  请选择操作:", "  Select an action:"))
-    print()
-    num = 1
-    for item in actions:
-        if item is None:
-            print("  " + "─" * 30)
-            continue
-        label, _ = item
-        print(f"  [{num}] {label}")
-        num += 1
-
-    print()
-    prompt = _msg("  请输入编号: ", "  Enter number: ")
-
-    try:
-        choice = input(prompt).strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        return
-
-    if not choice:
-        return
-
     flat_actions = [a for a in actions if a is not None]
 
-    try:
-        idx = int(choice)
-        if idx < 1 or idx > len(flat_actions):
-            print(_msg("  无效编号。", "  Invalid number."))
+    while True:
+        print()
+        print(_msg("  请选择操作:", "  Select an action:"))
+        print()
+        num = 1
+        for item in actions:
+            if item is None:
+                print("  " + "─" * 30)
+                continue
+            label, _ = item
+            print(f"  [{num}] {label}")
+            num += 1
+        print()
+        print(_msg("  [0] 退出", "  [0] Exit"))
+
+        print()
+        prompt = _msg("  请输入编号: ", "  Enter number: ")
+
+        try:
+            choice = input(prompt).strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
             return
-    except ValueError:
-        print(_msg("  无效输入。", "  Invalid input."))
-        return
 
-    action = flat_actions[idx - 1][1]
+        if not choice or choice == "0":
+            return
 
-    if action == "install":
-        _interactive_install()
-    elif action == "update":
-        update()
-    elif action == "uninstall":
-        _interactive_uninstall()
-    elif action == "status":
-        status()
-    elif action == "clean":
-        clean()
+        try:
+            idx = int(choice)
+            if idx < 1 or idx > len(flat_actions):
+                print(_msg("  无效编号。", "  Invalid number."))
+                continue
+        except ValueError:
+            print(_msg("  无效输入。", "  Invalid input."))
+            continue
+
+        action = flat_actions[idx - 1][1]
+
+        if action == "install":
+            _interactive_install()
+        elif action == "update":
+            update()
+            return  # package changed, exit to avoid stale code
+        elif action == "uninstall":
+            _interactive_uninstall()
+        elif action == "status":
+            status()
+        elif action == "clean":
+            clean()
 
 
 # ---------------------------------------------------------------------------
