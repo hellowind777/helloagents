@@ -63,4 +63,4 @@ We recommend Conventional Commits: feat, fix, docs, refactor, test, chore.
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the repository [MIT License](./LICENSE).
+By contributing, you agree that your contributions will be licensed under the terms described in [LICENSE](./LICENSE).

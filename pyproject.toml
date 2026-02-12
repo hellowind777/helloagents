@@ -4,7 +4,7 @@ version = "2.2.4"
 description = "HelloAGENTS - 自主的高级智能伙伴"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 authors = [{name = "HelloWind"}]
 keywords = ["ai", "agent", "claude", "codex", "cli", "opencode", "gemini", "qwen", "grok"]
 dependencies = []
