@@ -67,9 +67,13 @@ try {
 # ─── Step 3: Clean up corrupted pip remnants ───
 $SitePackages = & $PythonCmd -c "import site; print(site.getsitepackages()[0])" 2>$null
 if ($SitePackages -and (Test-Path $SitePackages)) {
-    Get-ChildItem -Path $SitePackages -Directory -Filter "~elloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
-        Write-Info (Msg "已清理 pip 残留目录: $($_.Name)" "Cleaned up pip remnant: $($_.Name)")
+    Get-ChildItem -Path $SitePackages -Directory -Filter "~*lloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
+            Write-Info (Msg "已清理 pip 残留目录: $($_.Name)" "Cleaned up pip remnant: $($_.Name)")
+        } catch {
+            Write-Warn (Msg "无法删除残留目录: $($_.FullName)，请手动删除。" "Cannot remove remnant: $($_.FullName), please delete manually.")
+        }
     }
 }
 
@@ -99,8 +103,12 @@ if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
 
 # Post-install cleanup: pip may create new remnants during upgrade
 if ($SitePackages -and (Test-Path $SitePackages)) {
-    Get-ChildItem -Path $SitePackages -Directory -Filter "~elloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path $SitePackages -Directory -Filter "~*lloagents*" -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
+        } catch {
+            Write-Warn (Msg "无法删除残留目录: $($_.FullName)，请手动删除。" "Cannot remove remnant: $($_.FullName), please delete manually.")
+        }
     }
 }
 

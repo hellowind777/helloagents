@@ -28,6 +28,19 @@ def _self_uninstall() -> bool:
     else:
         cmd = [sys.executable, "-m", "pip", "uninstall", "helloagents", "-y"]
 
+    # On Windows, rename the locked .exe before pip uninstall
+    exe_bak = None
+    if sys.platform == "win32" and method == "pip":
+        exe = shutil.which("helloagents")
+        if exe:
+            exe_path = Path(exe)
+            bak_path = exe_path.with_suffix(".exe.bak")
+            try:
+                exe_path.rename(bak_path)
+                exe_bak = bak_path
+            except OSError:
+                pass
+
     print(_msg(f"  正在移除 helloagents 包 ({method})...",
                f"  Removing helloagents package ({method})..."))
     try:
@@ -36,9 +49,23 @@ def _self_uninstall() -> bool:
         if result.returncode == 0:
             print(_msg("  ✓ helloagents 包已移除。",
                        "  ✓ helloagents package removed."))
+            if exe_bak:
+                try:
+                    exe_bak.unlink()
+                except OSError:
+                    pass  # still locked by current process, harmless leftover
+            # Clean up pip remnants left by uninstall
+            from .updater import _cleanup_pip_remnants
+            _cleanup_pip_remnants()
             return True
         else:
             stderr = result.stderr.strip()
+            # Restore .exe if uninstall failed
+            if exe_bak:
+                try:
+                    exe_bak.rename(exe_bak.with_suffix(""))
+                except OSError:
+                    pass
             if stderr:
                 print(f"  ✗ {stderr}")
             return False

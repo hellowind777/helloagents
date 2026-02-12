@@ -274,17 +274,21 @@ def check_update(force: bool = False,
 # ---------------------------------------------------------------------------
 
 def _cleanup_pip_remnants() -> None:
-    """Clean up corrupted pip remnant directories (~elloagents*) in site-packages."""
+    """Clean up corrupted pip remnant directories (~*lloagents*) in site-packages."""
     import site
     try:
         for sp in site.getsitepackages():
             sp_path = Path(sp)
             if not sp_path.is_dir():
                 continue
-            for remnant in sp_path.glob("~elloagents*"):
+            for remnant in sp_path.glob("~*lloagents*"):
                 if remnant.is_dir():
                     import shutil
-                    shutil.rmtree(remnant, ignore_errors=True)
+                    try:
+                        shutil.rmtree(remnant)
+                    except OSError:
+                        print(_msg(f"  [warn] 无法删除残留目录: {remnant}，请手动删除。",
+                                   f"  [warn] Cannot remove remnant: {remnant}, please delete manually."))
     except Exception:
         pass
 

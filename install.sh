@@ -80,10 +80,13 @@ fi
 # ─── Step 3: Clean up corrupted pip remnants ───
 SITE_PACKAGES=$("$PYTHON_CMD" -c "import site; print(site.getsitepackages()[0])" 2>/dev/null || true)
 if [ -n "$SITE_PACKAGES" ] && [ -d "$SITE_PACKAGES" ]; then
-    for remnant in "$SITE_PACKAGES"/~elloagents*; do
+    for remnant in "$SITE_PACKAGES"/~*lloagents*; do
         [ -e "$remnant" ] || continue
-        rm -rf "$remnant"
-        info "$(msg "已清理 pip 残留目录: $(basename "$remnant")" "Cleaned up pip remnant: $(basename "$remnant")")"
+        if rm -rf "$remnant" 2>/dev/null; then
+            info "$(msg "已清理 pip 残留目录: $(basename "$remnant")" "Cleaned up pip remnant: $(basename "$remnant")")"
+        else
+            warn "$(msg "无法删除残留目录: $remnant，请手动删除。" "Cannot remove remnant: $remnant, please delete manually.")"
+        fi
     done
 fi
 
@@ -108,9 +111,11 @@ fi
 
 # Post-install cleanup: pip may create new remnants during upgrade
 if [ -n "$SITE_PACKAGES" ] && [ -d "$SITE_PACKAGES" ]; then
-    for remnant in "$SITE_PACKAGES"/~elloagents*; do
+    for remnant in "$SITE_PACKAGES"/~*lloagents*; do
         [ -e "$remnant" ] || continue
-        rm -rf "$remnant"
+        if ! rm -rf "$remnant" 2>/dev/null; then
+            warn "$(msg "无法删除残留目录: $remnant，请手动删除。" "Cannot remove remnant: $remnant, please delete manually.")"
+        fi
     done
 fi
 
