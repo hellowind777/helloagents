@@ -6,504 +6,393 @@
 
 <div align="center">
 
-**An intelligent workflow system that keeps going: evaluate → implement → verify.**
+**A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Router](https://img.shields.io/badge/router-2026--01--22-6366F1)](./Codex%20CLI/AGENTS.md)
-[![Version](https://img.shields.io/badge/version-2.0.1-orange.svg)](./Codex%20CLI/AGENTS.md)
-[![License](https://img.shields.io/badge/license-Apache--2.0%20%7C%20CC%20BY%204.0-blue.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/version-2.2.5-orange.svg)](./pyproject.toml)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
+[![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
-![GitHub last commit](https://img.shields.io/github/last-commit/hellowind777/helloagents)
 
 </div>
 
 <p align="center">
   <a href="./README.md"><img src="https://img.shields.io/badge/English-blue?style=for-the-badge" alt="English"></a>
-  <a href="./README_CN.md"><img src="https://img.shields.io/badge/中文-blue?style=for-the-badge" alt="中文"></a>
+  <a href="./README_CN.md"><img src="https://img.shields.io/badge/简体中文-blue?style=for-the-badge" alt="简体中文"></a>
 </p>
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
-<details>
-<summary><strong>Click to expand</strong></summary>
+- [Why HelloAGENTS](#why-helloagents)
+- [What Changed vs Legacy Repo](#what-changed-vs-legacy-repo)
+- [Features](#features)
+- [Before and After (Snake Demo)](#before-and-after-snake-demo)
+- [Quick Start](#quick-start)
+- [How It Works](#how-it-works)
+- [Repository Guide](#repository-guide)
+- [In-Chat Workflow Commands](#in-chat-workflow-commands)
+- [FAQ](#faq)
+- [Troubleshooting](#troubleshooting)
+- [Version History](#version-history)
+- [Contributing](#contributing)
+- [License](#license)
 
-- [🎯 Why HelloAGENTS?](#why)
-- [📊 Data That Speaks](#data)
-- [🔁 Before & After](#before-after)
-- [✨ Features](#features)
-- [🚀 Quick Start](#quick-start)
-- [🔧 How It Works](#how-it-works)
-- [📖 Documentation](#documentation)
-- [❓ FAQ](#faq)
-- [🛠️ Troubleshooting](#troubleshooting)
-- [📈 Version History](#version-history)
-- [🔒 Security](#security)
-- [🙏 Acknowledgments](#acknowledgments)
-- [📜 License](#license)
+## Why HelloAGENTS
 
-</details>
-
----
-
-<a id="why"></a>
-
-## 🎯 Why HelloAGENTS?
-
-You know the pattern: the assistant gives a good analysis… then stops. Or it edits code but forgets the docs. Or it “finishes” without running anything.
-
-**HelloAGENTS is a structured workflow system** (routing + stages + acceptance gates) that pushes the work through to a verifiable end.
+Many assistants can analyze tasks but often stop before real delivery. HelloAGENTS adds strict routing, staged execution, and verification gates.
 
 | Challenge | Without HelloAGENTS | With HelloAGENTS |
 |---|---|---|
-| **Inconsistent outputs** | Depends on prompt quality | Unified output shell + deterministic stages |
-| **Stops too early** | “Here’s what you should do…” | Keeps going: implement → test → validate |
-| **No quality gates** | Manual review required | Stage / Gate / Flow acceptance |
-| **Context drift** | Decisions get lost | State variables + solution packages |
-| **Risky commands** | Easy to do damage | EHRB detection + workflow escalation |
-
-### 💡 Best For
-
-- ✅ **Coders** who want “done” to mean “verified”
-- ✅ **Teams** that need consistent format and traceable changes
-- ✅ **Projects** where docs are part of the deliverable
-
-### ⚠️ Not For
-
-- ❌ One-off snippets (a normal prompt is faster)
-- ❌ Projects where you can’t keep outputs in Git
-- ❌ Tasks that require hard guarantees (still review before production)
+| Stops at planning | Ends with suggestions | Pushes to implementation and validation |
+| Output drift | Different structure every prompt | Unified routing and stage chain |
+| Risky operations | Easier to make destructive mistakes | EHRB risk detection and escalation |
+| Knowledge continuity | Context gets scattered | Built-in KB and session memory |
+| Reusability | Prompt-by-prompt effort | Commandized reusable workflow |
 
 <div align="center">
   <img src="./readme_images/06-divider.svg" width="420" alt="divider">
 </div>
 
-<a id="data"></a>
+## What Changed vs Legacy Repo
 
-## 📊 Data That Speaks
+Compared with legacy multi-bundle releases, the v2.x line is now package-first with a fundamentally different architecture.
 
-No made-up “50% faster” claims here—just things you can verify in this repo:
-
-| Item | Value | Where to verify |
-|---|---:|---|
-| Routing layers | 3 | `AGENTS.md` / `CLAUDE.md` (Context → Tools → Intent) |
-| Workflow stages | 4 | Evaluate → Analyze → Design → Develop |
-| Execution modes | 3 | Tweak / Lite / Standard |
-| Commands | 12 | `{BUNDLE_DIR}/skills/helloagents/SKILL.md` |
-| Reference modules | 23 | `{BUNDLE_DIR}/skills/helloagents/references/` |
-| Automation scripts | 7 | `{BUNDLE_DIR}/skills/helloagents/scripts/` |
-| Bundles in this repo | 5 | `Codex CLI/`, `Claude Code/`, `Gemini CLI/`, `Grok CLI/`, `Qwen CLI/` |
-
-<a id="before-after"></a>
-
-## 🔁 Before & After
-
-Sometimes the difference is easier to *feel* than to explain. Here’s a concrete “before vs after” snapshot:
-
-| | Without HelloAGENTS | With HelloAGENTS |
+| Area | Legacy repo | Current repo |
 |---|---|---|
-| Start | You jump into implementation quickly | You start by scoring requirements and filling gaps |
-| Delivery | You assemble the steps manually | The workflow keeps pushing to “verified done” |
-| Docs | Often forgotten | Treated as a first-class deliverable |
-| Safety | Risky ops can slip through | EHRB detection escalates risky actions |
-| Repeatability | Depends on the prompt | Same stages + gates, every time |
+| Distribution | Multiple bundle folders per CLI | One Python package + installer CLI |
+| Installation | Manual copy of config and skill folders | pip/uv install + `helloagents` interactive menu |
+| Routing | Three-layer (Context → Tools → Intent) | Five-dimension scoring (R0–R3) |
+| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 4 stages + R1 fast flow, with sub-agent dispatch |
+| Agent system | None | RLM with 12 specialized roles and session isolation |
+| Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
+| Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
+| CLI targets | 5 visible bundle targets | 6 targets: codex, claude, gemini, qwen, grok, opencode |
+| Commands | 12 | 15 workflow commands |
 
-Now let’s make it tangible. Below is a real “before/after” demo snapshot (Snake game generated with/without a structured workflow):
+> ⚠️ **Migration notice:** Because repository structure and installation workflow changed in v2.x, legacy versions were moved to **helloagents-archive**: https://github.com/hellowind777/helloagents-archive
+
+## Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
+
+**RLM sub-agent orchestration**
+
+12 specialized roles (explorer, analyzer, designer, implementer, reviewer, tester, etc.) are dispatched automatically based on task complexity, with session isolation per CLI instance.
+
+**Your gain:** complex tasks are broken down and handled by the right specialist.
+</td>
+<td width="50%" valign="top">
+<img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
+
+**Five-dimension routing (R0–R3)**
+
+Every input is scored on action need, target clarity, decision scope, impact range, and EHRB risk — then routed to R0 direct response, R1 fast flow, R2 simplified flow, or R3 standard flow.
+
+**Your gain:** proportional effort — simple queries stay fast, complex tasks get full process.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="./readme_images/04-feature-icon-safety.svg" width="48" align="left">
+
+**Three-layer safety detection (EHRB)**
+
+Keyword scan, semantic analysis, and tool-output inspection catch destructive operations before execution. Interactive and delegated modes enforce user confirmation.
+
+**Your gain:** safer defaults with zero-config protection.
+</td>
+<td width="50%" valign="top">
+<img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
+
+**Three-layer memory model**
+
+L0 user memory (global preferences), L1 project knowledge base (structured docs synced from code), and L2 session summaries (auto-persisted at stage transitions).
+
+**Your gain:** context survives across sessions and projects.
+</td>
+</tr>
+</table>
+
+### Data points from this repo
+
+- 6 CLI targets from helloagents/cli.py
+- 15 workflow commands from helloagents/functions
+- 12 RLM roles from helloagents/rlm/roles
+- 4 stage definitions from helloagents/stages
+- 5 core services from helloagents/services
+- 4 rule modules from helloagents/rules
+- 8 helper scripts from helloagents/scripts
+- 10 KB/plan templates from helloagents/templates
+
+## Before and After (Snake Demo)
 
 <table>
 <tr>
 <td width="50%" valign="top" align="center">
 
-<strong>Without HelloAGENTS</strong>
-<br>
+**Without HelloAGENTS**
+
 <img src="./readme_images/08-demo-snake-without-helloagents.png" alt="Snake demo without HelloAGENTS" width="520">
-<br>
-<em>It works, but you’re still manually driving the process.</em>
 
 </td>
 <td width="50%" valign="top" align="center">
 
-<strong>With HelloAGENTS</strong>
-<br>
+**With HelloAGENTS**
+
 <img src="./readme_images/07-demo-snake-with-helloagents.png" alt="Snake demo with HelloAGENTS" width="520">
-<br>
-<em>More complete delivery, clearer controls, and verification steps baked in.</em>
 
 </td>
 </tr>
 </table>
 
-And here’s what the **Evaluate** stage looks like in practice: it asks the “boring but necessary” questions (platform, delivery form, controls, acceptance criteria) *before* writing code.
+## Quick Start
+
+### Method A: One-line install script (recommended)
+
+**macOS / Linux:**
+
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
+**Windows PowerShell:**
+
+    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+> The script auto-detects `uv` or `pip`, installs the HelloAGENTS package, and launches an interactive menu for you to select target CLIs. Re-running performs an update.
+
+**Update:**
+
+    helloagents update
+
+### Method B: UV (isolated environment)
+
+**Step 0 — Install UV first (skip if already installed):**
+
+    # Windows PowerShell
+    irm https://astral.sh/uv/install.ps1 | iex
+
+    # macOS / Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+> After installing UV, restart your terminal to make the `uv` command available.
+
+**Install and select targets (one command):**
+
+    uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents
+
+> Installs the package and launches an interactive menu for you to select target CLIs. You can also specify directly: `helloagents install codex`
+
+**Update:**
+
+    helloagents update
+
+### Method C: pip (Python >= 3.10)
+
+**Install and select targets (one command):**
+
+    pip install git+https://github.com/hellowind777/helloagents.git && helloagents
+
+> Installs the package and launches an interactive menu for you to select target CLIs. You can also specify directly: `helloagents install codex`
+
+**Update:**
+
+    pip install --upgrade git+https://github.com/hellowind777/helloagents.git
+
+### Install HelloAgents for different CLI targets
+
+    helloagents                  # interactive menu
+
+    helloagents install codex    # specify target directly
+
+    helloagents install --all    # install to all detected CLIs
+
+### Verify
+
+    helloagents status
+
+    helloagents version
+
+### Uninstall
+
+    helloagents uninstall codex
+
+    helloagents uninstall --all
+
+### Clean caches
+
+    helloagents clean
+
+### Codex CLI example
+
+**First install:**
+
+    # One-line script (recommended, auto-launches interactive menu after install)
+    # macOS / Linux
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
+    # Windows PowerShell
+    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # UV
+    uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install codex
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git && helloagents install codex
+
+**Update later (auto-syncs installed targets):**
+
+    helloagents update
+
+### Claude Code example
+
+**First install:**
+
+    # One-line script (recommended, auto-launches interactive menu after install)
+    # macOS / Linux
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
+
+    # Windows PowerShell
+    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # UV
+    uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install claude
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git && helloagents install claude
+
+**Update later (auto-syncs installed targets):**
+
+    helloagents update
+
+### Beta branch
+
+To install from the `beta` branch, append `@beta` to the repository URL:
+
+    # One-line script (auto-launches interactive menu after install)
+    # macOS / Linux
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
+
+    # Windows PowerShell
+    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
+
+    # UV
+    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents && helloagents
+
+    # pip
+    pip install git+https://github.com/hellowind777/helloagents.git@beta && helloagents
+
+## How It Works
+
+1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`).
+2. In AI chat, every input is scored on five dimensions and routed to R0–R3.
+3. R2/R3 tasks enter the stage chain: EVALUATE → ANALYZE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
+4. RLM dispatches specialized sub-agents (e.g. explorer, designer, implementer) based on task complexity.
+5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation.
+6. Three-layer memory (user / project KB / session) preserves context across sessions.
+7. Stage chain completes with verified output and optional knowledge base sync.
+
+## Repository Guide
+
+- AGENTS.md: router and workflow protocol
+- pyproject.toml: package metadata (v2.2.5)
+- helloagents/cli.py: installer entry
+- helloagents/functions: workflow commands
+- helloagents/stages: analyze, design, develop
+- helloagents/services: knowledge, package, memory and support services
+- helloagents/rules: state, cache, tools, scaling
+- helloagents/rlm: role library and orchestration helpers
+- helloagents/scripts: automation scripts
+- helloagents/templates: KB and plan templates
+
+## In-Chat Workflow Commands
+
+These commands run inside AI chat, not your system shell.
+
+| Command | Purpose |
+|---|---|
+| ~auto | full autonomous workflow |
+| ~plan | planning and package generation |
+| ~exec | execute existing package |
+| ~init | initialize knowledge base |
+| ~upgradekb | upgrade knowledge structure |
+| ~clean / ~cleanplan | cleanup workflow artifacts |
+| ~test / ~review / ~validatekb | quality checks |
+| ~commit | generate commit message from context |
+| ~rollback | rollback workflow state |
+| ~rlm | role orchestration commands |
+| ~status / ~help | status and help |
+
+## FAQ
+
+- Q: Is this a Python CLI tool or prompt package?
+  A: Both. CLI manages installation; workflow behavior comes from AGENTS.md and helloagents docs.
+
+- Q: Which target should I install?
+  A: Use the CLI you run: codex, claude, gemini, qwen, grok, or opencode.
+
+- Q: What if a rules file already exists?
+  A: Non-HelloAGENTS files are backed up before replacement.
+
+- Q: What is RLM?
+  A: Role Language Model — a sub-agent orchestration system with 12 specialized roles dispatched based on task complexity.
+
+- Q: Where does project knowledge go?
+  A: In the project-local `.helloagents/` directory, auto-synced when code changes.
+
+- Q: Does memory persist across sessions?
+  A: Yes. L0 user memory is global, L1 project KB is per-project, L2 session summaries are auto-saved at stage transitions.
+
+## Troubleshooting
+
+- command not found: ensure install path is in PATH
+- package version unknown: install package first for metadata
+- target not detected: launch target CLI once to create config directory
+- custom rules overwritten: restore from timestamped backup in CLI config dir
+- images not rendering: keep relative paths and commit readme_images files
+
+## Version History
+
+### v2.2.5 (current)
+
+- **RLM sub-agent system:** 12 specialized roles with automatic dispatch and session isolation
+- **Five-dimension routing (R0–R3):** replaces legacy three-layer routing
+- **Four-stage workflow + R1 fast flow:** stage chain (Evaluate → Analyze → Design → Develop) with R1 fast flow for single-point operations
+- **Three-layer memory:** L0 user preferences, L1 project knowledge base, L2 session summaries
+- **Three-layer EHRB:** keyword + semantic + tool-output safety detection
+- **Package-first installer:** pip/uv install with `helloagents` interactive menu
+- **15 workflow commands:** added ~rlm, ~validatekb, ~status
+- **6 CLI targets:** added OpenCode support
+- **Interactive installation menu:** multi-select target CLIs with one command
+- **Auto locale detection:** CLI messages switch between Chinese and English based on system locale
+- **Windows encoding fix:** UTF-8 safe subprocess handling on all platforms
+- **Knowledge base service:** structured project docs auto-synced from code changes
+- **Attention service:** live status tracking and progress snapshots
+
+### v2.0.1 (legacy multi-bundle baseline)
+
+- Multi-bundle distribution with manual copy-based installation
+- Three-layer routing (Context → Tools → Intent)
+- 4 workflow stages, 12 commands, 5 CLI targets
+- No sub-agent system, no persistent memory
+
+## Contributing
+
+See CONTRIBUTING.md for contribution rules and PR checklist.
+
+## License
+
+This project is dual-licensed: Code under Apache-2.0, Documentation under CC BY 4.0. See [LICENSE.md](./LICENSE.md).
+
+---
 
 <div align="center">
-  <img src="./readme_images/09-ui-evaluate-stage.png" alt="Evaluate stage screenshot" width="900">
-  <br>
-  <em>Evaluate stage: requirement scoring + targeted clarifying questions.</em>
+
+If this project helps your workflow, a star is always appreciated.
+
+Thanks to <a href="https://codexzh.com/?ref=EEABC8">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> for supporting this project
+
 </div>
-
-In plain words, you’ll typically be asked to clarify:
-
-- runtime target (browser / desktop / CLI)
-- delivery form (single file / repo / packaged build)
-- control scheme
-- rules and difficulty preferences
-- acceptance criteria (screen size, scoring, audio, obstacles, etc.)
-
-<a id="features"></a>
-
-## ✨ Features
-
-Let’s be practical—here’s what you get.
-
-<table>
-<tr>
-<td width="50%" valign="top">
-
-<img src="./readme_images/02-feature-icon-routing.svg" width="48" align="left" alt="routing icon">
-
-**🧭 3-layer intelligent routing**
-
-- Continues the same task across turns
-- Detects tool calls (SKILL/MCP/plugins) vs internal workflow
-- Chooses tweak / lite / standard execution based on complexity
-
-**Benefit:** less “prompt babysitting”
-
-</td>
-<td width="50%" valign="top">
-
-<img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left" alt="workflow icon">
-
-**📚 4-stage workflow engine**
-
-- Evaluate → Analyze → Design → Develop
-- Clear entry/exit gates
-- Keeps artifacts as solution packages
-
-**Benefit:** repeatable delivery, not lucky outputs
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-<img src="./readme_images/04-feature-icon-acceptance.svg" width="48" align="left" alt="acceptance icon">
-
-**⚡ 3-layer acceptance**
-
-- Stage-level checks
-- Inter-stage gates (e.g., validate solution package)
-- Flow-level acceptance summary
-
-**Benefit:** you can trust the result more
-
-</td>
-<td width="50%" valign="top">
-
-<img src="./readme_images/05-feature-icon-security.svg" width="48" align="left" alt="security icon">
-
-**🛡️ EHRB safety detection**
-
-- Keyword scan + semantic analysis
-- Escalates to confirmation when risky
-- Flags destructive ops (e.g., `rm -rf`, force push)
-
-**Benefit:** fewer “oops” moments
-
-</td>
-</tr>
-</table>
-
-<a id="quick-start"></a>
-
-## 🚀 Quick Start
-
-This repo ships **multiple ready-to-copy bundles** (one per AI CLI):
-
-Codex CLI, Claude Code, Gemini CLI, Grok CLI, Qwen CLI.
-
-### 1) Clone the repo
-
-```bash
-git clone https://github.com/hellowind777/helloagents.git
-cd helloagents
-```
-
-### 2) Install (placeholder-based)
-
-Because every CLI stores its config in a different place, the README uses placeholders.
-
-First, pick your bundle parameters:
-
-| Your CLI | `BUNDLE_DIR` | `CONFIG_FILE` |
-|---|---|---|
-| Codex CLI | `Codex CLI` | `AGENTS.md` |
-| Claude Code | `Claude Code` | `CLAUDE.md` |
-| Gemini CLI | `Gemini CLI` | `GEMINI.md` |
-| Grok CLI | `Grok CLI` | `GROK.md` |
-| Qwen CLI | `Qwen CLI` | `QWEN.md` |
-
-Then copy **both** the config file and the `skills/helloagents/` folder into your CLI config root.
-
-**macOS / Linux (bash)**
-
-```bash
-CLI_CONFIG_ROOT="..."
-BUNDLE_DIR="Codex CLI"
-CONFIG_FILE="AGENTS.md"
-
-mkdir -p "$CLI_CONFIG_ROOT/skills"
-cp -f "$BUNDLE_DIR/$CONFIG_FILE" "$CLI_CONFIG_ROOT/$CONFIG_FILE"
-cp -R "$BUNDLE_DIR/skills/helloagents" "$CLI_CONFIG_ROOT/skills/helloagents"
-```
-
-**Windows (PowerShell)**
-
-```powershell
-$CLI_CONFIG_ROOT = "..."
-$BUNDLE_DIR = "Codex CLI"
-$CONFIG_FILE = "AGENTS.md"
-
-New-Item -ItemType Directory -Force "$CLI_CONFIG_ROOT\\skills" | Out-Null
-Copy-Item -Force "$BUNDLE_DIR\\$CONFIG_FILE" "$CLI_CONFIG_ROOT\\$CONFIG_FILE"
-Copy-Item -Recurse -Force "$BUNDLE_DIR\\skills\\helloagents" "$CLI_CONFIG_ROOT\\skills\\helloagents"
-```
-
-### 3) Verify it works
-
-In your CLI, run:
-
-- `/helloagents` **or** `$helloagents`
-
-Expected: a welcome message that starts with something like:
-
-```
-💡【HelloAGENTS】- 技能已激活
-```
-
-### 4) Start using it
-
-- Try `~help` to see all commands
-- Or just describe what you want; the router will pick the workflow
-
-<a id="how-it-works"></a>
-
-## 🔧 How It Works
-
-<details>
-<summary><strong>📊 Click to view the architecture diagram</strong></summary>
-
-```mermaid
-flowchart TD
-  Start([User input / 用户输入]) --> L1{Layer 1: Context / 上下文}
-  L1 -->|Continue / 继续| Continue[Continue task / 继续任务]
-  L1 -->|New request / 新请求| L2{Layer 2: Tools / 工具}
-
-  L2 -->|External tool / 外部工具| Tool[Run tool + shell wrap / 执行工具+Shell包装]
-  L2 -->|No tool / 无工具| L3{Layer 3: Intent / 意图}
-
-  L3 -->|Q&A / 问答| Answer[Direct answer / 直接回答]
-  L3 -->|Change / 改动| Eval[Evaluate / 需求评估]
-
-  Eval -->|Score >= 7 / >=7| Complexity{Complexity / 复杂度}
-  Eval -->|Score < 7 / <7| Clarify[Clarify / 追问补充]
-
-  Complexity -->|Tweak / 微调| Tweak[Tweak mode / 微调模式]
-  Complexity -->|Lite / 轻量| Analyze[Analyze / 项目分析]
-  Complexity -->|Standard / 标准| Analyze
-
-  Analyze --> Design[Design / 方案设计（方案包）]
-  Design --> Develop[Develop / 开发实施（实现+测试）]
-  Develop --> Done[✅ Done / 完成 + acceptance / 验收摘要]
-
-  style Eval fill:#e3f2fd
-  style Analyze fill:#fff3e0
-  style Design fill:#ede9fe
-  style Develop fill:#dcfce7
-  style Done fill:#16a34a,color:#fff
-```
-
-</details>
-
-Key artifacts you’ll see in real projects:
-
-- `plan/YYYYMMDDHHMM_<feature>/` solution package (proposal + tasks)
-- `helloagents/` knowledge base workspace (INDEX/context/CHANGELOG/modules…)
-
-<a id="documentation"></a>
-
-## 📖 Documentation
-
-This repo is intentionally a “multi-bundle distribution”.
-
-Each bundle contains:
-
-- Entry config: `{BUNDLE_DIR}/{CONFIG_FILE}`
-- Skill package: `{BUNDLE_DIR}/skills/helloagents/`
-
-Start here (replace `{BUNDLE_DIR}` with your chosen bundle folder):
-
-- `{BUNDLE_DIR}/skills/helloagents/SKILL.md` (command list + entry behavior)
-- `{BUNDLE_DIR}/skills/helloagents/references/` (stages, rules, services)
-- `{BUNDLE_DIR}/skills/helloagents/scripts/` (automation scripts)
-
-### What you actually copy
-
-You copy a **config file** plus a **skill folder**:
-
-- Config: `{CONFIG_FILE}` (picked from the table above)
-- Skill: `skills/helloagents/` (includes `SKILL.md`, `references/`, `scripts/`, `assets/`)
-
-### Configuration (the knobs you’ll actually touch)
-
-Most people only tweak a few global settings:
-
-```yaml
-OUTPUT_LANGUAGE: zh-CN
-ENCODING: UTF-8
-KB_CREATE_MODE: 2
-BILINGUAL_COMMIT: 1
-```
-
-**KB_CREATE_MODE** controls knowledge base writes:
-
-- `0 (OFF)`: skip all KB operations
-- `1 (ON_DEMAND)`: create KB only when explicitly requested
-- `2 (ON_DEMAND_AUTO_FOR_CODING)`: auto-create for coding tasks (default)
-- `3 (ALWAYS)`: always create/update KB
-
-<a id="faq"></a>
-
-## ❓ FAQ
-
-<details>
-<summary><strong>Q: Which bundle should I install?</strong></summary>
-
-**A:** Match the CLI you’re using:
-- Codex CLI → `Codex CLI/`
-- Claude Code → `Claude Code/`
-- Gemini CLI → `Gemini CLI/`
-- Grok CLI → `Grok CLI/`
-- Qwen CLI → `Qwen CLI/`
-</details>
-
-<details>
-<summary><strong>Q: Can I install both?</strong></summary>
-
-**A:** Yes. They live in different config roots (`~/.codex/` vs `~/.claude/`). Just don’t mix the files inside one root.
-</details>
-
-<details>
-<summary><strong>Q: How do I invoke HelloAGENTS?</strong></summary>
-
-**A:** Use `/helloagents` or `$helloagents` to explicitly activate the skill. After that, use `~help` or describe your task.
-</details>
-
-<details>
-<summary><strong>Q: Where does the knowledge base go?</strong></summary>
-
-**A:** In the *project you are working on*, HelloAGENTS writes to `helloagents/` (unless disabled). It is the single source of truth for project knowledge in the workflow.
-</details>
-
-<details>
-<summary><strong>Q: How do I disable knowledge base writes?</strong></summary>
-
-**A:** Set `KB_CREATE_MODE: 0` in your installed `AGENTS.md` / `CLAUDE.md`.
-</details>
-
-<details>
-<summary><strong>Q: What if I only want a light change?</strong></summary>
-
-**A:** The router can choose tweak mode for small, clear changes. You can also ask for “tweak mode / minimal change” explicitly.
-</details>
-
-<details>
-<summary><strong>Q: What are the key commands?</strong></summary>
-
-**A:** Try `~help`. Common ones: `~plan`, `~exec`, `~test`, `~commit`, `~validate`.
-</details>
-
-<a id="troubleshooting"></a>
-
-## 🛠️ Troubleshooting
-
-### Stuck in Evaluate (requirement score &lt; 7)
-
-**Fix:** answer the clarifying questions with concrete details (inputs/outputs, files to change, acceptance criteria).
-
----
-
-### Solution package validation failed
-
-**Fix:** ensure the package has both files:
-
-- `proposal.md`
-- `tasks.md`
-
-Then run `~validate` (or follow the tool output).
-
----
-
-### “Skill not found” after copying
-
-**Fix:**
-
-- Confirm `skills/helloagents/SKILL.md` exists under your CLI config root (after copying)
-- Re-run `/helloagents` or `$helloagents`
-
----
-
-### Windows path/encoding issues
-
-**Fix:** keep files in UTF-8, and prefer quoted paths when copying folders with spaces (like `Codex CLI/`).
-
-<a id="version-history"></a>
-
-## 📈 Version History
-
-### Latest: v2.0 (2026-01)
-
-- Positioning: from “AI programming partner” → **intelligent workflow system**
-- Workflow: 3 stages → 4 stages (added **Evaluate**)
-- Routing: simple routing → **3-layer routing** (Context → Tools → Intent)
-- Acceptance: basic checks → **Stage / Gate / Flow** acceptance
-- Bundle distribution: **Codex CLI** and **Claude Code** both supported
-
-🆚 v1 vs v2 snapshot:
-
-| Area | v1 (2025-12) | v2 (2026-01) |
-|---|---|---|
-| Positioning | AI programming partner | Intelligent workflow system |
-| Stages | 3 stages | 4 stages (+ Evaluate) |
-| Routing | Simple | 3 layers (Context → Tools → Intent) |
-| Acceptance | Basic | 3 layers (Stage / Gate / Flow) |
-| Files | 6 files | 44 files |
-| Commands | 4 commands | 12 commands |
-
-<a id="security"></a>
-
-## 🔒 Security
-
-- EHRB detection is designed to catch destructive or high-risk operations before they run.
-- Even so, **review commands and diffs** before applying changes to important systems.
-
-If you believe you found a security issue, prefer using GitHub’s private reporting (Security Advisories) if enabled for this repo. Otherwise, contact the maintainer via their GitHub profile.
-
-<a id="acknowledgments"></a>
-
-## 🙏 Acknowledgments
-
-- AI CLI ecosystems (Codex CLI, Claude Code, etc.)
-- Keep a Changelog conventions (used by the workflow knowledge base)
-- MCP and the broader tool integration community
-
-<a id="license"></a>
-
-## 📜 License
-
-This project uses a **dual license**:
-
-- **Code:** Apache-2.0
-- **Documentation:** CC BY 4.0
-
-See `LICENSE` for details.
