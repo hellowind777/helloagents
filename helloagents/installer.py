@@ -71,12 +71,21 @@ def _self_uninstall() -> bool:
                             bak_path.rename(exe_path)
                         except OSError:
                             pass
-                        retry_err = retry.stderr.strip()
-                        if retry_err:
-                            print(f"  ✗ {retry_err}")
-                        return False
                 except OSError:
                     pass
+            # Rename-and-retry failed or not possible; schedule deferred uninstall
+            from .updater import _win_deferred_pip
+            if _win_deferred_pip(cmd):
+                print(_msg(
+                    "  helloagents 包将在程序退出后自动移除。",
+                    "  helloagents package will be removed after exit."))
+                return True
+            # Deferred also failed; show manual instruction
+            print(_msg(
+                "  ✗ 无法自动移除。请退出后手动执行:",
+                "  ✗ Cannot auto-remove. Please exit and run manually:"))
+            print("    pip uninstall helloagents")
+            return False
 
         if stderr:
             print(f"  ✗ {stderr}")

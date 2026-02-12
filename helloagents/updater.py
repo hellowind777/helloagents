@@ -364,6 +364,64 @@ def _win_cleanup_bak() -> None:
             pass
 
 
+def _win_deferred_pip(pip_args: list[str],
+                      post_cmds: list[list[str]] | None = None) -> bool:
+    """Schedule a pip command to run after the current process exits (Windows).
+
+    Creates a temporary batch script that:
+    1. Waits for the current helloagents.exe process to exit (polls PID)
+    2. Runs the specified pip command
+    3. Optionally runs post-commands (e.g., re-sync CLI targets)
+    4. Self-deletes
+
+    Returns True if the deferred command was scheduled successfully.
+    """
+    import os
+    import subprocess
+    import tempfile
+
+    pid = os.getpid()
+    lines = [
+        "@echo off",
+        "chcp 65001 >nul 2>&1",
+        ":wait",
+        f'tasklist /fi "PID eq {pid}" 2>nul | find "{pid}" >nul',
+        "if not errorlevel 1 (",
+        "    timeout /t 1 /nobreak >nul",
+        "    goto wait",
+        ")",
+    ]
+
+    # Main pip command
+    lines.append(" ".join(f'"{a}"' for a in pip_args))
+
+    # Optional follow-up commands (e.g. sync CLI targets after update)
+    if post_cmds:
+        for cmd in post_cmds:
+            lines.append(" ".join(f'"{a}"' for a in cmd))
+
+    # Self-delete
+    lines.append('del "%~f0"')
+
+    bat_content = "\r\n".join(lines)
+
+    try:
+        fd, bat_path = tempfile.mkstemp(suffix=".bat", prefix="helloagents_")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(bat_content)
+
+        # DETACHED_PROCESS=0x8, CREATE_NEW_PROCESS_GROUP=0x200
+        subprocess.Popen(
+            ["cmd.exe", "/c", bat_path],
+            creationflags=0x00000008 | 0x00000200,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except OSError:
+        return False
+
+
 def update(switch_branch: str = None) -> None:
     """Update HelloAGENTS to the latest version, then auto-sync installed targets."""
     import subprocess
@@ -453,14 +511,26 @@ def update(switch_branch: str = None) -> None:
                                     bak.rename(exe)
                                 except OSError:
                                     pass
-                                retry_err = retry.stderr.strip()
-                                if retry_err:
-                                    print(f"  pip error: {retry_err}")
                         except OSError:
-                            if stderr:
-                                print(f"  pip error: {stderr}")
-                    else:
-                        print(f"  pip error: {stderr}")
+                            pass
+                    # Rename-and-retry failed; schedule deferred update
+                    if not updated:
+                        post = [[sys.executable, "-m", "helloagents.cli",
+                                 "install", t] for t in pre_targets]
+                        if _win_deferred_pip(pip_cmd,
+                                            post_cmds=post or None):
+                            print(_msg(
+                                "  helloagents.exe 被当前进程锁定，"
+                                "更新将在退出后自动完成。",
+                                "  helloagents.exe is locked, "
+                                "update will complete after exit."))
+                            if pre_targets:
+                                print(_msg(
+                                    f"  已安装的 {len(pre_targets)} 个 CLI "
+                                    f"工具也将自动同步。",
+                                    f"  {len(pre_targets)} installed target(s) "
+                                    f"will also be synced."))
+                            return
                 elif stderr:
                     print(f"  pip error: {stderr}")
         except FileNotFoundError:
