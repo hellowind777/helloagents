@@ -1,5 +1,6 @@
 """HelloAGENTS Updater - Update command, status, and clean operations."""
 
+import os
 import sys
 from pathlib import Path
 from importlib.metadata import version as get_version
@@ -207,9 +208,11 @@ def update(switch_branch: str = None) -> None:
         results = {}
         for i, t in enumerate(targets, 1):
             print(_msg(f"  [{i}/{len(targets)}] {t}", f"  [{i}/{len(targets)}] {t}"))
+            env = os.environ.copy()
+            env["HELLOAGENTS_NO_UPDATE_CHECK"] = "1"
             ret = subprocess.run(
                 [sys.executable, "-m", "helloagents.cli", "install", t],
-                encoding="utf-8", errors="replace",
+                encoding="utf-8", errors="replace", env=env,
             )
             results[t] = ret.returncode == 0
             print()
@@ -409,13 +412,21 @@ def clean() -> None:
 
         for cache_dir in list(plugin_dir.rglob("__pycache__")):
             if cache_dir.is_dir():
-                shutil.rmtree(cache_dir)
-                removed += 1
+                try:
+                    shutil.rmtree(cache_dir)
+                    removed += 1
+                except Exception as e:
+                    print(_msg(f"  ⚠ 无法清理 {cache_dir}: {e}",
+                               f"  ⚠ Cannot clean {cache_dir}: {e}"))
 
         for pyc_file in list(plugin_dir.rglob("*.pyc")):
             if pyc_file.is_file():
-                pyc_file.unlink()
-                removed += 1
+                try:
+                    pyc_file.unlink()
+                    removed += 1
+                except Exception as e:
+                    print(_msg(f"  ⚠ 无法清理 {pyc_file}: {e}",
+                               f"  ⚠ Cannot clean {pyc_file}: {e}"))
 
         if removed:
             print(f"  ✓ {name:10} {_msg(f'清理了 {removed} 个缓存项', f'cleaned {removed} cache item(s)')}")

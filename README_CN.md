@@ -8,7 +8,8 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.6-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.7-orange.svg)](./pyproject.toml)
+[![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
@@ -171,7 +172,17 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     helloagents update
 
-### 方式 B：UV（隔离环境）
+### 方式 B：npx（Node.js >= 16）
+
+    npx helloagents
+
+> 安装 Python 包后自动弹出交互菜单。也可以直接指定：`npx helloagents install codex`
+
+> 需要 Python >= 3.10。首次安装后，直接使用原生 `helloagents` 命令即可。
+
+> **致谢：** 感谢 @setsuna1106 慷慨转让 npm `helloagents` 包所有权。
+
+### 方式 C：UV（隔离环境）
 
 **第 0 步 — 先安装 UV（已安装可跳过）：**
 
@@ -193,7 +204,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     helloagents update
 
-### 方式 C：pip（需要 Python >= 3.10）
+### 方式 D：pip（需要 Python >= 3.10）
 
 **安装并选择目标（一条命令）：**
 
@@ -240,6 +251,9 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
+    # npx
+    npx helloagents install codex
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install codex
 
@@ -260,6 +274,9 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # npx
+    npx helloagents install claude
 
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install claude
@@ -282,6 +299,9 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # Windows PowerShell
     $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
+    # npx
+    npx helloagents@beta
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents && helloagents
 
@@ -302,7 +322,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.6）
+- pyproject.toml：包元数据（v2.2.7）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：analyze、design、develop
@@ -367,7 +387,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.6（当前版本）
+### v2.2.7（当前版本）
 
 - **G12 Hooks 集成规范：** Claude Code 9个生命周期钩子 + Codex CLI notify 钩子
 - **Hooks 自动部署：** 安装/卸载时自动部署和清理 Hooks 配置，无需手动复制

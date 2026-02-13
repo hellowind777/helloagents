@@ -4,54 +4,130 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish (e.g. v2.2.7)"
+        required: true
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      base_version: ${{ steps.tag.outputs.base_version }}
+      channel: ${{ steps.tag.outputs.channel }}
+      is_beta: ${{ steps.tag.outputs.is_beta }}
+      pypi_version: ${{ steps.tag.outputs.pypi_version }}
+    steps:
+      - name: Resolve tag ref
+        id: ref
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.tag }}
+
+      - name: Parse tag info
+        id: tag
+        run: |
+          TAG_VERSION="${{ steps.ref.outputs.tag }}"
+          TAG_VERSION="${TAG_VERSION#v}"
+          echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
+          if [[ "$TAG_VERSION" == *"beta"* ]]; then
+            echo "is_beta=true" >> $GITHUB_OUTPUT
+            echo "channel=beta" >> $GITHUB_OUTPUT
+            BASE="${TAG_VERSION%%-beta*}"
+            BETA_NUM="${TAG_VERSION##*beta.}"
+            echo "base_version=$BASE" >> $GITHUB_OUTPUT
+            echo "pypi_version=${BASE}b${BETA_NUM}" >> $GITHUB_OUTPUT
+          else
+            echo "is_beta=false" >> $GITHUB_OUTPUT
+            echo "channel=latest" >> $GITHUB_OUTPUT
+            echo "base_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+            echo "pypi_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Verify npm version
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PKG_VERSION" != "${{ steps.tag.outputs.base_version }}" ]; then
+            echo "::error::package.json version ($PKG_VERSION) != tag base version (${{ steps.tag.outputs.base_version }})"
+            exit 1
+          fi
+
+      - name: Verify PyPI version
+        run: |
+          PKG_VERSION=$(python3 -c "import re; print(re.search(r'version\s*=\s*\"(.+?)\"', open('pyproject.toml').read()).group(1))")
+          if [ "$PKG_VERSION" != "${{ steps.tag.outputs.base_version }}" ]; then
+            echo "::error::pyproject.toml version ($PKG_VERSION) != tag base version (${{ steps.tag.outputs.base_version }})"
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Publish Info" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | ${{ steps.ref.outputs.tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Channel | ${{ steps.tag.outputs.channel }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm version | ${{ steps.tag.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| PyPI version | ${{ steps.tag.outputs.pypi_version }} |" >> $GITHUB_STEP_SUMMARY
+
   npm:
+    needs: prepare
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
 
-      - name: Verify package version matches tag
-        run: |
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)"
-            exit 1
-          fi
+      - name: Set beta version in package.json
+        if: needs.prepare.outputs.is_beta == 'true'
+        run: npm version "${{ needs.prepare.outputs.version }}" --no-git-tag-version
+
+      - name: Preview package contents
+        run: npm pack --dry-run 2>&1 | tee /tmp/npm-pack.log
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --tag ${{ needs.prepare.outputs.channel }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   pypi:
+    needs: prepare
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Verify package version matches tag
-        run: |
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          PKG_VERSION=$(python -c "import re; print(re.search(r'version\s*=\s*\"(.+?)\"', open('pyproject.toml').read()).group(1))")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match pyproject.toml version ($PKG_VERSION)"
-            exit 1
-          fi
+      - name: Set release version
+        run: sed -i 's/^version = ".*"/version = "${{ needs.prepare.outputs.pypi_version }}"/' pyproject.toml
 
       - name: Rename package for PyPI
         run: sed -i 's/^name = "helloagents"/name = "helloagents-x"/' pyproject.toml
@@ -59,5 +135,28 @@ jobs:
       - name: Build package
         run: pip install build && python -m build
 
+      - name: Verify build artifacts
+        run: |
+          ls -la dist/
+          pip install twine && twine check dist/*
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  release:
+    needs: [prepare, npm, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          name: ${{ needs.prepare.outputs.version }}
+          prerelease: ${{ needs.prepare.outputs.is_beta == 'true' }}
+          generate_release_notes: true
