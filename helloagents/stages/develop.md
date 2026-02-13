@@ -108,6 +108,13 @@ KB_SKIPPED 来源:
     接收结果后更新任务状态
   simple → 主代理直接执行
 
+并行批次: 任务列表中多个无依赖 implementer 任务 → 按批次并行（每批 ≤5）
+  - 有依赖任务保持串行
+  - Claude Code Task: 同一消息多个 Task 调用
+  - Claude Code Teams: complex 级别可启用 Agent Teams，每个 implementer 作为 teammate
+  - Codex CLI: 多个 spawn_agent + collab wait
+  - 其他: 串行执行
+
 任务状态处理:
   成功 → [√]，更新进度快照
   跳过 → [-]（前置失败/条件不满足/已被覆盖）
@@ -144,6 +151,10 @@ KB_SKIPPED 来源:
 子代理调用（按 G9 复杂度判定）:
   需要新增测试用例时 → [RLM:tester] 设计并编写测试用例（强制）[→ G10 调用通道]
   仅运行已有测试 → 主代理直接执行
+
+并行优化: reviewer（步骤7）和 tester（步骤8）均需调用且无依赖时 → 并行调度
+  适用: tester 测试用例设计不依赖 reviewer 审查结论
+  不适用: tester 需根据 reviewer 发现调整测试策略
 
 测试失败处理:
   ⛔ 阻断性(核心功能): 立即停止 → 输出: 警告 → 修复/跳过/终止

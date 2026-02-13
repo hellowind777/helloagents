@@ -2,17 +2,20 @@
 
 import shutil
 from pathlib import Path
-from importlib.metadata import version as get_version
 
 import subprocess
 import sys
 
 from .cli import (
-    _msg, _header,
+    _msg,
     CLI_TARGETS, PLUGIN_DIR_NAME, HELLOAGENTS_MARKER,
     is_helloagents_file, backup_user_file,
-    get_agents_md_path, get_helloagents_module_path,
+    get_agents_md_path, get_skill_md_path, get_helloagents_module_path,
     detect_installed_clis, _detect_installed_targets, _detect_install_method,
+)
+from .config_helpers import (
+    _configure_codex_toml, _configure_codex_notify, _remove_codex_notify,
+    _configure_claude_hooks, _remove_claude_hooks,
 )
 from .win_helpers import (
     _cleanup_pip_remnants, _win_deferred_pip,
@@ -97,11 +100,11 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
     """
     removed = []
 
-    # --- Legacy v1/v2.0 cleanup: skills/helloagents/ directory ---
+    # --- Clean skills/helloagents/ directory (will be re-deployed fresh if needed) ---
     legacy_skills_dir = dest_dir / "skills" / "helloagents"
     if legacy_skills_dir.exists():
         shutil.rmtree(legacy_skills_dir)
-        removed.append(f"{legacy_skills_dir} (legacy)")
+        removed.append(f"{legacy_skills_dir} (stale)")
         skills_parent = dest_dir / "skills"
         if skills_parent.exists() and not any(skills_parent.iterdir()):
             skills_parent.rmdir()
@@ -126,46 +129,6 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
                 removed.append(str(cache_dir))
 
     return removed
-
-
-# ---------------------------------------------------------------------------
-# Codex config helper
-# ---------------------------------------------------------------------------
-
-def _configure_codex_toml() -> None:
-    """Ensure ~/.codex/config.toml has project_doc_max_bytes >= 98304."""
-    import re
-    config_path = Path.home() / ".codex" / "config.toml"
-    content = ""
-    if config_path.exists():
-        content = config_path.read_text(encoding="utf-8")
-
-    # Already set and large enough — nothing to do
-    m = re.search(r'project_doc_max_bytes\s*=\s*(\d+)', content)
-    if m and int(m.group(1)) >= 98304:
-        return
-
-    if m:
-        # Exists but value is too small — replace it
-        content = re.sub(
-            r'project_doc_max_bytes\s*=\s*\d+',
-            'project_doc_max_bytes = 98304',
-            content)
-    else:
-        # Not present — insert before the first [section] or at the top
-        insert_pos = 0
-        section_match = re.search(r'^\[', content, re.MULTILINE)
-        if section_match:
-            insert_pos = section_match.start()
-        line = "project_doc_max_bytes = 98304\n"
-        if insert_pos > 0:
-            line += "\n"
-        content = content[:insert_pos] + line + content[insert_pos:]
-
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(content, encoding="utf-8")
-    print(_msg("  已配置 project_doc_max_bytes = 98304 (防止 AGENTS.md 被截断)",
-               "  Configured project_doc_max_bytes = 98304 (prevent AGENTS.md truncation)"))
 
 
 # ---------------------------------------------------------------------------
@@ -201,18 +164,10 @@ def install(target: str) -> bool:
     # Clean stale files
     removed = clean_stale_files(dest_dir, rules_file)
     if removed:
-        legacy_items = [r for r in removed if "(legacy)" in r]
-        other_items = [r for r in removed if "(legacy)" not in r]
-        if legacy_items:
-            print(_msg(f"  从旧版迁移: 清理了 {len(legacy_items)} 个旧文件",
-                       f"  Migrated from legacy version: cleaned {len(legacy_items)} old item(s)"))
-            for r in legacy_items:
-                print(f"    - {r}")
-        if other_items:
-            print(_msg(f"  清理了 {len(other_items)} 个过期文件:",
-                       f"  Cleaned {len(other_items)} stale file(s):"))
-            for r in other_items:
-                print(f"    - {r}")
+        print(_msg(f"  清理了 {len(removed)} 个过期文件:",
+                   f"  Cleaned {len(removed)} stale file(s):"))
+        for r in removed:
+            print(f"    - {r}")
 
     # Remove old module directory completely before copying
     if plugin_dest.exists():
@@ -223,7 +178,7 @@ def install(target: str) -> bool:
     # Copy new module directory
     shutil.copytree(
         module_src, plugin_dest,
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "hooks"),
     )
     print(_msg(f"  已安装模块到: {plugin_dest}",
                f"  Installed module to: {plugin_dest}"))
@@ -250,13 +205,32 @@ def install(target: str) -> bool:
         print(_msg(f"  警告: 未找到 AGENTS.md ({agents_md_src})",
                    f"  Warning: AGENTS.md not found at {agents_md_src}"))
 
+    # Deploy SKILL.md to skills discovery directory
+    skill_md_src = get_skill_md_path()
+    if skill_md_src.exists():
+        skill_dest_dir = dest_dir / "skills" / "helloagents"
+        skill_dest = skill_dest_dir / "SKILL.md"
+        skill_dest_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(skill_md_src, skill_dest)
+        print(_msg(f"  已部署技能: {skill_dest}",
+                   f"  Deployed skill: {skill_dest}"))
+
     print(_msg(f"  {target} 安装完成！请重启终端以应用更改。",
                f"  Installation complete for {target}! Please restart your terminal to apply changes."))
 
-    # Target-specific post-install configuration
-    if target == "codex":
+    # Target-specific post-install: hooks & config
+    if target == "claude":
         try:
-            _configure_codex_toml()
+            _configure_claude_hooks(dest_dir)
+        except Exception:
+            pass
+    elif target == "codex":
+        try:
+            _configure_codex_toml(dest_dir)
+        except Exception:
+            pass
+        try:
+            _configure_codex_notify(dest_dir)
         except Exception:
             pass
         print(_msg("  提示: VS Code Codex 插件对 HelloAGENTS 系统的支持可能与 CLI 不同，建议优先在 Codex CLI 中使用。",
@@ -334,14 +308,29 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
             print(_msg(f"  保留 {rules_dest}（用户创建，非 HelloAGENTS）",
                        f"  Kept {rules_dest} (user-created, not HelloAGENTS)"))
 
-    legacy_dir = dest_dir / "skills" / "helloagents"
-    if legacy_dir.exists():
-        shutil.rmtree(legacy_dir)
-        removed.append(f"{legacy_dir} (legacy)")
+    # Remove skills/helloagents/ directory (SKILL.md deployment)
+    skills_dir = dest_dir / "skills" / "helloagents"
+    if skills_dir.exists():
+        shutil.rmtree(skills_dir)
+        removed.append(str(skills_dir))
         skills_parent = dest_dir / "skills"
         if skills_parent.exists() and not any(skills_parent.iterdir()):
             skills_parent.rmdir()
             removed.append(f"{skills_parent} (empty parent)")
+
+    # Remove hooks configuration
+    if target == "claude":
+        try:
+            if _remove_claude_hooks(dest_dir):
+                removed.append("hooks (settings.json)")
+        except Exception:
+            pass
+    elif target == "codex":
+        try:
+            if _remove_codex_notify(dest_dir):
+                removed.append("notify hook (config.toml)")
+        except Exception:
+            pass
 
     if removed:
         print(_msg(f"  已移除 {len(removed)} 个项目:",

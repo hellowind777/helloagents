@@ -99,6 +99,11 @@ KB_SKIPPED=false → 知识库优先，不足则扫描代码库
   complex+依赖>5模块 → [RLM:analyzer] 执行深度依赖分析和质量评估（强制）[→ G10 调用通道]
   其他 → 主代理直接执行
 
+并行优化: 当 complex+依赖>5 且步骤4 explorer 和步骤6 analyzer 均需调用时:
+  - 若 analyzer 分析目标已明确（不依赖 explorer 结果）→ 并行调度两者
+  - 否则 → 保持串行（explorer 先完成，结果传给 analyzer）
+  实现: Claude Code 同一消息多个 Task | Codex CLI 多个 spawn_agent + collab wait
+
 复杂度确认: 根据完整分析结果修正 TASK_COMPLEXITY（若与步骤3初评不同则更新）
 
 **DO NOT:** 做技术选型决策（留给DESIGN），设计实现方案（留给DESIGN），修改代码（留给DEVELOP）

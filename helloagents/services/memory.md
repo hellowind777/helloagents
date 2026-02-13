@@ -150,6 +150,14 @@ Rewind/Undo（用户回退对话）:
   L2: 仅主代理在触发点写入（子代理结果通过返回值汇总到主代理）
   Session ID: 仅主代理持有，子代理不需要
   原则: 子代理是短生命周期任务执行者，不参与记忆的读写生命周期
+
+Codex CLI Memory 桥接:
+  映射: Codex CLI Memory 系统（~/.codex/ 下 rollout_summaries/）≈ HelloAGENTS L1 知识库的外部补充
+  读取优先级: HelloAGENTS L1 KB > Codex CLI Memory（避免冲突）
+  写入规则: HelloAGENTS 通过 KnowledgeService 写入 L1，不直接写入 Codex CLI Memory
+  子代理隔离: spawn_agent 创建的子代理继承主代理 Memory 上下文（只读）
+  同步触发: Stop hook（Claude Code）或 notify hook（Codex CLI, agent-turn-complete）触发 KB 同步时，
+            可选将 L1 变更同步到 Codex CLI Memory（单向，L1→Codex Memory）
 ```
 
 **DO:** 优先使用 CLI 原生 session ID，启动时静默加载，恢复会话时复用已有 L2 文件，在触发点自动写入 L2 摘要
