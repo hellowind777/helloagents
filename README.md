@@ -175,7 +175,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     npx helloagents
 
-> Installs the Python package and launches an interactive menu. You can also specify directly: `npx helloagents install codex`
+> Installs the Python package and launches an interactive menu. You can also specify directly: `npx helloagents install codex` (or use `npx -y` to auto-download without prompting)
 
 > Requires Python >= 3.10. After first install, use the native `helloagents` command directly.
 
@@ -250,7 +250,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
-    # npx
+    # npx (or use npx -y to auto-download without prompting)
     npx helloagents install codex
 
     # UV
@@ -274,7 +274,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
-    # npx
+    # npx (or use npx -y to auto-download without prompting)
     npx helloagents install claude
 
     # UV
@@ -298,7 +298,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
     # Windows PowerShell
     $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
-    # npx
+    # npx (or use npx -y to auto-download without prompting)
     npx helloagents@beta
 
     # UV
