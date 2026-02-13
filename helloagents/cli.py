@@ -32,6 +32,10 @@ CLI_TARGETS = {
 
 PLUGIN_DIR_NAME = "helloagents"
 
+# Hooks identification
+HOOKS_FINGERPRINT = "HelloAGENTS"  # description field marker to identify our hooks
+CODEX_NOTIFY_CMD = "helloagents --check-update --silent"
+
 # Fingerprint marker to identify HelloAGENTS-created files
 HELLOAGENTS_MARKER = "HELLOAGENTS_ROUTER:"
 
@@ -116,6 +120,11 @@ def get_package_root() -> Path:
 def get_agents_md_path() -> Path:
     """Get the path to AGENTS.md source file."""
     return get_package_root() / "AGENTS.md"
+
+
+def get_skill_md_path() -> Path:
+    """Get the path to SKILL.md source file."""
+    return get_package_root() / "SKILL.md"
 
 
 def get_helloagents_module_path() -> Path:
@@ -320,7 +329,12 @@ def main() -> None:
         print_usage()
         sys.exit(0)
 
-    has_update = False
+    # Hook-triggered update check (e.g. Codex CLI notify)
+    if cmd == "--check-update":
+        silent = "--silent" in sys.argv[2:]
+        check_update(cache_ttl_hours=24, show_version=not silent)
+        sys.exit(0)
+
     if cmd != "update":
         force = cmd == "version" and "--force" in sys.argv[2:]
         cache_ttl = None
@@ -330,8 +344,8 @@ def main() -> None:
                 cache_ttl = int(sys.argv[idx + 1])
             except (ValueError, IndexError):
                 pass
-        has_update = check_update(force=force, cache_ttl_hours=cache_ttl,
-                                  show_version=(cmd == "version"))
+        check_update(force=force, cache_ttl_hours=cache_ttl,
+                     show_version=(cmd == "version"))
 
     if not cmd:
         _interactive_main()

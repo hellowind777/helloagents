@@ -289,7 +289,10 @@ def check_update(force: bool = False,
                 print(f"HelloAGENTS local v{local_ver} (branch {branch})")
     except Exception:
         if show_version:
-            ver = get_version("helloagents")
-            br = _detect_channel()
-            print(f"HelloAGENTS local v{ver} / branch {br} (update check failed)")
+            try:
+                ver = get_version("helloagents")
+                br = _detect_channel()
+                print(f"HelloAGENTS local v{ver} / branch {br} (update check failed)")
+            except Exception:
+                print("HelloAGENTS (version unknown, update check failed)")
     return False

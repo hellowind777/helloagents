@@ -7,6 +7,7 @@ from importlib.metadata import version as get_version
 from .cli import (
     _msg, _header,
     CLI_TARGETS, PLUGIN_DIR_NAME, REPO_URL,
+    HOOKS_FINGERPRINT,
     _detect_installed_targets, _detect_install_method,
 )
 from .version_check import (
@@ -249,17 +250,23 @@ def status() -> None:
         cli_dir = Path.home() / config["dir"]
         plugin_dir = cli_dir / PLUGIN_DIR_NAME
         rules_file = cli_dir / config["rules_file"]
+        skill_file = cli_dir / "skills" / "helloagents" / "SKILL.md"
 
         cli_exists = cli_dir.exists()
         plugin_exists = plugin_dir.exists()
         rules_exists = rules_file.exists()
+        skill_exists = skill_file.exists()
 
         if not cli_exists:
             mark = "·"
             status_str = _msg("未检测到该工具", "tool not found")
-        elif plugin_exists and rules_exists:
+        elif plugin_exists and rules_exists and skill_exists:
             mark = "✓"
             status_str = _msg("已安装 HelloAGENTS", "HelloAGENTS installed")
+        elif plugin_exists and rules_exists:
+            mark = "!"
+            status_str = _msg("已安装但缺少 SKILL.md，建议重新安装",
+                              "installed but SKILL.md missing, reinstall recommended")
         elif plugin_exists or rules_exists:
             mark = "!"
             status_str = _msg("安装不完整", "partial install")
@@ -268,6 +275,46 @@ def status() -> None:
             status_str = _msg("未安装 HelloAGENTS", "HelloAGENTS not installed")
 
         print(f"  {mark} {name:10} {status_str}")
+
+        # Hooks status check (only for installed targets)
+        if plugin_exists and rules_exists:
+            if name == "claude":
+                try:
+                    import json
+                    sp = cli_dir / "settings.json"
+                    if sp.exists():
+                        st = json.loads(sp.read_text(encoding="utf-8"))
+                        hooks = st.get("hooks", {})
+                        ha_count = sum(
+                            1 for hl in hooks.values() if isinstance(hl, list)
+                            for h in hl if HOOKS_FINGERPRINT in h.get("description", ""))
+                        if ha_count > 0:
+                            print(f"    hooks: {ha_count} HelloAGENTS hook(s) ✓")
+                        else:
+                            print(_msg("    ⚠ 未检测到 HelloAGENTS Hooks，建议重新安装",
+                                       "    ⚠ No HelloAGENTS hooks found, reinstall recommended"))
+                    else:
+                        print(_msg("    ⚠ settings.json 不存在，Hooks 未配置",
+                                   "    ⚠ settings.json missing, hooks not configured"))
+                except Exception:
+                    pass
+            elif name == "codex":
+                try:
+                    import re as _re
+                    ct_path = cli_dir / "config.toml"
+                    if ct_path.exists():
+                        ct_text = ct_path.read_text(encoding="utf-8")
+                        nm = _re.search(r'^notify\s*=\s*"([^"]*)"', ct_text, _re.MULTILINE)
+                        if nm and "helloagents" in nm.group(1):
+                            print("    notify: helloagents ✓")
+                        elif nm:
+                            print(_msg("    notify: 用户自定义（非 HelloAGENTS）",
+                                       "    notify: user-defined (not HelloAGENTS)"))
+                        else:
+                            print(_msg("    ⚠ notify 未配置，建议重新安装",
+                                       "    ⚠ notify not configured, reinstall recommended"))
+                except Exception:
+                    pass
 
         # Codex: check AGENTS.md size vs project_doc_max_bytes
         if name == "codex" and rules_exists:
