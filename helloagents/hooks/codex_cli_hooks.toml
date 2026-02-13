@@ -5,5 +5,5 @@
 # 更多事件支持请关注 Codex CLI 更新。
 
 # notify — 代理轮次完成时触发（当前唯一支持的 hook 事件）
-# 格式: notify = "命令路径"（直接赋值，非 [notify] 表）
-notify = "helloagents --check-update --silent"
+# 格式: notify = ["命令路径"]（数组格式）
+notify = ["helloagents --check-update --silent"]

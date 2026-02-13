@@ -285,9 +285,20 @@ def status() -> None:
                     if sp.exists():
                         st = json.loads(sp.read_text(encoding="utf-8"))
                         hooks = st.get("hooks", {})
-                        ha_count = sum(
-                            1 for hl in hooks.values() if isinstance(hl, list)
-                            for h in hl if HOOKS_FINGERPRINT in h.get("description", ""))
+                        ha_count = 0
+                        for hl in hooks.values():
+                            if not isinstance(hl, list):
+                                continue
+                            for mg in hl:
+                                # New nested structure: matcher group with inner hooks
+                                inner = mg.get("hooks", [])
+                                if isinstance(inner, list):
+                                    for h in inner:
+                                        if HOOKS_FINGERPRINT in h.get("description", ""):
+                                            ha_count += 1
+                                # Legacy flat structure fallback
+                                elif HOOKS_FINGERPRINT in mg.get("description", ""):
+                                    ha_count += 1
                         if ha_count > 0:
                             print(f"    hooks: {ha_count} HelloAGENTS hook(s) ✓")
                         else:
@@ -304,10 +315,14 @@ def status() -> None:
                     ct_path = cli_dir / "config.toml"
                     if ct_path.exists():
                         ct_text = ct_path.read_text(encoding="utf-8")
-                        nm = _re.search(r'^notify\s*=\s*"([^"]*)"', ct_text, _re.MULTILINE)
-                        if nm and "helloagents" in nm.group(1):
+                        # Match both array format and legacy string format
+                        nm_arr = _re.search(r'^notify\s*=\s*\[([^\]]*)\]', ct_text, _re.MULTILINE)
+                        nm_str = _re.search(r'^notify\s*=\s*"([^"]*)"', ct_text, _re.MULTILINE)
+                        notify_val = (nm_arr.group(1) if nm_arr else
+                                      nm_str.group(1) if nm_str else None)
+                        if notify_val and "helloagents" in notify_val:
                             print("    notify: helloagents ✓")
-                        elif nm:
+                        elif notify_val:
                             print(_msg("    notify: 用户自定义（非 HelloAGENTS）",
                                        "    notify: user-defined (not HelloAGENTS)"))
                         else:

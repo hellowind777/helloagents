@@ -883,7 +883,7 @@ PreCompact — 上下文压缩前快照:
 
 ```toml
 # notify — 代理轮次完成时触发（当前 Codex CLI 唯一支持的 hook 事件）
-notify = "helloagents --check-update --silent"
+notify = ["helloagents --check-update --silent"]
 # 作用: 代理完成时检查 HelloAGENTS 版本更新，有更新则显示提示
 ```
 
