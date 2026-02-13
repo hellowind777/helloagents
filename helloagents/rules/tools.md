@@ -133,6 +133,46 @@ shared_tasks.py:
 
 ---
 
+## 并行工具执行规范
+
+```yaml
+并行工具执行:
+  适用范围: 主代理在同一消息中发起多个直接工具调用（不含子代理调度）
+  支持: Claude Code（多工具并行）、Codex CLI（并行 shell 工具执行）
+  规则:
+    - 多个无依赖的只读操作（文件读取/搜索/Glob）→ 可并行
+    - 包含写操作的直接工具调用 → 禁止并行（避免竞态）
+    - Codex CLI: shell 相关工具可并行执行，提升多命令吞吐量
+    - Shell 环境快照: Codex CLI 的 shell env snapshot 确保子代理继承主代理环境变量和 rc 配置
+  其他 CLI: 串行执行所有工具调用
+  与子代理并行的区分:
+    - 子代理调度（多个 Task/spawn_agent）→ 按 G10 并行调度规则执行，不受此处限制
+    - 子代理内部各自独立操作不同文件集，无竞态风险
+    - 此处规则仅约束主代理自身的直接工具调用
+```
+
+## Hooks 工具协调
+
+```yaml
+Hooks 工具协调:
+  - Claude Code Hooks 可在工具调用前后执行（详见 AGENTS.md G12）
+  - HelloAGENTS 提供预定义 Hook 配置，用户可选启用
+  - 子代理调用被用户自定义 Hook 阻断时:
+    记录阻断原因 → 降级为主代理执行 → 在 tasks.md 标记 [Hook阻断降级]
+  - 不主动注册修改用户已有的 Hook 配置
+```
+
+## Plan 工具协调
+
+```yaml
+Plan 工具协调:
+  - Codex CLI Plan 协作模式（CollaborationModes 特性，默认启用）与 HelloAGENTS ~plan 工作流命令协调
+  - DESIGN 阶段: Plan 模式输出可作为 designer 子代理的输入参考
+  - Plan 模式生成的计划不替代 HelloAGENTS 的 proposal.md/tasks.md 体系
+```
+
+---
+
 ## Shell 规范
 
 > 工具选择逻辑与 Shell 语法规范 [→ G1]

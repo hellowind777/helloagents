@@ -674,7 +674,8 @@ CURRENT_PACKAGE: 空  # develop阶段确定
 | CLI | 通道 | 调用方式 |
 |-----|------|----------|
 | Claude Code | Task 工具 | `Task(subagent_type="general-purpose", prompt="[RLM:{角色}] {任务描述}")` |
-| Codex CLI | Collab | 实验性，MAX_DEPTH=1 |
+| Claude Code | Agent Teams | complex 级别，多角色协作需互相通信时（实验性）[→ Agent Teams 协议] |
+| Codex CLI | spawn_agent | Collab 子代理调度（实验性特性门控，MAX_DEPTH=1，最多6并发） |
 | OpenCode | 降级 | 主上下文直接执行 |
 | Gemini/Qwen/Grok | 降级 | 主上下文直接执行 |
 
@@ -698,6 +699,72 @@ CURRENT_PACKAGE: 空  # develop阶段确定
             约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
             返回: {status, changes_made, issues_found}"
   )
+```
+
+### Codex CLI 调用协议（CRITICAL）
+
+```yaml
+执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+  1. 加载角色预设: 读取 rlm/roles/{角色}.md
+  2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+  3. 调用 spawn_agent: prompt=上述内容
+  4. 接收结果: 解析子代理返回的结构化结果
+  5. 记录调用: 通过 SessionManager.record_agent() 记录
+
+并行调用: 多个无依赖子代理 → 连续发起多个 spawn_agent → collab wait 等待全部完成（支持多ID单次等待）
+串行调用: 有依赖 → 逐个 spawn_agent → 等待完成再发下一个
+恢复暂停: 子代理超时/暂停 → resume_agent 恢复
+中断通信: send_input 向运行中的子代理发送消息（可选中断当前执行）
+关闭子代理: close 关闭指定子代理
+限制: Collab 实验性特性门控，MAX_DEPTH=1（仅一层嵌套），最多 6 个并发子代理
+角色预设: spawn_agent 支持 agent role preset（Default/Worker/Explorer）
+
+示例（DEVELOP 步骤6 并行 3 个 implementer）:
+  spawn_agent("[RLM:implementer] 任务1.1: 实现 filter.py 空白判定函数")
+  spawn_agent("[RLM:implementer] 任务1.2: 实现 validator.py 输入校验")
+  spawn_agent("[RLM:implementer] 任务1.3: 实现 formatter.py 输出格式化")
+  collab wait  # 等待全部完成（支持多ID）
+```
+
+### Claude Code Agent Teams 协议
+
+```yaml
+适用条件:
+  - TASK_COMPLEXITY = complex
+  - 需要多角色互相通信（如 reviewer 需参考 implementer 的设计意图）
+  - 任务可拆为 3+ 独立子任务分配给不同角色
+  - 用户确认启用（实验性功能）
+
+调度方式:
+  1. 主代理作为 Team Lead（delegate mode），仅负责协调
+  2. 按 RLM 角色 spawn teammates:
+     - explorer/analyzer → 研究型 teammate
+     - implementer × N → 实现型 teammates（每人负责不同文件集）
+     - reviewer + tester → 质量型 teammates（可并行）
+  3. 使用共享任务列表（映射到 tasks.md）
+  4. Teammates 通过 mailbox 互相通信
+  5. Team Lead 综合结果后清理团队
+
+与 Task 子代理的选择:
+  - Task 子代理: 结果只需返回给主代理的聚焦任务（默认）
+  - Agent Teams: 角色间需要讨论/挑战/协作的复杂任务
+
+降级: Agent Teams 不可用时 → 退回 Task 子代理模式
+前提: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 已启用
+```
+
+### 并行调度规则（适用所有 CLI）
+
+```yaml
+并行批次上限: ≤5 个子代理/批
+并行适用: 同阶段内无数据依赖的任务
+串行强制: 有数据依赖链的任务（如 design: analyzer→designer→synthesizer）
+
+CLI 实现:
+  Claude Code Task: 同一消息多个 Task 调用
+  Claude Code Teams: teammates 自动从共享任务列表认领
+  Codex CLI: 多个 spawn_agent + collab wait（支持多ID单次等待）
+  其他 CLI: 降级为串行执行
 ```
 
 ### 降级处理
@@ -735,5 +802,111 @@ Codex CLI: ~/.codex/sessions/{YYYY}/{MM}/{DD}/*.jsonl
   <!-- LIVE_STATUS_END -->
 更新时机: 任务开始、状态变更、遇到错误、阶段切换
 状态恢复: 缺少上下文时，读取 tasks.md 状态文件恢复进度
+```
+
+---
+
+## G12 | Hooks 集成（INFORMATIONAL）
+
+HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为可选增强，
+非 Hooks 环境下所有功能通过现有规则正常运行（降级兼容）。
+
+### Hooks 能力矩阵
+
+| 功能 | Claude Code Hook | Codex CLI Hook | 无 Hook 降级 |
+|------|-----------------|----------------|-------------|
+| 模块自动加载验证 | SessionStart | — | G7 规则手动加载 |
+| EHRB 安全预检 | PreToolUse (Shell/Write) | — | G3 规则内联检查 |
+| 子代理生命周期追踪 | SubagentStart/Stop | — | SessionManager 手动记录 |
+| 进度快照自动触发 | PostToolUse | — | cache.md 手动触发 |
+| 版本更新提示 | SessionStart | notify (agent-turn-complete) | 启动时脚本检查 |
+| 任务完成质量门 | TaskCompleted | — | develop.md 步骤7-8 手动 |
+| KB 同步触发 | Stop | notify (agent-turn-complete) | memory.md 触发点规则 |
+| Agent Teams 空闲检测 | TeammateIdle | — | 主代理轮询 |
+| 上下文压缩前处理 | PreCompact | — | 手动快照 |
+| Hook 阻断降级 | 被阻断→主代理执行 | 不适用 | 直接执行 |
+
+### Claude Code Hooks 配置（.claude/settings.json）
+
+HelloAGENTS 预定义以下 Hook 配置供用户可选启用:
+
+```yaml
+SessionStart — 模块加载验证 + 版本检查:
+  事件: SessionStart
+  动作: 检查 AGENTS.md 是否存在、验证 G1-G12 模块引用完整性
+  类型: command hook，执行 helloagents 版本检查脚本
+  失败: 输出警告，不阻断会话
+
+PreToolUse — EHRB 安全预检:
+  事件: PreToolUse
+  匹配: toolName 匹配 Bash|Shell|Write|Edit
+  动作: prompt hook，检查操作是否涉及 G3 EHRB 敏感路径
+  阻断: 命中 EHRB 红线 → exit 2 阻断工具调用
+  放行: 非敏感操作 → exit 0
+
+SubagentStart/Stop — 子代理追踪:
+  事件: SubagentStart, SubagentStop
+  动作: command hook，记录子代理 ID/角色/状态到会话日志
+  异步: async=true（不阻断子代理启动）
+
+PostToolUse — 进度快照:
+  事件: PostToolUse
+  匹配: toolName 匹配 Write|Edit|NotebookEdit
+  动作: command hook，检查距上次快照是否超过阈值(5次写操作)
+  触发: 超过阈值 → 生成进度快照
+
+TaskCompleted — 质量门:
+  事件: TaskCompleted
+  动作: agent hook，检查任务关联的测试是否通过
+  阻断: 测试未通过 → exit 2 阻止标记完成
+
+Stop — KB 同步 + L2 写入:
+  事件: Stop
+  动作: command hook，触发 KnowledgeService 同步和 L2 摘要写入
+  异步: async=true
+
+TeammateIdle — Agent Teams 空闲检测:
+  事件: TeammateIdle
+  动作: command hook，teammate 即将空闲时检查共享任务列表是否有未认领任务
+  异步: async=true
+  前提: Agent Teams 模式已启用（CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1）
+
+PreCompact — 上下文压缩前快照:
+  事件: PreCompact
+  动作: command hook，上下文压缩前自动保存进度快照到 cache.md
+  异步: async=false（必须在压缩前完成）
+```
+
+### Codex CLI Hooks 配置（~/.codex/config.toml）
+
+当前仅支持 `notify` 配置项（agent-turn-complete 事件），在代理完成一轮交互后触发:
+
+```toml
+# notify — 代理轮次完成时触发（当前 Codex CLI 唯一支持的 hook 事件）
+notify = ["helloagents --check-update --silent"]
+# 作用: 代理完成时检查 HelloAGENTS 版本更新，有更新则显示提示
+```
+
+### 预留扩展接口
+
+```yaml
+Codex CLI Hooks 系统持续发展中。以下功能已在 Claude Code 侧实现，
+当 Codex CLI 支持对应事件时可通过修改 config.toml 直接启用:
+
+  - PreToolUse → EHRB 安全预检（等待 Codex CLI 支持工具调用前事件）
+  - SessionStart → 模块加载验证（等待 Codex CLI 支持会话启动事件）
+  - PostToolUse → 进度快照（等待 Codex CLI 支持工具调用后事件）
+
+迁移方式: 将 Claude Code settings.json 中的 hook 逻辑移植为
+Codex CLI config.toml 格式，核心脚本/命令可复用。
+```
+
+### 降级原则
+
+```yaml
+所有 Hook 增强的功能在无 Hook 环境下必须有等效的规则降级:
+  - 有 Hook → 自动触发（更可靠、更及时）
+  - 无 Hook → 按现有 AGENTS.md 规则手动执行（功能不丢失）
+  - Hook 被用户自定义 Hook 阻断 → 记录原因，降级为主代理执行
 ```
 

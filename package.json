@@ -1,20 +1,23 @@
 {
   "name": "helloagents",
-  "version": "2.2.5",
-  "description": "HelloAGENTS - Multi-CLI AI agent workflow system",
+  "version": "2.2.7",
+  "type": "module",
+  "description": "HelloAGENTS - AI-native sub-agent orchestration framework for multi-CLI environments",
+  "author": "HelloWind",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/hellowind777/helloagents",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hellowind777/helloagents.git"
+  },
   "bin": {
     "helloagents": "./bin/cli.mjs"
   },
   "files": [
     "bin/"
   ],
-  "keywords": ["ai", "agent", "claude", "codex", "cli", "workflow"],
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hellowind777/helloagents"
-  },
+  "keywords": ["ai", "agent", "claude", "codex", "gemini", "qwen", "grok", "opencode", "cli", "workflow"],
   "engines": {
-    "node": ">=14"
+    "node": ">=16"
   }
 }

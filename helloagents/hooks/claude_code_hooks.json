@@ -1,0 +1,120 @@
+{
+  "_comment": "HelloAGENTS Claude Code Hooks 参考配置。将所需 hook 合并到 .claude/settings.json 的 hooks 字段中启用。",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "helloagents version --force --cache-ttl 72",
+            "timeout": 5,
+            "description": "HelloAGENTS 模块加载验证 + 版本检查"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Shell|Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "检查此操作是否涉及 EHRB 敏感路径（生产环境、破坏性操作、不可逆操作、权限变更、敏感数据）。如命中 EHRB 红线则 exit 2 阻断，否则 exit 0 放行。",
+            "description": "HelloAGENTS EHRB 安全预检"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[HelloAGENTS] SubagentStart: $CLAUDE_SUBAGENT_ID\"",
+            "async": true,
+            "description": "HelloAGENTS 子代理启动追踪"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[HelloAGENTS] SubagentStop: $CLAUDE_SUBAGENT_ID\"",
+            "async": true,
+            "description": "HelloAGENTS 子代理完成追踪"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[HelloAGENTS] PostToolUse: write operation completed\"",
+            "async": true,
+            "description": "HelloAGENTS 进度快照触发（写操作计数，超过5次阈值时生成快照）"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "检查此任务关联的测试是否通过。如测试未通过则 exit 2 阻止标记完成。",
+            "description": "HelloAGENTS 任务完成质量门"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[HelloAGENTS] Session ending: triggering KB sync and L2 summary write\"",
+            "async": true,
+            "description": "HelloAGENTS KB 同步 + L2 会话摘要写入"
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[HelloAGENTS] TeammateIdle: teammate about to go idle, checking shared task list\"",
+            "async": true,
+            "description": "HelloAGENTS Agent Teams 空闲检测（teammate 即将空闲时检查共享任务列表）"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[HelloAGENTS] PreCompact: saving progress snapshot before context compaction\"",
+            "async": false,
+            "description": "HelloAGENTS 上下文压缩前自动保存进度快照"
+          }
+        ]
+      }
+    ]
+  }
+}
