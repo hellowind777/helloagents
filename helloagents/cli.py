@@ -335,7 +335,7 @@ def main() -> None:
         check_update(cache_ttl_hours=24, show_version=not silent)
         sys.exit(0)
 
-    if cmd != "update":
+    if cmd and cmd != "update" and not os.environ.get("HELLOAGENTS_NO_UPDATE_CHECK"):
         force = cmd == "version" and "--force" in sys.argv[2:]
         cache_ttl = None
         if cmd == "version" and "--cache-ttl" in sys.argv[2:]:

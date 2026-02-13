@@ -111,8 +111,27 @@ def _interactive_uninstall() -> bool:
     """Show interactive menu for selecting CLI targets to uninstall."""
     installed = _detect_installed_targets()
     if not installed:
-        print(_msg("  未检测到已安装的 CLI 目标。",
-                   "  No installed CLI targets detected."))
+        print(_msg("  未检测到任何 CLI 安装。",
+                   "  No CLI installations detected."))
+        print()
+        print(_msg("  是否彻底移除 helloagents 包本身？",
+                   "  Remove the helloagents package itself?"))
+        print()
+        print(_msg("  [1] 是，彻底移除", "  [1] Yes, remove completely"))
+        print(_msg("  [2] 否，保留并退出",
+                   "  [2] No, keep and exit"))
+        print()
+
+        prompt = _msg("  请输入编号（直接回车跳过）: ",
+                      "  Enter number (press Enter to skip): ")
+        try:
+            choice = input(prompt).strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            choice = ""
+
+        if choice == "1":
+            _self_uninstall()
         return True
 
     _header(_msg("步骤 1/3: 选择要卸载的目标",
@@ -166,27 +185,37 @@ def _interactive_uninstall() -> bool:
         print(_msg("  未选择任何目标。", "  No targets selected."))
         return True
 
-    # Determine whether we'll offer to remove the package itself
-    remaining_after = set(_detect_installed_targets()) - set(selected)
-
     _header(_msg(f"步骤 2/3: 执行卸载（共 {len(selected)} 个目标）",
                  f"Step 2/3: Uninstalling ({len(selected)} target(s))"))
 
+    results = {}
     for i, t in enumerate(selected, 1):
         print(_msg(f"  [{i}/{len(selected)}] {t}",
                    f"  [{i}/{len(selected)}] {t}"))
-        uninstall(t, show_package_hint=False)
+        results[t] = uninstall(t, show_package_hint=False)
         print()
 
     _header(_msg("步骤 3/3: 卸载结果",
                  "Step 3/3: Uninstall Summary"))
-    for t in selected:
-        print(f"  ✓ {t:10} {_msg('已卸载', 'removed')}")
+    for t, ok in results.items():
+        mark = "✓" if ok else "✗"
+        status_text = _msg("已卸载", "removed") if ok else _msg("卸载失败", "FAILED")
+        print(f"  {mark} {t:10} {status_text}")
 
+    succeeded = sum(1 for v in results.values() if v)
+    failed_count = len(results) - succeeded
     print()
-    print(_msg(f"  共卸载 {len(selected)} 个目标。请重启终端以应用更改。",
-               f"  {len(selected)} target(s) uninstalled. "
-               f"Please restart your terminal to apply changes."))
+    if failed_count:
+        print(_msg(f"  共 {succeeded} 个成功，{failed_count} 个失败。请重启终端以应用更改。",
+                   f"  {succeeded} succeeded, {failed_count} failed. "
+                   f"Please restart your terminal to apply changes."))
+    else:
+        print(_msg(f"  共卸载 {len(selected)} 个目标。请重启终端以应用更改。",
+                   f"  {len(selected)} target(s) uninstalled. "
+                   f"Please restart your terminal to apply changes."))
+
+    # Detect what's actually remaining after uninstall
+    remaining_after = _detect_installed_targets()
 
     # If no CLI targets remain, offer to remove the package itself
     if not remaining_after:

@@ -8,7 +8,8 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.6-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.7-orange.svg)](./pyproject.toml)
+[![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
@@ -170,7 +171,17 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     helloagents update
 
-### Method B: UV (isolated environment)
+### Method B: npx (Node.js >= 16)
+
+    npx helloagents
+
+> Installs the Python package and launches an interactive menu. You can also specify directly: `npx helloagents install codex`
+
+> Requires Python >= 3.10. After first install, use the native `helloagents` command directly.
+
+> **Acknowledgment:** Thanks to @setsuna1106 for generously transferring the npm `helloagents` package ownership.
+
+### Method C: UV (isolated environment)
 
 **Step 0 — Install UV first (skip if already installed):**
 
@@ -192,7 +203,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     helloagents update
 
-### Method C: pip (Python >= 3.10)
+### Method D: pip (Python >= 3.10)
 
 **Install and select targets (one command):**
 
@@ -239,6 +250,9 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
+    # npx
+    npx helloagents install codex
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install codex
 
@@ -259,6 +273,9 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # npx
+    npx helloagents install claude
 
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install claude
@@ -281,6 +298,9 @@ To install from the `beta` branch, append `@beta` to the repository URL:
     # Windows PowerShell
     $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
+    # npx
+    npx helloagents@beta
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents && helloagents
 
@@ -301,7 +321,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.6)
+- pyproject.toml: package metadata (v2.2.7)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: analyze, design, develop
@@ -366,7 +386,7 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.6 (current)
+### v2.2.7 (current)
 
 - **G12 Hooks integration spec:** 9 Claude Code lifecycle hooks + Codex CLI notify hook
 - **Auto-deploy Hooks:** auto-deploy and clean up Hooks config during install/uninstall
