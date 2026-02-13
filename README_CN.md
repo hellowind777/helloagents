@@ -176,7 +176,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     npx helloagents
 
-> 安装 Python 包后自动弹出交互菜单。也可以直接指定：`npx helloagents install codex`
+> 安装 Python 包后自动弹出交互菜单。也可以直接指定：`npx helloagents install codex`（或使用 `npx -y` 自动下载安装，无需确认）
 
 > 需要 Python >= 3.10。首次安装后，直接使用原生 `helloagents` 命令即可。
 
@@ -251,7 +251,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
-    # npx
+    # npx（或使用 npx -y 自动下载安装）
     npx helloagents install codex
 
     # UV
@@ -275,7 +275,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
-    # npx
+    # npx（或使用 npx -y 自动下载安装）
     npx helloagents install claude
 
     # UV
@@ -299,7 +299,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # Windows PowerShell
     $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
-    # npx
+    # npx（或使用 npx -y 自动下载安装）
     npx helloagents@beta
 
     # UV
