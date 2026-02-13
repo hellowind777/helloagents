@@ -67,8 +67,21 @@ def _load_hooks_source() -> dict:
 
 
 def _is_helloagents_hook(hook: dict) -> bool:
-    """Check if a hook entry belongs to HelloAGENTS (by description fingerprint)."""
-    return HOOKS_FINGERPRINT in hook.get("description", "")
+    """Check if a hook entry belongs to HelloAGENTS (by description fingerprint).
+
+    Works with both flat hook objects and matcher-group objects.
+    A matcher group is ours if any hook inside its 'hooks' array has the fingerprint.
+    """
+    # Flat hook object (legacy or inner hook)
+    if HOOKS_FINGERPRINT in hook.get("description", ""):
+        return True
+    # Matcher group: check inner hooks array
+    inner = hook.get("hooks", [])
+    if isinstance(inner, list):
+        for h in inner:
+            if HOOKS_FINGERPRINT in h.get("description", ""):
+                return True
+    return False
 
 
 def _configure_claude_hooks(dest_dir: Path) -> None:
@@ -161,8 +174,10 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
 def _configure_codex_notify(dest_dir: Path) -> None:
     """Add HelloAGENTS notify hook to Codex CLI config.toml.
 
+    Codex CLI expects notify as an array: notify = ["command"]
+
     - If notify is not set → add it
-    - If notify is ours → update if command changed
+    - If notify is ours (old string or array format) → update to array format
     - If notify is user-defined → skip (don't overwrite)
     """
     config_path = dest_dir / "config.toml"
@@ -170,19 +185,40 @@ def _configure_codex_notify(dest_dir: Path) -> None:
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
 
-    m = re.search(r'^notify\s*=\s*"([^"]*)"', content, re.MULTILINE)
-    if m:
-        if "helloagents" in m.group(1):
-            if m.group(1) != CODEX_NOTIFY_CMD:
+    notify_line = f'notify = ["{CODEX_NOTIFY_CMD}"]'
+
+    # Match both old string format and new array format
+    m_str = re.search(r'^notify\s*=\s*"([^"]*)"', content, re.MULTILINE)
+    m_arr = re.search(r'^notify\s*=\s*\[([^\]]*)\]', content, re.MULTILINE)
+
+    if m_str:
+        # Old string format — upgrade to array if ours, skip if user's
+        if "helloagents" in m_str.group(1):
+            content = re.sub(
+                r'^notify\s*=\s*"[^"]*"',
+                notify_line,
+                content, count=1, flags=re.MULTILINE)
+            config_path.write_text(content, encoding="utf-8")
+            print(_msg("  已更新 notify hook 为数组格式 (config.toml)",
+                       "  Updated notify hook to array format (config.toml)"))
+            return
+        print(_msg("  跳过 notify 配置（已有用户自定义值）",
+                   "  Skipped notify config (user-defined value exists)"))
+        return
+
+    if m_arr:
+        # Array format — check if ours
+        arr_content = m_arr.group(1)
+        if "helloagents" in arr_content:
+            if f'"{CODEX_NOTIFY_CMD}"' not in arr_content:
                 content = re.sub(
-                    r'^notify\s*=\s*"[^"]*"',
-                    f'notify = "{CODEX_NOTIFY_CMD}"',
+                    r'^notify\s*=\s*\[[^\]]*\]',
+                    notify_line,
                     content, count=1, flags=re.MULTILINE)
                 config_path.write_text(content, encoding="utf-8")
                 print(_msg("  已更新 notify hook (config.toml)",
                            "  Updated notify hook (config.toml)"))
             return
-        # User's own notify — don't overwrite
         print(_msg("  跳过 notify 配置（已有用户自定义值）",
                    "  Skipped notify config (user-defined value exists)"))
         return
@@ -192,7 +228,7 @@ def _configure_codex_notify(dest_dir: Path) -> None:
     section_match = re.search(r'^\[', content, re.MULTILINE)
     if section_match:
         insert_pos = section_match.start()
-    line = f'notify = "{CODEX_NOTIFY_CMD}"\n'
+    line = notify_line + "\n"
     if insert_pos > 0:
         line += "\n"
     content = content[:insert_pos] + line + content[insert_pos:]
@@ -206,6 +242,7 @@ def _configure_codex_notify(dest_dir: Path) -> None:
 def _remove_codex_notify(dest_dir: Path) -> bool:
     """Remove HelloAGENTS notify hook from Codex CLI config.toml.
 
+    Handles both old string format and new array format.
     Returns True if the notify line was removed.
     """
     config_path = dest_dir / "config.toml"
@@ -213,13 +250,21 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
         return False
 
     content = config_path.read_text(encoding="utf-8")
-    m = re.search(r'^notify\s*=\s*"([^"]*)"', content, re.MULTILINE)
-    if not m or "helloagents" not in m.group(1):
+
+    # Try array format first, then old string format
+    m_arr = re.search(r'^notify\s*=\s*\[([^\]]*)\]', content, re.MULTILINE)
+    m_str = re.search(r'^notify\s*=\s*"([^"]*)"', content, re.MULTILINE)
+
+    matched = None
+    if m_arr and "helloagents" in m_arr.group(1):
+        matched = r'^notify\s*=\s*\[[^\]]*\]\n?\n?'
+    elif m_str and "helloagents" in m_str.group(1):
+        matched = r'^notify\s*=\s*"[^"]*"\n?\n?'
+
+    if not matched:
         return False
 
-    content = re.sub(
-        r'^notify\s*=\s*"[^"]*"\n?\n?', '',
-        content, count=1, flags=re.MULTILINE)
+    content = re.sub(matched, '', content, count=1, flags=re.MULTILINE)
     config_path.write_text(content, encoding="utf-8")
     print(_msg("  已移除 notify hook (config.toml)",
                "  Removed notify hook (config.toml)"))
