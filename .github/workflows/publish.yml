@@ -96,8 +96,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
+
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest && npm --version
 
       - name: Set beta version in package.json
         if: needs.prepare.outputs.is_beta == 'true'
@@ -107,9 +110,7 @@ jobs:
         run: npm pack --dry-run 2>&1 | tee /tmp/npm-pack.log
 
       - name: Publish to npm
-        run: npm publish --provenance --access public --tag ${{ needs.prepare.outputs.channel }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --tag ${{ needs.prepare.outputs.channel }}
 
   pypi:
     needs: prepare
