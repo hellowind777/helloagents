@@ -4,7 +4,8 @@
  * HelloAGENTS npm/npx bootstrap installer.
  *
  * This script is ONLY for first-time setup:
- *   npx helloagents install codex
+ *   npx helloagents                # install + interactive menu
+ *   npx helloagents install codex  # install + specify target
  *
  * After installation, use the native `helloagents` command directly
  * for all subsequent operations (update, uninstall, status, etc.).
@@ -70,14 +71,14 @@ if (!python) {
 
 const args = process.argv.slice(2);
 
-// Must provide at least "install <target>"
-if (args.length === 0 || args[0] !== "install") {
+// Supported: no args (interactive menu) or "install [target]"
+if (args.length > 0 && args[0] !== "install") {
   console.log("HelloAGENTS npx bootstrap installer");
   console.log("");
   console.log("Usage (first-time install only):");
-  console.log("  npx helloagents install codex");
-  console.log("  npx helloagents install claude");
-  console.log("  npx helloagents install --all");
+  console.log("  npx helloagents                # interactive menu");
+  console.log("  npx helloagents install codex   # specify target directly");
+  console.log("  npx helloagents install --all   # install to all detected CLIs");
   console.log("");
   console.log("After installation, use the native command directly:");
   console.log("  helloagents update");
@@ -90,8 +91,9 @@ if (args.length === 0 || args[0] !== "install") {
 // Step 1: Install pip package
 pipInstall(python, detectBranch());
 
-// Step 2: Forward install command to native CLI
-const res = spawnSync(python, ["-m", "helloagents", ...args], { stdio: "inherit" });
+// Step 2: Forward to native CLI (no args = interactive menu, install = direct install)
+const fwdArgs = args.length > 0 ? args : [];
+const res = spawnSync(python, ["-m", "helloagents", ...fwdArgs], { stdio: "inherit" });
 
 if (res.status === 0) {
   console.log("");

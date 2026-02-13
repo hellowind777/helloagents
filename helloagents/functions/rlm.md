@@ -23,6 +23,10 @@ RLM（Recursive Language Model）— 子代理编排与多终端协作。
   ~rlm backend     CLI 后端信息
   ~rlm reload      重新加载规则文件
   ~rlm spawn <role> <task>  手动启动子代理
+  ~rlm spawn r1,r2 <task>   并行启动多个子代理
+  ~rlm agents      查看当前会话子代理状态
+  ~rlm resume <id> 恢复暂停/超时的子代理
+  ~rlm team <action>  Agent Teams 管理（start|status|stop）
   ~rlm session     当前 Session 信息
   ~rlm sessions    列出所有 Sessions
   ~rlm cleanup [hours]  清理过期 Sessions（默认24h）
@@ -74,8 +78,14 @@ RLM（Recursive Language Model）— 子代理编排与多终端协作。
   3. 输出: 确认（角色+任务描述+执行通道）
      ⛔ END_TURN
   4. 用户确认后:
-       继续: 加载角色预设 → 启动子代理 → 等待完成 → 返回结果
+       继续: 加载角色预设 → 按 G10 调用通道启动子代理:
+         Claude Code → Task(subagent_type="general-purpose", prompt="[RLM:{role}] ...")
+         Codex CLI → spawn_agent("[RLM:{role}] ...")
+         其他 CLI → 主上下文直接执行（降级）
+         → 等待完成 → 返回结果
        取消: → 状态重置
+
+并行 spawn 语法: ~rlm spawn explorer,analyzer "任务描述" — 逗号分隔多角色，并行调度
 
 输出: 完成（角色+任务+结果状态+关键发现+变更+建议）
 ```
@@ -85,6 +95,52 @@ RLM（Recursive Language Model）— 子代理编排与多终端协作。
 ~rlm spawn explorer "分析项目的目录结构和依赖关系"
 ~rlm spawn analyzer "评估 src/api/ 模块的代码质量"
 ~rlm spawn implementer "实现用户登录功能"
+```
+
+---
+
+### ~rlm agents
+
+```yaml
+参数: 无
+流程: 查询当前会话子代理状态（活跃/已完成/暂停/失败）
+输出: 表格（ID | 角色 | 状态 | 任务摘要 | 耗时）
+数据来源: SessionManager.get_agents() | SubagentStart/Stop hook 日志（Claude Code）| 内部线程状态（Codex CLI）
+```
+
+---
+
+### ~rlm resume <agent_id>
+
+```yaml
+参数: agent_id — 子代理标识
+流程:
+  1. 验证 agent_id 存在且状态为暂停/超时
+  2. 按 G10 通道恢复:
+     Codex CLI → resume_agent(agent_id)（Collab 工具，需 Collab 特性启用）
+     Claude Code → 不支持（子代理无暂停态）→ 提示重新 spawn
+     其他 → 降级提示
+输出: 恢复状态确认
+```
+
+---
+
+### ~rlm team <action>
+
+```yaml
+参数:
+  action: start | status | stop
+
+~rlm team start "任务描述":
+  前置: Claude Code 环境 + CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+  流程: 分析任务 → 确定角色分配 → 创建 Agent Team → spawn teammates → delegate mode
+  不支持的 CLI → 输出: 降级提示（Agent Teams 仅 Claude Code 支持，使用 ~rlm spawn 替代）
+
+~rlm team status:
+  输出: 当前团队成员列表（角色 | 状态 | 当前任务）
+
+~rlm team stop:
+  流程: 请求 teammates 关闭 → 清理团队资源
 ```
 
 ---

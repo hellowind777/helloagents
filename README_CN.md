@@ -8,7 +8,8 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.5-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.7-orange.svg)](./pyproject.toml)
+[![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
@@ -68,6 +69,7 @@
 | 代理系统 | 无 | RLM 12 个专业角色 + Session 隔离 |
 | 记忆系统 | 无持久化 | 三层记忆：L0 用户、L1 项目知识库、L2 会话 |
 | 安全检测 | 基础 EHRB | 三层 EHRB（关键词 + 语义 + 工具输出） |
+| Hooks | 无 | 自动部署生命周期钩子（Claude Code 9 事件 + Codex CLI notify） |
 | 目标 CLI | 5 个 | 6 个：codex、claude、gemini、qwen、grok、opencode |
 | 工作流命令 | 12 个 | 15 个 |
 
@@ -83,9 +85,9 @@
 
 **RLM 子代理编排**
 
-12 个专业角色（explorer、analyzer、designer、implementer、reviewer、tester 等）按任务复杂度自动调度，每个 CLI 实例独立 Session 隔离。
+12 个专业角色（explorer、analyzer、designer、implementer、reviewer、tester 等）按任务复杂度自动调度，每个 CLI 实例独立 Session 隔离。支持跨 CLI 并行调度和 Agent Teams 协作模式。
 
-**收益：** 复杂任务由对口专家角色分工处理。
+**收益：** 复杂任务由对口专家角色分工处理，支持并行执行提升效率。
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
@@ -127,7 +129,8 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - 4 个阶段定义来自 helloagents/stages
 - 5 个核心服务来自 helloagents/services
 - 4 个规则模块来自 helloagents/rules
-- 8 个辅助脚本来自 helloagents/scripts
+- 9 个辅助脚本来自 helloagents/scripts
+- 2 个 Hooks 配置来自 helloagents/hooks
 - 10 个知识库/方案模板来自 helloagents/templates
 
 ## 前后对比（贪吃蛇示例）
@@ -169,7 +172,17 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     helloagents update
 
-### 方式 B：UV（隔离环境）
+### 方式 B：npx（Node.js >= 16）
+
+    npx helloagents
+
+> 安装 Python 包后自动弹出交互菜单。也可以直接指定：`npx helloagents install codex`
+
+> 需要 Python >= 3.10。首次安装后，直接使用原生 `helloagents` 命令即可。
+
+> **致谢：** 感谢 @setsuna1106 慷慨转让 npm `helloagents` 包所有权。
+
+### 方式 C：UV（隔离环境）
 
 **第 0 步 — 先安装 UV（已安装可跳过）：**
 
@@ -191,7 +204,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     helloagents update
 
-### 方式 C：pip（需要 Python >= 3.10）
+### 方式 D：pip（需要 Python >= 3.10）
 
 **安装并选择目标（一条命令）：**
 
@@ -238,6 +251,9 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
+    # npx
+    npx helloagents install codex
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install codex
 
@@ -258,6 +274,9 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # npx
+    npx helloagents install claude
 
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install claude
@@ -280,6 +299,9 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     # Windows PowerShell
     $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
+    # npx
+    npx helloagents@beta
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents && helloagents
 
@@ -288,24 +310,26 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 工作原理
 
-1. 安装包（脚本/pip/uv）并执行 `helloagents` 弹出交互菜单选择目标 CLI（也可直接 `helloagents install <target>`）。
+1. 安装包（脚本/pip/uv）并执行 `helloagents` 弹出交互菜单选择目标 CLI（也可直接 `helloagents install <target>`）。安装时自动部署 Hooks 和 SKILL.md。
 2. 在 AI 聊天中，每条输入按五个维度评分并路由到 R0–R3。
 3. R2/R3 任务进入阶段链：EVALUATE → ANALYZE → DESIGN → DEVELOP。R1 快速流程直接处理单点操作。
-4. RLM 根据任务复杂度调度专业子代理（如 explorer、designer、implementer）。
-5. EHRB 在每个步骤扫描破坏性操作，高风险行为需用户明确确认。
+4. RLM 根据任务复杂度调度专业子代理（如 explorer、designer、implementer）。支持并行调度和 Agent Teams 协作处理复杂任务。
+5. EHRB 在每个步骤扫描破坏性操作，高风险行为需用户明确确认。Hooks 可提供额外的工具调用前安全预检。
 6. 三层记忆（用户 / 项目知识库 / 会话）跨会话保持上下文。
 7. 阶段链完成后输出可验证结果，并可选同步知识库。
 
 ## 仓库结构说明
 
 - AGENTS.md：路由与工作流协议
-- pyproject.toml：包元数据（v2.2.5）
+- SKILL.md：CLI 目标的技能发现元数据
+- pyproject.toml：包元数据（v2.2.7）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：analyze、design、develop
 - helloagents/services：knowledge、package、memory 等服务
 - helloagents/rules：state、cache、tools、scaling 规则
 - helloagents/rlm：角色库与编排辅助
+- helloagents/hooks：Claude Code 与 Codex CLI 钩子配置
 - helloagents/scripts：自动化脚本
 - helloagents/templates：知识库与方案模板
 
@@ -324,7 +348,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 | ~test / ~review / ~validatekb | 质量检查 |
 | ~commit | 基于上下文生成提交信息 |
 | ~rollback | 回滚工作流状态 |
-| ~rlm | 角色编排命令 |
+| ~rlm | 角色编排命令（spawn / agents / resume / team） |
 | ~status / ~help | 状态与帮助 |
 
 ## FAQ
@@ -347,6 +371,12 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - Q: 记忆能跨会话保持吗？
   A: 能。L0 用户记忆全局共享，L1 项目知识库按项目存储，L2 会话摘要在阶段切换时自动保存。
 
+- Q: Hooks 是什么？
+  A: 安装时自动部署的生命周期钩子。Claude Code 支持 9 个事件钩子（安全预检、进度快照、KB 同步等），Codex CLI 支持 notify 钩子（版本更新检查）。全部可选，无 Hooks 环境下功能正常降级。
+
+- Q: Agent Teams 是什么？
+  A: Claude Code 实验性多代理协作模式。多个 Claude Code 实例作为 teammates 协作，共享任务列表和邮箱通信，映射到 RLM 角色体系。不可用时自动退回标准 Task 子代理模式。
+
 ## 故障排除
 
 - command not found：确认安装路径已加入 PATH
@@ -357,7 +387,19 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.5（当前版本）
+### v2.2.7（当前版本）
+
+- **G12 Hooks 集成规范：** Claude Code 9个生命周期钩子 + Codex CLI notify 钩子
+- **Hooks 自动部署：** 安装/卸载时自动部署和清理 Hooks 配置，无需手动复制
+- **Codex CLI 原生子代理：** G10 新增 spawn_agent 调用协议和跨CLI并行调度规则
+- **Agent Teams 协议：** G10 新增 Claude Code 多角色协作协议
+- **SKILL 技能集成：** SKILL.md 自动部署到所有 CLI 目标的技能发现目录
+- **RLM 命令扩展：** 新增 ~rlm agents/resume/team 子命令，支持多角色并行调度
+- **阶段并行优化：** analyze/develop 阶段新增并行规则，design 阶段串行标注
+- **Memory v2 桥接：** 新增 Codex Memory v2 桥接协议
+- **脚本模块化：** 提取 config_helpers.py 模块
+
+### v2.2.5
 
 - **RLM 子代理系统：** 12 个专业角色，自动调度 + Session 隔离
 - **五维度路由（R0–R3）：** 替代旧版三层路由

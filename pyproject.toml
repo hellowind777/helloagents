@@ -1,6 +1,6 @@
 [project]
 name = "helloagents"
-version = "2.2.5"
+version = "2.2.7"
 description = "HelloAGENTS - 自主的高级智能伙伴"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,11 +21,13 @@ packages = ["helloagents"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "AGENTS.md" = "AGENTS.md"
+"SKILL.md" = "SKILL.md"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "helloagents/**",
     "AGENTS.md",
+    "SKILL.md",
     "README.md",
     "pyproject.toml",
 ]

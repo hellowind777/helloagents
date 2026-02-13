@@ -8,7 +8,8 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.5-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.7-orange.svg)](./pyproject.toml)
+[![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
@@ -68,6 +69,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 | Agent system | None | RLM with 12 specialized roles and session isolation |
 | Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
 | Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
+| Hooks | None | Auto-deploy lifecycle hooks (Claude Code 9 events + Codex CLI notify) |
 | CLI targets | 5 visible bundle targets | 6 targets: codex, claude, gemini, qwen, grok, opencode |
 | Commands | 12 | 15 workflow commands |
 
@@ -82,9 +84,9 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 
 **RLM sub-agent orchestration**
 
-12 specialized roles (explorer, analyzer, designer, implementer, reviewer, tester, etc.) are dispatched automatically based on task complexity, with session isolation per CLI instance.
+12 specialized roles (explorer, analyzer, designer, implementer, reviewer, tester, etc.) are dispatched automatically based on task complexity, with session isolation per CLI instance. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
 
-**Your gain:** complex tasks are broken down and handled by the right specialist.
+**Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
@@ -126,7 +128,8 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 - 4 stage definitions from helloagents/stages
 - 5 core services from helloagents/services
 - 4 rule modules from helloagents/rules
-- 8 helper scripts from helloagents/scripts
+- 9 helper scripts from helloagents/scripts
+- 2 hooks configs from helloagents/hooks
 - 10 KB/plan templates from helloagents/templates
 
 ## Before and After (Snake Demo)
@@ -168,7 +171,17 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     helloagents update
 
-### Method B: UV (isolated environment)
+### Method B: npx (Node.js >= 16)
+
+    npx helloagents
+
+> Installs the Python package and launches an interactive menu. You can also specify directly: `npx helloagents install codex`
+
+> Requires Python >= 3.10. After first install, use the native `helloagents` command directly.
+
+> **Acknowledgment:** Thanks to @setsuna1106 for generously transferring the npm `helloagents` package ownership.
+
+### Method C: UV (isolated environment)
 
 **Step 0 — Install UV first (skip if already installed):**
 
@@ -190,7 +203,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     helloagents update
 
-### Method C: pip (Python >= 3.10)
+### Method D: pip (Python >= 3.10)
 
 **Install and select targets (one command):**
 
@@ -237,6 +250,9 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
+    # npx
+    npx helloagents install codex
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install codex
 
@@ -257,6 +273,9 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     # Windows PowerShell
     irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+    # npx
+    npx helloagents install claude
 
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install claude
@@ -279,6 +298,9 @@ To install from the `beta` branch, append `@beta` to the repository URL:
     # Windows PowerShell
     $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
+    # npx
+    npx helloagents@beta
+
     # UV
     uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents && helloagents
 
@@ -287,24 +309,26 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 ## How It Works
 
-1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`).
+1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`). Hooks and SKILL.md are auto-deployed during installation.
 2. In AI chat, every input is scored on five dimensions and routed to R0–R3.
 3. R2/R3 tasks enter the stage chain: EVALUATE → ANALYZE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
-4. RLM dispatches specialized sub-agents (e.g. explorer, designer, implementer) based on task complexity.
-5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation.
+4. RLM dispatches specialized sub-agents (e.g. explorer, designer, implementer) based on task complexity. Supports parallel scheduling and Agent Teams for complex tasks.
+5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation. Hooks provide additional pre-tool safety checks when available.
 6. Three-layer memory (user / project KB / session) preserves context across sessions.
 7. Stage chain completes with verified output and optional knowledge base sync.
 
 ## Repository Guide
 
 - AGENTS.md: router and workflow protocol
-- pyproject.toml: package metadata (v2.2.5)
+- SKILL.md: skill discovery metadata for CLI targets
+- pyproject.toml: package metadata (v2.2.7)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: analyze, design, develop
 - helloagents/services: knowledge, package, memory and support services
 - helloagents/rules: state, cache, tools, scaling
 - helloagents/rlm: role library and orchestration helpers
+- helloagents/hooks: Claude Code and Codex CLI hooks configs
 - helloagents/scripts: automation scripts
 - helloagents/templates: KB and plan templates
 
@@ -323,7 +347,7 @@ These commands run inside AI chat, not your system shell.
 | ~test / ~review / ~validatekb | quality checks |
 | ~commit | generate commit message from context |
 | ~rollback | rollback workflow state |
-| ~rlm | role orchestration commands |
+| ~rlm | role orchestration (spawn / agents / resume / team) |
 | ~status / ~help | status and help |
 
 ## FAQ
@@ -346,6 +370,12 @@ These commands run inside AI chat, not your system shell.
 - Q: Does memory persist across sessions?
   A: Yes. L0 user memory is global, L1 project KB is per-project, L2 session summaries are auto-saved at stage transitions.
 
+- Q: What are Hooks?
+  A: Lifecycle hooks auto-deployed during installation. Claude Code gets 9 event hooks (safety checks, progress snapshots, KB sync, etc.); Codex CLI gets a notify hook for update checks. All optional — features degrade gracefully without hooks.
+
+- Q: What is Agent Teams?
+  A: An experimental Claude Code multi-agent collaboration mode. Multiple Claude Code instances work as teammates with shared task lists and mailbox communication, mapped to RLM roles. Falls back to standard Task sub-agents when unavailable.
+
 ## Troubleshooting
 
 - command not found: ensure install path is in PATH
@@ -356,7 +386,19 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.5 (current)
+### v2.2.7 (current)
+
+- **G12 Hooks integration spec:** 9 Claude Code lifecycle hooks + Codex CLI notify hook
+- **Auto-deploy Hooks:** auto-deploy and clean up Hooks config during install/uninstall
+- **Codex CLI native sub-agent:** G10 adds spawn_agent protocol with cross-CLI parallel scheduling
+- **Agent Teams protocol:** G10 adds Claude Code multi-role collaboration protocol
+- **SKILL integration:** auto-deploy SKILL.md to skills discovery directory for all CLI targets
+- **RLM command expansion:** add ~rlm agents/resume/team subcommands with parallel multi-role dispatch
+- **Stage parallel optimization:** parallel rules for analyze/develop stages, serial annotation for design
+- **Memory v2 bridge:** add Codex Memory v2 bridge protocol
+- **Script modularization:** extract config_helpers.py module
+
+### v2.2.5
 
 - **RLM sub-agent system:** 12 specialized roles with automatic dispatch and session isolation
 - **Five-dimension routing (R0–R3):** replaces legacy three-layer routing

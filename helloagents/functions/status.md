@@ -24,26 +24,31 @@
    - CURRENT_STAGE（当前阶段）
    - 无活跃工作流时显示"空闲"
 
-2. 知识库状态:
+2. 子代理状态:
+   - 活跃子代理数量和角色列表（从 SessionManager 获取）
+   - Agent Teams 状态（如有活跃团队：团队ID+成员数+当前进度）
+   - 无活跃子代理时显示"无"
+
+3. 知识库状态:
    - {KB_ROOT}/ 是否存在
    - KB_CREATE_MODE 当前值
    - 知识库文件数量（存在时）
 
-3. 活跃方案包:
+4. 活跃方案包:
    - 扫描 {KB_ROOT}/plan/ 目录
    - 列出各方案包名称与状态（有 tasks.md 时读取进度）
    - 无方案包时显示"无"
 
-4. 最近会话摘要:
+5. 最近会话摘要:
    - 读取 {KB_ROOT}/sessions/ 最新 1 条摘要
    - 不存在时显示"无历史会话"
 
-5. Git 状态:
+6. Git 状态:
    - 当前分支名
    - 未提交变更数（git status --porcelain 行数）
    - 非 Git 仓库时显示"非 Git 仓库"
 
-6. 更新检查:
+7. 更新检查:
    - UPDATE_CHECK 当前值（0=关闭，正整数=缓存有效小时数，默认72）
    - 读取 ~/.helloagents/.update_cache 缓存（expires_at 未过期则使用），超期时执行 `helloagents version --force --cache-ttl {UPDATE_CHECK}`
    - 命令不可用时显示"未安装"
@@ -57,6 +62,8 @@
 💡【HelloAGENTS】- 状态概览
 
 📊 工作流: {WORKFLOW_MODE} | 级别: {ROUTING_LEVEL} | 阶段: {CURRENT_STAGE}
+
+🤖 子代理: {活跃数量+角色列表 或 "无"}  团队: {Agent Teams 状态 或 "无"}
 
 📚 知识库: {存在/不存在} (KB_CREATE_MODE={值})
 
