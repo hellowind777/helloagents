@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.7-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.8-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -321,7 +321,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.7)
+- pyproject.toml: package metadata (v2.2.8)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: analyze, design, develop
@@ -386,7 +386,11 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.7 (current)
+### v2.2.8 (current)
+
+- **AGENTS.md:** Codex CLI attention optimization for more stable HelloAGENTS execution
+
+### v2.2.7
 
 - **G12 Hooks integration spec:** 9 Claude Code lifecycle hooks + Codex CLI notify hook
 - **Auto-deploy Hooks:** auto-deploy and clean up Hooks config during install/uninstall

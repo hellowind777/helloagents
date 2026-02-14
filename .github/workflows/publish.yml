@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to publish (e.g. v2.2.7)"
+        description: "Tag to publish (e.g. v2.2.8)"
         required: true
 
 concurrency:
