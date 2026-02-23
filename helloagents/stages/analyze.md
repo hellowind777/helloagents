@@ -78,7 +78,7 @@ KB_SKIPPED=true → 扫描代码库
 KB_SKIPPED=false → 知识库优先，不足则扫描代码库
 
 子代理调用（按步骤3 TASK_COMPLEXITY）:
-  moderate/complex → [RLM:explorer] 执行代码库扫描和结构分析 [→ G10 调用通道]
+  moderate/complex → 原生子代理执行代码库扫描和结构分析（强制）[→ G10 调用通道]
   simple → 主代理直接执行
 ```
 
@@ -96,13 +96,12 @@ KB_SKIPPED=false → 知识库优先，不足则扫描代码库
 输出物: 项目上下文（技术栈、模块结构、质量问题、技术约束）
 
 子代理调用:
-  complex+依赖>5模块 → [RLM:analyzer] 执行深度依赖分析和质量评估（强制）[→ G10 调用通道]
+  complex+依赖>5模块 → 原生子代理执行深度依赖分析和质量评估（强制）[→ G10 调用通道]
   其他 → 主代理直接执行
 
-并行优化: 当 complex+依赖>5 且步骤4 explorer 和步骤6 analyzer 均需调用时:
-  - 若 analyzer 分析目标已明确（不依赖 explorer 结果）→ 并行调度两者
-  - 否则 → 保持串行（explorer 先完成，结果传给 analyzer）
-  实现: Claude Code 同一消息多个 Task | Codex CLI 多个 spawn_agent + collab wait
+并行优化: 当 complex+依赖>5 且步骤4和步骤6均需调用原生子代理时:
+  - 步骤6分析维度与步骤4无交集 → 并行调度 [→ G10 并行调度规则]
+  - 否则 → 保持串行（步骤4先完成，结果传给步骤6）
 
 复杂度确认: 根据完整分析结果修正 TASK_COMPLEXITY（若与步骤3初评不同则更新）
 

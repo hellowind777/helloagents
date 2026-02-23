@@ -167,7 +167,7 @@ Hooks 工具协调:
 ```yaml
 Plan 工具协调:
   - Codex CLI Plan 协作模式（CollaborationModes 特性，默认启用）与 HelloAGENTS ~plan 工作流命令协调
-  - DESIGN 阶段: Plan 模式输出可作为 designer 子代理的输入参考
+  - DESIGN 阶段: Plan 模式输出可作为方案设计子代理的输入参考
   - Plan 模式生成的计划不替代 HelloAGENTS 的 proposal.md/tasks.md 体系
 ```
 
