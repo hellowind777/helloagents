@@ -107,6 +107,116 @@ def _win_cleanup_bak() -> None:
             pass
 
 
+# ---------------------------------------------------------------------------
+# Preemptive unlock: rename exe BEFORE pip/uv to avoid lock entirely
+# ---------------------------------------------------------------------------
+
+def win_preemptive_unlock() -> Path | None:
+    """Preemptively rename helloagents.exe → .exe.bak before pip/uv operations.
+
+    Windows locks a running .exe, preventing pip/uv from overwriting it.
+    By renaming first, the original path is freed for pip/uv to write to.
+
+    Returns the .bak Path if renamed successfully, None otherwise.
+    Caller MUST call win_finish_unlock() after the operation completes.
+    """
+    if sys.platform != "win32":
+        return None
+
+    exe = _win_find_exe()
+    if not exe:
+        return None
+
+    bak = exe.with_suffix(".exe.bak")
+    try:
+        # Clean up stale .bak from previous runs
+        if bak.exists():
+            bak.unlink()
+    except OSError:
+        pass
+
+    try:
+        exe.rename(bak)
+        return bak
+    except OSError:
+        return None
+
+
+def win_finish_unlock(bak: Path | None, success: bool) -> None:
+    """Clean up after preemptive unlock.
+
+    On success: delete .bak (pip/uv already created a new exe).
+    On failure: restore .bak → .exe so the command still works next time.
+    """
+    if bak is None:
+        return
+
+    exe = bak.with_suffix(".exe")
+    if success:
+        try:
+            if bak.exists():
+                bak.unlink()
+        except OSError:
+            pass  # will be cleaned up on next run
+    else:
+        try:
+            if not exe.exists() and bak.exists():
+                bak.rename(exe)
+        except OSError:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# Safe rmtree: rename-aside fallback for locked directories
+# ---------------------------------------------------------------------------
+
+def win_safe_rmtree(path: Path) -> bool:
+    """Remove a directory tree, with rename-aside fallback on Windows.
+
+    If shutil.rmtree fails (e.g. a CLI process holds files open),
+    rename the directory to a ~name.old.PID.TIMESTAMP suffix so the original
+    path is freed. Stale .old directories are cleaned up automatically.
+
+    Returns True if the path no longer exists (removed or renamed aside).
+    """
+    if not path.exists():
+        return True
+
+    # First, clean up any stale .old directories from previous runs
+    _cleanup_old_dirs(path.parent, path.name)
+
+    try:
+        shutil.rmtree(path)
+        return True
+    except OSError:
+        if sys.platform != "win32":
+            return False
+
+    # Rename-aside: free the original path
+    import os
+    import time
+    suffix = f"{os.getpid()}.{int(time.time())}"
+    aside = path.with_name(f"~{path.name}.old.{suffix}")
+    try:
+        path.rename(aside)
+        return True
+    except OSError:
+        return False
+
+
+def _cleanup_old_dirs(parent: Path, base_name: str) -> None:
+    """Clean up stale ~name.old.* directories from previous rename-aside ops."""
+    if not parent.exists():
+        return
+    prefix = f"~{base_name}.old."
+    for item in parent.iterdir():
+        if item.is_dir() and item.name.startswith(prefix):
+            try:
+                shutil.rmtree(item)
+            except OSError:
+                pass  # still locked, will be cleaned next time
+
+
 def _win_deferred_pip(pip_args: list[str],
                       post_cmds: list[list[str]] | None = None) -> bool:
     """Schedule a pip command to run after the current process exits (Windows).
