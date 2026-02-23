@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.8-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.9-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -322,7 +322,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.8）
+- pyproject.toml：包元数据（v2.2.9）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：analyze、design、develop
@@ -387,9 +387,13 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.8（当前版本）
+### v2.2.9（当前版本）
 
-- **AGENTS.md：** Codex CLI 注意力优化，使其更稳定的按照helloagents运行
+- Windows 文件锁定全面修复，安装/更新/卸载/清理均支持预防性解锁和重命名旁路
+
+### v2.2.8
+
+- Codex CLI 注意力优化，使其更稳定的按照helloagents运行
 
 ### v2.2.7
 

@@ -23,9 +23,10 @@ from .version_check import (
 from .win_helpers import (
     # Used by update()
     _cleanup_pip_remnants, _win_cleanup_bak,
-    _win_deferred_pip, build_pip_cleanup_cmd, win_exe_retry,
-    # Backward-compatible re-export
-    _win_find_exe,  # noqa: F401
+    _win_deferred_pip, build_pip_cleanup_cmd,
+    win_preemptive_unlock, win_finish_unlock, win_safe_rmtree,
+    # Backward-compatible re-exports
+    _win_find_exe, win_exe_retry,  # noqa: F401
 )
 
 
@@ -120,6 +121,9 @@ def update(switch_branch: str = None) -> None:
     print(_msg("  正在从远程仓库下载并安装，请稍候...",
                "  Downloading and installing from remote, please wait..."))
 
+    # Preemptive unlock: rename exe BEFORE pip/uv to avoid lock entirely
+    bak = win_preemptive_unlock()
+
     # Try uv first
     if method == "uv":
         uv_url = f"git+{REPO_URL}" + branch_suffix
@@ -154,34 +158,33 @@ def update(switch_branch: str = None) -> None:
                 updated = True
             else:
                 stderr = result.stderr.strip()
-                # Windows .exe locking — use shared retry helper
+                # Preemptive unlock failed or not Windows — last resort deferred
                 if sys.platform == "win32" and (
                         "WinError" in stderr or "helloagents.exe" in stderr):
-                    ok, _ = win_exe_retry(pip_cmd, label="pip")
-                    if ok:
-                        updated = True
-                    # Rename-and-retry failed; schedule deferred update
-                    if not updated:
-                        post = [[sys.executable, "-m", "helloagents.cli",
-                                 "install", t] for t in pre_targets]
-                        all_post = (post or []) + [build_pip_cleanup_cmd()]
-                        if _win_deferred_pip(pip_cmd, post_cmds=all_post):
+                    post = [[sys.executable, "-m", "helloagents.cli",
+                             "install", t] for t in pre_targets]
+                    all_post = (post or []) + [build_pip_cleanup_cmd()]
+                    if _win_deferred_pip(pip_cmd, post_cmds=all_post):
+                        print(_msg(
+                            "  helloagents.exe 被当前进程锁定，"
+                            "更新将在退出后自动完成。",
+                            "  helloagents.exe is locked, "
+                            "update will complete after exit."))
+                        if pre_targets:
                             print(_msg(
-                                "  helloagents.exe 被当前进程锁定，"
-                                "更新将在退出后自动完成。",
-                                "  helloagents.exe is locked, "
-                                "update will complete after exit."))
-                            if pre_targets:
-                                print(_msg(
-                                    f"  已安装的 {len(pre_targets)} 个 CLI "
-                                    f"工具也将自动同步。",
-                                    f"  {len(pre_targets)} installed target(s) "
-                                    f"will also be synced."))
-                            return
+                                f"  已安装的 {len(pre_targets)} 个 CLI "
+                                f"工具也将自动同步。",
+                                f"  {len(pre_targets)} installed target(s) "
+                                f"will also be synced."))
+                        win_finish_unlock(bak, False)
+                        return
                 elif stderr:
                     print(f"  pip error: {stderr}")
         except FileNotFoundError:
             print(_msg("  错误: 未找到 pip。", "  Error: pip not found."))
+
+    # Finish preemptive unlock: clean .bak on success, restore on failure
+    win_finish_unlock(bak, updated)
 
     # Clean up pip remnants created during upgrade
     _cleanup_pip_remnants()
@@ -390,8 +393,6 @@ def status() -> None:
 
 def clean() -> None:
     """Clean caches from all installed CLI targets."""
-    import shutil
-
     _header(_msg("清理缓存", "Clean Caches"))
 
     targets = _detect_installed_targets()
@@ -412,12 +413,11 @@ def clean() -> None:
 
         for cache_dir in list(plugin_dir.rglob("__pycache__")):
             if cache_dir.is_dir():
-                try:
-                    shutil.rmtree(cache_dir)
+                if win_safe_rmtree(cache_dir):
                     removed += 1
-                except Exception as e:
-                    print(_msg(f"  ⚠ 无法清理 {cache_dir}: {e}",
-                               f"  ⚠ Cannot clean {cache_dir}: {e}"))
+                else:
+                    print(_msg(f"  ⚠ 无法清理 {cache_dir}",
+                               f"  ⚠ Cannot clean {cache_dir}"))
 
         for pyc_file in list(plugin_dir.rglob("*.pyc")):
             if pyc_file.is_file():

@@ -19,7 +19,9 @@ from .config_helpers import (
 )
 from .win_helpers import (
     _cleanup_pip_remnants, _win_deferred_pip,
-    build_pip_cleanup_cmd, win_exe_retry,
+    build_pip_cleanup_cmd,
+    win_preemptive_unlock, win_finish_unlock, win_safe_rmtree,
+    win_exe_retry,  # noqa: F401 — backward-compatible re-export
 )
 
 
@@ -37,6 +39,10 @@ def _self_uninstall() -> bool:
 
     print(_msg(f"  正在移除 helloagents 包 ({method})...",
                f"  Removing helloagents package ({method})..."))
+
+    # Preemptive unlock: rename exe before pip/uv to avoid lock
+    bak = win_preemptive_unlock()
+
     try:
         result = subprocess.run(cmd, capture_output=True, text=True,
                                 encoding="utf-8", errors="replace")
@@ -44,32 +50,31 @@ def _self_uninstall() -> bool:
             print(_msg("  ✓ helloagents 包已移除。",
                        "  ✓ helloagents package removed."))
             _cleanup_pip_remnants()
+            win_finish_unlock(bak, True)
             return True
 
         stderr = result.stderr.strip()
 
-        # Windows .exe locking — use shared retry helper
-        if sys.platform == "win32" and method == "pip" and (
+        # Preemptive unlock failed or not Windows — last resort deferred
+        if sys.platform == "win32" and (
                 "WinError" in stderr or "helloagents.exe" in stderr):
-            ok, _ = win_exe_retry(cmd, label=method)
-            if ok:
-                _cleanup_pip_remnants()
-                return True
-            # Rename-and-retry failed; schedule deferred uninstall
             if _win_deferred_pip(cmd, post_cmds=[build_pip_cleanup_cmd()]):
                 print(_msg(
                     "  helloagents 包将在程序退出后自动移除。",
                     "  helloagents package will be removed after exit."))
+                win_finish_unlock(bak, False)
                 return True
             # Deferred also failed
             print(_msg(
                 "  ✗ 无法自动移除。请退出后手动执行:",
                 "  ✗ Cannot auto-remove. Please exit and run manually:"))
             print("    pip uninstall helloagents")
+            win_finish_unlock(bak, False)
             return False
 
         if stderr:
             print(f"  ✗ {stderr}")
+        win_finish_unlock(bak, False)
         return False
     except FileNotFoundError:
         print(_msg(f"  ✗ 未找到 {method}。请手动执行:",
@@ -78,6 +83,7 @@ def _self_uninstall() -> bool:
             print("    uv tool uninstall helloagents")
         else:
             print("    pip uninstall helloagents")
+        win_finish_unlock(bak, False)
         return False
 
 
@@ -103,12 +109,12 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
     # --- Clean skills/helloagents/ directory (will be re-deployed fresh if needed) ---
     legacy_skills_dir = dest_dir / "skills" / "helloagents"
     if legacy_skills_dir.exists():
-        shutil.rmtree(legacy_skills_dir)
-        removed.append(f"{legacy_skills_dir} (stale)")
-        skills_parent = dest_dir / "skills"
-        if skills_parent.exists() and not any(skills_parent.iterdir()):
-            skills_parent.rmdir()
-            removed.append(f"{skills_parent} (empty parent)")
+        if win_safe_rmtree(legacy_skills_dir):
+            removed.append(f"{legacy_skills_dir} (stale)")
+            skills_parent = dest_dir / "skills"
+            if skills_parent.exists() and not any(skills_parent.iterdir()):
+                skills_parent.rmdir()
+                removed.append(f"{skills_parent} (empty parent)")
 
     # --- Current-version stale rules files ---
     all_rules_files = {cfg["rules_file"] for cfg in CLI_TARGETS.values()}
@@ -125,8 +131,8 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
     if plugin_dir.exists():
         for cache_dir in plugin_dir.rglob("__pycache__"):
             if cache_dir.is_dir():
-                shutil.rmtree(cache_dir)
-                removed.append(str(cache_dir))
+                if win_safe_rmtree(cache_dir):
+                    removed.append(str(cache_dir))
 
     return removed
 
@@ -172,7 +178,10 @@ def install(target: str) -> bool:
     try:
         # Remove old module directory completely before copying
         if plugin_dest.exists():
-            shutil.rmtree(plugin_dest)
+            if not win_safe_rmtree(plugin_dest):
+                print(_msg(f"  ✗ 无法移除旧模块（可能被 CLI 进程占用）: {plugin_dest}",
+                           f"  ✗ Cannot remove old module (may be locked by CLI): {plugin_dest}"))
+                return False
             print(_msg(f"  已移除旧模块: {plugin_dest}",
                        f"  Removed old module: {plugin_dest}"))
 
@@ -305,12 +314,11 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
 
     ok = True
     if plugin_dest.exists():
-        try:
-            shutil.rmtree(plugin_dest)
+        if win_safe_rmtree(plugin_dest):
             removed.append(str(plugin_dest))
-        except Exception as e:
-            print(_msg(f"  ✗ 无法移除 {plugin_dest}: {e}",
-                       f"  ✗ Cannot remove {plugin_dest}: {e}"))
+        else:
+            print(_msg(f"  ✗ 无法移除 {plugin_dest}（可能被 CLI 进程占用）",
+                       f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
             ok = False
 
     if rules_dest.exists():
@@ -329,16 +337,15 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
     # Remove skills/helloagents/ directory (SKILL.md deployment)
     skills_dir = dest_dir / "skills" / "helloagents"
     if skills_dir.exists():
-        try:
-            shutil.rmtree(skills_dir)
+        if win_safe_rmtree(skills_dir):
             removed.append(str(skills_dir))
             skills_parent = dest_dir / "skills"
             if skills_parent.exists() and not any(skills_parent.iterdir()):
                 skills_parent.rmdir()
                 removed.append(f"{skills_parent} (empty parent)")
-        except Exception as e:
-            print(_msg(f"  ✗ 无法移除 {skills_dir}: {e}",
-                       f"  ✗ Cannot remove {skills_dir}: {e}"))
+        else:
+            print(_msg(f"  ✗ 无法移除 {skills_dir}（可能被 CLI 进程占用）",
+                       f"  ✗ Cannot remove {skills_dir} (may be locked by CLI)"))
             ok = False
 
     # Remove hooks configuration
