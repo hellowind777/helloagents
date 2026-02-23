@@ -14,18 +14,6 @@
         ]
       }
     ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Shell|Write|Edit",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "检查此操作是否涉及 EHRB 敏感路径（生产环境、破坏性操作、不可逆操作、权限变更、敏感数据）。如命中 EHRB 红线则 exit 2 阻断，否则 exit 0 放行。",
-            "description": "HelloAGENTS EHRB 安全预检"
-          }
-        ]
-      }
-    ],
     "SubagentStart": [
       {
         "matcher": "",

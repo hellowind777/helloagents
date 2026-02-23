@@ -898,7 +898,6 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 | 功能 | Claude Code Hook | Codex CLI Hook | 无 Hook 降级 |
 |------|-----------------|----------------|-------------|
 | 模块自动加载验证 | SessionStart | — | G7 规则手动加载 |
-| EHRB 安全预检 | PreToolUse (Shell/Write) | — | G3 规则内联检查 |
 | 子代理生命周期追踪 | SubagentStart/Stop | — | SessionManager 手动记录 |
 | 进度快照自动触发 | PostToolUse | — | cache.md 手动触发 |
 | 版本更新提示 | SessionStart | notify (agent-turn-complete) | 启动时脚本检查 |
@@ -918,13 +917,6 @@ SessionStart — 模块加载验证 + 版本检查:
   动作: 检查 AGENTS.md 是否存在、验证 G1-G12 模块引用完整性
   类型: command hook，执行 helloagents 版本检查脚本
   失败: 输出警告，不阻断会话
-
-PreToolUse — EHRB 安全预检:
-  事件: PreToolUse
-  匹配: toolName 匹配 Bash|Shell|Write|Edit
-  动作: prompt hook，检查操作是否涉及 G3 EHRB 敏感路径
-  阻断: 命中 EHRB 红线 → exit 2 阻断工具调用
-  放行: 非敏感操作 → exit 0
 
 SubagentStart/Stop — 子代理追踪:
   事件: SubagentStart, SubagentStop
@@ -975,7 +967,6 @@ notify = ["helloagents --check-update --silent"]
 Codex CLI Hooks 系统持续发展中。以下功能已在 Claude Code 侧实现，
 当 Codex CLI 支持对应事件时可通过修改 config.toml 直接启用:
 
-  - PreToolUse → EHRB 安全预检（等待 Codex CLI 支持工具调用前事件）
   - SessionStart → 模块加载验证（等待 Codex CLI 支持会话启动事件）
   - PostToolUse → 进度快照（等待 Codex CLI 支持工具调用后事件）
 
