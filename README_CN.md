@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.9-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.10-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -66,7 +66,7 @@
 | 安装方式 | 手工复制配置与技能目录 | pip/uv 安装 + `helloagents` 交互菜单 |
 | 路由系统 | 三层路由（Context → Tools → Intent） | 五维度评分路由（R0–R3） |
 | 工作流阶段 | 4 阶段（Evaluate、Analyze、Design、Develop） | 4 阶段 + R1 快速流程，支持子代理调度 |
-| 代理系统 | 无 | RLM 12 个专业角色 + Session 隔离 |
+| 代理系统 | 无 | RLM 5 个专有角色 + 原生子代理 + Session 隔离 |
 | 记忆系统 | 无持久化 | 三层记忆：L0 用户、L1 项目知识库、L2 会话 |
 | 安全检测 | 基础 EHRB | 三层 EHRB（关键词 + 语义 + 工具输出） |
 | Hooks | 无 | 自动部署生命周期钩子（Claude Code 9 事件 + Codex CLI notify） |
@@ -85,7 +85,7 @@
 
 **RLM 子代理编排**
 
-12 个专业角色（explorer、analyzer、designer、implementer、reviewer、tester 等）按任务复杂度自动调度，每个 CLI 实例独立 Session 隔离。支持跨 CLI 并行调度和 Agent Teams 协作模式。
+5 个专有角色（reviewer、synthesizer、kb_keeper、pkg_keeper、writer）+ 宿主 CLI 原生子代理（探索/实现/测试/设计）按任务复杂度自动调度，每个 CLI 实例独立 Session 隔离。支持跨 CLI 并行调度和 Agent Teams 协作模式。
 
 **收益：** 复杂任务由对口专家角色分工处理，支持并行执行提升效率。
 </td>
@@ -125,7 +125,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - 6 个 CLI 目标来自 helloagents/cli.py
 - 15 个工作流命令来自 helloagents/functions
-- 12 个 RLM 角色来自 helloagents/rlm/roles
+- 5 个 RLM 角色来自 helloagents/rlm/roles
 - 4 个阶段定义来自 helloagents/stages
 - 5 个核心服务来自 helloagents/services
 - 4 个规则模块来自 helloagents/rules
@@ -313,7 +313,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 1. 安装包（脚本/pip/uv）并执行 `helloagents` 弹出交互菜单选择目标 CLI（也可直接 `helloagents install <target>`）。安装时自动部署 Hooks 和 SKILL.md。
 2. 在 AI 聊天中，每条输入按五个维度评分并路由到 R0–R3。
 3. R2/R3 任务进入阶段链：EVALUATE → ANALYZE → DESIGN → DEVELOP。R1 快速流程直接处理单点操作。
-4. RLM 根据任务复杂度调度专业子代理（如 explorer、designer、implementer）。支持并行调度和 Agent Teams 协作处理复杂任务。
+4. RLM 根据任务复杂度调度原生子代理和专有角色。支持并行调度和 Agent Teams 协作处理复杂任务。
 5. EHRB 在每个步骤扫描破坏性操作，高风险行为需用户明确确认。Hooks 可提供额外的工具调用前安全预检。
 6. 三层记忆（用户 / 项目知识库 / 会话）跨会话保持上下文。
 7. 阶段链完成后输出可验证结果，并可选同步知识库。
@@ -322,7 +322,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.9）
+- pyproject.toml：包元数据（v2.2.10）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：analyze、design、develop
@@ -363,7 +363,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
   A: 非 HelloAGENTS 文件会先备份再替换。
 
 - Q: RLM 是什么？
-  A: Role Language Model — 子代理编排系统，12 个专业角色按任务复杂度自动调度。
+  A: Role Language Model — 子代理编排系统，5 个专有角色 + 原生子代理按任务复杂度自动调度。
 
 - Q: 工作流知识库存在哪里？
   A: 项目内 `.helloagents/` 目录，代码变更时自动同步。
@@ -387,7 +387,11 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.9（当前版本）
+### v2.2.10（当前版本）
+
+- 精简子代理角色，对接各 CLI 原生多代理编排
+
+### v2.2.9
 
 - Windows 文件锁定全面修复，安装/更新/卸载/清理均支持预防性解锁和重命名旁路
 
@@ -409,7 +413,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ### v2.2.5
 
-- **RLM 子代理系统：** 12 个专业角色，自动调度 + Session 隔离
+- **RLM 子代理系统：** 5 个专有角色 + 原生子代理，自动调度 + Session 隔离
 - **五维度路由（R0–R3）：** 替代旧版三层路由
 - **四阶段工作流 + R1 快速流程：** 阶段链（评估→分析→设计→开发）与 R1 快速流程并行
 - **三层记忆：** L0 用户偏好、L1 项目知识库、L2 会话摘要

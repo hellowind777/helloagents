@@ -609,17 +609,12 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 子代理调用合规检查（阶段验收时执行）:
   TASK_COMPLEXITY=moderate/complex 时:
     ANALYZE 阶段:
-      检查: explorer 是否已调用（moderate/complex 强制）
-      检查: analyzer 是否已调用（complex+依赖>5模块 强制）
+      （由原生子代理处理，不检查 helloagents 角色）
     DESIGN 阶段:
-      检查: designer 是否已调用（R2 moderate/complex 强制）
-      检查: analyzer 是否已调用（R3+候选方案≥2 强制）
       检查: synthesizer 是否已调用（complex+评估维度≥3 强制）
       检查: pkg_keeper 是否已调用（方案包填充时强制）
     DEVELOP 阶段:
-      检查: implementer 是否已调用（moderate/complex 强制）
       检查: reviewer 是否已调用（complex+涉及核心/安全模块 强制）
-      检查: tester 是否已调用（需要新增测试用例时强制）
       检查: kb_keeper 是否已调用（KB_SKIPPED=false 强制）
       检查: pkg_keeper 是否已调用（归档前状态更新时强制）
     未调用且未标记[降级执行] → ⚠️ 警告性（记录"子代理未按规则调用: {角色名}"）
@@ -651,35 +646,31 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ### 调用协议（CRITICAL）
 
 ```yaml
-角色清单: explorer, analyzer, designer, implementer, reviewer, tester, synthesizer, kb_keeper, pkg_keeper, researcher, writer, executor
+角色清单: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
+原生子代理映射:
+  代码探索 → Codex: spawn_agent(agent_type="explorer") | Claude: Task(subagent_type="Explore") | OpenCode: @explore | Gemini: codebase_investigator | Qwen: 自定义子代理
+  代码实现 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
+  测试运行 → Codex: spawn_agent(agent_type="awaiter") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
+  方案设计 → Codex: Plan mode | Claude: Task(subagent_type="Plan") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
 
 调用方式: 按 G10 定义的 CLI 通道执行，阶段文件中标注 [RLM:角色名] 的位置必须调用
 调用格式: [→ G10 调用通道]
 
 强制调用规则（标注"强制"的必须调用，标注"跳过"的可跳过）:
   EVALUATE: 主代理直接执行，不调用子代理
-  ANALYZE:
-    explorer — moderate/complex 强制 | simple 跳过
-    analyzer — complex 强制（依赖>5模块时）| 其他跳过
+  ANALYZE: 由原生子代理处理（代码探索/依赖分析），helloagents 角色不参与
   DESIGN:
-    analyzer — R3+候选方案≥2 强制 | 其他跳过
-    designer — R2 moderate/complex 强制 | simple 跳过
     synthesizer — complex+评估维度≥3 强制 | 其他跳过
     pkg_keeper — 方案包内容填充时强制（通过 PackageService 调用）
   DEVELOP:
-    implementer — moderate/complex 强制 | simple 主代理直接执行
     reviewer — complex+涉及核心/安全模块 强制 | 其他跳过
-    tester — 需要新增测试用例时 强制 | 其他跳过
     kb_keeper — KB_SKIPPED=false 时强制（通过 KnowledgeService 调用）
     pkg_keeper — 归档前状态更新时强制（通过 PackageService 调用）
   命令路径:
     ~review: reviewer — 审查文件>5 强制 | 其他主代理直接
-    ~test: tester — 需设计新测试用例时 强制 | 其他主代理直接
 
 通用路径角色（不绑定特定阶段，按任务类型触发）:
-  researcher — 需要外部技术调研/方案对比/依赖安全检查时调用
   writer — 需要生成独立文档（非知识库同步）时调用
-  executor — 需要运行构建/部署/环境配置等脚本任务时调用
   触发方式: 阶段流程中遇到匹配场景时主代理判断调用 | 用户通过 ~rlm spawn 手动调用
 
 跳过条件: 仅当标注"跳过"的条件成立时可跳过，其余情况必须调用
@@ -697,26 +688,34 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | Claude Code | Task 工具 | `Task(subagent_type="general-purpose", prompt="[RLM:{角色}] {任务描述}")` |
 | Claude Code | Agent Teams | complex 级别，多角色协作需互相通信时（实验性）[→ Agent Teams 协议] |
 | Codex CLI | spawn_agent | Collab 子代理调度（实验性特性门控，MAX_DEPTH=1，最多6并发） |
-| OpenCode | 降级 | 主上下文直接执行 |
-| Gemini/Qwen/Grok | 降级 | 主上下文直接执行 |
+| OpenCode | 子代理 | 内置 General（通用）+ Explore（只读探索），主代理自动委派或 @mention 手动触发 |
+| Gemini CLI | 子代理 | 内置 codebase_investigator + generalist_agent（实验性），自定义 .gemini/agents/*.md |
+| Qwen Code | 子代理 | 自定义子代理框架，/agents create 创建，.qwen/agents/*.md 存储，主代理自动委派 |
+| Grok CLI | 降级 | 主上下文直接执行 |
 
 ### Claude Code 调用协议（CRITICAL）
 
 ```yaml
-执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
-  1. 加载角色预设: 读取 rlm/roles/{角色}.md
-  2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
-  3. 调用 Task 工具: subagent_type="general-purpose", prompt=上述内容
-  4. 接收结果: 解析子代理返回的结构化结果
-  5. 记录调用: 通过 SessionManager.record_agent() 记录
+原生子代理:
+  代码探索/依赖分析 → Task(subagent_type="Explore", prompt="...")
+  代码实现 → Task(subagent_type="general-purpose", prompt="...")
+  方案设计 → Task(subagent_type="Plan", prompt="...")
+
+helloagents 专有角色（保留的 5 个角色）:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+    3. 调用 Task 工具: subagent_type="general-purpose", prompt=上述内容
+    4. 接收结果: 解析子代理返回的结构化结果
+    5. 记录调用: 通过 SessionManager.record_agent() 记录
 
 并行调用: 多个子代理无依赖时，在同一消息中发起多个 Task 调用
 串行调用: 有依赖关系时，等待前一个完成后再调用下一个
 
-示例（DEVELOP 步骤6）:
+示例（DEVELOP 步骤6 代码实现）:
   Task(
     subagent_type="general-purpose",
-    prompt="[RLM:implementer] 执行任务 1.1: 在 src/api/filter.py 中实现空白判定函数。
+    prompt="执行任务 1.1: 在 src/api/filter.py 中实现空白判定函数。
             约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
             返回: {status, changes_made, issues_found}"
   )
@@ -725,12 +724,19 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ### Codex CLI 调用协议（CRITICAL）
 
 ```yaml
-执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
-  1. 加载角色预设: 读取 rlm/roles/{角色}.md
-  2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
-  3. 调用 spawn_agent: prompt=上述内容
-  4. 接收结果: 解析子代理返回的结构化结果
-  5. 记录调用: 通过 SessionManager.record_agent() 记录
+原生子代理:
+  代码探索/依赖分析 → spawn_agent(agent_type="explorer", prompt="...")
+  代码实现 → spawn_agent(agent_type="worker", prompt="...")
+  测试运行 → spawn_agent(agent_type="awaiter", prompt="...")
+  方案设计 → Codex Plan mode（不需要 spawn）
+
+helloagents 专有角色（保留的 5 个角色）:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+    3. 调用 spawn_agent: prompt=上述内容
+    4. 接收结果: 解析子代理返回的结构化结果
+    5. 记录调用: 通过 SessionManager.record_agent() 记录
 
 并行调用: 多个无依赖子代理 → 连续发起多个 spawn_agent → collab wait 等待全部完成（支持多ID单次等待）
 串行调用: 有依赖 → 逐个 spawn_agent → 等待完成再发下一个
@@ -738,13 +744,65 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 中断通信: send_input 向运行中的子代理发送消息（可选中断当前执行）
 关闭子代理: close 关闭指定子代理
 限制: Collab 实验性特性门控，MAX_DEPTH=1（仅一层嵌套），最多 6 个并发子代理
-角色预设: spawn_agent 支持 agent role preset（Default/Worker/Explorer）
 
-示例（DEVELOP 步骤6 并行 3 个 implementer）:
-  spawn_agent("[RLM:implementer] 任务1.1: 实现 filter.py 空白判定函数")
-  spawn_agent("[RLM:implementer] 任务1.2: 实现 validator.py 输入校验")
-  spawn_agent("[RLM:implementer] 任务1.3: 实现 formatter.py 输出格式化")
+示例（DEVELOP 步骤6 并行 3 个 worker）:
+  spawn_agent(agent_type="worker", prompt="任务1.1: 实现 filter.py 空白判定函数")
+  spawn_agent(agent_type="worker", prompt="任务1.2: 实现 validator.py 输入校验")
+  spawn_agent(agent_type="worker", prompt="任务1.3: 实现 formatter.py 输出格式化")
   collab wait  # 等待全部完成（支持多ID）
+```
+
+### OpenCode 调用协议
+
+```yaml
+原生子代理:
+  代码探索/依赖分析 → @explore（只读，快速代码搜索和定位）
+  代码实现/通用任务 → @general（完整工具权限，可修改文件）
+
+helloagents 专有角色:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+    3. 通过 @general 委派执行
+    4. 记录调用: 通过 SessionManager.record_agent() 记录
+
+调用方式: 主代理自动委派 | 用户 @mention 手动触发
+子会话: 子代理创建独立 child session
+```
+
+### Gemini CLI 调用协议
+
+```yaml
+原生子代理（实验性）:
+  代码探索/依赖分析 → codebase_investigator（内置，代码库分析和逆向依赖）
+  通用任务路由 → generalist_agent（内置，自动路由到合适的子代理）
+
+helloagents 专有角色:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 创建自定义子代理: .gemini/agents/{角色}.md（YAML frontmatter + 角色预设）
+    3. 主代理自动委派或通过 generalist_agent 路由
+    4. 记录调用: 通过 SessionManager.record_agent() 记录
+
+自定义子代理: .gemini/agents/*.md（项目级）| ~/.gemini/agents/*.md（用户级）
+远程子代理: 支持 A2A 协议委派（可选）
+```
+
+### Qwen Code 调用协议
+
+```yaml
+原生子代理:
+  无固定内置类型，通过 /agents create 向导创建自定义子代理
+  主代理根据任务描述和子代理 description 自动匹配委派
+
+helloagents 专有角色:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 创建自定义子代理: .qwen/agents/{角色}.md（YAML frontmatter + 角色预设）
+    3. 主代理自动委派
+    4. 记录调用: 通过 SessionManager.record_agent() 记录
+
+自定义子代理: .qwen/agents/*.md（项目级）| ~/.qwen/agents/*.md（用户级）
 ```
 
 ### Claude Code Agent Teams 协议
@@ -752,16 +810,16 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ```yaml
 适用条件:
   - TASK_COMPLEXITY = complex
-  - 需要多角色互相通信（如 reviewer 需参考 implementer 的设计意图）
+  - 需要多角色互相通信（如 reviewer 需参考实现者的设计意图）
   - 任务可拆为 3+ 独立子任务分配给不同角色
   - 用户确认启用（实验性功能）
 
 调度方式:
   1. 主代理作为 Team Lead（delegate mode），仅负责协调
-  2. 按 RLM 角色 spawn teammates:
-     - explorer/analyzer → 研究型 teammate
-     - implementer × N → 实现型 teammates（每人负责不同文件集）
-     - reviewer + tester → 质量型 teammates（可并行）
+  2. spawn teammates（原生角色 + helloagents 专有角色混合）:
+     - 代码探索/分析 → 原生 Explore subagent
+     - 代码实现 × N → 原生 general-purpose subagent（每人负责不同文件集）
+     - reviewer/synthesizer/kb_keeper/pkg_keeper/writer → helloagents 专有角色 teammate
   3. 使用共享任务列表（映射到 tasks.md）
   4. Teammates 通过 mailbox 互相通信
   5. Team Lead 综合结果后清理团队
@@ -779,19 +837,22 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ```yaml
 并行批次上限: ≤5 个子代理/批
 并行适用: 同阶段内无数据依赖的任务
-串行强制: 有数据依赖链的任务（如 design: analyzer→designer→synthesizer）
+串行强制: 有数据依赖链的任务（如 design: 方案评估→synthesizer→pkg_keeper）
 
 CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用
   Claude Code Teams: teammates 自动从共享任务列表认领
   Codex CLI: 多个 spawn_agent + collab wait（支持多ID单次等待）
-  其他 CLI: 降级为串行执行
+  OpenCode: 多个 @general / @explore 子会话
+  Gemini CLI: 多个子代理自动委派（实验性）
+  Qwen Code: 多个自定义子代理自动委派
+  Grok CLI: 降级为串行执行
 ```
 
 ### 降级处理
 
 ```yaml
-降级触发: Task 工具调用失败 | CLI 不支持子代理
+降级触发: 子代理调用失败 | CLI 不支持子代理（Grok CLI）
 降级执行: 主代理在当前上下文中直接完成任务
 降级标记: 在 tasks.md 对应任务后追加 [降级执行]
 ```

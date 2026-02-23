@@ -163,7 +163,7 @@
       "needs_followup": false,
       "metadata": {
         "agent_id": "agent_001",
-        "role": "analyzer",
+        "role": "reviewer",
         "depth": 1,
         "parent_id": "root",
         "start_time": "2026-01-23T10:00:00Z",
