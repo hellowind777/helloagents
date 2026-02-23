@@ -897,11 +897,9 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 
 | 功能 | Claude Code Hook | Codex CLI Hook | 无 Hook 降级 |
 |------|-----------------|----------------|-------------|
-| 模块自动加载验证 | SessionStart | — | G7 规则手动加载 |
 | 子代理生命周期追踪 | SubagentStart/Stop | — | SessionManager 手动记录 |
 | 进度快照自动触发 | PostToolUse | — | cache.md 手动触发 |
 | 版本更新提示 | SessionStart | notify (agent-turn-complete) | 启动时脚本检查 |
-| 任务完成质量门 | TaskCompleted | — | develop.md 步骤7-8 手动 |
 | KB 同步触发 | Stop | notify (agent-turn-complete) | memory.md 触发点规则 |
 | Agent Teams 空闲检测 | TeammateIdle | — | 主代理轮询 |
 | 上下文压缩前处理 | PreCompact | — | 手动快照 |
@@ -912,12 +910,6 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 HelloAGENTS 预定义以下 Hook 配置供用户可选启用:
 
 ```yaml
-SessionStart — 模块加载验证 + 版本检查:
-  事件: SessionStart
-  动作: 检查 AGENTS.md 是否存在、验证 G1-G12 模块引用完整性
-  类型: command hook，执行 helloagents 版本检查脚本
-  失败: 输出警告，不阻断会话
-
 SubagentStart/Stop — 子代理追踪:
   事件: SubagentStart, SubagentStop
   动作: command hook，记录子代理 ID/角色/状态到会话日志
@@ -929,10 +921,6 @@ PostToolUse — 进度快照:
   动作: command hook，检查距上次快照是否超过阈值(5次写操作)
   触发: 超过阈值 → 生成进度快照
 
-TaskCompleted — 质量门:
-  事件: TaskCompleted
-  动作: agent hook，检查任务关联的测试是否通过
-  阻断: 测试未通过 → exit 2 阻止标记完成
 
 Stop — KB 同步 + L2 写入:
   事件: Stop
@@ -967,7 +955,6 @@ notify = ["helloagents --check-update --silent"]
 Codex CLI Hooks 系统持续发展中。以下功能已在 Claude Code 侧实现，
 当 Codex CLI 支持对应事件时可通过修改 config.toml 直接启用:
 
-  - SessionStart → 模块加载验证（等待 Codex CLI 支持会话启动事件）
   - PostToolUse → 进度快照（等待 Codex CLI 支持工具调用后事件）
 
 迁移方式: 将 Claude Code settings.json 中的 hook 逻辑移植为
