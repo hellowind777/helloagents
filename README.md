@@ -193,6 +193,8 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
 > After installing UV, restart your terminal to make the `uv` command available.
 
+> ⚠️ Windows PowerShell 5.1 does not support `&&`. Please run commands separately, or upgrade to [PowerShell 7+](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+
 **Install and select targets (one command):**
 
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents

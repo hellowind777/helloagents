@@ -194,6 +194,8 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 > 安装 UV 后请重启终端，使 `uv` 命令生效。
 
+> ⚠️ Windows PowerShell 5.1 不支持 `&&` 连接符，请分开执行两条命令，或升级到 [PowerShell 7+](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows)。
+
 **安装并选择目标（一条命令）：**
 
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents
