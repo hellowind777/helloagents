@@ -65,7 +65,7 @@
 | 分发形态 | 多 bundle 目录，每个 CLI 一份 | 统一 Python 包 + 安装器 CLI |
 | 安装方式 | 手工复制配置与技能目录 | pip/uv 安装 + `helloagents` 交互菜单 |
 | 路由系统 | 三层路由（Context → Tools → Intent） | 五维度评分路由（R0–R3） |
-| 工作流阶段 | 4 阶段（Evaluate、Analyze、Design、Develop） | 4 阶段 + R1 快速流程，支持子代理调度 |
+| 工作流阶段 | 4 阶段（Evaluate、Analyze、Design、Develop） | 3 阶段（Evaluate、Design、Develop）+ R1 快速流程，支持子代理调度 |
 | 代理系统 | 无 | RLM 5 个专有角色 + 原生子代理 + Session 隔离 |
 | 记忆系统 | 无持久化 | 三层记忆：L0 用户、L1 项目知识库、L2 会话 |
 | 安全检测 | 基础 EHRB | 三层 EHRB（关键词 + 语义 + 工具输出） |
@@ -126,7 +126,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - 6 个 CLI 目标来自 helloagents/cli.py
 - 15 个工作流命令来自 helloagents/functions
 - 5 个 RLM 角色来自 helloagents/rlm/roles
-- 4 个阶段定义来自 helloagents/stages
+- 2 个阶段定义来自 helloagents/stages
 - 5 个核心服务来自 helloagents/services
 - 4 个规则模块来自 helloagents/rules
 - 9 个辅助脚本来自 helloagents/scripts
@@ -334,7 +334,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - pyproject.toml：包元数据（v2.2.11）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
-- helloagents/stages：analyze、design、develop
+- helloagents/stages：design、develop
 - helloagents/services：knowledge、package、memory 等服务
 - helloagents/rules：state、cache、tools、scaling 规则
 - helloagents/rlm：角色库与编排辅助
