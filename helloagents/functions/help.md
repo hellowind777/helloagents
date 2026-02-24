@@ -18,7 +18,7 @@
 ## 输出模板
 
 ```
-- HelloAGENTS 是结构化任务工作流系统，可按需求执行评估、分析、设计、开发与验证。
+- HelloAGENTS 是结构化任务工作流系统，可按需求执行评估、设计、开发与验证。
 - 可用命令: ~auto ~plan ~exec ~init ~upgradekb ~clean ~cleanplan ~commit ~test ~review ~validatekb ~rollback ~rlm ~status ~help
 - 使用方式:
     - ~命令 需求描述 (例: ~auto 修复登录超时并补测试)

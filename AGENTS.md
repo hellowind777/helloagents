@@ -197,7 +197,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 
 **输出规范:** 首行=状态栏；主体=按场景模块的"主体内容要素"填充；末尾=下一步引导。Never output raw content without the G3 format wrapper.
 
-**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分≥7） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/项目分析/开发实施=阶段链中的具体阶段
+**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分≥7） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/开发实施=阶段链中的具体阶段
 
 **主体内容规范:**
 ```yaml
@@ -310,12 +310,12 @@ Prohibitions (CRITICAL):
     适用: 需要先分析再执行的局部任务，有局部决策
     流程: 快速评分（不追问）+EHRB → 简要确认（评分<7时标注信息不足） → ⛔ END_TURN → 用户确认后执行
     输出: 📐 状态栏 + 确认信息（做什么+怎么做）→ 执行后结构化总结
-    阶段链: 分析→规划(跳过多方案)→实施→KB同步→完成 [→ G5]
+    阶段链: 规划(含上下文收集，跳过多方案)→实施→KB同步→完成 [→ G5]
   R3 标准流程:
     适用: 复杂任务、新建项目、架构级变更、多方案对比
     流程: 完整评分+追问({EVAL_MODE})+EHRB → 完整确认+选项 → ⛔ END_TURN → 阶段链
     输出: 🔵 状态栏 + 完整确认信息 → 执行后完整验收报告
-    阶段链: 分析→完整规划(含多方案对比)→实施→KB同步→完成 [→ G5]
+    阶段链: 完整规划(含上下文收集+多方案对比)→实施→KB同步→完成 [→ G5]
 命令路径映射:
   ~auto: 强制 R3（全阶段自动推进）
   ~plan: 强制 R3（只到方案设计）
@@ -438,14 +438,14 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 确认选项（模式名使用 OUTPUT_LANGUAGE 显示）:
   ~auto:
     1. 全自动执行：自动完成所有阶段，仅遇到风险时暂停。（推荐）
-    2. 交互式执行：每个阶段完成后等待你确认。
+    2. 交互式执行：关键决策点等待你确认。
     3. 改需求后再执行。
   ~plan:
     1. 全自动规划：自动完成分析和方案设计。（推荐）
-    2. 交互式规划：每个阶段完成后等待你确认。
+    2. 交互式规划：关键决策点等待你确认。
     3. 改需求后再执行。
   通用路径 R2/R3:
-    1. 交互式执行：每个阶段完成后等待你确认。（推荐）
+    1. 交互式执行：关键决策点等待你确认。（推荐）
     2. 全自动执行：自动完成所有阶段，仅遇到风险时暂停。
     3. 改需求后再执行。
 ```
@@ -459,14 +459,14 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 | 命令模式 | 触发 | 流程 |
 |---------|------|------|
 | R1 快速流程 | 命令指定 | 评估→EHRB→定位→修改→KB同步(按开关)→验收→完成 |
-| R2 简化流程 | 命令指定 | 评估→确认→分析→规划(跳过多方案)→实施→KB同步(按开关)→完成 |
-| R3 标准流程 | ~auto/~plan 或命令指定 | 评估→确认→分析→完整规划→实施→KB同步(按开关)→完成 |
+| R2 简化流程 | 命令指定 | 评估→确认→规划(含上下文收集，跳过多方案)→实施→KB同步(按开关)→完成 |
+| R3 标准流程 | ~auto/~plan 或命令指定 | 评估→确认→完整规划(含上下文收集+多方案对比)→实施→KB同步(按开关)→完成 |
 | 直接执行 | ~exec（已有方案包） | 选包→实施→KB同步(按开关)→完成 |
 
 **升级条件:** R1→R2: 执行中发现超出预期/EHRB；R2→R3: 发现架构级影响/跨模块/EHRB
 
 ```yaml
-INTERACTIVE（默认）: 每个阶段完成后 ⛔ END_TURN，等待用户指令再继续
+INTERACTIVE（默认）: 关键决策点 ⛔ END_TURN（方案选择、失败处理），评估确认后直接进入 DESIGN
 DELEGATED（~auto委托）: 用户确认后，阶段间自动推进，遇到安全风险(EHRB)时中断委托
 DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止（不进入DEVELOP）
 ```
@@ -483,12 +483,15 @@ DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止�
 # ─── 工作流变量 ───
 WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN  # 默认 INTERACTIVE
 ROUTING_LEVEL: R0 | R1 | R2 | R3  # 通用路径级别判定 或 命令路径强制指定
-CURRENT_STAGE: 空 | EVALUATE | ANALYZE | DESIGN | DEVELOP
+CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP
 STAGE_ENTRY_MODE: NATURAL | DIRECT  # 默认 NATURAL，~exec 设为 DIRECT
 DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分<7时 → true
 
+# ─── 任务复杂度变量 ───
+TASK_COMPLEXITY: 未设置 | simple | moderate | complex  # DESIGN Phase1步骤3初评+步骤6确认，DEVELOP DIRECT入口步骤2评估
+
 # ─── 知识库与方案包变量 ───
-KB_SKIPPED: 未设置 | true  # R1强制true，analyze按KB_CREATE_MODE判定
+KB_SKIPPED: 未设置 | true  # R1强制true，DESIGN Phase1按KB_CREATE_MODE判定
 CREATED_PACKAGE: 空  # design阶段设置
 CURRENT_PACKAGE: 空  # develop阶段确定
 ```
@@ -518,7 +521,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ```yaml
 任务重置:
   触发: 单个任务完成/取消
-  重置: CURRENT_STAGE, STAGE_ENTRY_MODE, KB_SKIPPED, CREATED_PACKAGE, CURRENT_PACKAGE, ROUTING_LEVEL
+  重置: CURRENT_STAGE, STAGE_ENTRY_MODE, KB_SKIPPED, TASK_COMPLEXITY, CREATED_PACKAGE, CURRENT_PACKAGE, ROUTING_LEVEL
   保留: WORKFLOW_MODE, DELEGATION_INTERRUPTED
 完整重置:
   触发: 命令完成、用户取消、流程结束、错误终止
@@ -563,12 +566,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 |----------|----------|
 | 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md |
-| R2/R3 进入项目分析 | stages/analyze.md, services/knowledge.md, rules/state.md, rules/scaling.md |
-| R2/R3 进入方案设计 | stages/design.md, services/package.md, services/templates.md, rules/tools.md |
+| R2/R3 进入方案设计 | stages/design.md, stages/analyze.md, services/knowledge.md, services/package.md, services/templates.md, rules/state.md, rules/scaling.md, rules/tools.md |
 | R2/R3 进入开发实施 | stages/develop.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md, rules/tools.md |
 | ~auto | functions/auto.md |
 | ~plan | functions/plan.md |
-| ~exec | functions/exec.md, rules/tools.md |
+| ~exec | functions/exec.md, rules/tools.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md |
 | ~init | functions/init.md, services/templates.md, rules/tools.md |
 | ~upgradekb | functions/upgradekb.md, services/templates.md, rules/tools.md |
 | ~cleanplan | functions/cleanplan.md, rules/tools.md |
@@ -590,13 +592,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 阶段/类型 | 验收项 | 严重性 |
 |-----------|--------|------|
-| evaluate | 需求评分≥7分 | ⛔ 阻断性 |
-| analyze | 项目上下文已获取 + TASK_COMPLEXITY 已评估 | ℹ️ 信息性 |
-| design | 方案包结构完整+格式正确 | ⛔ 阻断性 |
+| evaluate | 需求评分≥7分（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
+| design（含 Phase1） | Phase1: 项目上下文已获取+TASK_COMPLEXITY 已评估 / Phase2: 方案包结构完整+格式正确 | ℹ️ 信息性（Phase1）/ ⛔ 阻断性（Phase2） |
 | develop | 阻断性测试通过+代码安全检查+子代理调用合规 [→ G9] | ⛔ 阻断性 |
 | R1 快速流程 | 变更已应用 | ⚠️ 警告性 |
-| evaluate→analyze | 需求评分≥7 | ⛔ 闸门 |
-| analyze→design | 项目上下文已获取 | ⛔ 闸门 |
+| evaluate→design | 需求评分≥7（R3）或已确认（R2） | ⛔ 闸门 |
 | design→develop | 方案包存在 + validate_package.py 通过 | ⛔ 闸门 |
 | 流程级（~auto/~plan/~exec） | 交付物状态 + 需求符合性 + 问题汇总 | 流程结束前 |
 
@@ -608,9 +608,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 子代理调用合规检查（阶段验收时执行）:
   TASK_COMPLEXITY=moderate/complex 时:
-    ANALYZE 阶段:
-      （由原生子代理处理，不检查 helloagents 角色）
-    DESIGN 阶段:
+    DESIGN 阶段（含 Phase1 上下文收集）:
       检查: synthesizer 是否已调用（complex+评估维度≥3 强制）
       检查: pkg_keeper 是否已调用（方案包填充时强制）
     DEVELOP 阶段:
@@ -629,7 +627,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ### 复杂度判定标准
 
 ```yaml
-判定时机: 进入 ANALYZE/DESIGN/DEVELOP 阶段时评估
+判定时机: DESIGN Phase1 步骤3 初评 + 步骤6 确认；DEVELOP NATURAL入口沿用，DIRECT入口（~exec）在步骤2 首次评估
 判定依据: 取以下维度最高级别
 
 | 维度 | simple | moderate | complex |
@@ -651,6 +649,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   代码探索 → Codex: spawn_agent(agent_type="explorer") | Claude: Task(subagent_type="Explore") | OpenCode: @explore | Gemini: codebase_investigator | Qwen: 自定义子代理
   代码实现 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
   测试运行 → Codex: spawn_agent(agent_type="awaiter") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
+  方案评估 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
   方案设计 → Codex: Plan mode | Claude: Task(subagent_type="Plan") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
 
 调用方式: 按 G10 定义的 CLI 通道执行，阶段文件中标注 [RLM:角色名] 的位置必须调用
@@ -658,8 +657,9 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 强制调用规则（标注"强制"的必须调用，标注"跳过"的可跳过）:
   EVALUATE: 主代理直接执行，不调用子代理
-  ANALYZE: 由原生子代理处理（代码探索/依赖分析），helloagents 角色不参与
   DESIGN:
+    Phase1（上下文收集）— 由原生子代理处理（代码探索/依赖分析），helloagents 角色不参与
+    Phase2（方案构思）—
     synthesizer — complex+评估维度≥3 强制 | 其他跳过
     pkg_keeper — 方案包内容填充时强制（通过 PackageService 调用）
   DEVELOP:
@@ -837,7 +837,7 @@ helloagents 专有角色:
 ```yaml
 并行批次上限: ≤5 个子代理/批
 并行适用: 同阶段内无数据依赖的任务
-串行强制: 有数据依赖链的任务（如 design: 方案评估→synthesizer→pkg_keeper）
+串行强制: 有数据依赖链的任务（如 design 步骤4: 方案评估→synthesizer）
 
 CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用

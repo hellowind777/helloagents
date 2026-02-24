@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.10-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.11-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -266,6 +266,13 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
     helloagents update
 
+> ⚠️ **Codex CLI config.toml 兼容提示：** 以下设置可能影响 HelloAGENTS 正常运行：
+> - `[features]` 中的 `steer = true` — 会改变输入提交行为，可能干扰工作流交互
+> - `[features]` 中的 `child_agents_md = true` — 实验性功能，会注入额外指令，可能与 HelloAGENTS 冲突
+> - `project_doc_max_bytes` 过小 — 默认 32KB，AGENTS.md 超出会被截断（安装时已自动调整为 98304）
+> - `agent_max_depth = 1` — 限制子代理嵌套深度，建议保持默认或设为 ≥2
+> - `agent_max_threads` 过小 — 默认 6，过低会限制并行子代理调度
+
 ### Claude Code 示例
 
 **首次安装：**
@@ -314,7 +321,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 1. 安装包（脚本/pip/uv）并执行 `helloagents` 弹出交互菜单选择目标 CLI（也可直接 `helloagents install <target>`）。安装时自动部署 Hooks 和 SKILL.md。
 2. 在 AI 聊天中，每条输入按五个维度评分并路由到 R0–R3。
-3. R2/R3 任务进入阶段链：EVALUATE → ANALYZE → DESIGN → DEVELOP。R1 快速流程直接处理单点操作。
+3. R2/R3 任务进入阶段链：EVALUATE → DESIGN → DEVELOP。R1 快速流程直接处理单点操作。
 4. RLM 根据任务复杂度调度原生子代理和专有角色。支持并行调度和 Agent Teams 协作处理复杂任务。
 5. EHRB 在每个步骤扫描破坏性操作，高风险行为需用户明确确认。Hooks 可提供额外的工具调用前安全预检。
 6. 三层记忆（用户 / 项目知识库 / 会话）跨会话保持上下文。
@@ -324,7 +331,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.10）
+- pyproject.toml：包元数据（v2.2.11）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：analyze、design、develop
@@ -389,7 +396,11 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.10（当前版本）
+### v2.2.11（当前版本）
+
+- 三阶段门控模型重构，合并分析到设计阶段（评估→设计→开发），优化标准流程停顿点并修复子代理编排一致性
+
+### v2.2.10
 
 - 精简子代理角色，对接各 CLI 原生多代理编排
 
@@ -417,7 +428,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - **RLM 子代理系统：** 5 个专有角色 + 原生子代理，自动调度 + Session 隔离
 - **五维度路由（R0–R3）：** 替代旧版三层路由
-- **四阶段工作流 + R1 快速流程：** 阶段链（评估→分析→设计→开发）与 R1 快速流程并行
+- **三阶段工作流 + R1 快速流程：** 阶段链（评估→设计→开发）与 R1 快速流程并行
 - **三层记忆：** L0 用户偏好、L1 项目知识库、L2 会话摘要
 - **三层 EHRB：** 关键词 + 语义 + 工具输出安全检测
 - **Package-first 安装器：** pip/uv 安装 + `helloagents` 交互菜单

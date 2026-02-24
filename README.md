@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.10-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.11-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -265,6 +265,13 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     helloagents update
 
+> ⚠️ **Codex CLI config.toml compatibility notes:** The following settings may affect HelloAGENTS:
+> - `[features]` `steer = true` — changes input submission behavior, may interfere with workflow interaction
+> - `[features]` `child_agents_md = true` — experimental, injects extra instructions that may conflict with HelloAGENTS
+> - `project_doc_max_bytes` too low — default 32KB, AGENTS.md will be truncated (auto-set to 98304 during install)
+> - `agent_max_depth = 1` — limits sub-agent nesting depth, recommend keeping default or ≥2
+> - `agent_max_threads` too low — default 6, lower values limit parallel sub-agent scheduling
+
 ### Claude Code example
 
 **First install:**
@@ -313,7 +320,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`). Hooks and SKILL.md are auto-deployed during installation.
 2. In AI chat, every input is scored on five dimensions and routed to R0–R3.
-3. R2/R3 tasks enter the stage chain: EVALUATE → ANALYZE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
+3. R2/R3 tasks enter the stage chain: EVALUATE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
 4. RLM dispatches native sub-agents and specialized roles based on task complexity. Supports parallel scheduling and Agent Teams for complex tasks.
 5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation. Hooks provide additional pre-tool safety checks when available.
 6. Three-layer memory (user / project KB / session) preserves context across sessions.
@@ -323,7 +330,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.10)
+- pyproject.toml: package metadata (v2.2.11)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: analyze, design, develop
@@ -388,7 +395,11 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.10 (current)
+### v2.2.11 (current)
+
+- Three-stage gate model: merge analysis into design stage (EVALUATE → DESIGN → DEVELOP), optimize stop points and fix sub-agent orchestration consistency
+
+### v2.2.10
 
 - Streamline sub-agent roles and integrate native multi-agent orchestration for all supported CLIs
 

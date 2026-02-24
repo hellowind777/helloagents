@@ -1,29 +1,24 @@
-# 项目分析模块
+# 上下文收集（DESIGN Phase1）
 
-本模块定义项目分析阶段的详细规则，在 R2 简化流程或 R3 标准流程下执行。
+本模块定义 DESIGN 阶段 Phase1（上下文收集）的执行规则，由 design.md 在流程起始时加载。
 
-**核心职责:** 纯信息收集，不做设计决策。为后续 DESIGN 阶段提供完整、准确的项目上下文。
+**核心职责:** 纯信息收集，不做设计决策。为 Phase2（方案构思）提供完整、准确的项目上下文。
 
 ---
 
 ## 模块入口
 
 ```yaml
-前置: ROUTING_LEVEL = R2 或 R3
-设置: CURRENT_STAGE = ANALYZE
+前置: CURRENT_STAGE = DESIGN（由 design.md 加载本模块）
+性质: DESIGN 阶段的内部子阶段，不独立设置 CURRENT_STAGE
 ```
 
 ---
 
 ## 执行模式适配
 
-按 G5 执行模式行为规范，本阶段补充规则:
-
 ```yaml
-INTERACTIVE: 输出阶段完成摘要 → ⛔ END_TURN
-DELEGATED/DELEGATED_PLAN: 输出摘要后自动进入方案设计
-
-完成后: CURRENT_STAGE = DESIGN → 进入方案设计阶段
+所有模式: 完成后输出上下文收集摘要，返回 design.md 继续 Phase2（方案构思）
 ```
 
 ---
@@ -35,7 +30,7 @@ DELEGATED/DELEGATED_PLAN: 输出摘要后自动进入方案设计
 ```yaml
 KB_CREATE_MODE=0 → KB_SKIPPED=true
 KB_CREATE_MODE=1/2/3 → KB_SKIPPED=false
-传递: 后续阶段(design/develop)直接使用此值
+传递: Phase2 及 DEVELOP 阶段直接使用此值
 ```
 
 ### 步骤2: 检查知识库状态
@@ -46,17 +41,13 @@ KB_CREATE_MODE=1/2/3 → KB_SKIPPED=false
 知识库状态显示:
   KB_CREATE_MODE=0: "⚠️ 已跳过（开关关闭）"
   存在: "✅ 已加载"
-  MODE=1 不存在: "⚠️ 不存在（建议 ~init）"
+  MODE=1 不存在: "ℹ️ 不存在，已跳过（建议 ~init）"
   MODE=2 不存在: 编程任务→"🔄 已自动创建" | 非编程→同MODE=1
   MODE=3 不存在: "🔄 已自动创建"
 
-需要用户确认时（MODE=1不存在 或 MODE=2非编程不存在）:
-  输出: 确认（知识库状态）
-  ⛔ END_TURN
-  用户确认后:
-    初始化: → ~init
-    跳过: KB_SKIPPED=true，继续执行
-    取消: → 状态重置
+MODE=1不存在 或 MODE=2非编程不存在:
+  KB_SKIPPED=true
+  继续执行
 ```
 
 ### 步骤3: 初步复杂度评估
@@ -67,8 +58,8 @@ KB_CREATE_MODE=1/2/3 → KB_SKIPPED=false
 脚本（可选）: project_stats.py
 
 检测到 complex:
-  INTERACTIVE → 输出: 确认（复杂度评估结果）→ 继续 / 取消(→状态重置)
-  DELEGATED/DELEGATED_PLAN → 继续执行，标注"complex 级别，已启用子代理编排"
+  输出: ℹ️ 复杂度: complex，已启用子代理编排
+  继续执行
 ```
 
 ### 步骤4: 获取项目上下文
@@ -78,7 +69,8 @@ KB_SKIPPED=true → 扫描代码库
 KB_SKIPPED=false → 知识库优先，不足则扫描代码库
 
 子代理调用（按步骤3 TASK_COMPLEXITY）:
-  moderate/complex → 原生子代理执行代码库扫描和结构分析（强制）[→ G10 调用通道]
+  moderate/complex + 现有代码库 → 原生子代理执行代码库扫描和结构分析（强制）[→ G10 调用通道]
+  moderate/complex + 新建项目(目录为空或仅配置文件) → 主代理直接执行（无代码可探索）
   simple → 主代理直接执行
 ```
 
@@ -105,5 +97,5 @@ KB_SKIPPED=false → 知识库优先，不足则扫描代码库
 
 复杂度确认: 根据完整分析结果修正 TASK_COMPLEXITY（若与步骤3初评不同则更新）
 
-**DO NOT:** 做技术选型决策（留给DESIGN），设计实现方案（留给DESIGN），修改代码（留给DEVELOP）
+**DO NOT:** 做技术选型决策（留给 Phase2），设计实现方案（留给 Phase2），修改代码（留给 DEVELOP）
 ```
