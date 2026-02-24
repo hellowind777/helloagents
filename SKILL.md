@@ -9,7 +9,7 @@ HelloAGENTS is a structured task workflow system that orchestrates AI sub-agents
 across multiple CLI environments (Claude Code, Codex CLI, OpenCode, etc.).
 
 Core capabilities:
-- Multi-stage workflow: EVALUATE → ANALYZE → DESIGN → DEVELOP → VERIFY
+- Multi-stage workflow: EVALUATE → DESIGN → DEVELOP (验收内嵌于 DEVELOP)
 - RLM (Recursive Language Model) sub-agent orchestration with 5 specialized roles + native CLI sub-agents
 - Three-tier knowledge base (L0 user / L1 project / L2 session)
 - Plan package management for complex feature development
