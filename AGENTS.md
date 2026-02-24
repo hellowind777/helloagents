@@ -330,16 +330,16 @@ Prohibitions (CRITICAL):
 | 闸门等级 | 命令 | 评估行为 | 确认行为 |
 |----------|------|----------|----------|
 | 无 | ~help, ~rlm, ~status | 无评估 | 直接执行，无需确认（破坏性子命令内部自带确认） |
-| 轻量 | ~init, ~upgradekb, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validatekb, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ 等待用户选择 |
-| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<7→追问→⛔；评分≥7→确认信息（评分+级别+后续流程）→⛔ |
+| 轻量 | ~init, ~upgradekb, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validatekb, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ ⛔ |
+| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<7→追问→⛔；评分≥7→确认信息（评分+级别+后续流程）→ ⛔ |
 
 **命令执行流程（CRITICAL）:**
 ```yaml
 1. 匹配命令 → 加载对应模块文件（按 G7 按需读取表）
 2. 按闸门等级执行:
    无闸门（~help/~rlm）: 加载模块后直接按模块规则执行
-   轻量闸门: 输出确认信息（需求摘要+后续流程）→ [等待用户选择]
-   完整闸门（~auto/~plan）: 需求评估 → 评分<7时追问⛔ → 评分≥7后输出确认信息 → [等待用户选择]
+   轻量闸门: 输出确认信息（需求摘要+后续流程）→ ⛔ END_TURN
+   完整闸门（~auto/~plan）: 需求评估 → 评分<7时追问 → ⛔ END_TURN | 评分≥7后输出确认信息 → ⛔ END_TURN
 3. 用户确认后 → 按命令模块定义的流程执行
 ```
 
@@ -353,7 +353,11 @@ When you receive a non-command input that does not match any external tool:
 1. Evaluate the 5 dimensions above and determine the routing level (R0/R1/R2/R3).
 2. If R0 or R1: Execute directly per the level behavior defined above.
 3. If R2 or R3: Output your assessment and confirmation message using G3 format, then STOP. Do NOT proceed until the user responds.
-4. After the user confirms: Execute per the level's stage chain.
+4. After the user confirms:
+   - Set WORKFLOW_MODE per user selection (INTERACTIVE / DELEGATED)
+   - Set CURRENT_STAGE = DESIGN
+   - Load stage files per G7 ("R2/R3 进入方案设计" row)
+   - Execute per G5 stage chain and loaded module flow
 ```
 
 **DO NOT:** For generic path R2/R3, execute ANY modification operations (coding, creating files, modifying code) before user confirmation.
@@ -454,19 +458,19 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 
 ## G5 | 执行模式（CRITICAL）
 
-> 以下执行模式仅通过 `~命令` 路径触发。通用路径按 G4 通用路径执行流程处理（R2/R3 同样需要评估和确认）。
+> 以下执行模式适用于所有 R2/R3 路径（通用路径和 ~命令 路径均适用）。通用路径确认后按 G4 step 4 设置 WORKFLOW_MODE 和 CURRENT_STAGE，然后按本节规则执行。
 
-| 命令模式 | 触发 | 流程 |
+| 模式 | 触发 | 流程 |
 |---------|------|------|
-| R1 快速流程 | 命令指定 | 评估→EHRB→定位→修改→KB同步(按开关)→验收→完成 |
-| R2 简化流程 | 命令指定 | 评估→确认→规划(含上下文收集，跳过多方案)→实施→KB同步(按开关)→完成 |
-| R3 标准流程 | ~auto/~plan 或命令指定 | 评估→确认→完整规划(含上下文收集+多方案对比)→实施→KB同步(按开关)→完成 |
+| R1 快速流程 | G4 路由判定 或 命令指定 | 评估→EHRB→定位→修改→KB同步(按开关)→验收→完成 |
+| R2 简化流程 | G4 路由判定 或 命令指定 | 评估→确认→规划(含上下文收集，跳过多方案)→实施→KB同步(按开关)→完成 |
+| R3 标准流程 | G4 路由判定 或 ~auto/~plan | 评估→确认→完整规划(含上下文收集+多方案对比)→实施→KB同步(按开关)→完成 |
 | 直接执行 | ~exec（已有方案包） | 选包→实施→KB同步(按开关)→完成 |
 
 **升级条件:** R1→R2: 执行中发现超出预期/EHRB；R2→R3: 发现架构级影响/跨模块/EHRB
 
 ```yaml
-INTERACTIVE（默认）: 关键决策点 ⛔ END_TURN（方案选择、失败处理），评估确认后直接进入 DESIGN
+INTERACTIVE（默认，通用路径用户选择交互式 或 命令路径默认）: 关键决策点 ⛔ END_TURN（方案选择、失败处理），评估确认后设置 CURRENT_STAGE=DESIGN，按 G7 加载阶段文件，进入 DESIGN
 DELEGATED（~auto委托）: 用户确认后，阶段间自动推进，遇到安全风险(EHRB)时中断委托
 DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止（不进入DEVELOP）
 ```
@@ -483,7 +487,7 @@ DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止�
 # ─── 工作流变量 ───
 WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN  # 默认 INTERACTIVE
 ROUTING_LEVEL: R0 | R1 | R2 | R3  # 通用路径级别判定 或 命令路径强制指定
-CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP
+CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP  # EVALUATE: G4 路由评估期间隐式生效；DESIGN/DEVELOP: G4 step 4 或阶段切换时显式设置
 STAGE_ENTRY_MODE: NATURAL | DIRECT  # 默认 NATURAL，~exec 设为 DIRECT
 DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分<7时 → true
 
@@ -566,7 +570,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 |----------|----------|
 | 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md |
-| R2/R3 进入方案设计 | stages/design.md, stages/analyze.md, services/knowledge.md, services/package.md, services/templates.md, rules/state.md, rules/scaling.md, rules/tools.md |
+| R2/R3 进入方案设计 | stages/design.md, services/knowledge.md, services/package.md, services/templates.md, rules/state.md, rules/scaling.md, rules/tools.md |
 | R2/R3 进入开发实施 | stages/develop.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md, rules/tools.md |
 | ~auto | functions/auto.md |
 | ~plan | functions/plan.md |
@@ -837,7 +841,7 @@ helloagents 专有角色:
 ```yaml
 并行批次上限: ≤5 个子代理/批
 并行适用: 同阶段内无数据依赖的任务
-串行强制: 有数据依赖链的任务（如 design 步骤4: 方案评估→synthesizer）
+串行强制: 有数据依赖链的任务（如 design 步骤10: 方案评估→synthesizer）
 
 CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用

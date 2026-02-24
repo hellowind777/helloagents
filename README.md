@@ -65,7 +65,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 | Distribution | Multiple bundle folders per CLI | One Python package + installer CLI |
 | Installation | Manual copy of config and skill folders | pip/uv install + `helloagents` interactive menu |
 | Routing | Three-layer (Context → Tools → Intent) | Five-dimension scoring (R0–R3) |
-| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 4 stages + R1 fast flow, with sub-agent dispatch |
+| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 3 stages (Evaluate, Design, Develop) + R1 fast flow, with sub-agent dispatch |
 | Agent system | None | RLM with 5 specialized roles + native sub-agents and session isolation |
 | Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
 | Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
@@ -125,7 +125,7 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 - 6 CLI targets from helloagents/cli.py
 - 15 workflow commands from helloagents/functions
 - 5 RLM roles from helloagents/rlm/roles
-- 4 stage definitions from helloagents/stages
+- 2 stage definitions from helloagents/stages
 - 5 core services from helloagents/services
 - 4 rule modules from helloagents/rules
 - 9 helper scripts from helloagents/scripts
@@ -333,7 +333,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 - pyproject.toml: package metadata (v2.2.11)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
-- helloagents/stages: analyze, design, develop
+- helloagents/stages: design, develop
 - helloagents/services: knowledge, package, memory and support services
 - helloagents/rules: state, cache, tools, scaling
 - helloagents/rlm: role library and orchestration helpers
