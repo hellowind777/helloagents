@@ -3,6 +3,8 @@
 #
 # 当前 Codex CLI 仅支持 notify 配置项（agent-turn-complete 事件）。
 # 更多事件支持请关注 Codex CLI 更新。
+#
+# 角色调度规则见 G9/G10。
 
 # notify — 代理轮次完成时触发（当前唯一支持的 hook 事件）
 # 格式: notify = ["命令路径"]（数组格式）

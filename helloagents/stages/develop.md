@@ -25,14 +25,14 @@
 
 | 入口 | 方案包来源 | 多包处理 |
 |------|-----------|---------|
-| NATURAL | CREATED_PACKAGE 变量 | 直接执行 |
+| NATURAL | CREATED_PACKAGE 变量 | 直接执行（仅1个包，多包停顿不触发） |
 | DIRECT (~exec) | 扫描 plan/ 目录 | 输出: 确认（方案包选择清单）→ ⛔ END_TURN |
 
 | 模式 | 行为 | 质量问题 | 完成后 |
 |------|------|----------|--------|
-| INTERACTIVE | 执行步骤1-14 | 询问用户 | 输出: 完成 → 等待确认 |
-| DELEGATED | 执行步骤1-14（省略中间态） | 在总结中列出 | 输出委托执行结果 → 状态重置 |
-| DIRECT | 执行步骤1-14 | 询问用户 | 输出执行结果 → 状态重置 |
+| INTERACTIVE | 执行步骤1-14 | 记录到验收报告 | 输出: 完成 → 等待确认 |
+| DELEGATED | 执行步骤1-14（省略中间态） | 记录到验收报告 | 输出委托执行结果 → 状态重置 |
+| DIRECT | 执行步骤1-14 | 记录到验收报告 | 输出执行结果 → 状态重置 |
 
 ### 阶段后续
 
@@ -70,16 +70,21 @@ DIRECT入口（~exec，CURRENT_PACKAGE 已由 exec.md 设置）:
   验证完整性失败 → 输出: 错误，停止
 ```
 
-### 步骤2: 知识库开关检查（CRITICAL）
+### 步骤2: 环境变量检查（CRITICAL）
 
 ```yaml
 KB_SKIPPED 来源:
-  NATURAL入口: 由 analyze.md 已设置，直接使用
+  NATURAL入口: 由 DESIGN Phase1 已设置，直接使用
   DIRECT入口: 本阶段首次设置，按 G1 KB_CREATE_MODE 判定
+
+TASK_COMPLEXITY 来源:
+  NATURAL入口: 由 DESIGN Phase1 已设置，直接使用
+  DIRECT入口: 本阶段首次评估，按 G9 复杂度判定标准（基于 tasks.md 任务数+涉及文件数+模块数）
 
 影响:
   KB_SKIPPED=true: 步骤5从代码扫描获取上下文，步骤9/10标记跳过
   步骤10 CHANGELOG 始终执行
+  TASK_COMPLEXITY: 决定步骤6/7/8 子代理调度策略
 ```
 
 ### 步骤3: 检查方案包类型（CRITICAL）
@@ -103,25 +108,21 @@ KB_SKIPPED 来源:
 执行: 严格按 tasks.md 逐项执行
 
 子代理调用（按 G9 复杂度判定）:
-  moderate/complex → [RLM:implementer] 逐项执行代码改动（强制）[→ G10 调用通道]
+  moderate/complex → 原生子代理逐项执行代码改动（强制）[→ G10 调用通道]
     每个任务项单独调用一次，prompt 包含: 任务描述 + 目标文件 + 约束条件
     接收结果后更新任务状态
   simple → 主代理直接执行
 
-并行批次: 任务列表中多个无依赖 implementer 任务 → 按批次并行（每批 ≤5）
+并行批次: 任务列表中多个无依赖实现任务 → 按批次并行（每批 ≤5）[→ G10 并行调度规则]
   - 有依赖任务保持串行
-  - Claude Code Task: 同一消息多个 Task 调用
-  - Claude Code Teams: complex 级别可启用 Agent Teams，每个 implementer 作为 teammate
-  - Codex CLI: 多个 spawn_agent + collab wait
-  - 其他: 串行执行
 
 任务状态处理:
   成功 → [√]，更新进度快照
   跳过 → [-]（前置失败/条件不满足/已被覆盖）
   失败 → [X]，记录错误，继续后续任务
     所有任务完成后如有失败:
-      INTERACTIVE/DIRECT → 输出: 确认（失败清单）→ 继续/取消
-      DELEGATED → 总结中列出，清除 WORKFLOW_MODE
+      INTERACTIVE/DIRECT → 输出: 确认（失败清单）→ ⛔ END_TURN（继续/取消）
+      DELEGATED → 记录到验收报告
 
 代码编辑: 大文件(≥2000行)先搜索定位再精确修改，每次只改单个函数/类
 ```
@@ -148,16 +149,16 @@ KB_SKIPPED 来源:
 ```yaml
 策略: 从具体到广泛（修改的代码→更广泛测试）
 
-子代理调用（按 G9 复杂度判定）:
-  需要新增测试用例时 → [RLM:tester] 设计并编写测试用例（强制）[→ G10 调用通道]
+子代理调用:
+  需要新增测试用例时 → 使用原生子代理设计并编写测试用例（强制）[→ G10 调用通道]
   仅运行已有测试 → 主代理直接执行
 
-并行优化: reviewer（步骤7）和 tester（步骤8）均需调用且无依赖时 → 并行调度
-  适用: tester 测试用例设计不依赖 reviewer 审查结论
-  不适用: tester 需根据 reviewer 发现调整测试策略
+并行优化: reviewer（步骤7）和测试子代理（步骤8）均需调用且无依赖时 → 并行调度
+  适用: 测试用例设计不依赖 reviewer 审查结论
+  不适用: 测试需根据 reviewer 发现调整测试策略
 
 测试失败处理:
-  ⛔ 阻断性(核心功能): 立即停止 → 输出: 警告 → 修复/跳过/终止
+  ⛔ 阻断性(核心功能): 立即停止 → 输出: 警告 → ⛔ END_TURN（修复/跳过/终止）
   ⚠️ 警告性(重要功能): 标注继续
   ℹ️ 信息性(次要功能): 记录继续
 
@@ -171,11 +172,10 @@ KB_SKIPPED 来源:
 
 ```yaml
 前置: KB_SKIPPED=true → 跳过，标注"⚠️ 知识库同步已跳过"
-重要: KB_SKIPPED=false 时，必须在步骤13迁移方案包前完成读取
+重要: KB_SKIPPED=false 时，必须在步骤13（迁移方案包）之前完成知识库同步
 
 子代理调用（KB_SKIPPED=false 时强制）:
   [RLM:kb_keeper] 执行知识库同步（通过 KnowledgeService 调用）[→ G10 调用通道]
-  [RLM:synthesizer] 参与一致性对照（与 kb_keeper 串行，kb_keeper 完成后执行）[→ G10 调用通道]
 
 同步: modules/{模块名}.md + _index.md（必须）| context.md/INDEX.md（按需）
 原则: 代码为唯一来源，最小变更，术语一致
@@ -191,17 +191,17 @@ KB_SKIPPED 来源:
 
 ```yaml
 前置: KB_SKIPPED=true → 跳过
+说明: 步骤9 KnowledgeService.sync() 内部由 synthesizer 执行细粒度一致性对照，本步骤为主代理的宏观验证
 审计: 完整性（本次变更涉及的模块文档已更新）+ 一致性（变更模块的 API/数据模型与代码一致）
 
 真实性原则: [→ 核心原则]（例外: 方案包设计意图或代码有明显Bug时修正代码）
 ```
 
-### 步骤12: 代码质量分析（可选）
+### 步骤12: 代码质量分析（有测试框架或静态分析工具时执行，否则跳过）
 
 ```yaml
 发现问题:
-  INTERACTIVE → 输出: 确认（优化建议）→ 执行优化/跳过
-  DELEGATED/DIRECT → 总结中列出（不执行）
+  所有模式 → 输出: ℹ️ 代码质量建议（记录到验收报告，可后续处理），继续执行
 ```
 
 ### 步骤13: 迁移方案包至 archive/

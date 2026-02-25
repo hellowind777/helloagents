@@ -8,7 +8,8 @@ BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST
 1. Determine the routing level (R0/R1/R2/R3) by evaluating the 5 dimensions in G4.
 2. For R2/R3: Score the request (4 dimensions, total 10), output your assessment using G3 format, then STOP and WAIT for user confirmation.
 3. For R3 with score < 7: Ask clarifying questions, then STOP and WAIT for user response.
-Never skip steps 1-3. Never write code before the user confirms on R2/R3 tasks.
+4. After user confirms on R2/R3: Follow the stage chain defined in G5 for the routing level. Load each stage's module files per G7 before executing that stage. Complete each stage before entering the next. Never skip any stage in the chain.
+Never skip steps 1-4. Never jump ahead in the stage chain.
 </execution_constraint>
 
 **核心原则（CRITICAL）:**
@@ -46,7 +47,7 @@ UPDATE_CHECK: 72  # 0=OFF（关闭更新检查），正整数=缓存有效小时
 
 > 例外: ~init 显式调用时忽略 KB_CREATE_MODE 开关
 
-**语言规则（CRITICAL）:** 所有输出（含回复用户和写入知识库文件）使用 {OUTPUT_LANGUAGE}，代码标识符/API名称/技术术语保持原样
+**语言规则（CRITICAL）:** 所有输出（含回复用户和写入知识库文件）使用 {OUTPUT_LANGUAGE}，代码标识符/API名称/技术术语保持原样。流程中的展示性术语（如 Phase、Step 等）和系统常量（如 DESIGN、DEVELOP、INTERACTIVE 等）在面向用户输出时按 {OUTPUT_LANGUAGE} 翻译为等价表述，但内部流转（状态变量赋值、阶段判定、G7 查表、模块间引用）始终使用原始常量名。
 
 **知识库目录结构:**
 ```
@@ -197,7 +198,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 
 **输出规范:** 首行=状态栏；主体=按场景模块的"主体内容要素"填充；末尾=下一步引导。Never output raw content without the G3 format wrapper.
 
-**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分≥7） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/项目分析/开发实施=阶段链中的具体阶段
+**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分≥7） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/开发实施=阶段链中的具体阶段
 
 **主体内容规范:**
 ```yaml
@@ -300,22 +301,23 @@ Prohibitions (CRITICAL):
     阶段链: 编码→R1 执行流程 / 非编码→直接执行
     R1 执行流程（编码类任务）:
       设置: KB_SKIPPED=true（R1 不触发完整知识库创建）
-      1. 定位: 文件查找 + 内容搜索定位修改位置（失败→INTERACTIVE 询问用户 | DELEGATED 输出错误终止）
-      2. 修改: 直接修改代码，不创建方案包；超出范围→升级判定
-      3. KB同步: CHANGELOG.md "快速修改"分类下记录（格式: - **[模块名]**: 描述 + 类型标注 + 文件:行号范围）
-      4. 遗留方案包扫描 [→ services/package.md]
-      5. 验收（均为警告性）: 变更已应用 + 快速测试（如有测试框架，无则跳过）
+      1. 加载: 按 G7 "R1 进入快速流程（编码类）" 行读取模块文件
+      2. 定位: 文件查找 + 内容搜索定位修改位置（失败→INTERACTIVE 询问用户 | DELEGATED 输出错误终止）
+      3. 修改: 直接修改代码，不创建方案包；超出范围→升级判定
+      4. KB同步: CHANGELOG.md "快速修改"分类下记录（格式: - **[模块名]**: 描述 + 类型标注 + 文件:行号范围）
+      5. 遗留方案包扫描 [→ services/package.md]
+      6. 验收（均为警告性）: 变更已应用 + 快速测试（如有测试框架，无则跳过）
     升级判定: 执行中发现超出预期（需分析后定位/涉及设计决策/跨模块影响/EHRB）→ 升级为 R2
   R2 简化流程:
     适用: 需要先分析再执行的局部任务，有局部决策
-    流程: 快速评分（不追问）+EHRB → 简要确认（评分<7时标注信息不足） → ⛔ END_TURN → 用户确认后执行
+    流程: 快速评分（不追问）+EHRB → 简要确认（评分<7时标注信息不足） → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
     输出: 📐 状态栏 + 确认信息（做什么+怎么做）→ 执行后结构化总结
-    阶段链: 分析→规划(跳过多方案)→实施→KB同步→完成 [→ G5]
+    阶段链: DESIGN(含上下文收集，跳过多方案)→DEVELOP(开发实施)→KB同步→完成 [→ G5]
   R3 标准流程:
     适用: 复杂任务、新建项目、架构级变更、多方案对比
-    流程: 完整评分+追问({EVAL_MODE})+EHRB → 完整确认+选项 → ⛔ END_TURN → 阶段链
+    流程: 完整评分+追问({EVAL_MODE})+EHRB → 完整确认+选项 → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
     输出: 🔵 状态栏 + 完整确认信息 → 执行后完整验收报告
-    阶段链: 分析→完整规划(含多方案对比)→实施→KB同步→完成 [→ G5]
+    阶段链: DESIGN(含上下文收集+多方案对比)→DEVELOP(开发实施)→KB同步→完成 [→ G5]
 命令路径映射:
   ~auto: 强制 R3（全阶段自动推进）
   ~plan: 强制 R3（只到方案设计）
@@ -330,16 +332,16 @@ Prohibitions (CRITICAL):
 | 闸门等级 | 命令 | 评估行为 | 确认行为 |
 |----------|------|----------|----------|
 | 无 | ~help, ~rlm, ~status | 无评估 | 直接执行，无需确认（破坏性子命令内部自带确认） |
-| 轻量 | ~init, ~upgradekb, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validatekb, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ 等待用户选择 |
-| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<7→追问→⛔；评分≥7→确认信息（评分+级别+后续流程）→⛔ |
+| 轻量 | ~init, ~upgradekb, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validatekb, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ ⛔ |
+| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<7→追问→⛔；评分≥7→确认信息（评分+级别+后续流程）→ ⛔ |
 
 **命令执行流程（CRITICAL）:**
 ```yaml
 1. 匹配命令 → 加载对应模块文件（按 G7 按需读取表）
 2. 按闸门等级执行:
    无闸门（~help/~rlm）: 加载模块后直接按模块规则执行
-   轻量闸门: 输出确认信息（需求摘要+后续流程）→ [等待用户选择]
-   完整闸门（~auto/~plan）: 需求评估 → 评分<7时追问⛔ → 评分≥7后输出确认信息 → [等待用户选择]
+   轻量闸门: 输出确认信息（需求摘要+后续流程）→ ⛔ END_TURN
+   完整闸门（~auto/~plan）: 需求评估 → 评分<7时追问 → ⛔ END_TURN | 评分≥7后输出确认信息 → ⛔ END_TURN
 3. 用户确认后 → 按命令模块定义的流程执行
 ```
 
@@ -353,10 +355,14 @@ When you receive a non-command input that does not match any external tool:
 1. Evaluate the 5 dimensions above and determine the routing level (R0/R1/R2/R3).
 2. If R0 or R1: Execute directly per the level behavior defined above.
 3. If R2 or R3: Output your assessment and confirmation message using G3 format, then STOP. Do NOT proceed until the user responds.
-4. After the user confirms: Execute per the level's stage chain.
+4. After the user confirms:
+   - Set WORKFLOW_MODE per user selection (INTERACTIVE / DELEGATED)
+   - Set CURRENT_STAGE = DESIGN
+   - Load stage files per G7 ("R2/R3 进入方案设计" row)
+   - Execute per G5 stage chain and loaded module flow
 ```
 
-**DO NOT:** For generic path R2/R3, execute ANY modification operations (coding, creating files, modifying code) before user confirmation.
+**DO NOT:** For generic path R2/R3, execute ANY modification operations (coding, creating files, modifying code) before user confirmation. After user confirmation, NEVER skip any stage in the stage chain — you MUST load each stage's module files per G7 and complete it before entering the next stage.
 
 <example_correct>
 User: "帮我做个游戏"
@@ -438,42 +444,75 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 确认选项（模式名使用 OUTPUT_LANGUAGE 显示）:
   ~auto:
     1. 全自动执行：自动完成所有阶段，仅遇到风险时暂停。（推荐）
-    2. 交互式执行：每个阶段完成后等待你确认。
+    2. 交互式执行：关键决策点等待你确认。
     3. 改需求后再执行。
   ~plan:
     1. 全自动规划：自动完成分析和方案设计。（推荐）
-    2. 交互式规划：每个阶段完成后等待你确认。
+    2. 交互式规划：关键决策点等待你确认。
     3. 改需求后再执行。
   通用路径 R2/R3:
-    1. 交互式执行：每个阶段完成后等待你确认。（推荐）
+    1. 交互式执行：关键决策点等待你确认。（推荐）
     2. 全自动执行：自动完成所有阶段，仅遇到风险时暂停。
     3. 改需求后再执行。
+
+下一步引导（🔄 下一步: 行的内容，CRITICAL）:
+  追问场景: "请回复选项编号或直接补充信息。"
+  确认场景:
+    R2: "请回复选项编号（1/2/3），确认后进入方案设计阶段（上下文收集→直接规划→开发实施）。"
+    R3: "请回复选项编号（1/2/3），确认后进入方案设计阶段（上下文收集→多方案对比→详细规划→开发实施）。"
+  DO NOT: 在下一步引导中使用"立即实现"、"立即开始"、"直接执行"等跳过方案设计的措辞
 ```
 
 ---
 
 ## G5 | 执行模式（CRITICAL）
 
-> 以下执行模式仅通过 `~命令` 路径触发。通用路径按 G4 通用路径执行流程处理（R2/R3 同样需要评估和确认）。
+> 以下执行模式适用于所有 R2/R3 路径（通用路径和 ~命令 路径均适用）。通用路径确认后按 G4 step 4 设置 WORKFLOW_MODE 和 CURRENT_STAGE，然后按本节规则执行。
 
-| 命令模式 | 触发 | 流程 |
+| 模式 | 触发 | 流程 |
 |---------|------|------|
-| R1 快速流程 | 命令指定 | 评估→EHRB→定位→修改→KB同步(按开关)→验收→完成 |
-| R2 简化流程 | 命令指定 | 评估→确认→分析→规划(跳过多方案)→实施→KB同步(按开关)→完成 |
-| R3 标准流程 | ~auto/~plan 或命令指定 | 评估→确认→分析→完整规划→实施→KB同步(按开关)→完成 |
-| 直接执行 | ~exec（已有方案包） | 选包→实施→KB同步(按开关)→完成 |
+| R1 快速流程 | G4 路由判定 或 命令指定 | 评估→EHRB→定位→修改→KB同步(按开关)→验收→完成 |
+| R2 简化流程 | G4 路由判定 或 命令指定 | 评估→确认→DESIGN(含上下文收集，跳过多方案)→DEVELOP(开发实施)→KB同步(按开关)→完成 |
+| R3 标准流程 | G4 路由判定 或 ~auto/~plan | 评估→确认→DESIGN(含上下文收集+多方案对比)→DEVELOP(开发实施)→KB同步(按开关)→完成 |
+| 直接执行 | ~exec（已有方案包） | 选包→DEVELOP(开发实施)→KB同步(按开关)→完成 |
 
 **升级条件:** R1→R2: 执行中发现超出预期/EHRB；R2→R3: 发现架构级影响/跨模块/EHRB
 
 ```yaml
-INTERACTIVE（默认）: 每个阶段完成后 ⛔ END_TURN，等待用户指令再继续
+INTERACTIVE（默认，通用路径用户选择交互式 或 命令路径默认）: 按阶段链顺序执行，每个阶段必须加载对应模块文件（按 G7）并完成后才能进入下一阶段。方案选择和失败处理时 ⛔ END_TURN。
 DELEGATED（~auto委托）: 用户确认后，阶段间自动推进，遇到安全风险(EHRB)时中断委托
 DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止（不进入DEVELOP）
 ```
 
+### 阶段执行步骤（R2/R3 确认后，CRITICAL）
+
+每个阶段的执行遵循相同模式:
+
+```yaml
+1. 查 G7 按需读取表 → 找到当前阶段对应的触发条件行
+2. 读取该行列出的所有模块文件（模块文件内含该阶段的完整执行步骤）
+3. 按已读取的模块文件中定义的流程逐步执行
+4. 模块流程执行完毕后，由模块内的"阶段切换"规则决定下一步
+5. 进入下一阶段时，重复步骤 1-4
+```
+
+确认后的首个阶段: G7 表中 **"R2/R3 进入方案设计"** 行。
+
+**DO NOT:** 不读取模块文件就凭自己的理解执行阶段内容。模块文件是该阶段的唯一执行指令，未读取 = 不知道该做什么。
+
 ---
 
 ## G6 | 通用规则（CRITICAL）
+
+### 术语映射（阶段名称）
+
+| 正式名称 | 等价术语 | 对应模块文件 |
+|----------|---------|-------------|
+| EVALUATE（需求评估） | 评估、评分、确认 | 无独立文件，G4 内联处理 |
+| DESIGN（方案设计） | 规划、设计、方案 | stages/design.md |
+| DEVELOP（开发实施） | 实施、开发、实现 | stages/develop.md |
+
+> 在所有流程描述中，"规划"="DESIGN 阶段"，"实施"="DEVELOP 阶段"。不要将"实施/实现"理解为"直接写代码"。
 
 ### 状态变量定义
 
@@ -483,12 +522,15 @@ DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止�
 # ─── 工作流变量 ───
 WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN  # 默认 INTERACTIVE
 ROUTING_LEVEL: R0 | R1 | R2 | R3  # 通用路径级别判定 或 命令路径强制指定
-CURRENT_STAGE: 空 | EVALUATE | ANALYZE | DESIGN | DEVELOP
+CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP  # EVALUATE: G4 路由评估期间隐式生效；DESIGN/DEVELOP: G4 step 4 或阶段切换时显式设置
 STAGE_ENTRY_MODE: NATURAL | DIRECT  # 默认 NATURAL，~exec 设为 DIRECT
 DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分<7时 → true
 
+# ─── 任务复杂度变量 ───
+TASK_COMPLEXITY: 未设置 | simple | moderate | complex  # DESIGN Phase1步骤3初评+步骤6确认，DEVELOP DIRECT入口步骤2评估
+
 # ─── 知识库与方案包变量 ───
-KB_SKIPPED: 未设置 | true  # R1强制true，analyze按KB_CREATE_MODE判定
+KB_SKIPPED: 未设置 | true  # R1强制true，DESIGN Phase1按KB_CREATE_MODE判定
 CREATED_PACKAGE: 空  # design阶段设置
 CURRENT_PACKAGE: 空  # develop阶段确定
 ```
@@ -518,7 +560,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ```yaml
 任务重置:
   触发: 单个任务完成/取消
-  重置: CURRENT_STAGE, STAGE_ENTRY_MODE, KB_SKIPPED, CREATED_PACKAGE, CURRENT_PACKAGE, ROUTING_LEVEL
+  重置: CURRENT_STAGE, STAGE_ENTRY_MODE, KB_SKIPPED, TASK_COMPLEXITY, CREATED_PACKAGE, CURRENT_PACKAGE, ROUTING_LEVEL
   保留: WORKFLOW_MODE, DELEGATION_INTERRUPTED
 完整重置:
   触发: 命令完成、用户取消、流程结束、错误终止
@@ -554,7 +596,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   "→ 任务重置": 按 G6 状态重置协议执行任务重置
   "输出: {场景名}": 按 G3 格式包装，内容要素从 G3 通用场景模式或命令模块提取
   "[→ G{N}]": 引用本文件对应章节规则，AI 已加载无需再次读取
-  "加载: {path} [阻塞式]": 按 G7 规则完整读取文件，加载完成前禁止执行
+  "加载: {path} [阻塞式]": 按 G7 规则完整读取文件，加载完成前禁止执行，加载完成后按模块文件中定义的流程逐步执行
 ```
 
 ### 按需读取规则
@@ -563,16 +605,15 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 |----------|----------|
 | 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md |
-| R2/R3 进入项目分析 | stages/analyze.md, services/knowledge.md, rules/state.md, rules/scaling.md |
-| R2/R3 进入方案设计 | stages/design.md, services/package.md, services/templates.md, rules/tools.md |
+| R2/R3 进入方案设计 | stages/design.md, services/knowledge.md, services/package.md, services/templates.md, rules/state.md, rules/scaling.md, rules/tools.md |
 | R2/R3 进入开发实施 | stages/develop.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md, rules/tools.md |
 | ~auto | functions/auto.md |
 | ~plan | functions/plan.md |
-| ~exec | functions/exec.md, rules/tools.md |
+| ~exec | functions/exec.md, rules/tools.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md |
 | ~init | functions/init.md, services/templates.md, rules/tools.md |
 | ~upgradekb | functions/upgradekb.md, services/templates.md, rules/tools.md |
 | ~cleanplan | functions/cleanplan.md, rules/tools.md |
-| ~commit | functions/commit.md |
+| ~commit | functions/commit.md, services/memory.md |
 | ~test | functions/test.md |
 | ~review | functions/review.md |
 | ~validatekb | functions/validatekb.md |
@@ -590,13 +631,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 阶段/类型 | 验收项 | 严重性 |
 |-----------|--------|------|
-| evaluate | 需求评分≥7分 | ⛔ 阻断性 |
-| analyze | 项目上下文已获取 + TASK_COMPLEXITY 已评估 | ℹ️ 信息性 |
-| design | 方案包结构完整+格式正确 | ⛔ 阻断性 |
+| evaluate | 需求评分≥7分（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
+| design（含 Phase1） | Phase1: 项目上下文已获取+TASK_COMPLEXITY 已评估 / Phase2: 方案包结构完整+格式正确 | ℹ️ 信息性（Phase1）/ ⛔ 阻断性（Phase2） |
 | develop | 阻断性测试通过+代码安全检查+子代理调用合规 [→ G9] | ⛔ 阻断性 |
 | R1 快速流程 | 变更已应用 | ⚠️ 警告性 |
-| evaluate→analyze | 需求评分≥7 | ⛔ 闸门 |
-| analyze→design | 项目上下文已获取 | ⛔ 闸门 |
+| evaluate→design | 需求评分≥7（R3）或已确认（R2） | ⛔ 闸门 |
 | design→develop | 方案包存在 + validate_package.py 通过 | ⛔ 闸门 |
 | 流程级（~auto/~plan/~exec） | 交付物状态 + 需求符合性 + 问题汇总 | 流程结束前 |
 
@@ -608,18 +647,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 子代理调用合规检查（阶段验收时执行）:
   TASK_COMPLEXITY=moderate/complex 时:
-    ANALYZE 阶段:
-      检查: explorer 是否已调用（moderate/complex 强制）
-      检查: analyzer 是否已调用（complex+依赖>5模块 强制）
-    DESIGN 阶段:
-      检查: designer 是否已调用（R2 moderate/complex 强制）
-      检查: analyzer 是否已调用（R3+候选方案≥2 强制）
+    DESIGN 阶段（含 Phase1 上下文收集）:
       检查: synthesizer 是否已调用（complex+评估维度≥3 强制）
       检查: pkg_keeper 是否已调用（方案包填充时强制）
     DEVELOP 阶段:
-      检查: implementer 是否已调用（moderate/complex 强制）
       检查: reviewer 是否已调用（complex+涉及核心/安全模块 强制）
-      检查: tester 是否已调用（需要新增测试用例时强制）
       检查: kb_keeper 是否已调用（KB_SKIPPED=false 强制）
       检查: pkg_keeper 是否已调用（归档前状态更新时强制）
     未调用且未标记[降级执行] → ⚠️ 警告性（记录"子代理未按规则调用: {角色名}"）
@@ -634,7 +666,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ### 复杂度判定标准
 
 ```yaml
-判定时机: 进入 ANALYZE/DESIGN/DEVELOP 阶段时评估
+判定时机: DESIGN Phase1 步骤3 初评 + 步骤6 确认；DEVELOP NATURAL入口沿用，DIRECT入口（~exec）在步骤2 首次评估
 判定依据: 取以下维度最高级别
 
 | 维度 | simple | moderate | complex |
@@ -651,36 +683,40 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ### 调用协议（CRITICAL）
 
 ```yaml
-角色清单: explorer, analyzer, designer, implementer, reviewer, tester, synthesizer, kb_keeper, pkg_keeper, researcher, writer, executor
+角色清单: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
+原生子代理映射:
+  代码探索 → Codex: spawn_agent(agent_type="explorer") | Claude: Task(subagent_type="Explore") | OpenCode: @explore | Gemini: codebase_investigator | Qwen: 自定义子代理
+  代码实现 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
+  测试运行 → Codex: spawn_agent(agent_type="awaiter") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
+  方案评估 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
+  方案设计 → Codex: Plan mode | Claude: Task(subagent_type="Plan") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
 
 调用方式: 按 G10 定义的 CLI 通道执行，阶段文件中标注 [RLM:角色名] 的位置必须调用
 调用格式: [→ G10 调用通道]
 
 强制调用规则（标注"强制"的必须调用，标注"跳过"的可跳过）:
   EVALUATE: 主代理直接执行，不调用子代理
-  ANALYZE:
-    explorer — moderate/complex 强制 | simple 跳过
-    analyzer — complex 强制（依赖>5模块时）| 其他跳过
   DESIGN:
-    analyzer — R3+候选方案≥2 强制 | 其他跳过
-    designer — R2 moderate/complex 强制 | simple 跳过
+    Phase1（上下文收集）—
+    原生子代理 — moderate/complex+现有代码库 代码库扫描强制（步骤4）| complex+依赖>5模块 深度依赖分析强制（步骤6）| simple 或新建项目跳过
+    helloagents 角色不参与 Phase1
+    Phase2（方案构思）—
+    原生子代理 — R3 标准流程步骤10 方案构思时强制，≥2 个子代理并行（每个独立构思一个方案）
     synthesizer — complex+评估维度≥3 强制 | 其他跳过
     pkg_keeper — 方案包内容填充时强制（通过 PackageService 调用）
   DEVELOP:
-    implementer — moderate/complex 强制 | simple 主代理直接执行
+    原生子代理 — moderate/complex 代码改动强制（步骤6，逐项调用）| 新增测试用例时强制（步骤8）| simple 跳过
     reviewer — complex+涉及核心/安全模块 强制 | 其他跳过
-    tester — 需要新增测试用例时 强制 | 其他跳过
     kb_keeper — KB_SKIPPED=false 时强制（通过 KnowledgeService 调用）
     pkg_keeper — 归档前状态更新时强制（通过 PackageService 调用）
   命令路径:
     ~review: reviewer — 审查文件>5 强制 | 其他主代理直接
-    ~test: tester — 需设计新测试用例时 强制 | 其他主代理直接
+    ~review: 原生子代理 — 审查文件>5 时各分析维度并行（质量/安全/性能，按复杂度分配子代理数量）[→ G10 调用通道]
+    ~validatekb: 原生子代理 — 知识库文件>10 时各验证维度并行（按复杂度分配子代理数量）[→ G10 调用通道]
+    ~init: 原生子代理 — complex 级别大型项目时模块扫描并行 [→ G10 调用通道]
 
-通用路径角色（不绑定特定阶段，按任务类型触发）:
-  researcher — 需要外部技术调研/方案对比/依赖安全检查时调用
-  writer — 需要生成独立文档（非知识库同步）时调用
-  executor — 需要运行构建/部署/环境配置等脚本任务时调用
-  触发方式: 阶段流程中遇到匹配场景时主代理判断调用 | 用户通过 ~rlm spawn 手动调用
+通用路径角色（不绑定特定阶段，按需调用）:
+  writer — 用户通过 ~rlm spawn writer 手动调用，用于生成独立文档（非知识库同步）
 
 跳过条件: 仅当标注"跳过"的条件成立时可跳过，其余情况必须调用
 降级: 子代理调用失败 → 主上下文直接执行，在 tasks.md 标记 [降级执行]
@@ -697,40 +733,69 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | Claude Code | Task 工具 | `Task(subagent_type="general-purpose", prompt="[RLM:{角色}] {任务描述}")` |
 | Claude Code | Agent Teams | complex 级别，多角色协作需互相通信时（实验性）[→ Agent Teams 协议] |
 | Codex CLI | spawn_agent | Collab 子代理调度（实验性特性门控，MAX_DEPTH=1，最多6并发） |
-| OpenCode | 降级 | 主上下文直接执行 |
-| Gemini/Qwen/Grok | 降级 | 主上下文直接执行 |
+| OpenCode | 子代理 | 内置 General（通用）+ Explore（只读探索），主代理自动委派或 @mention 手动触发 |
+| Gemini CLI | 子代理 | 内置 codebase_investigator + generalist_agent（实验性），自定义 .gemini/agents/*.md |
+| Qwen Code | 子代理 | 自定义子代理框架，/agents create 创建，.qwen/agents/*.md 存储，主代理自动委派 |
+| Grok CLI | 降级 | 主上下文直接执行 |
 
 ### Claude Code 调用协议（CRITICAL）
 
 ```yaml
-执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
-  1. 加载角色预设: 读取 rlm/roles/{角色}.md
-  2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
-  3. 调用 Task 工具: subagent_type="general-purpose", prompt=上述内容
-  4. 接收结果: 解析子代理返回的结构化结果
-  5. 记录调用: 通过 SessionManager.record_agent() 记录
+原生子代理:
+  代码探索/依赖分析 → Task(subagent_type="Explore", prompt="...")
+  代码实现 → Task(subagent_type="general-purpose", prompt="...")
+  方案设计 → Task(subagent_type="Plan", prompt="...")
+
+helloagents 专有角色（保留的 5 个角色）:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+    3. 调用 Task 工具: subagent_type="general-purpose", prompt=上述内容
+    4. 接收结果: 解析子代理返回的结构化结果
+    5. 记录调用: 通过 SessionManager.record_agent() 记录
 
 并行调用: 多个子代理无依赖时，在同一消息中发起多个 Task 调用
 串行调用: 有依赖关系时，等待前一个完成后再调用下一个
 
-示例（DEVELOP 步骤6）:
+示例（DEVELOP 步骤6 代码实现）:
   Task(
     subagent_type="general-purpose",
-    prompt="[RLM:implementer] 执行任务 1.1: 在 src/api/filter.py 中实现空白判定函数。
+    prompt="执行任务 1.1: 在 src/api/filter.py 中实现空白判定函数。
             约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
             返回: {status, changes_made, issues_found}"
+  )
+
+示例（DESIGN 步骤10 方案构思，≥2 个并行调用在同一消息中发起）:
+  Task(
+    subagent_type="general-purpose",
+    prompt="独立构思一个实现方案。上下文: {Phase1 收集的项目上下文}。
+            要求: 输出方案名称、核心思路、技术路径、优缺点。
+            返回: {name, approach, tech_path, pros, cons}"
+  )
+  Task(
+    subagent_type="general-purpose",
+    prompt="独立构思一个与其他方案差异化的实现方案。上下文: {Phase1 收集的项目上下文}。
+            要求: 输出方案名称、核心思路、技术路径、优缺点。
+            返回: {name, approach, tech_path, pros, cons}"
   )
 ```
 
 ### Codex CLI 调用协议（CRITICAL）
 
 ```yaml
-执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
-  1. 加载角色预设: 读取 rlm/roles/{角色}.md
-  2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
-  3. 调用 spawn_agent: prompt=上述内容
-  4. 接收结果: 解析子代理返回的结构化结果
-  5. 记录调用: 通过 SessionManager.record_agent() 记录
+原生子代理:
+  代码探索/依赖分析 → spawn_agent(agent_type="explorer", prompt="...")
+  代码实现 → spawn_agent(agent_type="worker", prompt="...")
+  测试运行 → spawn_agent(agent_type="awaiter", prompt="...")
+  方案设计 → Codex Plan mode（不需要 spawn）
+
+helloagents 专有角色（保留的 5 个角色）:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+    3. 调用 spawn_agent: prompt=上述内容
+    4. 接收结果: 解析子代理返回的结构化结果
+    5. 记录调用: 通过 SessionManager.record_agent() 记录
 
 并行调用: 多个无依赖子代理 → 连续发起多个 spawn_agent → collab wait 等待全部完成（支持多ID单次等待）
 串行调用: 有依赖 → 逐个 spawn_agent → 等待完成再发下一个
@@ -738,13 +803,65 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 中断通信: send_input 向运行中的子代理发送消息（可选中断当前执行）
 关闭子代理: close 关闭指定子代理
 限制: Collab 实验性特性门控，MAX_DEPTH=1（仅一层嵌套），最多 6 个并发子代理
-角色预设: spawn_agent 支持 agent role preset（Default/Worker/Explorer）
 
-示例（DEVELOP 步骤6 并行 3 个 implementer）:
-  spawn_agent("[RLM:implementer] 任务1.1: 实现 filter.py 空白判定函数")
-  spawn_agent("[RLM:implementer] 任务1.2: 实现 validator.py 输入校验")
-  spawn_agent("[RLM:implementer] 任务1.3: 实现 formatter.py 输出格式化")
+示例（DEVELOP 步骤6 并行 3 个 worker）:
+  spawn_agent(agent_type="worker", prompt="任务1.1: 实现 filter.py 空白判定函数")
+  spawn_agent(agent_type="worker", prompt="任务1.2: 实现 validator.py 输入校验")
+  spawn_agent(agent_type="worker", prompt="任务1.3: 实现 formatter.py 输出格式化")
   collab wait  # 等待全部完成（支持多ID）
+```
+
+### OpenCode 调用协议
+
+```yaml
+原生子代理:
+  代码探索/依赖分析 → @explore（只读，快速代码搜索和定位）
+  代码实现/通用任务 → @general（完整工具权限，可修改文件）
+
+helloagents 专有角色:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
+    3. 通过 @general 委派执行
+    4. 记录调用: 通过 SessionManager.record_agent() 记录
+
+调用方式: 主代理自动委派 | 用户 @mention 手动触发
+子会话: 子代理创建独立 child session
+```
+
+### Gemini CLI 调用协议
+
+```yaml
+原生子代理（实验性）:
+  代码探索/依赖分析 → codebase_investigator（内置，代码库分析和逆向依赖）
+  通用任务路由 → generalist_agent（内置，自动路由到合适的子代理）
+
+helloagents 专有角色:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 创建自定义子代理: .gemini/agents/{角色}.md（YAML frontmatter + 角色预设）
+    3. 主代理自动委派或通过 generalist_agent 路由
+    4. 记录调用: 通过 SessionManager.record_agent() 记录
+
+自定义子代理: .gemini/agents/*.md（项目级）| ~/.gemini/agents/*.md（用户级）
+远程子代理: 支持 A2A 协议委派（可选）
+```
+
+### Qwen Code 调用协议
+
+```yaml
+原生子代理:
+  无固定内置类型，通过 /agents create 向导创建自定义子代理
+  主代理根据任务描述和子代理 description 自动匹配委派
+
+helloagents 专有角色:
+  执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
+    1. 加载角色预设: 读取 rlm/roles/{角色}.md
+    2. 创建自定义子代理: .qwen/agents/{角色}.md（YAML frontmatter + 角色预设）
+    3. 主代理自动委派
+    4. 记录调用: 通过 SessionManager.record_agent() 记录
+
+自定义子代理: .qwen/agents/*.md（项目级）| ~/.qwen/agents/*.md（用户级）
 ```
 
 ### Claude Code Agent Teams 协议
@@ -752,16 +869,16 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ```yaml
 适用条件:
   - TASK_COMPLEXITY = complex
-  - 需要多角色互相通信（如 reviewer 需参考 implementer 的设计意图）
+  - 需要多角色互相通信（如 reviewer 需参考实现者的设计意图）
   - 任务可拆为 3+ 独立子任务分配给不同角色
   - 用户确认启用（实验性功能）
 
 调度方式:
   1. 主代理作为 Team Lead（delegate mode），仅负责协调
-  2. 按 RLM 角色 spawn teammates:
-     - explorer/analyzer → 研究型 teammate
-     - implementer × N → 实现型 teammates（每人负责不同文件集）
-     - reviewer + tester → 质量型 teammates（可并行）
+  2. spawn teammates（原生角色 + helloagents 专有角色混合）:
+     - 代码探索/分析 → 原生 Explore subagent
+     - 代码实现 × N → 原生 general-purpose subagent（每人负责不同文件集）
+     - reviewer/synthesizer/kb_keeper/pkg_keeper/writer → helloagents 专有角色 teammate
   3. 使用共享任务列表（映射到 tasks.md）
   4. Teammates 通过 mailbox 互相通信
   5. Team Lead 综合结果后清理团队
@@ -779,19 +896,27 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ```yaml
 并行批次上限: ≤5 个子代理/批
 并行适用: 同阶段内无数据依赖的任务
-串行强制: 有数据依赖链的任务（如 design: analyzer→designer→synthesizer）
+串行强制: 有数据依赖链的任务（如 design 步骤10: 方案评估→synthesizer）
+
+通用并行信息收集原则（适用所有流程和命令）:
+  多个独立文件读取/搜索 → 同一消息中发起多个并行工具调用（Read/Grep/Glob/WebSearch/WebFetch）
+  多个独立分析/验证维度 → 调度原生子代理并行执行（文件数>5 或维度≥3 时）
+  轻量级独立数据源（单次读取即可） → 并行工具调用即可，不需要子代理开销
 
 CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用
   Claude Code Teams: teammates 自动从共享任务列表认领
   Codex CLI: 多个 spawn_agent + collab wait（支持多ID单次等待）
-  其他 CLI: 降级为串行执行
+  OpenCode: 多个 @general / @explore 子会话
+  Gemini CLI: 多个子代理自动委派（实验性）
+  Qwen Code: 多个自定义子代理自动委派
+  Grok CLI: 降级为串行执行
 ```
 
 ### 降级处理
 
 ```yaml
-降级触发: Task 工具调用失败 | CLI 不支持子代理
+降级触发: 子代理调用失败 | CLI 不支持子代理（Grok CLI）
 降级执行: 主代理在当前上下文中直接完成任务
 降级标记: 在 tasks.md 对应任务后追加 [降级执行]
 ```
@@ -836,12 +961,9 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 
 | 功能 | Claude Code Hook | Codex CLI Hook | 无 Hook 降级 |
 |------|-----------------|----------------|-------------|
-| 模块自动加载验证 | SessionStart | — | G7 规则手动加载 |
-| EHRB 安全预检 | PreToolUse (Shell/Write) | — | G3 规则内联检查 |
 | 子代理生命周期追踪 | SubagentStart/Stop | — | SessionManager 手动记录 |
 | 进度快照自动触发 | PostToolUse | — | cache.md 手动触发 |
 | 版本更新提示 | SessionStart | notify (agent-turn-complete) | 启动时脚本检查 |
-| 任务完成质量门 | TaskCompleted | — | develop.md 步骤7-8 手动 |
 | KB 同步触发 | Stop | notify (agent-turn-complete) | memory.md 触发点规则 |
 | Agent Teams 空闲检测 | TeammateIdle | — | 主代理轮询 |
 | 上下文压缩前处理 | PreCompact | — | 手动快照 |
@@ -852,19 +974,6 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 HelloAGENTS 预定义以下 Hook 配置供用户可选启用:
 
 ```yaml
-SessionStart — 模块加载验证 + 版本检查:
-  事件: SessionStart
-  动作: 检查 AGENTS.md 是否存在、验证 G1-G12 模块引用完整性
-  类型: command hook，执行 helloagents 版本检查脚本
-  失败: 输出警告，不阻断会话
-
-PreToolUse — EHRB 安全预检:
-  事件: PreToolUse
-  匹配: toolName 匹配 Bash|Shell|Write|Edit
-  动作: prompt hook，检查操作是否涉及 G3 EHRB 敏感路径
-  阻断: 命中 EHRB 红线 → exit 2 阻断工具调用
-  放行: 非敏感操作 → exit 0
-
 SubagentStart/Stop — 子代理追踪:
   事件: SubagentStart, SubagentStop
   动作: command hook，记录子代理 ID/角色/状态到会话日志
@@ -876,10 +985,6 @@ PostToolUse — 进度快照:
   动作: command hook，检查距上次快照是否超过阈值(5次写操作)
   触发: 超过阈值 → 生成进度快照
 
-TaskCompleted — 质量门:
-  事件: TaskCompleted
-  动作: agent hook，检查任务关联的测试是否通过
-  阻断: 测试未通过 → exit 2 阻止标记完成
 
 Stop — KB 同步 + L2 写入:
   事件: Stop
@@ -914,8 +1019,6 @@ notify = ["helloagents --check-update --silent"]
 Codex CLI Hooks 系统持续发展中。以下功能已在 Claude Code 侧实现，
 当 Codex CLI 支持对应事件时可通过修改 config.toml 直接启用:
 
-  - PreToolUse → EHRB 安全预检（等待 Codex CLI 支持工具调用前事件）
-  - SessionStart → 模块加载验证（等待 Codex CLI 支持会话启动事件）
   - PostToolUse → 进度快照（等待 Codex CLI 支持工具调用后事件）
 
 迁移方式: 将 Claude Code settings.json 中的 hook 逻辑移植为

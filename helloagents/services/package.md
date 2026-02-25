@@ -90,7 +90,7 @@ LIVE_STATUS 格式: 按 G11 定义
 角色定位: 服务绑定型，预设: rlm/roles/pkg_keeper.md
 职责: 方案包内容填充、任务状态更新、进度快照生成、质量检查
 调用: 只能通过 PackageService 接口
-协作: 接收 designer 方案→填充 proposal.md | 接收 implementer 结果→更新 tasks.md
+协作: 接收方案设计结果→填充 proposal.md | 接收代码实现结果→更新 tasks.md
 ```
 
 ---
