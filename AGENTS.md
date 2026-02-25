@@ -8,7 +8,8 @@ BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST
 1. Determine the routing level (R0/R1/R2/R3) by evaluating the 5 dimensions in G4.
 2. For R2/R3: Score the request (4 dimensions, total 10), output your assessment using G3 format, then STOP and WAIT for user confirmation.
 3. For R3 with score < 7: Ask clarifying questions, then STOP and WAIT for user response.
-Never skip steps 1-3. Never write code before the user confirms on R2/R3 tasks.
+4. After user confirms on R2/R3: Follow the stage chain defined in G5 for the routing level. Load each stage's module files per G7 before executing that stage. Complete each stage before entering the next. Never skip any stage in the chain.
+Never skip steps 1-4. Never jump ahead in the stage chain.
 </execution_constraint>
 
 **核心原则（CRITICAL）:**
@@ -46,7 +47,7 @@ UPDATE_CHECK: 72  # 0=OFF（关闭更新检查），正整数=缓存有效小时
 
 > 例外: ~init 显式调用时忽略 KB_CREATE_MODE 开关
 
-**语言规则（CRITICAL）:** 所有输出（含回复用户和写入知识库文件）使用 {OUTPUT_LANGUAGE}，代码标识符/API名称/技术术语保持原样
+**语言规则（CRITICAL）:** 所有输出（含回复用户和写入知识库文件）使用 {OUTPUT_LANGUAGE}，代码标识符/API名称/技术术语保持原样。流程中的展示性术语（如 Phase、Step 等）和系统常量（如 DESIGN、DEVELOP、INTERACTIVE 等）在面向用户输出时按 {OUTPUT_LANGUAGE} 翻译为等价表述，但内部流转（状态变量赋值、阶段判定、G7 查表、模块间引用）始终使用原始常量名。
 
 **知识库目录结构:**
 ```
@@ -300,11 +301,12 @@ Prohibitions (CRITICAL):
     阶段链: 编码→R1 执行流程 / 非编码→直接执行
     R1 执行流程（编码类任务）:
       设置: KB_SKIPPED=true（R1 不触发完整知识库创建）
-      1. 定位: 文件查找 + 内容搜索定位修改位置（失败→INTERACTIVE 询问用户 | DELEGATED 输出错误终止）
-      2. 修改: 直接修改代码，不创建方案包；超出范围→升级判定
-      3. KB同步: CHANGELOG.md "快速修改"分类下记录（格式: - **[模块名]**: 描述 + 类型标注 + 文件:行号范围）
-      4. 遗留方案包扫描 [→ services/package.md]
-      5. 验收（均为警告性）: 变更已应用 + 快速测试（如有测试框架，无则跳过）
+      1. 加载: 按 G7 "R1 进入快速流程（编码类）" 行读取模块文件
+      2. 定位: 文件查找 + 内容搜索定位修改位置（失败→INTERACTIVE 询问用户 | DELEGATED 输出错误终止）
+      3. 修改: 直接修改代码，不创建方案包；超出范围→升级判定
+      4. KB同步: CHANGELOG.md "快速修改"分类下记录（格式: - **[模块名]**: 描述 + 类型标注 + 文件:行号范围）
+      5. 遗留方案包扫描 [→ services/package.md]
+      6. 验收（均为警告性）: 变更已应用 + 快速测试（如有测试框架，无则跳过）
     升级判定: 执行中发现超出预期（需分析后定位/涉及设计决策/跨模块影响/EHRB）→ 升级为 R2
   R2 简化流程:
     适用: 需要先分析再执行的局部任务，有局部决策
@@ -360,7 +362,7 @@ When you receive a non-command input that does not match any external tool:
    - Execute per G5 stage chain and loaded module flow
 ```
 
-**DO NOT:** For generic path R2/R3, execute ANY modification operations (coding, creating files, modifying code) before user confirmation.
+**DO NOT:** For generic path R2/R3, execute ANY modification operations (coding, creating files, modifying code) before user confirmation. After user confirmation, NEVER skip any stage in the stage chain — you MUST load each stage's module files per G7 and complete it before entering the next stage.
 
 <example_correct>
 User: "帮我做个游戏"
@@ -477,10 +479,26 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 **升级条件:** R1→R2: 执行中发现超出预期/EHRB；R2→R3: 发现架构级影响/跨模块/EHRB
 
 ```yaml
-INTERACTIVE（默认，通用路径用户选择交互式 或 命令路径默认）: 关键决策点 ⛔ END_TURN（方案选择、失败处理），评估确认后设置 CURRENT_STAGE=DESIGN，按 G7 加载阶段文件，进入 DESIGN
+INTERACTIVE（默认，通用路径用户选择交互式 或 命令路径默认）: 按阶段链顺序执行，每个阶段必须加载对应模块文件（按 G7）并完成后才能进入下一阶段。方案选择和失败处理时 ⛔ END_TURN。
 DELEGATED（~auto委托）: 用户确认后，阶段间自动推进，遇到安全风险(EHRB)时中断委托
 DELEGATED_PLAN（~plan委托）: 同DELEGATED，但方案设计完成后停止（不进入DEVELOP）
 ```
+
+### 阶段执行步骤（R2/R3 确认后，CRITICAL）
+
+每个阶段的执行遵循相同模式:
+
+```yaml
+1. 查 G7 按需读取表 → 找到当前阶段对应的触发条件行
+2. 读取该行列出的所有模块文件（模块文件内含该阶段的完整执行步骤）
+3. 按已读取的模块文件中定义的流程逐步执行
+4. 模块流程执行完毕后，由模块内的"阶段切换"规则决定下一步
+5. 进入下一阶段时，重复步骤 1-4
+```
+
+确认后的首个阶段: G7 表中 **"R2/R3 进入方案设计"** 行。
+
+**DO NOT:** 不读取模块文件就凭自己的理解执行阶段内容。模块文件是该阶段的唯一执行指令，未读取 = 不知道该做什么。
 
 ---
 
@@ -578,7 +596,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   "→ 任务重置": 按 G6 状态重置协议执行任务重置
   "输出: {场景名}": 按 G3 格式包装，内容要素从 G3 通用场景模式或命令模块提取
   "[→ G{N}]": 引用本文件对应章节规则，AI 已加载无需再次读取
-  "加载: {path} [阻塞式]": 按 G7 规则完整读取文件，加载完成前禁止执行
+  "加载: {path} [阻塞式]": 按 G7 规则完整读取文件，加载完成前禁止执行，加载完成后按模块文件中定义的流程逐步执行
 ```
 
 ### 按需读取规则
@@ -679,20 +697,26 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 强制调用规则（标注"强制"的必须调用，标注"跳过"的可跳过）:
   EVALUATE: 主代理直接执行，不调用子代理
   DESIGN:
-    Phase1（上下文收集）— 由原生子代理处理（代码探索/依赖分析），helloagents 角色不参与
+    Phase1（上下文收集）—
+    原生子代理 — moderate/complex+现有代码库 代码库扫描强制（步骤4）| complex+依赖>5模块 深度依赖分析强制（步骤6）| simple 或新建项目跳过
+    helloagents 角色不参与 Phase1
     Phase2（方案构思）—
+    原生子代理 — R3 标准流程步骤10 方案构思时强制，≥2 个子代理并行（每个独立构思一个方案）
     synthesizer — complex+评估维度≥3 强制 | 其他跳过
     pkg_keeper — 方案包内容填充时强制（通过 PackageService 调用）
   DEVELOP:
+    原生子代理 — moderate/complex 代码改动强制（步骤6，逐项调用）| 新增测试用例时强制（步骤8）| simple 跳过
     reviewer — complex+涉及核心/安全模块 强制 | 其他跳过
     kb_keeper — KB_SKIPPED=false 时强制（通过 KnowledgeService 调用）
     pkg_keeper — 归档前状态更新时强制（通过 PackageService 调用）
   命令路径:
     ~review: reviewer — 审查文件>5 强制 | 其他主代理直接
+    ~review: 原生子代理 — 审查文件>5 时各分析维度并行（质量/安全/性能，按复杂度分配子代理数量）[→ G10 调用通道]
+    ~validatekb: 原生子代理 — 知识库文件>10 时各验证维度并行（按复杂度分配子代理数量）[→ G10 调用通道]
+    ~init: 原生子代理 — complex 级别大型项目时模块扫描并行 [→ G10 调用通道]
 
-通用路径角色（不绑定特定阶段，按任务类型触发）:
-  writer — 需要生成独立文档（非知识库同步）时调用
-  触发方式: 阶段流程中遇到匹配场景时主代理判断调用 | 用户通过 ~rlm spawn 手动调用
+通用路径角色（不绑定特定阶段，按需调用）:
+  writer — 用户通过 ~rlm spawn writer 手动调用，用于生成独立文档（非知识库同步）
 
 跳过条件: 仅当标注"跳过"的条件成立时可跳过，其余情况必须调用
 降级: 子代理调用失败 → 主上下文直接执行，在 tasks.md 标记 [降级执行]
@@ -739,6 +763,20 @@ helloagents 专有角色（保留的 5 个角色）:
     prompt="执行任务 1.1: 在 src/api/filter.py 中实现空白判定函数。
             约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
             返回: {status, changes_made, issues_found}"
+  )
+
+示例（DESIGN 步骤10 方案构思，≥2 个并行调用在同一消息中发起）:
+  Task(
+    subagent_type="general-purpose",
+    prompt="独立构思一个实现方案。上下文: {Phase1 收集的项目上下文}。
+            要求: 输出方案名称、核心思路、技术路径、优缺点。
+            返回: {name, approach, tech_path, pros, cons}"
+  )
+  Task(
+    subagent_type="general-purpose",
+    prompt="独立构思一个与其他方案差异化的实现方案。上下文: {Phase1 收集的项目上下文}。
+            要求: 输出方案名称、核心思路、技术路径、优缺点。
+            返回: {name, approach, tech_path, pros, cons}"
   )
 ```
 
@@ -859,6 +897,11 @@ helloagents 专有角色:
 并行批次上限: ≤5 个子代理/批
 并行适用: 同阶段内无数据依赖的任务
 串行强制: 有数据依赖链的任务（如 design 步骤10: 方案评估→synthesizer）
+
+通用并行信息收集原则（适用所有流程和命令）:
+  多个独立文件读取/搜索 → 同一消息中发起多个并行工具调用（Read/Grep/Glob/WebSearch/WebFetch）
+  多个独立分析/验证维度 → 调度原生子代理并行执行（文件数>5 或维度≥3 时）
+  轻量级独立数据源（单次读取即可） → 并行工具调用即可，不需要子代理开销
 
 CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用

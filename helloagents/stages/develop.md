@@ -172,7 +172,7 @@ TASK_COMPLEXITY 来源:
 
 ```yaml
 前置: KB_SKIPPED=true → 跳过，标注"⚠️ 知识库同步已跳过"
-重要: KB_SKIPPED=false 时，必须在步骤13迁移方案包前完成读取
+重要: KB_SKIPPED=false 时，必须在步骤13（迁移方案包）之前完成知识库同步
 
 子代理调用（KB_SKIPPED=false 时强制）:
   [RLM:kb_keeper] 执行知识库同步（通过 KnowledgeService 调用）[→ G10 调用通道]
@@ -197,7 +197,7 @@ TASK_COMPLEXITY 来源:
 真实性原则: [→ 核心原则]（例外: 方案包设计意图或代码有明显Bug时修正代码）
 ```
 
-### 步骤12: 代码质量分析（可选）
+### 步骤12: 代码质量分析（有测试框架或静态分析工具时执行，否则跳过）
 
 ```yaml
 发现问题:

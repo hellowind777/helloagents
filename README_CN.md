@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.11-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.12-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -331,7 +331,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.11）
+- pyproject.toml：包元数据（v2.2.12）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：design、develop
@@ -396,7 +396,11 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.11（当前版本）
+### v2.2.12（当前版本）
+
+- 全面并行化子代理编排，G10 扩展覆盖所有流程和命令，消除硬编码子代理数量，新增通用并行信息收集原则
+
+### v2.2.11
 
 - 三阶段门控模型重构，合并分析到设计阶段（评估→设计→开发），优化标准流程停顿点并修复子代理编排一致性
 
@@ -420,7 +424,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - **Agent Teams 协议：** G10 新增 Claude Code 多角色协作协议
 - **SKILL 技能集成：** SKILL.md 自动部署到所有 CLI 目标的技能发现目录
 - **RLM 命令扩展：** 新增 ~rlm agents/resume/team 子命令，支持多角色并行调度
-- **阶段并行优化：** analyze/develop 阶段新增并行规则，design 阶段串行标注
+- **阶段并行优化：** develop 阶段新增并行规则，design 阶段串行标注
 - **Memory v2 桥接：** 新增 Codex Memory v2 桥接协议
 - **脚本模块化：** 提取 config_helpers.py 模块
 
