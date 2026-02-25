@@ -71,6 +71,7 @@
 扫描代码库:
   优先: 根目录配置文件（package.json/pyproject.toml/Cargo.toml/pom.xml 等）
   按需: 配置文件信息不足时，再扫描目录结构和源代码文件
+  并行读取: 多个根目录配置文件同时读取（同一消息中发起多个并行工具调用）
 
 技术栈识别:
   1. 读取根目录包管理/构建配置文件（优先，通常足够确定技术栈）
@@ -82,7 +83,7 @@
 创建:
   目录结构: 按 G1 知识库完整结构创建（含 sessions/ 目录）
   模板: 读取 services/templates.md
-  大型项目: 按 G9 复杂度判定标准（TASK_COMPLEXITY=complex）分批处理
+  大型项目（TASK_COMPLEXITY=complex）: 调度原生子代理并行扫描不同模块目录 [→ G10 调用通道]，主代理汇总各子代理扫描结果后统一创建
   全局记忆: 检查 {HELLOAGENTS_ROOT}/user/ 目录，不存在时自动创建
 ```
 

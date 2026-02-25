@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.11-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.12-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -330,7 +330,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.11)
+- pyproject.toml: package metadata (v2.2.12)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -395,7 +395,11 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.11 (current)
+### v2.2.12 (current)
+
+- Comprehensive parallel sub-agent orchestration across all flows and commands, extend G10 coverage, eliminate hardcoded agent counts, add universal parallel information gathering principle
+
+### v2.2.11
 
 - Three-stage gate model: merge analysis into design stage (EVALUATE → DESIGN → DEVELOP), optimize stop points and fix sub-agent orchestration consistency
 
@@ -419,7 +423,7 @@ These commands run inside AI chat, not your system shell.
 - **Agent Teams protocol:** G10 adds Claude Code multi-role collaboration protocol
 - **SKILL integration:** auto-deploy SKILL.md to skills discovery directory for all CLI targets
 - **RLM command expansion:** add ~rlm agents/resume/team subcommands with parallel multi-role dispatch
-- **Stage parallel optimization:** parallel rules for analyze/develop stages, serial annotation for design
+- **Stage parallel optimization:** parallel rules for develop stage, serial annotation for design
 - **Memory v2 bridge:** add Codex Memory v2 bridge protocol
 - **Script modularization:** extract config_helpers.py module
 

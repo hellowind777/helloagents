@@ -34,7 +34,7 @@
 步骤2 - 旧目录名迁移:
   检测: 项目根目录是否存在 helloagents/（旧版目录名）
   脚本: upgradewiki.py --migrate-root
-  status=migrated: 静默完成，提示已自动迁移 helloagents/ → .helloagents/
+  status=migrated: 静默完成，输出: 提示（旧目录名已自动迁移至新目录名）
   status=conflict: 新旧目录同时存在 → 输出: 确认（让用户选择保留哪个）→ ⛔ END_TURN
   status=not_needed/not_found: 静默继续
 
@@ -45,7 +45,7 @@
     kb_version 缺失或低于当前框架版本:
       补全缺失的目录和文件（对比 G1 知识库目录结构，缺什么补什么）
       更新 INDEX.md 中的 kb_version 为当前版本
-      提示: "知识库结构已自动升级至 {当前版本}"
+      输出: 提示（知识库结构已自动升级至当前版本）
     kb_version 与当前版本一致: 静默继续
 ```
 
