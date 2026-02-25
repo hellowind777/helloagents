@@ -81,7 +81,7 @@ overview 类型方案包: 直接归档，总结中标注
 ### INTERACTIVE 模式行为
 
 ```yaml
-关键决策点: ⛔ END_TURN（方案选择、失败处理），评估确认（G1）后直接进入 DESIGN
+关键决策点: ⛔ END_TURN（方案选择、失败处理），评估确认后进入 DESIGN 阶段
 阶段内选择: 输出选项 → ⛔ END_TURN → 等待用户选择
 ```
 

@@ -23,9 +23,9 @@
 
 | 模式 | R3 标准流程 | R2 简化流程 |
 |------|----------|----------|
-| INTERACTIVE | 输出方案对比→用户选择→详细规划→进入 DEVELOP | 直接规划→进入 DEVELOP |
-| DELEGATED | 推荐方案作为选择→详细规划→进入 DEVELOP | 直接规划→进入 DEVELOP |
-| DELEGATED_PLAN | 推荐方案作为选择→详细规划→验收→结束 | 直接规划→验收→结束 |
+| INTERACTIVE | 输出方案对比→用户选择→详细规划→进入 DEVELOP | Phase1+Phase2(跳过多方案对比)→进入 DEVELOP |
+| DELEGATED | 推荐方案作为选择→详细规划→进入 DEVELOP | Phase1+Phase2(跳过多方案对比)→进入 DEVELOP |
+| DELEGATED_PLAN | 推荐方案作为选择→详细规划→验收→结束 | Phase1+Phase2(跳过多方案对比)→验收→结束 |
 
 ⚠️ 选择方案 = 确认执行，不再有第二次确认
 
@@ -39,7 +39,7 @@
   implementation 类型:
     设置 CREATED_PACKAGE = 方案包路径
     DELEGATED_PLAN → 返回 plan.md 执行验收
-    其他 → CURRENT_STAGE = DEVELOP → 进入开发实施
+    其他 → CURRENT_STAGE = DEVELOP → 按 G7 加载开发实施阶段文件 → 进入 DEVELOP
 ```
 
 ### 推荐方案选择（DELEGATED模式）
