@@ -1,6 +1,6 @@
 [project]
 name = "helloagents"
-version = "2.2.9"
+version = "2.2.12"
 description = "HelloAGENTS - 自主的高级智能伙伴"
 readme = "README.md"
 requires-python = ">=3.10"

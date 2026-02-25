@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.9-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.12-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -65,8 +65,8 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 | Distribution | Multiple bundle folders per CLI | One Python package + installer CLI |
 | Installation | Manual copy of config and skill folders | pip/uv install + `helloagents` interactive menu |
 | Routing | Three-layer (Context → Tools → Intent) | Five-dimension scoring (R0–R3) |
-| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 4 stages + R1 fast flow, with sub-agent dispatch |
-| Agent system | None | RLM with 12 specialized roles and session isolation |
+| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 3 stages (Evaluate, Design, Develop) + R1 fast flow, with sub-agent dispatch |
+| Agent system | None | RLM with 5 specialized roles + native sub-agents and session isolation |
 | Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
 | Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
 | Hooks | None | Auto-deploy lifecycle hooks (Claude Code 9 events + Codex CLI notify) |
@@ -84,7 +84,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 
 **RLM sub-agent orchestration**
 
-12 specialized roles (explorer, analyzer, designer, implementer, reviewer, tester, etc.) are dispatched automatically based on task complexity, with session isolation per CLI instance. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
+5 specialized roles (reviewer, synthesizer, kb_keeper, pkg_keeper, writer) plus host CLI native sub-agents (explore/implement/test/design) are dispatched automatically based on task complexity, with session isolation per CLI instance. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
 
 **Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
 </td>
@@ -124,8 +124,8 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
 - 6 CLI targets from helloagents/cli.py
 - 15 workflow commands from helloagents/functions
-- 12 RLM roles from helloagents/rlm/roles
-- 4 stage definitions from helloagents/stages
+- 5 RLM roles from helloagents/rlm/roles
+- 2 stage definitions from helloagents/stages
 - 5 core services from helloagents/services
 - 4 rule modules from helloagents/rules
 - 9 helper scripts from helloagents/scripts
@@ -192,6 +192,8 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     curl -LsSf https://astral.sh/uv/install.sh | sh
 
 > After installing UV, restart your terminal to make the `uv` command available.
+
+> ⚠️ Windows PowerShell 5.1 does not support `&&`. Please run commands separately, or upgrade to [PowerShell 7+](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
 
 **Install and select targets (one command):**
 
@@ -263,6 +265,13 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 
     helloagents update
 
+> ⚠️ **Codex CLI config.toml compatibility notes:** The following settings may affect HelloAGENTS:
+> - `[features]` `steer = true` — changes input submission behavior, may interfere with workflow interaction
+> - `[features]` `child_agents_md = true` — experimental, injects extra instructions that may conflict with HelloAGENTS
+> - `project_doc_max_bytes` too low — default 32KB, AGENTS.md will be truncated (auto-set to 98304 during install)
+> - `agent_max_depth = 1` — limits sub-agent nesting depth, recommend keeping default or ≥2
+> - `agent_max_threads` too low — default 6, lower values limit parallel sub-agent scheduling
+
 ### Claude Code example
 
 **First install:**
@@ -311,8 +320,8 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`). Hooks and SKILL.md are auto-deployed during installation.
 2. In AI chat, every input is scored on five dimensions and routed to R0–R3.
-3. R2/R3 tasks enter the stage chain: EVALUATE → ANALYZE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
-4. RLM dispatches specialized sub-agents (e.g. explorer, designer, implementer) based on task complexity. Supports parallel scheduling and Agent Teams for complex tasks.
+3. R2/R3 tasks enter the stage chain: EVALUATE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
+4. RLM dispatches native sub-agents and specialized roles based on task complexity. Supports parallel scheduling and Agent Teams for complex tasks.
 5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation. Hooks provide additional pre-tool safety checks when available.
 6. Three-layer memory (user / project KB / session) preserves context across sessions.
 7. Stage chain completes with verified output and optional knowledge base sync.
@@ -321,10 +330,10 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.9)
+- pyproject.toml: package metadata (v2.2.12)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
-- helloagents/stages: analyze, design, develop
+- helloagents/stages: design, develop
 - helloagents/services: knowledge, package, memory and support services
 - helloagents/rules: state, cache, tools, scaling
 - helloagents/rlm: role library and orchestration helpers
@@ -362,7 +371,7 @@ These commands run inside AI chat, not your system shell.
   A: Non-HelloAGENTS files are backed up before replacement.
 
 - Q: What is RLM?
-  A: Role Language Model — a sub-agent orchestration system with 12 specialized roles dispatched based on task complexity.
+  A: Role Language Model — a sub-agent orchestration system with 5 specialized roles + native CLI sub-agents dispatched based on task complexity.
 
 - Q: Where does project knowledge go?
   A: In the project-local `.helloagents/` directory, auto-synced when code changes.
@@ -386,7 +395,19 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.9 (current)
+### v2.2.12 (current)
+
+- Comprehensive parallel sub-agent orchestration across all flows and commands, extend G10 coverage, eliminate hardcoded agent counts, add universal parallel information gathering principle
+
+### v2.2.11
+
+- Three-stage gate model: merge analysis into design stage (EVALUATE → DESIGN → DEVELOP), optimize stop points and fix sub-agent orchestration consistency
+
+### v2.2.10
+
+- Streamline sub-agent roles and integrate native multi-agent orchestration for all supported CLIs
+
+### v2.2.9
 
 - Comprehensive Windows file-locking fix: preemptive unlock and rename-aside fallback for install/update/uninstall/clean
 
@@ -402,13 +423,13 @@ These commands run inside AI chat, not your system shell.
 - **Agent Teams protocol:** G10 adds Claude Code multi-role collaboration protocol
 - **SKILL integration:** auto-deploy SKILL.md to skills discovery directory for all CLI targets
 - **RLM command expansion:** add ~rlm agents/resume/team subcommands with parallel multi-role dispatch
-- **Stage parallel optimization:** parallel rules for analyze/develop stages, serial annotation for design
+- **Stage parallel optimization:** parallel rules for develop stage, serial annotation for design
 - **Memory v2 bridge:** add Codex Memory v2 bridge protocol
 - **Script modularization:** extract config_helpers.py module
 
 ### v2.2.5
 
-- **RLM sub-agent system:** 12 specialized roles with automatic dispatch and session isolation
+- **RLM sub-agent system:** 5 specialized roles + native sub-agents with automatic dispatch and session isolation
 - **Five-dimension routing (R0–R3):** replaces legacy three-layer routing
 - **Four-stage workflow + R1 fast flow:** stage chain (Evaluate → Analyze → Design → Develop) with R1 fast flow for single-point operations
 - **Three-layer memory:** L0 user preferences, L1 project knowledge base, L2 session summaries

@@ -49,7 +49,7 @@
 ### 步骤2: 环境检测与变更分析
 
 ```yaml
-环境检测:
+环境检测（4 个独立命令，同一消息中发起多个并行工具调用）:
   命令: git rev-parse --git-dir | git status --porcelain | git remote -v | git branch --show-current
   非 Git 仓库: 输出: 错误，建议 git init
   无变更: 输出: 完成，提示无需提交
@@ -186,7 +186,7 @@ BILINGUAL_COMMIT=1: 本地语言块在上，英文块在下，用 --- 分隔，�
 
 | 场景 | 特征 | 处理 |
 |------|------|------|
-| 首次提交 | git log 为空 | type=init，summary="项目初始化" |
+| 首次提交 | git log 为空 | type=init，summary=描述项目初始化 |
 | 功能分支 | feature/*, fix/* | 推送后提示创建PR |
 | 破坏性变更 | 删除公共API、修改数据结构 | type 后添加 !，footer 添加 BREAKING CHANGE |
 | 回滚 | 用户说"回滚上次提交" | git revert HEAD，type=revert |

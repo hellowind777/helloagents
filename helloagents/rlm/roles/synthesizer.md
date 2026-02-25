@@ -96,7 +96,8 @@ DESIGN 阶段步骤4:
   - complex+评估维度≥3 时强制调用
   - 综合多方案评估结果，生成对比结论
 
-DEVELOP 阶段步骤9:
-  - KB_SKIPPED=false 时强制调用（与 kb_keeper 串行，kb_keeper 完成后执行）
-  - 参与知识库一致性对照，整合代码变更与文档更新的对照结果
+DEVELOP 阶段步骤9（间接参与）:
+  - KnowledgeService.sync() 内部调用，非阶段级直接调用
+  - KB_SKIPPED=false 时，在 kb_keeper 同步前执行一致性对照
+  - 不在 G9 强制调用规则中，由 KnowledgeService 内部编排
 ```
