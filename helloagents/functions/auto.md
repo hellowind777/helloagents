@@ -91,14 +91,7 @@ overview 类型方案包: 直接归档，总结中标注
 
 ```yaml
 EHRB 检测始终生效，不受模式影响。
-
-中断委托规则（DELEGATED 模式期间）:
-  必须中断: EHRB 检测 | 阻断性测试失败 | 方案包验收失败（阻断性） | 无法解决的错误
-  中断时: 设置 DELEGATION_INTERRUPTED = true → 输出问题详情和选项 → ⛔ END_TURN
-  用户响应后:
-    继续: DELEGATION_INTERRUPTED = false，恢复委托模式
-    手动处理: WORKFLOW_MODE = INTERACTIVE
-    取消: → 状态重置
+中断委托规则: [→ G5]
 ```
 
 ---
