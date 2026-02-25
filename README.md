@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.12-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.13-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -271,6 +271,8 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 > - `project_doc_max_bytes` too low — default 32KB, AGENTS.md will be truncated (auto-set to 98304 during install)
 > - `agent_max_depth = 1` — limits sub-agent nesting depth, recommend keeping default or ≥2
 > - `agent_max_threads` too low — default 6, lower values limit parallel sub-agent scheduling
+> - `[features]` `multi_agent = true` — must be enabled for sub-agent orchestration to work
+> - Collab sub-agent scheduling is experimental, requires Codex CLI feature gate to be enabled
 
 ### Claude Code example
 
@@ -295,6 +297,11 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 **Update later (auto-syncs installed targets):**
 
     helloagents update
+
+> 💡 **Claude Code sub-agent orchestration tips:**
+> - Sub-agents (Task tool) work out of the box, no extra configuration needed
+> - Agent Teams collaboration mode requires environment variable: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+> - Parallel sub-agent count is managed automatically by the model, no user-side limit config needed
 
 ### Beta branch
 
@@ -330,7 +337,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.12)
+- pyproject.toml: package metadata (v2.2.13)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -395,7 +402,11 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.12 (current)
+### v2.2.13 (current)
+
+- R3 design proposals default ≥3 parallel, parallel batch limit ≤6, explicit sub-agent count principle (count = independent work units, no vague wording), add sub-agent orchestration config tips to README
+
+### v2.2.12
 
 - Comprehensive parallel sub-agent orchestration across all flows and commands, extend G10 coverage, eliminate hardcoded agent counts, add universal parallel information gathering principle
 
