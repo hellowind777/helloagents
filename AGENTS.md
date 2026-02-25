@@ -617,11 +617,14 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 |----------|----------|
 | 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md |
-| R2/R3 进入方案设计 | stages/design.md, services/knowledge.md, services/package.md, services/templates.md, rules/state.md, rules/scaling.md, rules/tools.md |
-| R2/R3 进入开发实施 | stages/develop.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md, rules/tools.md |
+| R2/R3 进入方案设计（入口） | stages/design.md |
+| DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex） |
+| DESIGN Phase2 按需 | services/package.md, services/templates.md, rules/state.md |
+| R2/R3 进入开发实施（入口） | stages/develop.md, services/package.md |
+| DEVELOP 按需 | services/knowledge.md（KB_SKIPPED=false）, services/attention.md（进度快照时）, rules/cache.md, rules/state.md |
 | ~auto | functions/auto.md |
 | ~plan | functions/plan.md |
-| ~exec | functions/exec.md, rules/tools.md, services/package.md, services/knowledge.md, services/attention.md, rules/cache.md, rules/state.md |
+| ~exec | functions/exec.md, rules/tools.md |
 | ~init | functions/init.md, services/templates.md, rules/tools.md |
 | ~upgradekb | functions/upgradekb.md, services/templates.md, rules/tools.md |
 | ~cleanplan | functions/cleanplan.md, rules/tools.md |
