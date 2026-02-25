@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.13-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.14-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -84,7 +84,7 @@ Compared with legacy multi-bundle releases, the v2.x line is now package-first w
 
 **RLM sub-agent orchestration**
 
-5 specialized roles (reviewer, synthesizer, kb_keeper, pkg_keeper, writer) plus host CLI native sub-agents (explore/implement/test/design) are dispatched automatically based on task complexity, with session isolation per CLI instance. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
+5 specialized roles (reviewer, synthesizer, kb_keeper, pkg_keeper, writer) plus host CLI native sub-agents (explore/implement/test/design) are dispatched automatically based on task complexity, with session isolation per CLI instance. Tasks are scheduled via DAG dependency analysis with layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
 
 **Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
 </td>
@@ -328,7 +328,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`). Hooks and SKILL.md are auto-deployed during installation.
 2. In AI chat, every input is scored on five dimensions and routed to R0–R3.
 3. R2/R3 tasks enter the stage chain: EVALUATE → DESIGN → DEVELOP. R1 fast flow handles single-point operations directly.
-4. RLM dispatches native sub-agents and specialized roles based on task complexity. Supports parallel scheduling and Agent Teams for complex tasks.
+4. RLM dispatches native sub-agents and specialized roles based on task complexity. Tasks with dependencies are scheduled via DAG topological sort with layer-by-layer parallel dispatch.
 5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation. Hooks provide additional pre-tool safety checks when available.
 6. Three-layer memory (user / project KB / session) preserves context across sessions.
 7. Stage chain completes with verified output and optional knowledge base sync.
@@ -337,7 +337,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.13)
+- pyproject.toml: package metadata (v2.2.14)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -378,7 +378,7 @@ These commands run inside AI chat, not your system shell.
   A: Non-HelloAGENTS files are backed up before replacement.
 
 - Q: What is RLM?
-  A: Role Language Model — a sub-agent orchestration system with 5 specialized roles + native CLI sub-agents dispatched based on task complexity.
+  A: Role Language Model — a sub-agent orchestration system with 5 specialized roles + native CLI sub-agents, DAG-based parallel scheduling, and standardized prompt/return format.
 
 - Q: Where does project knowledge go?
   A: In the project-local `.helloagents/` directory, auto-synced when code changes.
@@ -402,7 +402,15 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.13 (current)
+### v2.2.14 (current)
+
+- DAG dependency scheduling for task execution (depends_on, topological sort, layer-by-layer parallel dispatch with failure propagation)
+- Graded retry and standardized sub-agent return format with scope verification
+- Sub-agent orchestration paradigm: four-step method, prompt template, behavior constraints (route-skip, output format)
+- Execution path hardening: explicit R1 upgrade triggers, DESIGN retry limits, DEVELOP entry/exit conditions
+- Workflow rule audit: terminology and format consistency, redundancy cleanup
+
+### v2.2.13
 
 - R3 design proposals default ≥3 parallel, parallel batch limit ≤6, explicit sub-agent count principle (count = independent work units, no vague wording), add sub-agent orchestration config tips to README
 
