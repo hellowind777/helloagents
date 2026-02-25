@@ -701,7 +701,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
     原生子代理 — moderate/complex+现有代码库 代码库扫描强制（步骤4）| complex+依赖>5模块 深度依赖分析强制（步骤6）| simple 或新建项目跳过
     helloagents 角色不参与 Phase1
     Phase2（方案构思）—
-    原生子代理 — R3 标准流程步骤10 方案构思时强制，≥2 个子代理并行（每个独立构思一个方案）
+    原生子代理 — R3 标准流程步骤10 方案构思时强制，≥3 个子代理并行（每个独立构思一个方案）
     synthesizer — complex+评估维度≥3 强制 | 其他跳过
     pkg_keeper — 方案包内容填充时强制（通过 PackageService 调用）
   DEVELOP:
@@ -765,7 +765,7 @@ helloagents 专有角色（保留的 5 个角色）:
             返回: {status, changes_made, issues_found}"
   )
 
-示例（DESIGN 步骤10 方案构思，≥2 个并行调用在同一消息中发起）:
+示例（DESIGN 步骤10 方案构思，≥3 个并行调用在同一消息中发起）:
   Task(
     subagent_type="general-purpose",
     prompt="独立构思一个实现方案。上下文: {Phase1 收集的项目上下文}。
@@ -774,7 +774,13 @@ helloagents 专有角色（保留的 5 个角色）:
   )
   Task(
     subagent_type="general-purpose",
-    prompt="独立构思一个与其他方案差异化的实现方案。上下文: {Phase1 收集的项目上下文}。
+    prompt="独立构思一个差异化的实现方案，优先考虑不同的技术路径或架构模式。上下文: {Phase1 收集的项目上下文}。
+            要求: 输出方案名称、核心思路、技术路径、优缺点。
+            返回: {name, approach, tech_path, pros, cons}"
+  )
+  Task(
+    subagent_type="general-purpose",
+    prompt="独立构思一个差异化的实现方案，优先考虑不同的权衡取舍（如性能vs可维护性）。上下文: {Phase1 收集的项目上下文}。
             要求: 输出方案名称、核心思路、技术路径、优缺点。
             返回: {name, approach, tech_path, pros, cons}"
   )
@@ -894,7 +900,7 @@ helloagents 专有角色:
 ### 并行调度规则（适用所有 CLI）
 
 ```yaml
-并行批次上限: ≤5 个子代理/批
+并行批次上限: ≤6 个子代理/批
 并行适用: 同阶段内无数据依赖的任务
 串行强制: 有数据依赖链的任务（如 design 步骤10: 方案评估→synthesizer）
 
@@ -902,6 +908,7 @@ helloagents 专有角色:
   多个独立文件读取/搜索 → 同一消息中发起多个并行工具调用（Read/Grep/Glob/WebSearch/WebFetch）
   多个独立分析/验证维度 → 调度原生子代理并行执行（文件数>5 或维度≥3 时）
   轻量级独立数据源（单次读取即可） → 并行工具调用即可，不需要子代理开销
+  子代理数量原则: 子代理数 = 实际独立工作单元数（维度数/模块数/文件数），受≤6/批上限约束，禁止用"多个"模糊带过
 
 CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用

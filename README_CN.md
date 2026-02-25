@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.12-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.13-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -272,6 +272,8 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 > - `project_doc_max_bytes` 过小 — 默认 32KB，AGENTS.md 超出会被截断（安装时已自动调整为 98304）
 > - `agent_max_depth = 1` — 限制子代理嵌套深度，建议保持默认或设为 ≥2
 > - `agent_max_threads` 过小 — 默认 6，过低会限制并行子代理调度
+> - `[features]` 中的 `multi_agent = true` — 需开启才能使用子代理编排功能
+> - Collab 子代理调度为实验性特性，需 Codex CLI 开启特性门控后方可使用
 
 ### Claude Code 示例
 
@@ -296,6 +298,11 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 **后续更新（自动同步已安装目标）：**
 
     helloagents update
+
+> 💡 **Claude Code 子代理编排配置提示：**
+> - 子代理（Task 工具）开箱即用，无需额外配置
+> - Agent Teams 协作模式需设置环境变量：`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+> - 并行子代理数量由模型自动管理，无需用户配置上限
 
 ### Beta 分支
 
@@ -331,7 +338,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.12）
+- pyproject.toml：包元数据（v2.2.13）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：design、develop
@@ -396,7 +403,11 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.12（当前版本）
+### v2.2.13（当前版本）
+
+- R3 方案构思默认≥3 并行，并行批次上限调整为≤6，明确子代理数量原则（数量=独立工作单元数，禁止模糊用词），README 新增子代理编排配置提示
+
+### v2.2.12
 
 - 全面并行化子代理编排，G10 扩展覆盖所有流程和命令，消除硬编码子代理数量，新增通用并行信息收集原则
 
