@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.13-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.14-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -85,7 +85,7 @@
 
 **RLM 子代理编排**
 
-5 个专有角色（reviewer、synthesizer、kb_keeper、pkg_keeper、writer）+ 宿主 CLI 原生子代理（探索/实现/测试/设计）按任务复杂度自动调度，每个 CLI 实例独立 Session 隔离。支持跨 CLI 并行调度和 Agent Teams 协作模式。
+5 个专有角色（reviewer、synthesizer、kb_keeper、pkg_keeper、writer）+ 宿主 CLI 原生子代理（探索/实现/测试/设计）按任务复杂度自动调度，每个 CLI 实例独立 Session 隔离。任务通过 DAG 依赖分析按层并行派发。支持跨 CLI 并行调度和 Agent Teams 协作模式。
 
 **收益：** 复杂任务由对口专家角色分工处理，支持并行执行提升效率。
 </td>
@@ -329,7 +329,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 1. 安装包（脚本/pip/uv）并执行 `helloagents` 弹出交互菜单选择目标 CLI（也可直接 `helloagents install <target>`）。安装时自动部署 Hooks 和 SKILL.md。
 2. 在 AI 聊天中，每条输入按五个维度评分并路由到 R0–R3。
 3. R2/R3 任务进入阶段链：EVALUATE → DESIGN → DEVELOP。R1 快速流程直接处理单点操作。
-4. RLM 根据任务复杂度调度原生子代理和专有角色。支持并行调度和 Agent Teams 协作处理复杂任务。
+4. RLM 根据任务复杂度调度原生子代理和专有角色。有依赖关系的任务通过 DAG 拓扑排序按层并行派发。
 5. EHRB 在每个步骤扫描破坏性操作，高风险行为需用户明确确认。Hooks 可提供额外的工具调用前安全预检。
 6. 三层记忆（用户 / 项目知识库 / 会话）跨会话保持上下文。
 7. 阶段链完成后输出可验证结果，并可选同步知识库。
@@ -338,7 +338,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.13）
+- pyproject.toml：包元数据（v2.2.14）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：design、develop
@@ -379,7 +379,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
   A: 非 HelloAGENTS 文件会先备份再替换。
 
 - Q: RLM 是什么？
-  A: Role Language Model — 子代理编排系统，5 个专有角色 + 原生子代理按任务复杂度自动调度。
+  A: Role Language Model — 子代理编排系统，5 个专有角色 + 原生子代理，支持 DAG 并行调度与标准化 prompt/返回格式。
 
 - Q: 工作流知识库存在哪里？
   A: 项目内 `.helloagents/` 目录，代码变更时自动同步。
@@ -403,7 +403,15 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.13（当前版本）
+### v2.2.14（当前版本）
+
+- 任务执行 DAG 依赖调度（depends_on、拓扑排序、按层并行派发+失败传播）
+- 分级重试与子代理标准返回格式，含 scope 校验
+- 子代理编排范式：四步法、prompt 模板、行为约束（路由跳过、输出格式）
+- 执行路径明确化：R1 升级触发条件显式化、DESIGN 重试上限、DEVELOP 入口/出口条件
+- 工作流规则审计：术语与格式一致性修正、冗余内容清理
+
+### v2.2.13
 
 - R3 方案构思默认≥3 并行，并行批次上限调整为≤6，明确子代理数量原则（数量=独立工作单元数，禁止模糊用词），README 新增子代理编排配置提示
 
