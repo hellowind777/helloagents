@@ -415,7 +415,7 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
     1. 需求理解（可读取项目上下文辅助理解：知识库摘要、目录结构、配置文件等）
     2. 逐维度打分
     3. 评分 < 8 → 按 {EVAL_MODE} 追问 → ⛔ END_TURN
-       EVAL_MODE=1: 每轮1个问题（最低分维度），最多5轮
+       EVAL_MODE=1: 每轮1个问题（最低分维度，按绝对分值比较），最多5轮
        EVAL_MODE=2: 一次性展示所有未满分维度问题（≤5个），最多3轮
        同分优先级: 多维度同分时，按 需求范围 → 成果规格 → 实施条件 → 验收标准 顺序优先追问
        维度隔离（CRITICAL）: 每个问题仅针对单一维度追问，禁止将多个维度合并到同一问题或选项中。选项之间的差异必须限定在该维度范围内
@@ -668,7 +668,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 |-----------|--------|------|
 | evaluate | 需求评分≥8分（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
 | design（含 Phase1） | Phase1: 项目上下文已获取+TASK_COMPLEXITY 已评估 / Phase2: 方案包结构完整+格式正确 | ℹ️ 信息性（Phase1）/ ⛔ 阻断性（Phase2） |
-| develop | 阻断性测试通过+代码安全检查+子代理调用合规 [→ G9] | ⛔ 阻断性 |
+| develop | 阻断性测试通过+安全与质量检查+子代理调用合规 [→ G9] | ⛔ 阻断性 |
 | R1 快速流程 | 变更已应用 | ⚠️ 警告性 |
 | evaluate→design | 需求评分≥8（R3）或已确认（R2） | ⛔ 闸门 |
 | design→develop | 方案包存在 + validate_package.py 通过 | ⛔ 闸门 |
@@ -733,14 +733,14 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   EVALUATE: 主代理直接执行，不调用子代理
   DESIGN:
     Phase1（上下文收集）—
-    原生子代理 — moderate/complex+现有代码库 代码库扫描强制（步骤4）| complex+依赖>5模块 深度依赖分析强制（步骤6）| simple 或新建项目跳过
+    原生子代理 — moderate/complex+现有项目资源 项目资源扫描强制（步骤4）| complex+涉及>5个独立单元 深度依赖分析强制（步骤6）| simple 或新建项目跳过
     helloagents 角色不参与 Phase1
     Phase2（方案构思）—
     原生子代理 — R3 标准流程步骤10 方案构思时强制，≥3 个子代理并行（每个独立构思一个方案）
     synthesizer — complex+评估维度≥3 强制 | 其他跳过
     pkg_keeper — 方案包内容填充时强制（通过 PackageService 调用）
   DEVELOP:
-    原生子代理 — moderate/complex 代码改动强制（步骤6，逐项调用）| 新增测试用例时强制（步骤8）| simple 跳过
+    原生子代理 — moderate/complex 任务改动强制（步骤6，逐项调用）| 新增测试用例时强制（步骤8）| simple 跳过
     reviewer — complex+涉及核心/安全模块 强制 | 其他跳过
     kb_keeper — KB_SKIPPED=false 时强制（通过 KnowledgeService 调用）
     pkg_keeper — 归档前状态更新时强制（通过 PackageService 调用）
@@ -863,24 +863,24 @@ helloagents 角色:
     prompt="直接执行以下任务，跳过路由评分。
             你负责: 独立构思一个实现方案。
             上下文: {Phase1 收集的项目上下文}。
-            任务: 输出方案名称、核心思路、技术路径、优缺点。
-            返回: {name, approach, tech_path, pros, cons}"
+            任务: 输出方案名称、核心思路、实现路径、优缺点。
+            返回: {name, approach, impl_path, pros, cons}"
   )
   Task(
     subagent_type="general-purpose",
     prompt="直接执行以下任务，跳过路由评分。
-            你负责: 独立构思一个差异化方案，优先考虑不同的技术路径或架构模式。
+            你负责: 独立构思一个差异化方案，优先考虑不同的实现路径或架构模式。
             上下文: {Phase1 收集的项目上下文}。
-            任务: 输出方案名称、核心思路、技术路径、优缺点。
-            返回: {name, approach, tech_path, pros, cons}"
+            任务: 输出方案名称、核心思路、实现路径、优缺点。
+            返回: {name, approach, impl_path, pros, cons}"
   )
   Task(
     subagent_type="general-purpose",
     prompt="直接执行以下任务，跳过路由评分。
             你负责: 独立构思一个差异化方案，优先考虑不同的权衡取舍（如性能vs可维护性）。
             上下文: {Phase1 收集的项目上下文}。
-            任务: 输出方案名称、核心思路、技术路径、优缺点。
-            返回: {name, approach, tech_path, pros, cons}"
+            任务: 输出方案名称、核心思路、实现路径、优缺点。
+            返回: {name, approach, impl_path, pros, cons}"
   )
 ```
 

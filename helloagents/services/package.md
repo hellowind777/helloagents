@@ -30,7 +30,7 @@
 ### create(feature, type)
 
 ```yaml
-触发: design 阶段步骤5
+触发: design 阶段步骤11
 参数: feature(功能名), type(implementation|overview)
 流程: 生成路径 plan/YYYYMMDDHHMM_{feature}/ → 冲突检查(使用_v2,_v3) → create_package.py → pkg_keeper 填充 → 验证
 返回: success, package_path, errors

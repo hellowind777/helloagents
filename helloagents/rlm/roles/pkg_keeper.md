@@ -32,7 +32,7 @@
 ### 1. 方案包创建（create 接口）
 
 ```yaml
-触发: design 阶段步骤5
+触发: design 阶段步骤11
 输入: feature（功能名称）, type（implementation | overview）
 任务:
   - 生成方案包路径: plan/YYYYMMDDHHMM_{feature}/
