@@ -107,7 +107,7 @@ AI 生成目标内容: 读取源 → 按模板格式重组 → 填充占位符
 ```yaml
 Codex CLI 配置（自动检测，非 Codex 环境跳过）:
   脚本: configure_codex.py
-  功能: 设置 project_doc_max_bytes = 98304（96 KiB），防止规则文件被截断
+  功能: 设置 project_doc_max_bytes = 131072（128 KiB），防止规则文件被截断
   安全: 仅在参数未设置或低于目标值时写入，不修改已有配置
 ```
 
