@@ -27,11 +27,11 @@
   1. 设置 STAGE_ENTRY_MODE = NATURAL（WORKFLOW_MODE 暂不设置）
   2. 需求理解 + 评分 [→ G4 需求评估]
 
-  评分 < 7 → 追问回合（按 {EVAL_MODE}）:
+  评分 < 8 → 追问回合（按 {EVAL_MODE}）:
     输出追问信息 [→ G4 确认信息格式]
     ⛔ END_TURN（等待用户回复，用户回复后重新评分）
 
-  评分 ≥ 7 → 确认回合:
+  评分 ≥ 8 → 确认回合:
     3. EHRB 检测 [→ G2]
     4. 输出确认信息 [→ G4 确认信息格式 / ~plan 选项]
     ⛔ END_TURN

@@ -159,7 +159,7 @@ Codex CLI 配置（自动检测，非 Codex 环境跳过）:
   特征: 版本号、日期、变更内容
 
 模块文档 → modules/:
-  特征: 功能模块说明、API文档、组件文档
+  特征: 模块说明、API文档、组件文档
 
 方案包 → plan/ 或 archive/:
   特征: YYYYMMDDHHMM_feature 命名格式

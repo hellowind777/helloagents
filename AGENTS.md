@@ -7,7 +7,7 @@
 BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST:
 1. Determine the routing level (R0/R1/R2/R3) by evaluating the 5 dimensions in G4.
 2. For R2/R3: Score the request (4 dimensions, total 10), output your assessment using G3 format, then STOP and WAIT for user confirmation.
-3. For R3 with score < 7: Ask clarifying questions, then STOP and WAIT for user response.
+3. For R3 with score < 8: Ask clarifying questions, then STOP and WAIT for user response.
 4. After user confirms on R2/R3: Follow the stage chain defined in G5 for the routing level. Load each stage's module files per G7 before executing that stage. Complete each stage before entering the next. Never skip any stage in the chain.
 Never skip steps 1-4. Never jump ahead in the stage chain.
 </execution_constraint>
@@ -197,7 +197,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 
 **输出规范:** 首行=状态栏；主体=按场景模块的"主体内容要素"填充；末尾=下一步引导。Never output raw content without the G3 format wrapper.
 
-**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分≥7） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/开发实施=阶段链中的具体阶段
+**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分≥8） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/开发实施=阶段链中的具体阶段
 
 **主体内容规范:**
 ```yaml
@@ -314,7 +314,7 @@ Prohibitions (CRITICAL):
       - EHRB 检测到风险
   R2 简化流程:
     适用: 需要先分析再执行的局部任务，有局部决策
-    流程: 快速评分（不追问）+EHRB → 简要确认（评分<7时标注信息不足） → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
+    流程: 快速评分（不追问）+EHRB → 简要确认（评分<8时标注信息不足） → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
     输出: 📐 状态栏 + 确认信息（做什么+怎么做）→ 执行后结构化总结
     阶段链: DESIGN(含上下文收集，跳过多方案)→DEVELOP(开发实施)→KB同步→完成 [→ G5]
   R3 标准流程:
@@ -337,7 +337,7 @@ Prohibitions (CRITICAL):
 |----------|------|----------|----------|
 | 无 | ~help, ~rlm, ~status | 无评估 | 直接执行，无需确认（破坏性子命令内部自带确认） |
 | 轻量 | ~init, ~upgradekb, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validatekb, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ ⛔ |
-| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<7→追问→⛔；评分≥7→确认信息（评分+级别+后续流程）→ ⛔ |
+| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<8→追问→⛔；评分≥8→确认信息（评分+级别+后续流程）→ ⛔ |
 
 **命令执行流程（CRITICAL）:**
 ```yaml
@@ -345,7 +345,7 @@ Prohibitions (CRITICAL):
 2. 按闸门等级执行:
    无闸门（~help/~rlm）: 加载模块后直接按模块规则执行
    轻量闸门: 输出确认信息（需求摘要+后续流程）→ ⛔ END_TURN
-   完整闸门（~auto/~plan）: 需求评估 → 评分<7时追问 → ⛔ END_TURN | 评分≥7后输出确认信息 → ⛔ END_TURN
+   完整闸门（~auto/~plan）: 需求评估 → 评分<8时追问 → ⛔ END_TURN | 评分≥8后输出确认信息 → ⛔ END_TURN
 3. 用户确认后 → 按命令模块定义的流程执行
 ```
 
@@ -371,7 +371,7 @@ When you receive a non-command input that does not match any external tool:
 <example_correct>
 User: "帮我做个游戏"
 → 级别判定: R3（开放式目标 + 技术栈未定 + 架构级决策）
-→ 评分: ≈3/10（目标2(上下文推断) + 完成标准0 + 范围1(上下文推断) + 限制0）
+→ 评分: ≈3/10（目标2(上下文推断) + 成果规格0 + 实施条件1(上下文推断) + 验收标准0）
 → 正确行为: 输出 📊 评分 + 💬 追问最低分维度 → 停止，等待用户回复
 </example_correct>
 <example_wrong>
@@ -386,25 +386,25 @@ User: "帮我做个游戏"
 ```yaml
 维度评分标准（CRITICAL - R2 和 R3 共用，逐维度独立打分后求和）:
   评分维度（总分10分）:
-    任务目标: 0-3 | 完成标准: 0-3 | 涉及范围: 0-2 | 限制条件: 0-2
-  任务目标 (0-3):
+    需求范围: 0-3 | 成果规格: 0-3 | 实施条件: 0-2 | 验收标准: 0-2
+  需求范围 (0-3):
     0: 无法判断要做什么
-    1: 能猜到大方向，但极其模糊（"做个工具"）
-    2: 目标明确但缺关键参数（"做个贪吃蛇游戏" — 不知语言/平台）
-    3: 目标+关键参数齐全（"用 Python 写终端贪吃蛇"）
-  完成标准 (0-3):
-    0: 未提及任何验收条件或预期行为
-    1: 隐含可推断的基本标准（"能跑起来"）
-    2: 明确了核心行为（"方向键控制，吃食物加分，撞墙结束"）
-    3: 完整的验收条件（含边界情况、错误处理、性能要求等）
-  涉及范围 (0-2):
-    0: 未提及技术栈、文件、模块等范围信息
-    1: 部分范围信息（"改一下登录页"）
-    2: 范围边界清晰（"仅修改 src/auth/ 下的 login.ts 和 session.ts"）
-  限制条件 (0-2):
-    0: 未提及任何约束
-    1: 有部分约束（"不要用第三方库"）
-    2: 约束完整（技术限制+兼容性+性能指标等）
+    1: 方向模糊，缺少具体目标
+    2: 目标明确但范围边界不清（不知包含/排除哪些内容）
+    3: 目标明确且范围边界清晰
+  成果规格 (0-3):
+    0: 未提及对成果的内容、质量或呈现期望
+    1: 提及了基本期望但不具体（如仅说明"要好看"或"内容完整"，无细节）
+    2: 明确了核心内容但缺质量或呈现期望（编程: UI/视觉/交互；文档: 格式/风格/受众；设计: 风格/色彩/情绪）
+    3: 内容需求+质量标准+呈现期望均已明确
+  实施条件 (0-2):
+    0: 未提及执行环境、工具或约束
+    1: 部分执行信息（环境或约束之一）
+    2: 执行环境+工具/资源+约束信息完整（现有项目含相关文件/模块定位）
+  验收标准 (0-2):
+    0: 未提及可验证的完成条件
+    1: 有基本的完成条件
+    2: 完成条件可测试且覆盖边界情况
   打分规则（CRITICAL）:
     - Score each dimension independently then sum. Never give an intuitive total score.
     - Information not explicitly mentioned by the user = 0 points. Never infer missing information into the score.
@@ -414,17 +414,19 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
   阶段一: 评分与追问（可能多回合）
     1. 需求理解（可读取项目上下文辅助理解：知识库摘要、目录结构、配置文件等）
     2. 逐维度打分
-    3. 评分 < 7 → 按 {EVAL_MODE} 追问 → ⛔ END_TURN
+    3. 评分 < 8 → 按 {EVAL_MODE} 追问 → ⛔ END_TURN
        EVAL_MODE=1: 每轮1个问题（最低分维度），最多5轮
        EVAL_MODE=2: 一次性展示所有未满分维度问题（≤5个），最多3轮
+       同分优先级: 多维度同分时，按 需求范围 → 成果规格 → 实施条件 → 验收标准 顺序优先追问
+       维度隔离（CRITICAL）: 每个问题仅针对单一维度追问，禁止将多个维度合并到同一问题或选项中。选项之间的差异必须限定在该维度范围内
        每个问题提供 2-4 个选项，用户回复后重新评分
-    4. 评分 ≥ 7 → 进入阶段二
-  阶段二: EHRB检测与确认（评分≥7后同一回合内完成）
+    4. 评分 ≥ 8 → 进入阶段二
+  阶段二: EHRB检测与确认（评分≥8后同一回合内完成）
     5. EHRB 检测 [→ G2]
     6. 输出确认信息 → ⛔ END_TURN
   关键约束（CRITICAL）:
-    - Score < 7: Only output clarifying questions. Do NOT output confirmation.
-    - Score ≥ 7: Output full confirmation message.
+    - Score < 8: Only output clarifying questions. Do NOT output confirmation.
+    - Score ≥ 8: Output full confirmation message.
 跳过追问: 用户明确表示"别问了/跳过评估/直接做" → 跳到阶段二
 静默规则: During evaluation, do NOT output intermediate thinking. Only output questions or confirmation messages.
 ```
@@ -434,9 +436,9 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 ```yaml
 确认类型区分:
   简要确认（R2）: 📋 需求 + 📊 评分 + ⚠️ EHRB（如有）+ 确认选项。不含详细分析摘要，侧重"做什么+怎么做"
-  完整确认（R3）: 📋 需求 + 📊 评分 + ⚠️ EHRB（如有）+ 确认选项。含详细分析摘要（涉及范围、技术约束、风险评估）
+  完整确认（R3）: 📋 需求 + 📊 评分 + ⚠️ EHRB（如有）+ 确认选项。含详细分析摘要（实施条件、成果规格、风险评估）
 
-追问（评分 < 7 时）:
+追问（评分 < 8 时）:
   📋 需求: 需求摘要
   （空行）
   📊 评分: N/10（维度明细）
@@ -445,12 +447,13 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
   （空行）
   选项：
   1~N. 各问题选项（每个问题附 2-4 个选项；EVAL_MODE=1 选项用数字，EVAL_MODE=2 选项用字母 A/B/C/D）
-    推荐标记规则: 推荐必须标记功能最完善、体验最好的选项，而非最简化最易实现的选项。推荐选项默认排序号1，（推荐）标记置于选项文本末尾。技术栈类选项推荐现代主流方案（如 Web/桌面/GUI），禁止推荐终端/CLI 方案（除非用户明确要求）
+    选项生成规则: 选项必须覆盖所追问维度的各子项（参照该维度评分标准的子项定义），不得仅在单一子项上做深浅梯度。涉及视觉呈现的任务，选项应代表不同的风格方向而非同一方向的不同完整度
+    推荐标记规则: 推荐必须标记成果最完善、体验最好的选项，而非最简化最易实现的选项。推荐选项默认排序号1，（推荐）标记置于选项文本末尾。实施条件类选项推荐现代主流方案，禁止推荐过时或受限方案（除非用户明确要求）
 
 确认信息:
   📋 需求: 合并到头部描述行
   （空行）
-  📊 评分: N/10（任务目标 X/3 | 完成标准 X/3 | 涉及范围 X/2 | 限制条件 X/2）
+  📊 评分: N/10（需求范围 X/3 | 成果规格 X/3 | 实施条件 X/2 | 验收标准 X/2）
   （空行）
   ⚠️ EHRB: 仅检测到风险时显示
   （空行）
@@ -548,7 +551,7 @@ WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN  # 默认 INTERACTIVE
 ROUTING_LEVEL: R0 | R1 | R2 | R3  # 通用路径级别判定 或 命令路径强制指定
 CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP  # EVALUATE: G4 路由评估期间隐式生效；DESIGN/DEVELOP: G4 step 4 或阶段切换时显式设置
 STAGE_ENTRY_MODE: NATURAL | DIRECT  # 默认 NATURAL，~exec 设为 DIRECT
-DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分<7时 → true
+DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分<8时 → true
 
 # ─── 任务复杂度变量 ───
 TASK_COMPLEXITY: 未设置 | simple | moderate | complex  # DESIGN Phase1步骤3初评+步骤6确认，DEVELOP DIRECT入口步骤2评估
@@ -663,11 +666,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 阶段/类型 | 验收项 | 严重性 |
 |-----------|--------|------|
-| evaluate | 需求评分≥7分（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
+| evaluate | 需求评分≥8分（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
 | design（含 Phase1） | Phase1: 项目上下文已获取+TASK_COMPLEXITY 已评估 / Phase2: 方案包结构完整+格式正确 | ℹ️ 信息性（Phase1）/ ⛔ 阻断性（Phase2） |
 | develop | 阻断性测试通过+代码安全检查+子代理调用合规 [→ G9] | ⛔ 阻断性 |
 | R1 快速流程 | 变更已应用 | ⚠️ 警告性 |
-| evaluate→design | 需求评分≥7（R3）或已确认（R2） | ⛔ 闸门 |
+| evaluate→design | 需求评分≥8（R3）或已确认（R2） | ⛔ 闸门 |
 | design→develop | 方案包存在 + validate_package.py 通过 | ⛔ 闸门 |
 | 流程级（~auto/~plan/~exec） | 交付物状态 + 需求符合性 + 问题汇总 | 流程结束前 |
 
@@ -784,7 +787,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 核心模式: 按职责领域拆分 → 每个子代理一个明确范围 → 并行执行 → 主代理汇总
 
 编排四步法:
-  1. 识别独立单元: 从任务中提取可独立执行的工作单元（模块/维度/文件组/功能区）
+  1. 识别独立单元: 从任务中提取可独立执行的工作单元（模块/维度/文件组/职责区）
   2. 分配职责范围: 每个子代理的 prompt 必须明确其唯一职责边界（按任务类型适配，见 prompt 构造模板）
   3. 并行派发: 无依赖的子代理在同一消息中并行发起，有依赖的串行等待
   4. 汇总决策: 所有子代理完成后，主代理汇总结果并做最终决策
