@@ -29,7 +29,7 @@ except ImportError:
 
 
 # === 常量 ===
-TARGET_BYTES = 98304  # 96 KiB
+TARGET_BYTES = 131072  # 128 KiB
 PARAM_NAME = "project_doc_max_bytes"
 
 
@@ -177,7 +177,7 @@ def main():
             config_path=str(config_path),
             target_bytes=TARGET_BYTES
         )
-        report.mark_success(f"{PARAM_NAME} = {TARGET_BYTES} (96 KiB)")
+        report.mark_success(f"{PARAM_NAME} = {TARGET_BYTES} (128 KiB)")
     else:
         report.mark_failed("验证写入", ["手动检查 config.toml"], "写入后验证失败")
 

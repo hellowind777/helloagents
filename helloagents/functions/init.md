@@ -83,7 +83,10 @@
 创建:
   目录结构: 按 G1 知识库完整结构创建（含 sessions/ 目录）
   模板: 读取 services/templates.md
-  大型项目（TASK_COMPLEXITY=complex）: 调度原生子代理并行扫描不同模块目录 [→ G10 调用通道]，主代理汇总各子代理扫描结果后统一创建
+  大型项目（TASK_COMPLEXITY=complex）: 调度原生子代理并行扫描不同模块目录（强制）[→ G10 调用通道]
+    编排: 按模块目录拆分，每个子代理负责扫描一个目录（子代理数=模块目录数，≤6/批）
+    每个子代理 prompt 明确: 负责的目录路径 + 扫描内容（文件结构/入口点/导出接口/依赖关系）
+    主代理汇总各子代理扫描结果后统一创建
   全局记忆: 检查 {HELLOAGENTS_ROOT}/user/ 目录，不存在时自动创建
 ```
 
@@ -92,7 +95,7 @@
 ```yaml
 Codex CLI 配置（自动检测，非 Codex 环境跳过）:
   脚本: configure_codex.py
-  功能: 设置 project_doc_max_bytes = 98304（96 KiB），防止规则文件被截断
+  功能: 设置 project_doc_max_bytes = 131072（128 KiB），防止规则文件被截断
   安全: 仅在参数未设置或低于目标值时写入，不修改已有配置
 ```
 

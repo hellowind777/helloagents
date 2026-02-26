@@ -15,7 +15,7 @@ from .cli import (
 # ---------------------------------------------------------------------------
 
 def _configure_codex_toml(dest_dir: Path) -> None:
-    """Ensure config.toml has project_doc_max_bytes >= 98304."""
+    """Ensure config.toml has project_doc_max_bytes >= 131072."""
     config_path = dest_dir / "config.toml"
     content = ""
     if config_path.exists():
@@ -23,14 +23,14 @@ def _configure_codex_toml(dest_dir: Path) -> None:
 
     # Already set and large enough — nothing to do
     m = re.search(r'project_doc_max_bytes\s*=\s*(\d+)', content)
-    if m and int(m.group(1)) >= 98304:
+    if m and int(m.group(1)) >= 131072:
         return
 
     if m:
         # Exists but value is too small — replace it
         content = re.sub(
             r'project_doc_max_bytes\s*=\s*\d+',
-            'project_doc_max_bytes = 98304',
+            'project_doc_max_bytes = 131072',
             content)
     else:
         # Not present — insert before the first [section] or at the top
@@ -38,15 +38,15 @@ def _configure_codex_toml(dest_dir: Path) -> None:
         section_match = re.search(r'^\[', content, re.MULTILINE)
         if section_match:
             insert_pos = section_match.start()
-        line = "project_doc_max_bytes = 98304\n"
+        line = "project_doc_max_bytes = 131072\n"
         if insert_pos > 0:
             line += "\n"
         content = content[:insert_pos] + line + content[insert_pos:]
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
-    print(_msg("  已配置 project_doc_max_bytes = 98304 (防止 AGENTS.md 被截断)",
-               "  Configured project_doc_max_bytes = 98304 (prevent AGENTS.md truncation)"))
+    print(_msg("  已配置 project_doc_max_bytes = 131072 (防止 AGENTS.md 被截断)",
+               "  Configured project_doc_max_bytes = 131072 (prevent AGENTS.md truncation)"))
 
 
 # ---------------------------------------------------------------------------
