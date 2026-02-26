@@ -381,6 +381,15 @@ User: "帮我做个游戏"
 
 **命令解析：** `~命令名 [需求描述]`，AI 按语义区分参数和需求描述
 
+**自定义命令扩展:**
+```yaml
+自定义命令: 匹配内置命令失败后 → 扫描 .helloagents/commands/*.md
+  文件名即命令名（如 deploy.md → ~deploy）
+  闸门等级: 轻量（需求理解 + EHRB，不评分不追问）
+  加载: 读取对应 .md 文件作为执行规则
+  无匹配: 按通用路径处理
+```
+
 ### 需求评估（R2/R3 评估流程）
 
 ```yaml
@@ -659,6 +668,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | ~clean | functions/clean.md, services/memory.md, rules/tools.md |
 | ~rlm spawn | rlm/roles/{role}.md |
 | 调用脚本时 | rules/tools.md（脚本执行规范与降级处理） |
+| 自定义命令 | .helloagents/commands/{命令名}.md |
 
 ---
 
@@ -779,6 +789,22 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   原因: 路由评分是主代理的职责，子代理重复评分会导致错误的流程标签（如标准流程的子代理输出"快速流程"）
   实现: 子代理 prompt 中追加指令 "直接执行以下任务，跳过路由评分"
 输出格式: 子代理只输出任务执行结果，不输出流程标题（如"【HelloAGENTS】– 快速流程"等）
+
+上下文注入（Claude Code）:
+  主代理: UserPromptSubmit hook 在每次用户消息时注入 CLAUDE.md 关键规则摘要，确保 compact 后规则不丢失
+  子代理: SubagentStart hook 自动注入当前方案包上下文（proposal.md + tasks.md + context.md）+ 技术指南（guidelines.md），
+    主代理构建子代理 prompt 时仍需包含任务描述和约束条件，hook 注入的上下文作为补充而非替代
+    技术指南: .helloagents/guidelines.md 存放项目级编码约定（框架规范/代码风格/架构约束），子代理开发前自动获取
+
+质量验证循环（Claude Code）: SubagentStop hook 在代码实现子代理完成时自动运行项目验证命令，
+  验证失败 → 子代理继续修复（最多1次循环，stop_hook_active=true 时放行）
+  验证命令来源: .helloagents/verify.yaml > package.json scripts > 自动检测
+
+Worktree 隔离（Claude Code）: 当多个子代理需修改同一文件的不同区域时，
+  使用 Task(isolation="worktree") 在独立 worktree 中执行，避免 Edit 工具冲突
+  适用: DAG 同层任务涉及同文件不同函数/区域
+  不适用: 子代理仅读取文件（无写冲突）或任务间无文件重叠
+  worktree 子代理完成后，主代理在汇总阶段合并变更
 ```
 
 ### 子代理编排标准范式
@@ -1061,6 +1087,15 @@ tasks.md 依赖声明格式:
 
 重试上限: 每个子代理最多重试 1 次
 结果保留: 成功的子代理结果始终保留，仅重试失败项
+
+深度分析（break-loop）: 当同一任务经 Ralph Loop 验证循环仍失败（stop_hook_active=true 放行后主代理接手），
+  或主代理补充执行仍失败时，执行 5 维度根因分析后再标记 [X]:
+  1. 根因分类: 逻辑错误/类型不匹配/依赖缺失/环境问题/设计缺陷
+  2. 修复失败原因: 为什么之前的修复尝试没有解决问题
+  3. 预防机制: 建议添加什么检查/测试可防止此类问题
+  4. 系统性扩展: 同类问题是否可能存在于其他模块（列出可疑位置）
+  5. 知识沉淀: 将分析结论记录到验收报告的"经验教训"区域
+  触发条件: 逻辑失败 + 已有≥1次修复尝试（子代理重试或 Ralph Loop 循环）
 ```
 
 ### CLI 会话目录
@@ -1109,6 +1144,9 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 | KB 同步触发 | Stop | notify (agent-turn-complete) | memory.md 触发点规则 |
 | Agent Teams 空闲检测 | TeammateIdle | — | 主代理轮询 |
 | 上下文压缩前处理 | PreCompact | — | 手动快照 |
+| 主代理规则强化 | UserPromptSubmit | — | CLAUDE.md 规则由 compact 自然保留 |
+| 子代理上下文注入 | SubagentStart | — | 主代理 prompt 手动包含上下文 |
+| 质量验证循环 | SubagentStop | — | develop.md 步骤8 手动验证 |
 | Hook 阻断降级 | 被阻断→主代理执行 | 不适用 | 直接执行 |
 
 ### Claude Code Hooks 配置（.claude/settings.json）
@@ -1116,10 +1154,24 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 HelloAGENTS 预定义以下 Hook 配置供用户可选启用:
 
 ```yaml
-SubagentStart/Stop — 子代理追踪:
-  事件: SubagentStart, SubagentStop
-  动作: command hook，记录子代理 ID/角色/状态到会话日志
-  异步: async=true（不阻断子代理启动）
+UserPromptSubmit — 主代理规则强化:
+  事件: UserPromptSubmit
+  动作: command hook，注入 CLAUDE.md 关键规则摘要（≤2000字符）
+  超时: 3s
+  脚本: inject_context.py（路径1）
+
+SubagentStart — 子代理上下文注入:
+  事件: SubagentStart
+  动作: command hook，注入当前方案包上下文（proposal.md + tasks.md + context.md，≤4000字符）
+  超时: 5s
+  脚本: inject_context.py（路径2）
+
+SubagentStop — 质量验证循环（Ralph Loop）:
+  事件: SubagentStop
+  匹配: agent_type = general-purpose
+  动作: command hook，运行项目验证命令，失败时 decision=block 阻止子代理停止
+  超时: 120s
+  脚本: ralph_loop.py
 
 PostToolUse — 进度快照:
   事件: PostToolUse

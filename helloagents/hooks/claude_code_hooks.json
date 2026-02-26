@@ -14,28 +14,41 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/inject_context.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 主代理规则强化（CLAUDE.md 关键规则注入）"
+          }
+        ]
+      }
+    ],
     "SubagentStart": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[HelloAGENTS] SubagentStart: $CLAUDE_SUBAGENT_ID\"",
-            "async": true,
-            "description": "HelloAGENTS 子代理启动追踪"
+            "command": "python3 \"{SCRIPTS_DIR}/inject_context.py\"",
+            "timeout": 5,
+            "description": "HelloAGENTS 子代理上下文自动注入（方案包上下文）"
           }
         ]
       }
     ],
     "SubagentStop": [
       {
-        "matcher": "",
+        "matcher": "general-purpose",
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[HelloAGENTS] SubagentStop: $CLAUDE_SUBAGENT_ID\"",
-            "async": true,
-            "description": "HelloAGENTS 子代理完成追踪"
+            "command": "python3 \"{SCRIPTS_DIR}/ralph_loop.py\"",
+            "timeout": 120,
+            "description": "HelloAGENTS 质量验证循环（Ralph Loop）"
           }
         ]
       }

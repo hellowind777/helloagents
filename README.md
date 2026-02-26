@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.16-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.17-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -128,9 +128,9 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 - 2 stage definitions from helloagents/stages
 - 5 core services from helloagents/services
 - 4 rule modules from helloagents/rules
-- 9 helper scripts from helloagents/scripts
+- 11 helper scripts from helloagents/scripts
 - 2 hooks configs from helloagents/hooks
-- 10 KB/plan templates from helloagents/templates
+- 13 KB/plan templates from helloagents/templates
 
 ## Before and After (Snake Demo)
 
@@ -337,7 +337,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.16)
+- pyproject.toml: package metadata (v2.2.17)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -402,7 +402,18 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.16 (current)
+### v2.2.17 (current)
+
+- Auto context injection for sub-agents and rule reinforcement for main agent
+- Quality verification loop (Ralph Loop): auto-verify after sub-agent completion, block and feedback on failure
+- Deep 5-dimension root cause analysis on repeated failures (break-loop)
+- Auto-inject project technical guidelines before sub-agent development
+- Pre-commit quality checks (code-doc consistency, test coverage, verification commands)
+- Worktree isolation for parallel editing
+- Custom command extension (.helloagents/commands/)
+- Auto-append Git author info to CHANGELOG entries
+
+### v2.2.16
 
 - Refactored evaluation dimension system with dimension isolation rule, pass threshold tuned to 8/10. Options are user-need-driven, organized by style direction rather than complexity tiers (e.g. UI design offers different styles instead of simple/medium/complex); recommended option points to the most complete deliverable, derived from recommendation principles and scoring criteria rather than hardcoded
 - Proposal design requires both implementation path and deliverable design direction to differ across alternatives, each sub-agent independently outputs a complete proposal including presentation direction, style, and experience
