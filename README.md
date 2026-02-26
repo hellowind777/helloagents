@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.14-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.15-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -337,7 +337,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.14)
+- pyproject.toml: package metadata (v2.2.15)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -402,7 +402,16 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.14 (current)
+### v2.2.15 (current)
+
+- Professional evaluation dimensions: Scope(0-3), Specs(0-3), Constraints(0-2), Acceptance(0-2), mapped to PM fundamentals
+- Evaluation threshold raised from 7 to 8, ensuring all zero-score dimensions are covered during follow-up
+- Dimension isolation rule: each follow-up question targets exactly one dimension, no cross-dimension merging
+- Simplified option generation rules, removed redundancy with dimension isolation
+- R3 proposal differentiation strengthened: both technical path and deliverable design direction must differ
+- Universal task support: terminology generalized beyond programming to cover all task types (documents, design, general tasks)
+
+### v2.2.14
 
 - DAG dependency scheduling for task execution (depends_on, topological sort, layer-by-layer parallel dispatch with failure propagation)
 - Graded retry and standardized sub-agent return format with scope verification
