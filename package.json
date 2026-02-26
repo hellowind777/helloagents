@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "2.2.15",
+  "version": "2.2.16",
   "type": "module",
   "description": "HelloAGENTS - AI-native sub-agent orchestration framework for multi-CLI environments",
   "author": "HelloWind",
