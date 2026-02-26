@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.14-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.15-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -338,7 +338,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.14）
+- pyproject.toml：包元数据（v2.2.15）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：design、develop
@@ -403,7 +403,16 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.14（当前版本）
+### v2.2.15（当前版本）
+
+- 评估维度专业化重命名：需求范围(0-3)/成果规格(0-3)/实施条件(0-2)/验收标准(0-2)，映射 PM 四要素
+- 评估合格门槛从 7 提升至 8，确保所有零分维度在追问中被覆盖
+- 新增维度隔离规则：每个追问仅针对单一维度，禁止跨维度合并问题或选项
+- 精简选项生成规则，消除与维度隔离的冗余描述
+- R3 方案差异化强化：技术路径和成果设计方向均须差异化，不得仅技术路径不同而呈现方向趋同
+- 全任务类型适配：术语泛化至编程、文档、设计、常规任务等所有场景
+
+### v2.2.14
 
 - 任务执行 DAG 依赖调度（depends_on、拓扑排序、按层并行派发+失败传播）
 - 分级重试与子代理标准返回格式，含 scope 校验
