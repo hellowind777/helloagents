@@ -8,7 +8,7 @@
 
 **A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
 
-[![Version](https://img.shields.io/badge/version-2.2.15-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.16-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -337,7 +337,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.15)
+- pyproject.toml: package metadata (v2.2.16)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -402,7 +402,7 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.15 (current)
+### v2.2.16 (current)
 
 - Refactored evaluation dimension system with dimension isolation rule, pass threshold tuned to 8/10. Options are user-need-driven, organized by style direction rather than complexity tiers (e.g. UI design offers different styles instead of simple/medium/complex); recommended option points to the most complete deliverable, derived from recommendation principles and scoring criteria rather than hardcoded
 - Proposal design requires both implementation path and deliverable design direction to differ across alternatives, each sub-agent independently outputs a complete proposal including presentation direction, style, and experience
