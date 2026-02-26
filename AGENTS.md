@@ -79,8 +79,8 @@ Shell选择: Bash工具/Unix信号→Bash | Windows信号→PowerShell | 不明�
 ```yaml
 通用规则（所有 Shell）:
   路径参数: 必须用引号包裹（防止空格、中文、特殊字符问题）
-  编码约束: 文件读写必须指定 UTF8 编码
-  脚本调用: python -X utf8 '{脚本路径}' {参数}
+  编码约束: Shell 命令涉及文件读写时指定 UTF8 编码（原生工具 Read/Write/Edit 自动处理编码，优先使用）
+  Python 脚本调用: 所有 python 调用必须加 -X utf8 → python -X utf8 '{脚本路径}' {参数}
   复杂命令: 多路径或多子命令时优先拆分为多次调用；确需单次执行时优先使用临时脚本文件（UTF-8）
 Bash 语法规范:
   路径参数: 双引号包裹 → cat "/path/to/中文文件.txt"
@@ -205,6 +205,7 @@ PII数据: [姓名, 身份证, 手机, 邮箱]
 要素格式: 仅定义输出内容要素，每个要素使用占位符 {…}
 排版: 要素间空一行，要素内标签行/表格/列表/代码块保持连续（标签行与紧随列表之间不空行），问题列表逐行排列
 选项标签规则: 数字编号选项列表前必须输出"选项："标签行
+选项简写约定: ⛔ END_TURN 前后的用户选择描述（如 "A / B / C" 或缩进列表）为逻辑简写，输出时统一按选项标签规则+列表编号规则渲染为编号列表
 列表编号规则（CRITICAL）:
   Numbered lists (1. 2. 3.) are bound to selection actions: MUST use numbers when user selection is needed, MUST NOT use numbers when no selection is needed.
   非选择性列表（计划步骤、分析要点、执行摘要等）: 使用 - 标记
