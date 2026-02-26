@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.15-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.16-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -338,7 +338,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.15）
+- pyproject.toml：包元数据（v2.2.16）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：design、develop
@@ -403,7 +403,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.15（当前版本）
+### v2.2.16（当前版本）
 
 - 重构评估维度体系，新增维度隔离规则，合格门槛调优至 8/10。选项以用户需求为导向，按风格方向而非复杂度分级（如 UI 设计提供不同风格而非简单/中等/复杂）；推荐项指向最完整的成果方案，由推荐原则与评分标准推导生成而非硬编码
 - 方案构思要求实现路径与成果设计方向同时差异化，子代理独立输出含呈现方向/风格/体验的完整方案
