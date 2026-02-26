@@ -8,7 +8,7 @@
 
 **一个会持续推进到实现与验证完成的多 CLI 工作流系统。**
 
-[![Version](https://img.shields.io/badge/version-2.2.16-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.2.17-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -129,9 +129,9 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 - 2 个阶段定义来自 helloagents/stages
 - 5 个核心服务来自 helloagents/services
 - 4 个规则模块来自 helloagents/rules
-- 9 个辅助脚本来自 helloagents/scripts
+- 11 个辅助脚本来自 helloagents/scripts
 - 2 个 Hooks 配置来自 helloagents/hooks
-- 10 个知识库/方案模板来自 helloagents/templates
+- 13 个知识库/方案模板来自 helloagents/templates
 
 ## 前后对比（贪吃蛇示例）
 
@@ -338,7 +338,7 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 - AGENTS.md：路由与工作流协议
 - SKILL.md：CLI 目标的技能发现元数据
-- pyproject.toml：包元数据（v2.2.16）
+- pyproject.toml：包元数据（v2.2.17）
 - helloagents/cli.py：安装器入口
 - helloagents/functions：工作流命令
 - helloagents/stages：design、develop
@@ -403,7 +403,18 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
 
 ## 版本历史
 
-### v2.2.16（当前版本）
+### v2.2.17（当前版本）
+
+- 子代理上下文自动注入与主代理规则强化
+- 质量验证循环（Ralph Loop），子代理完成后自动验证并反馈修复
+- 反复失败时触发 5 维度深度根因分析（break-loop）
+- 子代理开发前自动注入项目技术指南
+- 提交前质量检查（代码-文档一致性、测试覆盖、验证命令）
+- Worktree 隔离并行编辑
+- 自定义命令扩展（.helloagents/commands/）
+- CHANGELOG 自动追加 Git 作者信息
+
+### v2.2.16
 
 - 重构评估维度体系，新增维度隔离规则，合格门槛调优至 8/10。选项以用户需求为导向，按风格方向而非复杂度分级（如 UI 设计提供不同风格而非简单/中等/复杂）；推荐项指向最完整的成果方案，由推荐原则与评分标准推导生成而非硬编码
 - 方案构思要求实现路径与成果设计方向同时差异化，子代理独立输出含呈现方向/风格/体验的完整方案
