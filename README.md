@@ -404,12 +404,16 @@ These commands run inside AI chat, not your system shell.
 
 ### v2.2.15 (current)
 
-- Professional evaluation dimensions: Scope(0-3), Specs(0-3), Constraints(0-2), Acceptance(0-2), mapped to PM fundamentals
-- Evaluation threshold raised from 7 to 8, ensuring all zero-score dimensions are covered during follow-up
-- Dimension isolation rule: each follow-up question targets exactly one dimension, no cross-dimension merging
-- Simplified option generation rules, removed redundancy with dimension isolation
-- R3 proposal differentiation strengthened: both technical path and deliverable design direction must differ
-- Universal task support: terminology generalized beyond programming to cover all task types (documents, design, general tasks)
+- Refactored evaluation dimension system with dimension isolation rule, pass threshold tuned to 8/10. Options are user-need-driven, organized by style direction rather than complexity tiers (e.g. UI design offers different styles instead of simple/medium/complex); recommended option points to the most complete deliverable, derived from recommendation principles and scoring criteria rather than hardcoded
+- Proposal design requires both implementation path and deliverable design direction to differ across alternatives, each sub-agent independently outputs a complete proposal including presentation direction, style, and experience
+- Proposal evaluation criteria optimized: user value weight is always no less than any other single dimension, evaluation dimensions dynamically adjusted by project context
+- Universal task type support: generalized evaluation, follow-up, and proposal design terminology from programming-specific to documents, design, general tasks and more
+- Added sub-agent DAG dependency scheduling with topological sort, layer-by-layer parallel dispatch, and failure propagation
+- Dynamic sub-agent parallel count based on independent work units, eliminated hardcoded limits
+- Unified output format: structured display for score breakdowns, follow-up options, and confirmation messages
+- Streamlined execution paths with shorter stage chains and step-level on-demand module loading
+- Adjusted Codex CLI memory limit to 128 KiB to prevent rules file truncation
+- Improved recommendation option generation rules, proposal differentiation requirements, and evaluation scoring criteria
 
 ### v2.2.14
 
