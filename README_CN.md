@@ -267,13 +267,13 @@ L0 用户记忆（全局偏好）、L1 项目知识库（代码变更自动同�
     helloagents update
 
 > ⚠️ **Codex CLI config.toml 兼容提示：** 以下设置可能影响 HelloAGENTS 正常运行：
-> - `[features]` 中的 `steer = true` — 会改变输入提交行为，可能干扰工作流交互
 > - `[features]` 中的 `child_agents_md = true` — 实验性功能，会注入额外指令，可能与 HelloAGENTS 冲突
 > - `project_doc_max_bytes` 过小 — 默认 32KB，AGENTS.md 超出会被截断（安装时已自动调整为 131072）
 > - `agent_max_depth = 1` — 限制子代理嵌套深度，建议保持默认或设为 ≥2
-> - `agent_max_threads` 过小 — 默认 6，过低会限制并行子代理调度
+> - `agent_max_threads` 过小 — 默认 6，过低会限制并行子代理调度（CSV 批处理模式建议 ≥16）
 > - `[features]` 中的 `multi_agent = true` — 需开启才能使用子代理编排功能
-> - Collab 子代理调度为实验性特性，需 Codex CLI 开启特性门控后方可使用
+> - `[features]` 中的 `sqlite = true` — 需开启才能使用 CSV 批处理编排（spawn_agents_on_csv）
+> - Collab 子代理调度需 Codex CLI 开启特性门控后方可使用
 
 ### Claude Code 示例
 

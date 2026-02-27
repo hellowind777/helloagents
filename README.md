@@ -266,13 +266,13 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
     helloagents update
 
 > ⚠️ **Codex CLI config.toml compatibility notes:** The following settings may affect HelloAGENTS:
-> - `[features]` `steer = true` — changes input submission behavior, may interfere with workflow interaction
 > - `[features]` `child_agents_md = true` — experimental, injects extra instructions that may conflict with HelloAGENTS
 > - `project_doc_max_bytes` too low — default 32KB, AGENTS.md will be truncated (auto-set to 131072 during install)
 > - `agent_max_depth = 1` — limits sub-agent nesting depth, recommend keeping default or ≥2
-> - `agent_max_threads` too low — default 6, lower values limit parallel sub-agent scheduling
+> - `agent_max_threads` too low — default 6, lower values limit parallel sub-agent scheduling (CSV batch mode recommends ≥16)
 > - `[features]` `multi_agent = true` — must be enabled for sub-agent orchestration to work
-> - Collab sub-agent scheduling is experimental, requires Codex CLI feature gate to be enabled
+> - `[features]` `sqlite = true` — must be enabled for CSV batch orchestration (spawn_agents_on_csv)
+> - Collab sub-agent scheduling requires Codex CLI feature gate to be enabled
 
 ### Claude Code example
 
