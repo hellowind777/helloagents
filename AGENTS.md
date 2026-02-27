@@ -83,32 +83,16 @@ Shell选择: Bash工具/Unix信号→Bash | Windows信号→PowerShell | 不明�
   Python 脚本调用: 所有 python 调用必须加 -X utf8 → python -X utf8 '{脚本路径}' {参数}
   复杂命令: 多路径或多子命令时优先拆分为多次调用；确需单次执行时优先使用临时脚本文件（UTF-8）
 Bash 语法规范:
-  路径参数: 双引号包裹 → cat "/path/to/中文文件.txt"
-  变量引用: "${var}" 防止分词
+  路径参数: 双引号包裹 → cat "/path/to/中文文件.txt" | 变量引用: "${var}" 防止分词
   禁止: $env:VAR（→ $VAR）、反引号 `cmd`（→ $(cmd)）
 PowerShell 语法规范:
-  外部调用: 外层双引号 + 内层单引号
-    正确: powershell -Command "Get-Content -Raw -Encoding UTF8 'C:/路径/文件.md'"
-    错误: powershell -Command "Get-Content -Raw -Encoding UTF8 \"C:/路径/文件.md\""
-  内部 cmdlet: 推荐单引号（无变量展开）
-  多路径: 每个路径单引号，多子命令用 ; 分隔（PS 5.1 禁止 &&）
-  路径含单引号: 单引号双写（''）转义，或改用临时 .ps1 脚本
-  环境一致性: 使用 PowerShell 原生 cmdlet，禁止混用 Unix 命令
+  外部调用: 外层双引号 + 内层单引号 → powershell -Command "Get-Content -Raw -Encoding UTF8 'C:/路径/文件.md'"
+  内部 cmdlet: 推荐单引号（无变量展开）| 多路径每个单引号，多子命令用 ; 分隔（PS 5.1 禁止 &&）
+  路径含单引号: 双写（''）转义，或改用临时 .ps1 脚本 | 环境一致性: 使用原生 cmdlet，禁止混用 Unix 命令
   版本策略: 默认 5.1 兼容语法；用户明确指定时可用 7+ 特性（&& / ||）
-  5.1/7+ 通用约束:
-    - 环境变量: $env:VAR（禁止 $VAR）
-    - 文件操作: -Encoding UTF8 -Force
-    - 路径参数: 单引号包裹，推荐正斜杠 C:/...
-    - 变量: ${var} 形式，使用前初始化
-    - 空值比较: $null 置于左侧（$null -eq $var）
-    - Here-String: @'/@" 在行尾，'@/"@ 独占行首
-    - 参数值为表达式: 括号包裹（范围 (1..10)、数组 @($a, $b)）
-  5.1 特有限制:
-    - && / || 不支持 → 用 ; 或 if ($?) 替代
-    - > < 解析为重定向 → 用 -gt -lt -eq -ne
-  多行代码传递:
-    -c 参数仅用于单行代码，多行脚本（>3行）必须使用临时文件
-    -Command 内部的 cmdlet 与参数必须在同一行
+  通用约束: $env:VAR（禁止 $VAR）| -Encoding UTF8 -Force | 路径单引号+正斜杠 | ${var} 使用前初始化 | $null 置于比较左侧 | Here-String @'/@" 在行尾 | 表达式参数括号包裹
+  5.1 特有: && / || 不支持（→ ; 或 if ($?)）| > < 解析为重定向（→ -gt -lt -eq -ne）
+  多行代码: -c 仅用于单行，多行脚本（>3行）必须使用临时文件 | -Command 内 cmdlet 与参数必须同行
 ```
 
 **编码实现原则（CRITICAL）:**
@@ -281,15 +265,8 @@ Prohibitions (CRITICAL):
     - EHRB 命中 → 强制 R3
 ```
 
-| 级别 | 图标 | 评估 | 确认 | 总结 |
-|------|------|------|------|------|
-| R0 直接响应 | 💡 | 无 | 无 | 无 |
-| R1 快速流程 | ⚡ | EHRB 检测 | 无 | 简要结果摘要 |
-| R2 简化流程 | 📐 | 快速评分（不追问）+EHRB | 简要确认 → ⛔ END_TURN | 结构化总结 |
-| R3 标准流程 | 🔵 | 完整评分+追问({EVAL_MODE})+EHRB | 完整确认+选项 → ⛔ END_TURN | 完整验收报告 |
-
 ```yaml
-各级别行为（上表的详细定义，执行时以此为准）:
+各级别行为（执行时以此为准）:
   R0 直接响应:
     适用: 问答、解释、查询、翻译等不涉及执行动作的请求
     流程: 直接回答
@@ -466,22 +443,11 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
   （空行）
   ⚠️ EHRB: 仅检测到风险时显示
   （空行）
-确认选项（模式名使用 OUTPUT_LANGUAGE 显示）:
-  ~auto:
-    选项：
-    1. 全自动执行：自动完成所有阶段，仅遇到风险时暂停。（推荐）
-    2. 交互式执行：关键决策点等待你确认。
-    3. 改需求后再执行。
-  ~plan:
-    选项：
-    1. 全自动规划：自动完成分析和方案设计。（推荐）
-    2. 交互式规划：关键决策点等待你确认。
-    3. 改需求后再执行。
-  通用路径 R2/R3:
-    选项：
-    1. 交互式执行：关键决策点等待你确认。（推荐）
-    2. 全自动执行：自动完成所有阶段，仅遇到风险时暂停。
-    3. 改需求后再执行。
+确认选项（模式名使用 OUTPUT_LANGUAGE 显示，三个选项固定，仅推荐项和措辞因入口不同）:
+  选项模板: 1. {自动模式}（推荐项标记） 2. {交互模式} 3. 改需求后再执行。
+  ~auto: 推荐=全自动执行（自动完成所有阶段，仅遇到风险时暂停）| 备选=交互式执行（关键决策点等待确认）
+  ~plan: 推荐=全自动规划（自动完成分析和方案设计）| 备选=交互式规划（关键决策点等待确认）
+  通用路径 R2/R3: 推荐=交互式执行（关键决策点等待确认）| 备选=全自动执行（自动完成所有阶段，仅遇到风险时暂停）
 
 下一步引导（🔄 下一步: 行的内容，CRITICAL）:
   追问场景: "请回复选项编号或直接补充信息。"
@@ -884,30 +850,9 @@ helloagents 角色:
   )
 
 示例（DESIGN 步骤10 方案构思，≥3 个并行调用在同一消息中发起）:
-  Task(
-    subagent_type="general-purpose",
-    prompt="直接执行以下任务，跳过路由评分。
-            你负责: 独立构思一个实现方案。
-            上下文: {Phase1 收集的项目上下文}。
-            任务: 输出方案名称、核心思路、实现路径、优缺点。
-            返回: {name, approach, impl_path, pros, cons}"
-  )
-  Task(
-    subagent_type="general-purpose",
-    prompt="直接执行以下任务，跳过路由评分。
-            你负责: 独立构思一个差异化方案，优先考虑不同的实现路径或架构模式。
-            上下文: {Phase1 收集的项目上下文}。
-            任务: 输出方案名称、核心思路、实现路径、优缺点。
-            返回: {name, approach, impl_path, pros, cons}"
-  )
-  Task(
-    subagent_type="general-purpose",
-    prompt="直接执行以下任务，跳过路由评分。
-            你负责: 独立构思一个差异化方案，优先考虑不同的权衡取舍（如性能vs可维护性）。
-            上下文: {Phase1 收集的项目上下文}。
-            任务: 输出方案名称、核心思路、实现路径、优缺点。
-            返回: {name, approach, impl_path, pros, cons}"
-  )
+  Task(subagent_type="general-purpose", prompt="直接执行以下任务，跳过路由评分。你负责: 独立构思一个实现方案。上下文: {Phase1 收集的项目上下文}。任务: 输出方案名称、核心思路、实现路径、优缺点。返回: {name, approach, impl_path, pros, cons}")
+  Task(subagent_type="general-purpose", prompt="...你负责: 独立构思一个差异化方案，优先考虑不同的实现路径或架构模式。...")
+  Task(subagent_type="general-purpose", prompt="...你负责: 独立构思一个差异化方案，优先考虑不同的权衡取舍（如性能vs可维护性）。...")
 ```
 
 ### Codex CLI 调用协议（CRITICAL）
@@ -956,92 +901,38 @@ helloagents 角色:
   collab wait
 
 示例（spawn_agents_on_csv 同构批处理，批量审查 30 个文件）:
-  # 主代理先生成 /tmp/review_tasks.csv:
-  # path,module,focus
-  # src/api/auth.py,auth,安全检查
-  # src/api/users.py,users,输入校验
-  # ... (30 rows)
-  spawn_agents_on_csv(
-    csv_path="/tmp/review_tasks.csv",
-    instruction="审查 {path} 模块 {module}，重点关注 {focus}。返回: {{score: 1-10, issues: [...], suggestions: [...]}}",
-    output_csv_path="/tmp/review_results.csv",
-    max_concurrency=16
-  )
-  # 阻塞直到全部完成，期间 agent_job_progress 事件持续更新进度
-  # 完成后读取 /tmp/review_results.csv 汇总结果
+  # 主代理先生成 CSV: path,module,focus（每行一个任务，如 src/api/auth.py,auth,安全检查）
+  spawn_agents_on_csv(csv_path="/tmp/review_tasks.csv", instruction="审查 {path} 模块 {module}，重点关注 {focus}。返回: {{score: 1-10, issues: [...], suggestions: [...]}}", output_csv_path="/tmp/review_results.csv", max_concurrency=16)
+  # 阻塞直到全部完成（agent_job_progress 事件持续更新），完成后读取 output CSV 汇总结果
 ```
 
-### OpenCode 调用协议
+### OpenCode / Gemini CLI / Qwen Code 调用协议
 
 ```yaml
-原生子代理:
-  代码探索/依赖分析 → @explore（只读，快速代码搜索和定位）
-  代码实现/通用任务 → @general（完整工具权限，可修改文件）
+通用规则: helloagents 角色执行步骤同 Claude Code 协议，仅调用方式不同
 
-helloagents 角色:
-  执行步骤（同 Claude Code，仅调用方式不同）:
-    3. 通过 @general 委派执行（其余步骤同 Claude Code 协议）
+OpenCode:
+  原生子代理: @explore（只读，代码搜索定位）| @general（完整工具权限，可修改文件）
+  调用方式: 主代理自动委派 | 用户 @mention 手动触发 | 子代理创建独立 child session
 
-调用方式: 主代理自动委派 | 用户 @mention 手动触发
-子会话: 子代理创建独立 child session
-```
+Gemini CLI（实验性）:
+  原生子代理: codebase_investigator（代码库分析和逆向依赖）| generalist_agent（自动路由）
+  自定义子代理: .gemini/agents/*.md（项目级）| ~/.gemini/agents/*.md（用户级）| 支持 A2A 协议远程委派
 
-### Gemini CLI 调用协议
-
-```yaml
-原生子代理（实验性）:
-  代码探索/依赖分析 → codebase_investigator（内置，代码库分析和逆向依赖）
-  通用任务路由 → generalist_agent（内置，自动路由到合适的子代理）
-
-helloagents 角色:
-  执行步骤（同 Claude Code，仅调用方式不同）:
-    2. 创建自定义子代理: .gemini/agents/{角色}.md（YAML frontmatter + 角色预设）
-    3. 主代理自动委派或通过 generalist_agent 路由（其余步骤同 Claude Code 协议）
-
-自定义子代理: .gemini/agents/*.md（项目级）| ~/.gemini/agents/*.md（用户级）
-远程子代理: 支持 A2A 协议委派（可选）
-```
-
-### Qwen Code 调用协议
-
-```yaml
-原生子代理:
-  无固定内置类型，通过 /agents create 向导创建自定义子代理
-  主代理根据任务描述和子代理 description 自动匹配委派
-
-helloagents 角色:
-  执行步骤（同 Claude Code，仅调用方式不同）:
-    2. 创建自定义子代理: .qwen/agents/{角色}.md（YAML frontmatter + 角色预设）
-    3. 主代理自动委派（其余步骤同 Claude Code 协议）
-
-自定义子代理: .qwen/agents/*.md（项目级）| ~/.qwen/agents/*.md（用户级）
+Qwen Code:
+  原生子代理: 无固定内置类型，/agents create 创建，主代理按 description 自动匹配委派
+  自定义子代理: .qwen/agents/*.md（项目级）| ~/.qwen/agents/*.md（用户级）
 ```
 
 ### Claude Code Agent Teams 协议
 
 ```yaml
-适用条件:
-  - TASK_COMPLEXITY = complex
-  - 需要多角色互相通信（如 reviewer 需参考实现者的设计意图）
-  - 任务可拆为 3+ 独立子任务分配给不同角色
-  - 用户确认启用（实验性功能）
-
-调度方式:
-  1. 主代理作为 Team Lead（delegate mode），仅负责协调
-  2. spawn teammates（原生角色 + helloagents 专有角色混合）:
-     - 代码探索/分析 → 原生 Explore subagent
-     - 代码实现 × N → 原生 general-purpose subagent（每人负责不同文件集）
-     - reviewer/synthesizer/kb_keeper/pkg_keeper/writer → helloagents 专有角色 teammate
-  3. 使用共享任务列表（映射到 tasks.md）
-  4. Teammates 通过 mailbox 互相通信
-  5. Team Lead 综合结果后清理团队
-
-与 Task 子代理的选择:
-  - Task 子代理: 结果只需返回给主代理的聚焦任务（默认）
-  - Agent Teams: 角色间需要讨论/挑战/协作的复杂任务
-
+适用条件: TASK_COMPLEXITY=complex + 多角色需互相通信 + 任务可拆为 3+ 独立子任务 + 用户确认启用（实验性）
+前提: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+调度: 主代理作为 Team Lead（delegate mode）→ spawn teammates（原生+专有角色混合）→ 共享任务列表（映射 tasks.md）+ mailbox 通信 → Team Lead 综合结果
+  teammates: Explore（代码探索）| general-purpose × N（代码实现，每人负责不同文件集）| helloagents 专有角色（reviewer/synthesizer/kb_keeper/pkg_keeper/writer）
+选择标准: Task 子代理 = 结果只需返回主代理的聚焦任务（默认）| Agent Teams = 角色间需讨论/协作的复杂任务
 降级: Agent Teams 不可用时 → 退回 Task 子代理模式
-前提: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 已启用
 ```
 
 ### 并行调度规则（适用所有 CLI）
@@ -1187,77 +1078,9 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 | 质量验证循环 | SubagentStop | — | develop.md 步骤8 手动验证 |
 | Hook 阻断降级 | 被阻断→主代理执行 | 不适用 | 直接执行 |
 
-### Claude Code Hooks 配置（.claude/settings.json）
-
-HelloAGENTS 预定义以下 Hook 配置供用户可选启用:
-
-```yaml
-UserPromptSubmit — 主代理规则强化:
-  事件: UserPromptSubmit
-  动作: command hook，注入 CLAUDE.md 关键规则摘要（≤2000字符）
-  超时: 3s
-  脚本: inject_context.py（路径1）
-
-SubagentStart — 子代理上下文注入:
-  事件: SubagentStart
-  动作: command hook，注入当前方案包上下文（proposal.md + tasks.md + context.md，≤4000字符）
-  超时: 5s
-  脚本: inject_context.py（路径2）
-
-SubagentStop — 质量验证循环（Ralph Loop）:
-  事件: SubagentStop
-  匹配: agent_type = general-purpose
-  动作: command hook，运行项目验证命令，失败时 decision=block 阻止子代理停止
-  超时: 120s
-  脚本: ralph_loop.py
-
-PostToolUse — 进度快照:
-  事件: PostToolUse
-  匹配: toolName 匹配 Write|Edit|NotebookEdit
-  动作: command hook，检查距上次快照是否超过阈值(5次写操作)
-  触发: 超过阈值 → 生成进度快照
-
-
-Stop — KB 同步 + L2 写入:
-  事件: Stop
-  动作: command hook，触发 KnowledgeService 同步和 L2 摘要写入
-  异步: async=true
-
-TeammateIdle — Agent Teams 空闲检测:
-  事件: TeammateIdle
-  动作: command hook，teammate 即将空闲时检查共享任务列表是否有未认领任务
-  异步: async=true
-  前提: Agent Teams 模式已启用（CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1）
-
-PreCompact — 上下文压缩前快照:
-  事件: PreCompact
-  动作: command hook，上下文压缩前自动保存进度快照到 cache.md
-  异步: async=false（必须在压缩前完成）
-```
-
-### Codex CLI Hooks 配置（~/.codex/config.toml）
-
-当前仅支持 `notify` 配置项（agent-turn-complete 事件），在代理完成一轮交互后触发:
-
-```toml
-# notify — 代理轮次完成时触发（当前 Codex CLI 唯一支持的 hook 事件）
-notify = ["helloagents --check-update --silent"]
-# 作用: 代理完成时检查 HelloAGENTS 版本更新，有更新则显示提示
-```
-
-### 预留扩展接口
-
-```yaml
-Codex CLI Hooks 系统持续发展中。以下功能已在 Claude Code 侧实现，
-当 Codex CLI 支持对应事件时可通过修改 config.toml 直接启用:
-
-  - PostToolUse → 进度快照（等待 Codex CLI 支持工具调用后事件）
-
-迁移方式: 将 Claude Code settings.json 中的 hook 逻辑移植为
-Codex CLI config.toml 格式，核心脚本/命令可复用。
-```
-
 ### 降级原则
+
+> 各 CLI 的 Hooks 配置详情见 {HELLOAGENTS_ROOT}/hooks/hooks_reference.md（安装参考，运行时无需加载）
 
 ```yaml
 所有 Hook 增强的功能在无 Hook 环境下必须有等效的规则降级:
