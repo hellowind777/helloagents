@@ -14,7 +14,8 @@ from .cli import (
     detect_installed_clis, _detect_installed_targets, _detect_install_method,
 )
 from .config_helpers import (
-    _configure_codex_toml, _configure_codex_notify, _remove_codex_notify,
+    _configure_codex_toml, _configure_codex_csv_batch,
+    _configure_codex_notify, _remove_codex_notify,
     _configure_claude_hooks, _remove_claude_hooks,
 )
 from .win_helpers import (
@@ -249,6 +250,11 @@ def install(target: str) -> bool:
         except Exception as e:
             print(_msg(f"  ⚠ 配置 notify hook 时出错: {e}",
                        f"  ⚠ Error configuring notify hook: {e}"))
+        try:
+            _configure_codex_csv_batch(dest_dir)
+        except Exception as e:
+            print(_msg(f"  ⚠ 配置 CSV 批处理时出错: {e}",
+                       f"  ⚠ Error configuring CSV batch: {e}"))
         print(_msg("  提示: VS Code Codex 插件对 HelloAGENTS 系统的支持可能与 CLI 不同，建议优先在 Codex CLI 中使用。",
                    "  Note: VS Code Codex plugin may not fully support HelloAGENTS. Codex CLI is recommended."))
 

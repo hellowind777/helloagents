@@ -49,6 +49,77 @@ def _configure_codex_toml(dest_dir: Path) -> None:
                "  Configured project_doc_max_bytes = 131072 (prevent AGENTS.md truncation)"))
 
 
+def _configure_codex_csv_batch(dest_dir: Path) -> None:
+    """Ensure config.toml has agent_max_threads >= 64 and sqlite feature enabled.
+
+    Required for CSV batch processing (spawn_agents_on_csv).
+    - agent_max_threads: top-level key, controls max concurrent sub-agents
+    - sqlite: [features] key, enables CSV batch orchestration persistence
+    """
+    config_path = dest_dir / "config.toml"
+    if not config_path.exists():
+        return
+
+    content = config_path.read_text(encoding="utf-8")
+    changed = False
+
+    # --- agent_max_threads >= 64 ---
+    m = re.search(r'agent_max_threads\s*=\s*(\d+)', content)
+    if m:
+        if int(m.group(1)) < 64:
+            content = re.sub(
+                r'agent_max_threads\s*=\s*\d+',
+                'agent_max_threads = 64',
+                content)
+            changed = True
+    else:
+        # Insert before first [section] (top-level area)
+        insert_pos = 0
+        section_match = re.search(r'^\[', content, re.MULTILINE)
+        if section_match:
+            insert_pos = section_match.start()
+        line = "agent_max_threads = 64\n"
+        if insert_pos > 0:
+            line += "\n"
+        content = content[:insert_pos] + line + content[insert_pos:]
+        changed = True
+
+    # --- [features] sqlite = true ---
+    sqlite_added = False
+    features_match = re.search(r'^\[features\]', content, re.MULTILINE)
+    if features_match:
+        sqlite_match = re.search(
+            r'^sqlite\s*=', content[features_match.end():], re.MULTILINE)
+        if not sqlite_match:
+            # Find end of [features] section (next [section] or EOF)
+            next_section = re.search(
+                r'^\[', content[features_match.end():], re.MULTILINE)
+            if next_section:
+                pos = features_match.end() + next_section.start()
+            else:
+                pos = len(content)
+            insert = "sqlite = true\n"
+            content = content[:pos] + insert + content[pos:]
+            changed = True
+            sqlite_added = True
+    else:
+        # No [features] section — append one
+        content = content.rstrip() + "\n\n[features]\nsqlite = true\n"
+        changed = True
+        sqlite_added = True
+
+    if changed:
+        config_path.write_text(content, encoding="utf-8")
+        msgs = []
+        if not m or int(m.group(1)) < 64:
+            msgs.append("agent_max_threads = 64")
+        if sqlite_added:
+            msgs.append("sqlite = true")
+        print(_msg(
+            f"  已配置 CSV 批处理: {', '.join(msgs) if msgs else 'agent_max_threads + sqlite'}",
+            f"  Configured CSV batch: {', '.join(msgs) if msgs else 'agent_max_threads + sqlite'}"))
+
+
 # ---------------------------------------------------------------------------
 # Hooks configuration helpers
 # ---------------------------------------------------------------------------
