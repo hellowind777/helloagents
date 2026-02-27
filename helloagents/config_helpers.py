@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .cli import (
     _msg,
-    HOOKS_FINGERPRINT, CODEX_NOTIFY_CMD,
+    HOOKS_FINGERPRINT, CODEX_NOTIFY_CMD, PLUGIN_DIR_NAME,
     get_helloagents_module_path,
 )
 
@@ -84,11 +84,28 @@ def _is_helloagents_hook(hook: dict) -> bool:
     return False
 
 
+def _resolve_hook_placeholders(hooks: dict, scripts_dir: str) -> dict:
+    """Replace placeholders in hook commands with actual values.
+
+    Resolves:
+    - {SCRIPTS_DIR} → actual installed scripts path
+    - python3 → platform-appropriate Python command (Windows: python)
+    """
+    import json
+    import sys
+    raw = json.dumps(hooks, ensure_ascii=False)
+    raw = raw.replace("{SCRIPTS_DIR}", scripts_dir)
+    if sys.platform == "win32":
+        raw = raw.replace("python3 ", "python ")
+    return json.loads(raw)
+
+
 def _configure_claude_hooks(dest_dir: Path) -> None:
     """Merge HelloAGENTS hooks into Claude Code settings.json.
 
     - Preserves all user-defined hooks
     - Replaces old HelloAGENTS hooks with current version (idempotent)
+    - Resolves {SCRIPTS_DIR} placeholder to actual installed scripts path
     - Identifies our hooks by HOOKS_FINGERPRINT in description field
     """
     import json
@@ -106,6 +123,10 @@ def _configure_claude_hooks(dest_dir: Path) -> None:
     our_hooks = _load_hooks_source()
     if not our_hooks:
         return
+
+    # Resolve {SCRIPTS_DIR} to actual installed path
+    scripts_path = (dest_dir / PLUGIN_DIR_NAME / "scripts").as_posix()
+    our_hooks = _resolve_hook_placeholders(our_hooks, scripts_path)
 
     existing_hooks = settings.get("hooks", {})
 
