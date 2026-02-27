@@ -112,7 +112,6 @@ PowerShell 语法规范:
 
 **第一层 - 关键词检测（仅匹配危险命令和操作，不匹配业务词汇）:**
 ```yaml
-不可逆操作: [--force, --hard, push -f, 无备份]
 生产环境: [prod, production, live]
 破坏性操作: [rm -rf, DROP TABLE, DELETE FROM, git reset --hard, git push -f, 缓存清空]
 权限变更: [chmod 777, sudo]
