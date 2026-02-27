@@ -9,6 +9,11 @@
 HelloAGENTS 预定义以下 Hook 配置供用户可选启用:
 
 ```yaml
+SessionStart — 版本更新检查:
+  事件: SessionStart
+  动作: command hook，检查 HelloAGENTS 是否有新版本，有更新则显示提示
+  超时: 5s | 命令: helloagents --check-update --silent
+
 UserPromptSubmit — 主代理规则强化:
   事件: UserPromptSubmit
   动作: command hook，注入 CLAUDE.md 关键规则摘要（≤2000字符）
