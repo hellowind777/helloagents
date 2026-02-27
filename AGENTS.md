@@ -919,6 +919,26 @@ helloagents 角色:
   测试运行 → spawn_agent(agent_type="awaiter", prompt="...")
   方案设计 → Codex Plan mode（不需要 spawn）
 
+CSV 批处理编排（v0.105+，需 collab + sqlite 特性）:
+  同构并行任务 → spawn_agents_on_csv(csv_path, instruction, ...)
+  适用: 批量代码审查/批量测试/批量数据处理等每行任务结构相同的场景
+  不适用: 异构任务（不同任务需不同工具/不同逻辑）→ 保留 spawn_agent 方式
+  参数:
+    csv_path: 输入 CSV 路径（每行一个任务，首行为列头）
+    instruction: 指令模板，{column_name} 占位符自动替换为行值
+    id_column: 可选，指定用作任务 ID 的列名
+    output_csv_path: 可选，结果导出路径（默认自动生成）
+    output_schema: 可选，worker 返回结果的 JSON Schema
+    max_concurrency: 并发数（默认 16，上限受 agent_max_threads 约束）
+    max_runtime_seconds: 单个 worker 超时（默认 1800s）
+  执行流程:
+    1. 主代理生成任务 CSV（从 tasks.md 提取同构任务行）
+    2. 调用 spawn_agents_on_csv，阻塞直到全部完成
+    3. 每个 worker 自动收到行数据 + 指令，执行后调用 report_agent_job_result 回报
+    4. 主代理读取 output CSV 汇总结果
+  进度监控: agent_job_progress 事件持续发出（pending/running/completed/failed/ETA）
+  状态持久化: SQLite 跟踪每个 item 状态，支持崩溃恢复
+
 helloagents 角色:
   执行步骤（同 Claude Code，仅调用方式不同）:
     3. 调用 spawn_agent: prompt=上述内容（其余步骤同 Claude Code 协议）
@@ -928,13 +948,27 @@ helloagents 角色:
 恢复暂停: 子代理超时/暂停 → resume_agent 恢复
 中断通信: send_input 向运行中的子代理发送消息（可选中断当前执行）
 关闭子代理: close 关闭指定子代理
-限制: Collab 实验性特性门控，MAX_DEPTH=1（仅一层嵌套），最多 6 个并发子代理
+限制: Collab 特性门控，MAX_DEPTH=1（仅一层嵌套），spawn_agent 最多 6 个并发，spawn_agents_on_csv 最多 16 个并发（可配置至 64）
 
-示例（DEVELOP 步骤6 并行 3 个 worker，每个子代理职责范围不重叠）:
+示例（spawn_agent 异构并行，每个子代理职责范围不重叠）:
   spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。你负责: 任务1.1。操作范围: filter.py 中的空白判定函数。任务: 实现空白判定逻辑。返回: {status, changes: [{file, type, scope}], issues, verification: {lint_passed, tests_passed}}")
   spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。你负责: 任务1.2。操作范围: validator.py 中的输入校验函数。任务: 实现输入校验逻辑。返回: {status, changes, issues, verification}")
-  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。你负责: 任务1.3。操作范围: formatter.py 中的输出格式化函数。任务: 实现输出格式化逻辑。返回: {status, changes, issues, verification}")
-  collab wait  # 等待全部完成（支持多ID）
+  collab wait
+
+示例（spawn_agents_on_csv 同构批处理，批量审查 30 个文件）:
+  # 主代理先生成 /tmp/review_tasks.csv:
+  # path,module,focus
+  # src/api/auth.py,auth,安全检查
+  # src/api/users.py,users,输入校验
+  # ... (30 rows)
+  spawn_agents_on_csv(
+    csv_path="/tmp/review_tasks.csv",
+    instruction="审查 {path} 模块 {module}，重点关注 {focus}。返回: {{score: 1-10, issues: [...], suggestions: [...]}}",
+    output_csv_path="/tmp/review_results.csv",
+    max_concurrency=16
+  )
+  # 阻塞直到全部完成，期间 agent_job_progress 事件持续更新进度
+  # 完成后读取 /tmp/review_results.csv 汇总结果
 ```
 
 ### OpenCode 调用协议
@@ -1013,7 +1047,7 @@ helloagents 角色:
 ### 并行调度规则（适用所有 CLI）
 
 ```yaml
-并行批次上限: ≤6 个子代理/批
+并行批次上限: ≤6 个子代理/批（Codex CLI CSV 批处理模式 ≤16，可配置至 64）
 并行适用: 同阶段内无数据依赖的任务
 串行强制: 有数据依赖链的任务（如 design 步骤10: 方案评估→synthesizer）
 
@@ -1033,7 +1067,10 @@ helloagents 角色:
 CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用
   Claude Code Teams: teammates 自动从共享任务列表认领
-  Codex CLI: 多个 spawn_agent + collab wait（支持多ID单次等待）
+  Codex CLI spawn_agent: 多个 spawn_agent + collab wait（异构任务，≤6/批）
+  Codex CLI spawn_agents_on_csv: CSV 批处理（同构任务，≤16 并发，需 collab+sqlite）
+    适用判定: 同层≥6 个结构相同的任务（相同指令模板+不同参数）→ 优先 CSV 批处理
+    不适用: 任务间指令逻辑不同、需要不同工具集、或任务数<6 → 保留 spawn_agent
   OpenCode: 多个 @general / @explore 子会话
   Gemini CLI: 多个子代理自动委派（实验性）
   Qwen Code: 多个自定义子代理自动委派
@@ -1142,6 +1179,7 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 | 进度快照自动触发 | PostToolUse | — | cache.md 手动触发 |
 | 版本更新提示 | SessionStart | notify (agent-turn-complete) | 启动时脚本检查 |
 | KB 同步触发 | Stop | notify (agent-turn-complete) | memory.md 触发点规则 |
+| CSV 批处理进度监控 | — | agent_job_progress 事件 | 主代理轮询任务状态 |
 | Agent Teams 空闲检测 | TeammateIdle | — | 主代理轮询 |
 | 上下文压缩前处理 | PreCompact | — | 手动快照 |
 | 主代理规则强化 | UserPromptSubmit | — | CLAUDE.md 规则由 compact 自然保留 |

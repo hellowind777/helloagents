@@ -137,6 +137,11 @@ KB_SKIPPED=true → 扫描项目现有资源
   同文件并行安全（编程任务）: 各子代理只修改各自负责的函数/类体内代码，不得修改文件级共享区域（imports/模块变量/初始化逻辑），共享区域变更由主代理在汇总阶段统一处理
   Worktree 隔离（Claude Code）: 同文件多区域并行改动时，优先使用 Task(isolation="worktree") 替代函数级隔离，
     由主代理在汇总阶段合并 worktree 变更
+  CSV 批处理（Codex CLI）: 同层≥6 个结构相同的任务时，优先使用 spawn_agents_on_csv 替代逐个 spawn_agent [→ G10 Codex CLI 调用协议]
+    主代理从 tasks.md 提取同构任务 → 生成 CSV（列: task_id, file_path, scope, description）→ 构造指令模板 → 调用 spawn_agents_on_csv
+    并发上限 16，进度通过 agent_job_progress 事件实时追踪（pending/running/completed/failed/ETA）
+    完成后读取 output CSV 汇总结果，更新各任务状态
+    不适用时（异构任务/任务数<6）: 保留 spawn_agent 方式
 
 分级重试 [→ G10 分级重试策略]:
   瞬时失败（timeout/网络错误）→ 自动重试 1 次，仍失败 → [X]
