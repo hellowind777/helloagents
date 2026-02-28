@@ -1,5 +1,8 @@
-# HelloAGENTS Codex CLI Hooks 参考配置
-# 将所需配置合并到 ~/.codex/config.toml 中启用。
+# HelloAGENTS Codex CLI Hooks 参考配置（仅供参考，非自动部署源）
+#
+# 此文件是 Codex CLI 配置的参考文档。实际配置由 config_helpers.py 中的
+# _configure_codex_notify() 和 _configure_codex_csv_batch() 程序化写入
+# ~/.codex/config.toml，不会直接读取此文件。
 #
 # 角色调度规则见 G9/G10。
 

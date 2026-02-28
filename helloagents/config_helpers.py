@@ -35,7 +35,7 @@ def _configure_codex_toml(dest_dir: Path) -> None:
     else:
         # Not present — insert before the first [section] or at the top
         insert_pos = 0
-        section_match = re.search(r'^\[', content, re.MULTILINE)
+        section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
         if section_match:
             insert_pos = section_match.start()
         line = "project_doc_max_bytes = 131072\n"
@@ -62,7 +62,9 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
         content = config_path.read_text(encoding="utf-8")
     changed = False
 
-    # --- agents.max_threads >= 64 ---
+    # --- agents.max_threads >= 64 (minimum required for CSV batch orchestration) ---
+    # Enforces minimum: overwrites values < 64. This differs from max_depth which
+    # only adds when absent, because max_threads has a hard minimum for CSV batching.
     m = re.search(r'agents\.max_threads\s*=\s*(\d+)', content)
     if m:
         if int(m.group(1)) < 64:
@@ -73,7 +75,7 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
             changed = True
     else:
         insert_pos = 0
-        section_match = re.search(r'^\[', content, re.MULTILINE)
+        section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
         if section_match:
             insert_pos = section_match.start()
         line = "agents.max_threads = 64\n"
@@ -83,10 +85,12 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
         changed = True
 
     # --- agents.max_depth = 1 (prevent deep nesting) ---
+    # Only adds when absent — does NOT overwrite user-customized values, since
+    # users may intentionally set deeper nesting for advanced workflows.
     md = re.search(r'agents\.max_depth\s*=\s*(\d+)', content)
     if not md:
         insert_pos = 0
-        section_match = re.search(r'^\[', content, re.MULTILINE)
+        section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
         if section_match:
             insert_pos = section_match.start()
         line = "agents.max_depth = 1\n"
@@ -102,9 +106,10 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
         sqlite_match = re.search(
             r'^sqlite\s*=', content[features_match.end():], re.MULTILINE)
         if not sqlite_match:
-            # Find end of [features] section (next [section] or EOF)
+            # Find end of [features] section (next TOML [section] header or EOF)
+            # Use ^\[[\w] to avoid matching TOML array values like ["..."]
             next_section = re.search(
-                r'^\[', content[features_match.end():], re.MULTILINE)
+                r'^\[[\w]', content[features_match.end():], re.MULTILINE)
             if next_section:
                 pos = features_match.end() + next_section.start()
             else:
@@ -329,9 +334,9 @@ def _configure_codex_notify(dest_dir: Path) -> None:
                    "  Skipped notify config (user-defined value exists)"))
         return
 
-    # Not present — add before first [section] or at top
+    # Not present — add before first TOML [section] header or at top
     insert_pos = 0
-    section_match = re.search(r'^\[', content, re.MULTILINE)
+    section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
     if section_match:
         insert_pos = section_match.start()
     line = notify_line + "\n"
