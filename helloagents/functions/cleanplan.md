@@ -38,7 +38,7 @@
 ### 步骤2: 扫描方案包
 
 ```yaml
-前置迁移: upgrade_wiki.py --migrate-root（静默执行，确保旧目录名已迁移后再扫描）
+前置迁移: [→ services/knowledge.md 前置检查 步骤2]
 前置: plan/ 目录存在至少一个方案包
 
 脚本: list_packages.py

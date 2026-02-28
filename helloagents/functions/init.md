@@ -52,6 +52,7 @@
      status=migrated → 提示已自动迁移 helloagents/ → .helloagents/，继续
      status=conflict → 输出: 确认（新旧目录同时存在）→ 用户选择保留哪个 → ⛔ END_TURN
      status=not_needed/not_found → 静默继续
+     status=error → 输出: 警告（迁移失败原因），按 not_found 继续
   1. 检查 {KB_ROOT}/ 目录是否存在
   2. 检查核心文件完整性（INDEX.md, context.md, CHANGELOG.md, modules/_index.md）
   3. 对比当前结构与框架标准

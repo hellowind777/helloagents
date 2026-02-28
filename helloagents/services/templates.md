@@ -75,6 +75,9 @@ tasks.md: 文件存在 + 元数据头部 + 进度概览 + 任务列表 + 执行�
 | 文件路径 | 用途 | 说明 |
 |---------|------|------|
 | session_summary.md | L2 会话摘要格式参考 | AI 写入 sessions/{session_id}.md 时参考 |
+| verify.yaml | 验收规则配置 | 定义阻断性/警告性/信息性验收项 |
+| guidelines.md | 项目开发指南模板 | 知识库 guidelines 参考结构 |
+| custom_command.md | 自定义命令模板 | 用户创建 .helloagents/commands/ 时参考 |
 
 > **L0 骨架文件:** `{HELLOAGENTS_ROOT}/user/profile.md` 为系统自带的用户记忆骨架，由用户手动维护，非模板生成。
 
@@ -143,6 +146,17 @@ context.md:
 ```yaml
 格式: {feature}#D{NNN}（如 add-login#D001）
 简写: 同方案包内可省略前缀，跨方案引用必须带前缀
+```
+
+### 方案包命名规范化
+
+```yaml
+规则: generate_package_name() 自动处理
+  1. feature 名称转小写
+  2. 非字母/数字/中文字符替换为连字符
+  3. 首尾连字符去除
+  4. 拼接时间戳: YYYYMMDDHHMM_{normalized_feature}
+示例: "Add Login" → 202512191430_add-login
 ```
 
 ---

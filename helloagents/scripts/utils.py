@@ -9,7 +9,11 @@ import re
 import os
 import sys
 import io
+import json
 import functools
+from pathlib import Path
+from datetime import datetime
+from typing import Optional, Tuple, List, Dict, Callable, Any
 
 
 def setup_encoding():
@@ -25,12 +29,6 @@ def setup_encoding():
             sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
         if hasattr(sys.stdin, 'buffer'):
             sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
-
-
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, Tuple, List, Dict, Callable, Any
-import json
 
 
 # === 执行报告机制 ===
@@ -364,7 +362,7 @@ def count_tasks(task_file: Path) -> int:
 
     content = task_file.read_text(encoding='utf-8')
     # 匹配任务行: - [ ] 或 * [ ] 或 - [x] 或 - [√] 等
-    tasks = re.findall(r'^[-*]\s*\[.\]', content, re.MULTILINE)
+    tasks = re.findall(r'^\s*[-*]\s*\[.\]', content, re.MULTILINE)
     return len(tasks)
 
 

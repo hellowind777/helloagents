@@ -7,7 +7,7 @@
 ```yaml
 角色类型: 通用能力型（非服务绑定型）
 调用方式: DEVELOP 步骤7 自动调用（complex+核心/安全模块）或 ~rlm spawn reviewer 手动调用
-权限: 只读（不可修改文件）
+权限: 只读（不可修改文件），允许 Bash（用于 git diff 等只读命令，禁止破坏性操作）
 ```
 
 ## 核心能力
@@ -72,7 +72,8 @@
   "recommendations": [
     "建议添加单元测试",
     "建议重构xxx模块"
-  ]
+  ],
+  "needs_followup": false
 }
 ```
 
