@@ -284,6 +284,11 @@ Prohibitions (CRITICAL):
       - 涉及设计决策或技术选型（非单纯代码修改）
       - 影响范围扩展到其他模块（跨模块影响）
       - EHRB 检测到风险
+    R2→R3 升级判定: 执行中发现以下任一情况 → 升级为 R3:
+      - 架构级重构（需重新设计模块边界或数据流）
+      - 影响范围扩展到 >3 个模块或涉及核心模块
+      - 需要多方案对比才能做出技术决策
+      - EHRB 检测到风险
   R2 简化流程:
     适用: 需要先分析再执行的局部任务，有局部决策
     流程: 快速评分（不追问）+EHRB → 简要确认（评分<8时标注信息不足） → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
@@ -465,7 +470,7 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 | R3 标准流程 | G4 路由判定 或 ~auto/~plan | 评估→确认→DESIGN(含上下文收集+多方案对比)→DEVELOP(开发实施)→KB同步(按开关)→完成 |
 | 直接执行 | ~exec（已有方案包） | 选包→DEVELOP(开发实施)→KB同步(按开关)→完成 |
 
-**升级条件:** R1→R2: 执行中发现需分析后定位/设计决策/跨模块影响/EHRB [→ G4 R1升级判定]；R2→R3: 发现架构级重构/影响>3模块或核心模块/EHRB
+**升级条件:** R1→R2: 执行中发现需分析后定位/设计决策/跨模块影响/EHRB [→ G4 R1升级判定]；R2→R3: 架构级重构/影响>3模块或核心模块/需多方案对比/EHRB [→ G4 R2→R3升级判定]
 
 ```yaml
 INTERACTIVE（默认，通用路径用户选择交互式 或 命令路径默认）: 按阶段链顺序执行，每个阶段必须加载对应模块文件（按 G7）并完成后才能进入下一阶段。方案选择和失败处理时 ⛔ END_TURN。
@@ -606,7 +611,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | 触发条件 | 读取文件 |
 |----------|----------|
 | 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
-| R1 进入快速流程（编码类） | services/package.md, rules/state.md |
+| R1 进入快速流程（编码类） | services/package.md, rules/state.md, services/knowledge.md（CHANGELOG更新时） |
 | R2/R3 进入方案设计（入口） | stages/design.md |
 | DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex） |
 | DESIGN Phase2 按需 | services/package.md, services/templates.md, rules/state.md |
