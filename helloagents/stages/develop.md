@@ -94,7 +94,7 @@ TASK_COMPLEXITY 来源:
 
 ```yaml
 读取 CURRENT_PACKAGE/proposal.md 判断类型:
-  overview: [→ services/package.md Overview 类型处理]
+  overview: [→ services/package.md Overview 类型处理]  # 仅 DIRECT 入口（~exec）触发；NATURAL 入口的 overview 在 DESIGN 阶段已归档处理
   implementation: → 步骤4
 ```
 

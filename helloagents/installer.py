@@ -369,6 +369,9 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
         except Exception as e:
             print(_msg(f"  ⚠ 移除 notify hook 时出错: {e}",
                        f"  ⚠ Error removing notify hook: {e}"))
+        print(_msg(
+            "  ℹ config.toml 中的 project_doc_max_bytes / agent_max_threads / sqlite 配置已保留（可能被其他工具使用）。",
+            "  ℹ project_doc_max_bytes / agent_max_threads / sqlite kept in config.toml (may be used by other tools)."))
 
     if removed:
         print(_msg(f"  已移除 {len(removed)} 个项目:",
