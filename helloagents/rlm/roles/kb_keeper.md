@@ -106,11 +106,20 @@ modules/{module}.md: 模块文档（职责、接口定义、行为规范、依�
     "关键变更: ..."
   ],
   "changes_made": [
-    {"file": "{KB_ROOT}/INDEX.md", "type": "update", "description": "已更新"},
-    {"file": "{KB_ROOT}/modules/xxx.md", "type": "create", "description": "已创建"}
+    {"file": "{KB_ROOT}/INDEX.md", "type": "update", "description": "已更新", "scope": "INDEX.md"},
+    {"file": "{KB_ROOT}/modules/xxx.md", "type": "create", "description": "已创建", "scope": "xxx 模块文档"}
   ],
+  "verification": {
+    "lint_passed": "skipped",
+    "tests_passed": "skipped"
+  },
   "issues_found": [
-    "模块 xxx 文档与代码不一致"
+    {
+      "severity": "medium",
+      "description": "模块 xxx 文档与代码不一致",
+      "location": "{KB_ROOT}/modules/xxx.md",
+      "suggestion": "更新接口定义章节"
+    }
   ],
   "recommendations": [
     "建议更新 xxx 模块的接口定义"

@@ -6,7 +6,7 @@
 
 ```yaml
 角色类型: 通用能力型（非服务绑定型）
-调用方式: DEVELOP 步骤7 自动调用（complex+核心/安全模块）或 ~rlm spawn reviewer 手动调用
+调用方式: DEVELOP 阶段代码审查步骤自动调用（complex+核心/安全模块）或 ~rlm spawn reviewer 手动调用
 权限: 只读（不可修改文件），允许 Bash（用于 git diff 等只读命令，禁止破坏性操作）
 ```
 

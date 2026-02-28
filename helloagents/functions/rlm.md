@@ -144,7 +144,7 @@ RLM（Role-based Language Model）— 子代理编排与多终端协作。
 ### ~rlm session
 
 ```yaml
-脚本: session.py --info
+脚本: {HELLOAGENTS_ROOT}/rlm/session.py --info
 输出: 直接回答（Session ID+创建时间+最后活跃+目录+事件数+代理执行数）
 ```
 
@@ -153,7 +153,7 @@ RLM（Role-based Language Model）— 子代理编排与多终端协作。
 ### ~rlm sessions
 
 ```yaml
-脚本: session.py --list
+脚本: {HELLOAGENTS_ROOT}/rlm/session.py --list
 输出: 直接回答（Sessions表+清理建议）
 ```
 
@@ -164,13 +164,13 @@ RLM（Role-based Language Model）— 子代理编排与多终端协作。
 ```yaml
 参数: hours（清理超过N小时的Sessions，默认24）
 
-扫描: session.py --list → 获取 Sessions 总数和符合清理条件的数量
+扫描: {HELLOAGENTS_ROOT}/rlm/session.py --list → 获取 Sessions 总数和符合清理条件的数量
 
 输出: 确认（符合条件{N}个/共{M}个Sessions+清理范围: 超过{hours}小时）
 ⛔ END_TURN
 
 用户确认后:
-  继续: 脚本 session.py --cleanup {hours} → 输出完成（已清理数量+保留当前Session）
+  继续: 脚本 {HELLOAGENTS_ROOT}/rlm/session.py --cleanup {hours} → 输出完成（已清理数量+保留当前Session）
   取消: → 状态重置
 
 说明: 当前 Session 由 HELLOAGENTS_SESSION_ID 环境变量确定
