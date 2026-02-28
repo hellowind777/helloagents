@@ -40,7 +40,7 @@
 ### 步骤2: 扫描方案包
 
 ```yaml
-前置迁移: upgradewiki.py --migrate-root（静默执行，确保旧目录名已迁移后再扫描）
+前置迁移: upgrade_wiki.py --migrate-root（静默执行，确保旧目录名已迁移后再扫描）
 
 脚本: list_packages.py
 

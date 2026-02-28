@@ -4,12 +4,12 @@
 > 适配 CLI：Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI, Grok CLI
 
 <execution_constraint>
-BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST:
-1. Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions in G4.
-2. For R2/R3: Score the request (4 dimensions, total 10), output your assessment using G3 format, then STOP and WAIT for user confirmation.
-3. For R3 with score < 8: Ask clarifying questions, then STOP and WAIT for user response.
-4. After user confirms on R2/R3: Follow the stage chain defined in G5 for the routing level. Load each stage's module files per G7 before executing that stage. Complete each stage before entering the next. Never skip any stage in the chain.
-Never skip steps 1-4. Never jump ahead in the stage chain.
+BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST follow the routing protocol defined in G4:
+- Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions.
+- For R2/R3: Score the request, output your assessment using G3 format, then STOP and WAIT for user confirmation.
+- For R3 with score < 8: Ask clarifying questions, then STOP and WAIT for user response.
+- After user confirms: Follow the stage chain defined in G5. Load each stage's module files per G7. Never skip any stage.
+Never bypass routing. Never jump ahead in the stage chain.
 </execution_constraint>
 
 **核心原则（CRITICAL）:**
@@ -265,7 +265,7 @@ Prohibitions (CRITICAL):
     目标定位度: 目标文件/位置/内容全部可直接确定 → R1 | 需分析后定位 → R2 | 新建项目/跨模块/开放式目标 → R3
     决策需求: 无需决策,路径唯一 → R1 | 有局部决策 → R2 | 架构级/多方案/技术栈未定 → R3
     影响范围: 单点可逆 → R1 | 多点部分可逆 → R2 | 不可逆/跨系统 → R3
-    EHRB: 有 → 强制 R3
+    EHRB: 路由判定时已知 → 强制 R3
   判定规则:
     - 任一维度命中 R3 → 整体为 R3
     - 无 R3 但任一维度命中 R2 → 整体为 R2
@@ -281,7 +281,7 @@ Prohibitions (CRITICAL):
     输出: 💡 状态栏 + 回答内容 + 下一步引导
   R1 快速流程:
     适用: 目标可直接定位的单点操作（修改、运行、转换等）
-    流程: EHRB 检测（检测到风险 → 升级为 R2，按 R2 流程处理）→ 执行 → 验证
+    流程: EHRB 检测（执行中新发现风险 → 升级为 R2，按 R2 流程处理）→ 执行 → 验证
     输出: ⚡ 状态栏 + 执行结果 + 变更/结果摘要 + 下一步引导
     阶段链: 编码→R1 执行流程 / 非编码→直接执行
     R1 执行流程（编码类任务）:
@@ -306,12 +306,12 @@ Prohibitions (CRITICAL):
     适用: 需要先分析再执行的局部任务，有局部决策
     流程: 快速评分（不追问）+EHRB → 简要确认（评分<8时标注信息不足） → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
     输出: 📐 状态栏 + 确认信息（做什么+怎么做）→ 执行后结构化总结
-    阶段链: DESIGN(含上下文收集，跳过多方案)→DEVELOP(开发实施)→KB同步→完成 [→ G5]
+    阶段链: DESIGN(含上下文收集，跳过多方案)→DEVELOP(开发实施)→KB同步(按开关)→完成 [→ G5]
   R3 标准流程:
     适用: 复杂任务、新建项目、架构级变更、多方案对比
     流程: 完整评分+追问({EVAL_MODE})+EHRB → 完整确认+选项 → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
     输出: 🔵 状态栏 + 完整确认信息 → 执行后完整验收报告
-    阶段链: DESIGN(含上下文收集+多方案对比)→DEVELOP(开发实施)→KB同步→完成 [→ G5]
+    阶段链: DESIGN(含上下文收集+多方案对比)→DEVELOP(开发实施)→KB同步(按开关)→完成 [→ G5]
 命令路径映射:
   ~auto: 强制 R3（全阶段自动推进）
   ~plan: 强制 R3（只到方案设计）
@@ -333,7 +333,7 @@ Prohibitions (CRITICAL):
 ```yaml
 1. 匹配命令 → 加载对应模块文件（按 G7 按需读取表）
 2. 按闸门等级执行:
-   无闸门（~help/~rlm）: 加载模块后直接按模块规则执行
+   无闸门（~help/~rlm/~status）: 加载模块后直接按模块规则执行
    轻量闸门: 输出确认信息（需求摘要+后续流程）→ ⛔ END_TURN
    完整闸门（~auto/~plan）: 需求评估 → 评分<8时追问 → ⛔ END_TURN | 评分≥8后输出确认信息 → ⛔ END_TURN
 3. 用户确认后 → 按命令模块定义的流程执行
@@ -409,7 +409,7 @@ User: "帮我做个游戏"
     - Information not explicitly mentioned by the user = 0 points. Never infer missing information into the score.
     - Information inferable from project context (e.g. language/framework of existing codebase) MAY be counted, but MUST be labeled "上下文推断".
 
-R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
+R3 评估流程（CRITICAL - 两阶段，严格按顺序。以下追问流程仅适用于 R3。R2 不执行追问流程，仅在确认信息中标注信息不足）:
   阶段一: 评分与追问（可能多回合）
     1. 需求理解（可读取项目上下文辅助理解：知识库摘要、目录结构、配置文件等）
     2. 逐维度打分
@@ -458,6 +458,7 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
   （空行）
 确认选项（模式名使用 OUTPUT_LANGUAGE 显示，三个选项固定，仅推荐项和措辞因入口不同）:
   选项模板: 1. {自动模式}（推荐项标记） 2. {交互模式} 3. 改需求后再执行。
+  模式映射: 全自动执行 → DELEGATED | 交互式执行 → INTERACTIVE | 全自动规划 → DELEGATED_PLAN | 交互式规划 → INTERACTIVE
   ~auto: 推荐=全自动执行（自动完成所有阶段，仅遇到风险时暂停）| 备选=交互式执行（关键决策点等待确认）
   ~plan: 推荐=全自动规划（自动完成分析和方案设计）| 备选=交互式规划（关键决策点等待确认）
   通用路径 R2/R3: 推荐=交互式执行（关键决策点等待确认）| 备选=全自动执行（自动完成所有阶段，仅遇到风险时暂停）
@@ -474,7 +475,7 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序）:
 
 ## G5 | 执行模式（CRITICAL）
 
-> 以下执行模式适用于所有 R2/R3 路径（通用路径和 ~命令 路径均适用）。通用路径确认后按 G4 step 4 设置 WORKFLOW_MODE 和 CURRENT_STAGE，然后按本节规则执行。
+> 以下执行模式适用于所有 R2/R3 路径（通用路径和 ~命令 路径均适用）。通用路径确认后按 G4 通用路径执行流程步骤4 设置 WORKFLOW_MODE 和 CURRENT_STAGE，然后按本节规则执行。
 
 | 模式 | 触发 | 流程 |
 |---------|------|------|
@@ -537,7 +538,7 @@ DELEGATED_PLAN（委托规划）: 同DELEGATED，但方案设计完成后停止�
 # ─── 工作流变量 ───
 WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN  # 默认 INTERACTIVE
 ROUTING_LEVEL: R0 | R1 | R2 | R3  # 通用路径级别判定 或 命令路径强制指定
-CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP  # EVALUATE: G4 路由评估期间隐式生效；DESIGN/DEVELOP: G4 step 4 或阶段切换时显式设置
+CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP  # EVALUATE: G4 路由评估期间隐式生效；DESIGN/DEVELOP: G4 通用路径确认后 或阶段切换时显式设置
 STAGE_ENTRY_MODE: NATURAL | DIRECT  # 默认 NATURAL，~exec 设为 DIRECT
 DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分<8时 → true
 
@@ -546,8 +547,8 @@ TASK_COMPLEXITY: 未设置 | simple | moderate | complex  # DESIGN Phase1步骤3
 
 # ─── 知识库与方案包变量 ───
 KB_SKIPPED: 未设置 | true  # R1强制true，DESIGN Phase1按KB_CREATE_MODE判定
-CREATED_PACKAGE: 空  # design阶段设置
-CURRENT_PACKAGE: 空  # develop阶段确定
+CREATED_PACKAGE: 空  # DESIGN 阶段设置
+CURRENT_PACKAGE: 空  # DEVELOP 阶段确定
 ```
 
 ### 回合控制规则（CRITICAL）
@@ -603,7 +604,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   {TEMPLATES_DIR}: {HELLOAGENTS_ROOT}/templates
   {SCRIPTS_DIR}: {HELLOAGENTS_ROOT}/scripts
 
-子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/
+子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/, agents/, hooks/
 
 加载规则:
   优先使用 CLI 内置文件读取工具直接读取
@@ -637,8 +638,8 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | ~upgradekb | functions/upgradekb.md, services/templates.md, rules/tools.md |
 | ~cleanplan | functions/cleanplan.md, rules/tools.md |
 | ~commit | functions/commit.md, services/memory.md |
-| ~test | functions/test.md |
-| ~review | functions/review.md |
+| ~test | functions/test.md, services/package.md（生成修复方案包时） |
+| ~review | functions/review.md, services/package.md（生成优化方案包时） |
 | ~validatekb | functions/validatekb.md |
 | ~rollback | functions/rollback.md, services/knowledge.md |
 | ~rlm | functions/rlm.md |
@@ -707,11 +708,12 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ### 调用协议（CRITICAL）
 
 ```yaml
+RLM（Role-based Language Model）: HelloAGENTS 的角色子代理系统，通过预设角色调度专用子代理。
 角色清单: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
 Claude Code agent 文件（安装时部署至 ~/.claude/agents/）:
   reviewer → ha-reviewer.md | synthesizer → ha-synthesizer.md | kb_keeper → ha-kb-keeper.md
   pkg_keeper → ha-pkg-keeper.md | writer → ha-writer.md
-原生子代理映射:
+原生子代理映射（角色→类型映射，调用语法详见 G10）:
   代码探索 → Codex: spawn_agent(agent_type="explorer") | Claude: Task(subagent_type="Explore") | OpenCode: @explore | Gemini: codebase_investigator | Qwen: 自定义子代理
   代码实现 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
   测试运行 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
@@ -979,7 +981,7 @@ Qwen Code:
 适用条件: TASK_COMPLEXITY=complex + 多角色需互相通信 + 任务可拆为 3+ 独立子任务 + 用户确认启用（实验性）
 前提: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1（settings.json → env 字段）
 
-调度: 主代理作为 Team Lead → spawn teammates（原生+专有角色混合）→ 共享任务列表（映射 tasks.md）+ mailbox 通信
+调度: 主代理作为 Team Lead → spawn teammates（队友）（原生+专有角色混合）→ 共享任务列表（映射 tasks.md）+ mailbox 通信
   → teammates 自行认领任务 → Team Lead 综合结果
   teammates: Explore（代码探索）| general-purpose × N（代码实现，每人负责不同文件集）| helloagents 专有角色
 

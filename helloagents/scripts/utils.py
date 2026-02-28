@@ -14,7 +14,7 @@ import functools
 
 def setup_encoding():
     """
-    设置 stdout/stderr 编码为 UTF-8
+    设置 stdout/stderr/stdin 编码为 UTF-8
     解决 Windows 命令行中文输出乱码问题
     """
     if sys.platform == 'win32':
@@ -23,6 +23,8 @@ def setup_encoding():
             sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
         if hasattr(sys.stderr, 'buffer'):
             sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+        if hasattr(sys.stdin, 'buffer'):
+            sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
 
 
 from pathlib import Path

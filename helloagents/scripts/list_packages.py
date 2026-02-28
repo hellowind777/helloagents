@@ -17,17 +17,28 @@ import json
 import sys
 from pathlib import Path
 
-# 确保能找到同目录下的 utils 模块
-sys.path.insert(0, str(Path(__file__).parent))
-from utils import (
-    setup_encoding,
-    get_plan_path,
-    get_archive_path,
-    list_packages,
-    get_package_summary,
-    script_error_handler,
-    validate_base_path
-)
+# 导入 utils 模块（优先直接导入，回退时添加脚本目录到路径）
+try:
+    from utils import (
+        setup_encoding,
+        get_plan_path,
+        get_archive_path,
+        list_packages,
+        get_package_summary,
+        script_error_handler,
+        validate_base_path
+    )
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import (
+        setup_encoding,
+        get_plan_path,
+        get_archive_path,
+        list_packages,
+        get_package_summary,
+        script_error_handler,
+        validate_base_path
+    )
 
 
 def print_table(packages: list, title: str):

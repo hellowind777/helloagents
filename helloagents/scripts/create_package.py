@@ -18,18 +18,30 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# 确保能找到同目录下的 utils 模块
-sys.path.insert(0, str(Path(__file__).parent))
-from utils import (
-    setup_encoding,
-    get_plan_path,
-    generate_package_name,
-    print_error,
-    print_success,
-    validate_base_path,
-    get_template_loader,
-    ExecutionReport
-)
+# 导入 utils 模块（优先直接导入，回退时添加脚本目录到路径）
+try:
+    from utils import (
+        setup_encoding,
+        get_plan_path,
+        generate_package_name,
+        print_error,
+        print_success,
+        validate_base_path,
+        get_template_loader,
+        ExecutionReport
+    )
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import (
+        setup_encoding,
+        get_plan_path,
+        generate_package_name,
+        print_error,
+        print_success,
+        validate_base_path,
+        get_template_loader,
+        ExecutionReport
+    )
 
 
 # 模板路径常量

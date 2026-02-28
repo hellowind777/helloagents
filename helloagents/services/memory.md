@@ -12,6 +12,34 @@
 服务类型: 领域服务
 适用范围: 所有路径（命令路径 + 外部工具路径 + 通用路径）
 核心职责: 跨会话记忆的存储、加载与检索
+执行者: 主代理直接执行（无专用角色）
+```
+
+---
+
+## 服务接口
+
+### load(sessionId)
+
+```yaml
+触发: 会话启动时
+流程: 获取 CLI session ID → 扫描 user/*.md（L0）→ 查找 sessions/{sessionId}.md（L2）→ 注入上下文
+返回: { l0_files, l2_summary, session_type(new|resumed) }
+```
+
+### save(sessionId, trigger)
+
+```yaml
+触发: 阶段切换 / ~commit / 状态重置 / 用户明确请求
+流程: 提取对话关键信息 → 写入 sessions/{sessionId}.md（L2）
+跳过条件: 轮次≤2 且无文件操作且无明确结论
+```
+
+### cleanup(maxFiles)
+
+```yaml
+触发: 会话启动时自动执行
+流程: sessions/ 下文件数 > maxFiles(默认20) → 删除最旧文件
 ```
 
 ---

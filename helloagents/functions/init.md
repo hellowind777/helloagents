@@ -48,7 +48,7 @@
 
 知识库状态检测:
   0. 旧目录名迁移检测:
-     脚本: upgradewiki.py --migrate-root
+     脚本: upgrade_wiki.py --migrate-root
      status=migrated → 提示已自动迁移 helloagents/ → .helloagents/，继续
      status=conflict → 输出: 确认（新旧目录同时存在）→ 用户选择保留哪个 → ⛔ END_TURN
      status=not_needed/not_found → 静默继续

@@ -1,6 +1,7 @@
 """HelloAGENTS Updater - Update command, status, and clean operations."""
 
 import os
+import re
 import sys
 from pathlib import Path
 from importlib.metadata import version as get_version
@@ -11,6 +12,7 @@ from .cli import (
     HOOKS_FINGERPRINT,
     _detect_installed_targets, _detect_install_method,
 )
+from .config_helpers import _is_helloagents_hook
 from .version_check import (
     # Used by update() / status()
     _detect_channel, _local_commit_id, _remote_commit_id,
@@ -263,6 +265,124 @@ def _show_config_status() -> None:
             print(f"  · {label}: {_msg('未配置', 'not set')}")
 
 
+def _show_claude_cli_details(cli_dir: Path) -> None:
+    """Show Claude Code specific status details (hooks + agent definitions)."""
+    try:
+        import json
+        sp = cli_dir / "settings.json"
+        if sp.exists():
+            st = json.loads(sp.read_text(encoding="utf-8"))
+            hooks = st.get("hooks", {})
+            ha_count = sum(
+                1 for hl in hooks.values() if isinstance(hl, list)
+                for mg in hl if _is_helloagents_hook(mg)
+            )
+            if ha_count > 0:
+                print(f"    hooks: {ha_count} HelloAGENTS hook(s) ✓")
+            else:
+                print(_msg("    ⚠ 未检测到 HelloAGENTS Hooks，建议重新安装",
+                           "    ⚠ No HelloAGENTS hooks found, reinstall recommended"))
+        else:
+            print(_msg("    ⚠ settings.json 不存在，Hooks 未配置",
+                       "    ⚠ settings.json missing, hooks not configured"))
+    except Exception:
+        pass
+    # Agent definition files check
+    agents_dir = cli_dir / "agents"
+    ha_agents = list(agents_dir.glob("ha-*.md")) if agents_dir.exists() else []
+    if ha_agents:
+        print(f"    agents: {len(ha_agents)} ha-*.md ✓")
+    else:
+        print(_msg("    ⚠ 未检测到 ha-*.md 子代理定义，建议重新安装",
+                   "    ⚠ No ha-*.md agent definitions found, reinstall recommended"))
+
+
+def _show_codex_cli_details(cli_dir: Path) -> None:
+    """Show Codex CLI specific status details (notify + multi-agent config)."""
+    try:
+        ct_path = cli_dir / "config.toml"
+        if not ct_path.exists():
+            return
+        ct_text = ct_path.read_text(encoding="utf-8")
+        # --- notify check ---
+        nm_arr = re.search(r'^notify\s*=\s*\[([^\]]*)\]', ct_text, re.MULTILINE)
+        nm_str = re.search(r'^notify\s*=\s*"([^"]*)"', ct_text, re.MULTILINE)
+        notify_val = (nm_arr.group(1) if nm_arr else
+                      nm_str.group(1) if nm_str else None)
+        if notify_val and "helloagents" in notify_val:
+            print("    notify: helloagents ✓")
+        elif notify_val:
+            print(_msg("    notify: 用户自定义（非 HelloAGENTS）",
+                       "    notify: user-defined (not HelloAGENTS)"))
+        else:
+            print(_msg("    ⚠ notify 未配置，建议重新安装",
+                       "    ⚠ notify not configured, reinstall recommended"))
+        # --- multi-agent config check ---
+        ma_items = []
+        if re.search(r'agents\.max_threads\s*=', ct_text):
+            ma_items.append("agents.max_threads")
+        if re.search(r'agents\.max_depth\s*=', ct_text):
+            ma_items.append("agents.max_depth")
+        if re.search(r'^sqlite\s*=\s*true', ct_text, re.MULTILINE):
+            ma_items.append("sqlite")
+        if ma_items:
+            print(f"    multi-agent: {', '.join(ma_items)} ✓")
+        else:
+            print(_msg("    ⚠ 多代理配置缺失，建议重新安装",
+                       "    ⚠ Multi-agent config missing, reinstall recommended"))
+    except Exception:
+        pass
+
+
+def _show_codex_rules_warning(cli_dir: Path, rules_file: Path) -> None:
+    """Warn if AGENTS.md exceeds Codex project_doc_max_bytes limit."""
+    try:
+        rules_size = rules_file.stat().st_size
+        max_bytes = 32768  # Codex default
+        config_toml = cli_dir / "config.toml"
+        if config_toml.exists():
+            ct = config_toml.read_text(encoding="utf-8")
+            m = re.search(r'project_doc_max_bytes\s*=\s*(\d+)', ct)
+            if m:
+                max_bytes = int(m.group(1))
+        if rules_size > max_bytes:
+            print(_msg(
+                f"    ⚠ AGENTS.md ({rules_size} 字节) 超过 project_doc_max_bytes ({max_bytes})，内容会被截断",
+                f"    ⚠ AGENTS.md ({rules_size} bytes) exceeds project_doc_max_bytes ({max_bytes}), content will be truncated"))
+            print(_msg(
+                "    → 执行 helloagents install codex 可自动修复此问题",
+                "    → Run helloagents install codex to fix this automatically"))
+    except Exception:
+        pass
+
+
+def _show_wsl_hint() -> None:
+    """Show WSL environment hint if applicable."""
+    try:
+        _is_wsl = False
+        if sys.platform != "win32":
+            try:
+                _is_wsl = "microsoft" in Path("/proc/version").read_text().lower()
+            except Exception:
+                pass
+        if _is_wsl:
+            print()
+            print(_msg("  ⚠ 当前运行在 WSL 环境中。WSL 与 Windows 宿主的配置路径互相独立，",
+                       "  ⚠ Running inside WSL. WSL and Windows host have separate config paths,"))
+            print(_msg("    若需在两侧使用 HelloAGENTS，需分别安装。",
+                       "    install HelloAGENTS on both sides if needed."))
+        elif sys.platform == "win32":
+            import shutil as _sh
+            if _sh.which("wsl"):
+                print()
+                print(_msg("  ⚠ 检测到 WSL。若在 VS Code 中以 WSL Remote 模式使用 HelloAGENTS，",
+                           "  ⚠ WSL detected. If using HelloAGENTS via VS Code WSL Remote,"))
+                print(_msg("    需在 WSL 内部单独执行 helloagents install，两侧配置路径互相独立。",
+                           "    run helloagents install inside WSL separately — config paths are independent."))
+    except Exception:
+        pass
+
+
 def status() -> None:
     """Show installation status for all CLIs."""
     _header(_msg("安装状态", "Installation Status"))
@@ -275,9 +395,7 @@ def status() -> None:
     except Exception:
         print(_msg("  包版本: 未知", "  Package version: unknown"))
 
-    # Config override status
     _show_config_status()
-
     print()
 
     for name, config in CLI_TARGETS.items():
@@ -310,134 +428,16 @@ def status() -> None:
 
         print(f"  {mark} {name:10} {status_str}")
 
-        # Hooks status check (only for installed targets)
+        # CLI-specific details (only for installed targets)
         if plugin_exists and rules_exists:
             if name == "claude":
-                try:
-                    import json
-                    sp = cli_dir / "settings.json"
-                    if sp.exists():
-                        st = json.loads(sp.read_text(encoding="utf-8"))
-                        hooks = st.get("hooks", {})
-                        ha_count = 0
-                        for hl in hooks.values():
-                            if not isinstance(hl, list):
-                                continue
-                            for mg in hl:
-                                # New nested structure: matcher group with inner hooks
-                                inner = mg.get("hooks", [])
-                                if isinstance(inner, list):
-                                    for h in inner:
-                                        if HOOKS_FINGERPRINT in h.get("description", ""):
-                                            ha_count += 1
-                                # Legacy flat structure fallback
-                                elif HOOKS_FINGERPRINT in mg.get("description", ""):
-                                    ha_count += 1
-                        if ha_count > 0:
-                            print(f"    hooks: {ha_count} HelloAGENTS hook(s) ✓")
-                        else:
-                            print(_msg("    ⚠ 未检测到 HelloAGENTS Hooks，建议重新安装",
-                                       "    ⚠ No HelloAGENTS hooks found, reinstall recommended"))
-                    else:
-                        print(_msg("    ⚠ settings.json 不存在，Hooks 未配置",
-                                   "    ⚠ settings.json missing, hooks not configured"))
-                except Exception:
-                    pass
-                # Agent definition files check
-                agents_dir = cli_dir / "agents"
-                ha_agents = list(agents_dir.glob("ha-*.md")) if agents_dir.exists() else []
-                if ha_agents:
-                    print(f"    agents: {len(ha_agents)} ha-*.md ✓")
-                else:
-                    print(_msg("    ⚠ 未检测到 ha-*.md 子代理定义，建议重新安装",
-                               "    ⚠ No ha-*.md agent definitions found, reinstall recommended"))
+                _show_claude_cli_details(cli_dir)
             elif name == "codex":
-                try:
-                    import re as _re
-                    ct_path = cli_dir / "config.toml"
-                    if ct_path.exists():
-                        ct_text = ct_path.read_text(encoding="utf-8")
-                        # Match both array format and legacy string format
-                        nm_arr = _re.search(r'^notify\s*=\s*\[([^\]]*)\]', ct_text, _re.MULTILINE)
-                        nm_str = _re.search(r'^notify\s*=\s*"([^"]*)"', ct_text, _re.MULTILINE)
-                        notify_val = (nm_arr.group(1) if nm_arr else
-                                      nm_str.group(1) if nm_str else None)
-                        if notify_val and "helloagents" in notify_val:
-                            print("    notify: helloagents ✓")
-                        elif notify_val:
-                            print(_msg("    notify: 用户自定义（非 HelloAGENTS）",
-                                       "    notify: user-defined (not HelloAGENTS)"))
-                        else:
-                            print(_msg("    ⚠ notify 未配置，建议重新安装",
-                                       "    ⚠ notify not configured, reinstall recommended"))
-                except Exception:
-                    pass
-                # Multi-agent config check
-                try:
-                    import re as _re2
-                    ct_path2 = cli_dir / "config.toml"
-                    if ct_path2.exists():
-                        ct2 = ct_path2.read_text(encoding="utf-8")
-                        ma_items = []
-                        if _re2.search(r'agents\.max_threads\s*=', ct2):
-                            ma_items.append("agents.max_threads")
-                        if _re2.search(r'agents\.max_depth\s*=', ct2):
-                            ma_items.append("agents.max_depth")
-                        if _re2.search(r'^sqlite\s*=\s*true', ct2, _re2.MULTILINE):
-                            ma_items.append("sqlite")
-                        if ma_items:
-                            print(f"    multi-agent: {', '.join(ma_items)} ✓")
-                        else:
-                            print(_msg("    ⚠ 多代理配置缺失，建议重新安装",
-                                       "    ⚠ Multi-agent config missing, reinstall recommended"))
-                except Exception:
-                    pass
+                _show_codex_cli_details(cli_dir)
         if name == "codex" and rules_exists:
-            try:
-                rules_size = rules_file.stat().st_size
-                max_bytes = 32768  # Codex default
-                config_toml = cli_dir / "config.toml"
-                if config_toml.exists():
-                    import re
-                    ct = config_toml.read_text(encoding="utf-8")
-                    m = re.search(r'project_doc_max_bytes\s*=\s*(\d+)', ct)
-                    if m:
-                        max_bytes = int(m.group(1))
-                if rules_size > max_bytes:
-                    print(_msg(
-                        f"    ⚠ AGENTS.md ({rules_size} 字节) 超过 project_doc_max_bytes ({max_bytes})，内容会被截断",
-                        f"    ⚠ AGENTS.md ({rules_size} bytes) exceeds project_doc_max_bytes ({max_bytes}), content will be truncated"))
-                    print(_msg(
-                        "    → 执行 helloagents install codex 可自动修复此问题",
-                        "    → Run helloagents install codex to fix this automatically"))
-            except Exception:
-                pass
+            _show_codex_rules_warning(cli_dir, rules_file)
 
-    # WSL environment hint
-    try:
-        _is_wsl = False
-        if sys.platform != "win32":
-            try:
-                _is_wsl = "microsoft" in Path("/proc/version").read_text().lower()
-            except Exception:
-                pass
-        if _is_wsl:
-            print()
-            print(_msg("  ⚠ 当前运行在 WSL 环境中。WSL 与 Windows 宿主的配置路径互相独立，",
-                       "  ⚠ Running inside WSL. WSL and Windows host have separate config paths,"))
-            print(_msg("    若需在两侧使用 HelloAGENTS，需分别安装。",
-                       "    install HelloAGENTS on both sides if needed."))
-        elif sys.platform == "win32":
-            import shutil as _sh
-            if _sh.which("wsl"):
-                print()
-                print(_msg("  ⚠ 检测到 WSL。若在 VS Code 中以 WSL Remote 模式使用 HelloAGENTS，",
-                           "  ⚠ WSL detected. If using HelloAGENTS via VS Code WSL Remote,"))
-                print(_msg("    需在 WSL 内部单独执行 helloagents install，两侧配置路径互相独立。",
-                           "    run helloagents install inside WSL separately — config paths are independent."))
-    except Exception:
-        pass
-
+    _show_wsl_hint()
     print()
 
 

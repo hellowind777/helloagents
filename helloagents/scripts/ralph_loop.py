@@ -111,6 +111,10 @@ def run_verification(commands: List[str], cwd: str) -> tuple:
     failures = []
     for cmd in commands:
         try:
+            # Security note: shell=True is intentional here. Commands come from
+            # project-local config files (verify.yaml / package.json), not from
+            # untrusted external input. Shell interpretation is required for
+            # compound commands (e.g. "npm run lint", pipes, &&).
             result = subprocess.run(
                 cmd,
                 shell=True,

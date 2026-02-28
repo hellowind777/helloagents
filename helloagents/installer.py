@@ -286,6 +286,9 @@ def install(target: str) -> bool:
         if target == "claude":
             _deploy_agent_files(dest_dir)
     except Exception as e:
+        # Clean up temp directory on failure
+        if user_backup and user_backup.parent.exists():
+            shutil.rmtree(user_backup.parent, ignore_errors=True)
         print(_msg(f"  ✗ 安装失败: {e}", f"  ✗ Installation failed: {e}"))
         return False
 
@@ -389,26 +392,30 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
         # Preserve user/ directory before removing plugin (contains user preferences)
         user_dir = plugin_dest / "user"
         user_backup = None
-        if user_dir.exists() and any(user_dir.iterdir()):
-            import tempfile
-            user_backup = Path(tempfile.mkdtemp()) / "user"
-            shutil.copytree(user_dir, user_backup)
+        try:
+            if user_dir.exists() and any(user_dir.iterdir()):
+                import tempfile
+                user_backup = Path(tempfile.mkdtemp()) / "user"
+                shutil.copytree(user_dir, user_backup)
 
-        if win_safe_rmtree(plugin_dest):
-            removed.append(str(plugin_dest))
-        else:
-            print(_msg(f"  ✗ 无法移除 {plugin_dest}（可能被 CLI 进程占用）",
-                       f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
-            ok = False
+            if win_safe_rmtree(plugin_dest):
+                removed.append(str(plugin_dest))
+            else:
+                print(_msg(f"  ✗ 无法移除 {plugin_dest}（可能被 CLI 进程占用）",
+                           f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
+                ok = False
 
-        # Restore user/ directory if it was backed up
-        if user_backup and user_backup.exists():
-            restore_dir = plugin_dest / "user"
-            restore_dir.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(user_backup, restore_dir)
-            shutil.rmtree(user_backup.parent)
-            print(_msg(f"  已保留用户偏好目录: {restore_dir}",
-                       f"  Preserved user preferences: {restore_dir}"))
+            # Restore user/ directory if it was backed up
+            if user_backup and user_backup.exists():
+                restore_dir = plugin_dest / "user"
+                restore_dir.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(user_backup, restore_dir)
+                print(_msg(f"  已保留用户偏好目录: {restore_dir}",
+                           f"  Preserved user preferences: {restore_dir}"))
+        finally:
+            # Always clean up temp directory
+            if user_backup and user_backup.parent.exists():
+                shutil.rmtree(user_backup.parent, ignore_errors=True)
 
     if rules_dest.exists():
         if is_helloagents_file(rules_dest):

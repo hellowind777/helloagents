@@ -33,7 +33,7 @@
 
 步骤2 - 旧目录名迁移:
   检测: 项目根目录是否存在 helloagents/（旧版目录名）
-  脚本: upgradewiki.py --migrate-root
+  脚本: upgrade_wiki.py --migrate-root
   status=migrated: 静默完成，输出: 提示（旧目录名已自动迁移至新目录名）
   status=conflict: 新旧目录同时存在 → 输出: 确认（让用户选择保留哪个）→ ⛔ END_TURN
   status=not_needed/not_found: 静默继续
@@ -61,7 +61,7 @@
 
 ```yaml
 触发: ~init 命令
-流程: 检查 {KB_ROOT}/ → upgradewiki.py --init → kb_keeper 扫描填充 → 验证完整性
+流程: 检查 {KB_ROOT}/ → upgrade_wiki.py --init → kb_keeper 扫描填充 → 验证完整性
 返回: success, kb_path, files_created, errors
 保证: 知识库结构完整，文档反映项目实际状态
 ```
