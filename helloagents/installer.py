@@ -177,6 +177,14 @@ def install(target: str) -> bool:
             print(f"    - {r}")
 
     try:
+        # Preserve user/ directory (contains user preferences, not overwritable)
+        user_dir = plugin_dest / "user"
+        user_backup = None
+        if user_dir.exists():
+            import tempfile
+            user_backup = Path(tempfile.mkdtemp()) / "user"
+            shutil.copytree(user_dir, user_backup)
+
         # Remove old module directory completely before copying
         if plugin_dest.exists():
             if not win_safe_rmtree(plugin_dest):
@@ -193,6 +201,14 @@ def install(target: str) -> bool:
         )
         print(_msg(f"  已安装模块到: {plugin_dest}",
                    f"  Installed module to: {plugin_dest}"))
+
+        # Restore user/ directory (overwrite template with user data)
+        if user_backup and user_backup.exists():
+            target_user = plugin_dest / "user"
+            if target_user.exists():
+                shutil.rmtree(target_user)
+            shutil.copytree(user_backup, target_user)
+            shutil.rmtree(user_backup.parent)
 
         # Copy and rename AGENTS.md to target rules file
         if agents_md_src.exists():
@@ -231,6 +247,10 @@ def install(target: str) -> bool:
 
     print(_msg(f"  {target} 安装完成！请重启终端以应用更改。",
                f"  Installation complete for {target}! Please restart your terminal to apply changes."))
+    config_path = Path.home() / ".helloagents" / "config.json"
+    if not config_path.exists():
+        print(_msg("  ℹ 个性化配置可写入 ~/.helloagents/config.json，更新时不会被覆盖。",
+                   "  ℹ Custom settings can be saved to ~/.helloagents/config.json (preserved across updates)."))
 
     # Target-specific post-install: hooks & config
     if target == "claude":

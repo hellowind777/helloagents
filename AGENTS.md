@@ -30,6 +30,7 @@ KB_CREATE_MODE: 2  # 0=OFF, 1=ON_DEMAND, 2=ON_DEMAND_AUTO_FOR_CODING, 3=ALWAYS
 BILINGUAL_COMMIT: 1  # 0=仅 OUTPUT_LANGUAGE, 1=OUTPUT_LANGUAGE + English
 EVAL_MODE: 1  # 1=PROGRESSIVE（渐进式追问，默认）, 2=ONESHOT（一次性追问）
 UPDATE_CHECK: 72  # 0=OFF（关闭更新检查），正整数=缓存有效小时数（默认 72）
+CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并发数（默认 16，上限 64，仅 Codex CLI）
 ```
 
 **开关行为摘要:**
@@ -44,8 +45,20 @@ UPDATE_CHECK: 72  # 0=OFF（关闭更新检查），正整数=缓存有效小时
 | EVAL_MODE | 2 | 一次性追问：一次性展示所有低分维度问题，用户回答后重新评分，最多3轮 |
 | UPDATE_CHECK | 0 | 关闭更新检查，不显示更新提示 |
 | UPDATE_CHECK | N (正整数) | 首次响应时按 G3 ⬆️ 生成规则检查更新，N 为缓存有效小时数（默认 72） |
+| CSV_BATCH_MAX | 0 | 关闭 CSV 批处理编排，同构任务退回 spawn_agent 逐个执行 |
+| CSV_BATCH_MAX | N (正整数) | CSV 批处理最大并发数（默认 16，上限 64），仅 Codex CLI 生效，其他 CLI 忽略 |
 
 > 例外: ~init 显式调用时忽略 KB_CREATE_MODE 开关
+
+**配置覆盖（CRITICAL）:** 以上为默认值，会话启动时按优先级加载外置配置覆盖同名键:
+```yaml
+优先级: {CWD}/.helloagents/config.json > ~/.helloagents/config.json > 以上默认值
+加载: 会话启动时静默读取（与 user/*.md 同批），文件不存在或读取失败→静默跳过，使用默认值
+格式: {"CSV_BATCH_MAX": 0, "EVAL_MODE": 2}  # 仅列出需要覆盖的键
+作用域: ~/.helloagents/config.json = 全局（所有项目）| {CWD}/.helloagents/config.json = 当前项目
+合法键: OUTPUT_LANGUAGE, KB_CREATE_MODE, BILINGUAL_COMMIT, EVAL_MODE, UPDATE_CHECK, CSV_BATCH_MAX
+未知键: config.json 中出现不在合法键列表中的键 → 输出 "⚠️ config.json: 未知配置项 '{键名}'，已忽略（可能已废弃或拼写错误）"
+```
 
 **语言规则（CRITICAL）:** 所有输出（含回复用户和写入知识库文件）使用 {OUTPUT_LANGUAGE}，代码标识符/API名称/技术术语保持原样。流程中的展示性术语（如 Phase、Step 等）和系统常量（如 DESIGN、DEVELOP、INTERACTIVE 等）在面向用户输出时按 {OUTPUT_LANGUAGE} 翻译为等价表述，但内部流转（状态变量赋值、阶段判定、G7 查表、模块间引用）始终使用原始常量名。
 
@@ -610,7 +623,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 触发条件 | 读取文件 |
 |----------|----------|
-| 会话启动 | user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过 |
+| 会话启动 | ~/.helloagents/config.json, {CWD}/.helloagents/config.json, user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md, services/knowledge.md（CHANGELOG更新时） |
 | R2/R3 进入方案设计（入口） | stages/design.md |
 | DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex） |
@@ -902,7 +915,7 @@ CSV 批处理编排（需 collab + sqlite 特性）:
     id_column: 可选，指定用作任务 ID 的列名（默认行索引）
     output_csv_path: 可选，结果导出路径（默认自动生成）
     output_schema: 可选，worker 返回结果的 JSON Schema
-    max_concurrency: 并发数（默认 16，可配置至 64）
+    max_concurrency: 并发数（默认 {CSV_BATCH_MAX}，上限 64）
     max_runtime_seconds: 单个 worker 超时（默认 1800s）
   执行流程:
     1. 主代理生成任务 CSV（从 tasks.md 提取同构任务行）
@@ -924,7 +937,7 @@ helloagents 角色:
 中断通信: send_input 向运行中的子代理发送消息（可选中断当前执行，用于纠偏或补充指令）
 关闭子代理: close 关闭指定子代理
 审批传播: 父代理审批策略自动传播到子代理，可按类型自动拒绝特定审批请求
-限制: Collab 特性门控（/experimental 开启），agents.max_depth=1（仅一层嵌套），spawn_agent ≤6 并发，spawn_agents_on_csv ≤64 并发（默认 16）
+限制: Collab 特性门控（/experimental 开启），agents.max_depth=1（仅一层嵌套），spawn_agent ≤6 并发，spawn_agents_on_csv ≤{CSV_BATCH_MAX} 并发（上限 64，CSV_BATCH_MAX=0 时禁用）
 
 示例（spawn_agent 异构并行，每个子代理职责范围不重叠）:
   spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。你负责: 任务1.1。操作范围: filter.py 中的空白判定函数。任务: 实现空白判定逻辑。返回: {status, changes: [{file, type, scope}], issues, verification: {lint_passed, tests_passed}}")
@@ -997,9 +1010,9 @@ CLI 实现:
   Claude Code Task: 同一消息多个 Task 调用
   Claude Code Teams: teammates 自动从共享任务列表认领
   Codex CLI spawn_agent: 多个 spawn_agent + collab wait（异构任务，≤6/批）
-  Codex CLI spawn_agents_on_csv: CSV 批处理（同构任务，≤16 并发，需 collab+sqlite）
-    适用判定: 同层≥6 个结构相同的任务（相同指令模板+不同参数）→ 优先 CSV 批处理
-    不适用: 任务间指令逻辑不同、需要不同工具集、或任务数<6 → 保留 spawn_agent
+  Codex CLI spawn_agents_on_csv: CSV 批处理（同构任务，≤{CSV_BATCH_MAX} 并发，需 collab+sqlite，CSV_BATCH_MAX=0 时禁用）
+    适用判定: CSV_BATCH_MAX>0 且同层≥6 个结构相同的任务（相同指令模板+不同参数）→ 优先 CSV 批处理
+    不适用: CSV_BATCH_MAX=0 | 任务间指令逻辑不同、需要不同工具集、或任务数<6 → 保留 spawn_agent
   OpenCode: 多个 @general / @explore 子会话
   Gemini CLI: 多个子代理自动委派（实验性）
   Qwen Code: 多个自定义子代理自动委派
