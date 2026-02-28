@@ -94,7 +94,7 @@ L2 会话摘要:
        示例: 1d6e01ef-b78f-434c-8dc3-4c67277cd896
 
   Codex CLI（检测: ~/.codex/ 目录存在）:
-    1. 扫描 ~/.codex/sessions/ 下最新日期目录
+    1. 扫描 ~/.codex/sessions/{YYYY}/{MM}/{DD}/ 下最新日期目录
     2. 找到修改时间最新的 .jsonl 文件
     3. 文件名（去掉 .jsonl）= session ID
        示例: rollout-2026-02-06T19-57-42-019c32d0-ad7a-70b2-b378-c2b94a4ce4a3

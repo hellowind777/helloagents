@@ -50,7 +50,7 @@ ralph_loop.py:
   说明: 质量验证循环，子代理完成时自动运行 lint/typecheck/test，失败则阻止停止
 
 session.py:
-  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/session.py' --info|--list|--cleanup [<hours>]
+  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/session.py' --info|--list|--cleanup [<hours>]|--events [<N>]|--history [<N>]
   说明: RLM Session 管理（位于 rlm/ 目录，非 scripts/）
 
 shared_tasks.py:

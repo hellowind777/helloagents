@@ -36,7 +36,7 @@
     "字数/章节: ..."
   ],
   "changes_made": [
-    {"file": "path", "type": "create", "description": "..."}
+    {"file": "path", "type": "create", "description": "...", "scope": "文档章节/文件"}
   ],
   "issues_found": [],
   "recommendations": [

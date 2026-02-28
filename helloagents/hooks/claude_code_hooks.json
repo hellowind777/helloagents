@@ -1,5 +1,5 @@
 {
-  "_comment": "HelloAGENTS Claude Code Hooks 参考配置。将所需 hook 合并到 .claude/settings.json 的 hooks 字段中启用。",
+  "_comment": "HelloAGENTS Claude Code Hooks 参考配置（非直接使用）。实际部署由 installer.py 的 _configure_claude_hooks() 程序化写入 .claude/settings.json，{SCRIPTS_DIR} 等占位符会被替换为实际路径。手动配置时需将 {SCRIPTS_DIR} 替换为 helloagents 模块的 scripts/ 绝对路径。",
   "hooks": {
     "SessionStart": [
       {

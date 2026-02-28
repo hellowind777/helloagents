@@ -53,12 +53,7 @@
   - {TEMPLATES_DIR}/plan/proposal.md, plan/tasks.md
 
 扫描知识库:
-  旧目录名迁移检测:
-    脚本: upgrade_wiki.py --migrate-root
-    status=migrated → 提示已自动迁移 helloagents/ → .helloagents/，继续
-    status=conflict → 输出: 确认（新旧目录同时存在）→ 用户选择保留哪个 → ⛔ END_TURN
-    status=not_needed/not_found → 静默继续
-    status=error → 输出: 警告（迁移失败原因），按 not_found 继续
+  旧目录名迁移检测: [→ services/knowledge.md 前置检查 步骤2]
   脚本: upgrade_wiki.py --scan
   获取: 目录结构和文件列表（JSON格式）
 ```

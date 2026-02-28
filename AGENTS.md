@@ -595,7 +595,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
     解析: 检测当前 CLI 配置目录 → 拼接 /helloagents/
       Claude Code: ~/.claude/helloagents/
       Codex CLI: ~/.codex/helloagents/
-      OpenCode: ~/.opencode/helloagents/
+      OpenCode: ~/.config/opencode/helloagents/
       Gemini CLI: ~/.gemini/helloagents/
       Qwen CLI: ~/.qwen/helloagents/
       Grok CLI: ~/.grok/helloagents/
@@ -646,7 +646,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | ~rlm | functions/rlm.md |
 | ~help | functions/help.md |
 | ~status | functions/status.md, services/memory.md |
-| ~clean | functions/clean.md, services/memory.md |
+| ~clean | functions/clean.md, services/memory.md, services/knowledge.md（前置迁移检查） |
 | ~rlm spawn | rlm/roles/{role}.md |
 | 调用脚本时 | rules/tools.md（脚本执行规范与降级处理） |
 | 自定义命令 | .helloagents/commands/{命令名}.md |
@@ -827,7 +827,7 @@ prompt 构造模板:
    [职责边界] 你负责: {按任务类型描述职责边界，见下方}。
    [任务内容] {具体要做什么}。
    [约束条件] {代码风格/格式/限制}。
-   [返回格式] 返回: {status: success|partial|failed, changes: [{file, type, scope}], issues: [...], verification: {lint_passed, tests_passed}}"
+   [返回格式] 返回: {status: completed|partial|failed, changes: [{file, type, scope}], issues: [...], verification: {lint_passed, tests_passed}}"
 
   职责边界按任务类型适配:
     代码实现 → "你负责: 任务X。操作范围: {文件路径}中的{函数/类名}。"
@@ -838,10 +838,11 @@ prompt 构造模板:
     测试编写 → "你负责: 为{测试文件路径}编写测试用例。覆盖范围: {被测函数/类列表}。"
 
   标准返回格式（代码实现/测试编写类子代理强制，其他类型按需）:
-    status: success（全部完成）| partial（部分完成）| failed（失败）
+    status: completed（全部完成）| partial（部分完成）| failed（失败）
     changes: [{file: "路径", type: "modified|created|deleted", scope: "函数/类名"}]
     issues: ["发现的问题或风险"]
     verification: {lint_passed: true|false|skipped, tests_passed: true|false|skipped}
+    注: 此为 prompt 内嵌简化格式，完整字段定义见 rlm/schemas/agent_result.json（RLM 角色子代理使用完整 schema）
 ```
 
 ### Claude Code 调用协议（CRITICAL）
@@ -879,7 +880,7 @@ helloagents 角色:
             你负责: 任务 1.1。操作范围: src/api/filter.py 中的空白判定函数。
             任务: 实现空白判定函数，处理空字符串和纯空格输入。
             约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
-            返回: {status: success|partial|failed, changes: [{file, type, scope}], issues: [...], verification: {lint_passed, tests_passed}}"
+            返回: {status: completed|partial|failed, changes: [{file, type, scope}], issues: [...], verification: {lint_passed, tests_passed}}"
   )
 
 示例（DESIGN 步骤10 方案构思，≥3 个并行调用在同一消息中发起）:
@@ -1140,7 +1141,7 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 | KB 同步触发 | Stop | notify (agent-turn-complete) | memory.md 触发点规则 |
 | CSV 批处理进度监控 | — | agent_job_progress 事件 | 主代理轮询任务状态 |
 | Agent Teams 空闲检测 | TeammateIdle | — | 主代理轮询 |
-| Agent Teams 任务完成 | TaskCompleted（exit 2 阻止完成） | — | 主代理审查 |
+| Agent Teams 任务完成 | TaskCompleted（exit 2 阻止完成）（预留） | — | 主代理审查 |
 | 上下文压缩前处理 | PreCompact | — | 手动快照 |
 | 主代理规则强化 | UserPromptSubmit | — | CLAUDE.md 规则由 compact 自然保留 |
 | 子代理上下文注入 | SubagentStart | — | 主代理 prompt 手动包含上下文 |
