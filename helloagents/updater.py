@@ -340,6 +340,14 @@ def status() -> None:
                                    "    ⚠ settings.json missing, hooks not configured"))
                 except Exception:
                     pass
+                # Agent definition files check
+                agents_dir = cli_dir / "agents"
+                ha_agents = list(agents_dir.glob("ha-*.md")) if agents_dir.exists() else []
+                if ha_agents:
+                    print(f"    agents: {len(ha_agents)} ha-*.md ✓")
+                else:
+                    print(_msg("    ⚠ 未检测到 ha-*.md 子代理定义，建议重新安装",
+                               "    ⚠ No ha-*.md agent definitions found, reinstall recommended"))
             elif name == "codex":
                 try:
                     import re as _re
@@ -361,8 +369,26 @@ def status() -> None:
                                        "    ⚠ notify not configured, reinstall recommended"))
                 except Exception:
                     pass
-
-        # Codex: check AGENTS.md size vs project_doc_max_bytes
+                # Multi-agent config check
+                try:
+                    import re as _re2
+                    ct_path2 = cli_dir / "config.toml"
+                    if ct_path2.exists():
+                        ct2 = ct_path2.read_text(encoding="utf-8")
+                        ma_items = []
+                        if _re2.search(r'agents\.max_threads\s*=', ct2):
+                            ma_items.append("agents.max_threads")
+                        if _re2.search(r'agents\.max_depth\s*=', ct2):
+                            ma_items.append("agents.max_depth")
+                        if _re2.search(r'^sqlite\s*=\s*true', ct2, _re2.MULTILINE):
+                            ma_items.append("sqlite")
+                        if ma_items:
+                            print(f"    multi-agent: {', '.join(ma_items)} ✓")
+                        else:
+                            print(_msg("    ⚠ 多代理配置缺失，建议重新安装",
+                                       "    ⚠ Multi-agent config missing, reinstall recommended"))
+                except Exception:
+                    pass
         if name == "codex" and rules_exists:
             try:
                 rules_size = rules_file.stat().st_size

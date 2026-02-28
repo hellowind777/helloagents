@@ -89,6 +89,44 @@ def _self_uninstall() -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Agent definition files (Claude Code only)
+# ---------------------------------------------------------------------------
+
+_AGENT_PREFIX = "ha-"  # HelloAGENTS agent files use this prefix
+
+
+def _deploy_agent_files(dest_dir: Path) -> None:
+    """Deploy HelloAGENTS agent definition files to ~/.claude/agents/."""
+    agents_src = get_helloagents_module_path() / "agents"
+    if not agents_src.exists():
+        return
+    agents_dest = dest_dir / "agents"
+    agents_dest.mkdir(parents=True, exist_ok=True)
+    count = 0
+    for src_file in agents_src.glob(f"{_AGENT_PREFIX}*.md"):
+        shutil.copy2(src_file, agents_dest / src_file.name)
+        count += 1
+    if count:
+        print(_msg(f"  已部署 {count} 个子代理定义 ({agents_dest})",
+                   f"  Deployed {count} agent definition(s) ({agents_dest})"))
+
+
+def _remove_agent_files(dest_dir: Path) -> list[str]:
+    """Remove HelloAGENTS agent definition files from ~/.claude/agents/."""
+    agents_dir = dest_dir / "agents"
+    removed = []
+    if not agents_dir.exists():
+        return removed
+    for f in agents_dir.glob(f"{_AGENT_PREFIX}*.md"):
+        f.unlink()
+        removed.append(str(f))
+    if agents_dir.exists() and not any(agents_dir.iterdir()):
+        agents_dir.rmdir()
+        removed.append(f"{agents_dir} (empty parent)")
+    return removed
+
+
+# ---------------------------------------------------------------------------
 # File cleanup
 # ---------------------------------------------------------------------------
 
@@ -197,7 +235,7 @@ def install(target: str) -> bool:
         # Copy new module directory
         shutil.copytree(
             module_src, plugin_dest,
-            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "hooks"),
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "hooks", "agents"),
         )
         print(_msg(f"  已安装模块到: {plugin_dest}",
                    f"  Installed module to: {plugin_dest}"))
@@ -241,6 +279,10 @@ def install(target: str) -> bool:
             shutil.copy2(skill_md_src, skill_dest)
             print(_msg(f"  已部署技能: {skill_dest}",
                        f"  Deployed skill: {skill_dest}"))
+
+        # Deploy agent definition files (Claude Code only)
+        if target == "claude":
+            _deploy_agent_files(dest_dir)
     except Exception as e:
         print(_msg(f"  ✗ 安装失败: {e}", f"  ✗ Installation failed: {e}"))
         return False
@@ -275,6 +317,8 @@ def install(target: str) -> bool:
         except Exception as e:
             print(_msg(f"  ⚠ 配置 CSV 批处理时出错: {e}",
                        f"  ⚠ Error configuring CSV batch: {e}"))
+        print(_msg("  提示: 需在 Codex CLI 中执行 /experimental 开启多代理功能。",
+                   "  Note: Run /experimental in Codex CLI to enable multi-agent features."))
         print(_msg("  提示: VS Code Codex 插件对 HelloAGENTS 系统的支持可能与 CLI 不同，建议优先在 Codex CLI 中使用。",
                    "  Note: VS Code Codex plugin may not fully support HelloAGENTS. Codex CLI is recommended."))
 
@@ -374,6 +418,10 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
                        f"  ✗ Cannot remove {skills_dir} (may be locked by CLI)"))
             ok = False
 
+    # Remove agent definition files (Claude Code only)
+    if target == "claude":
+        removed.extend(_remove_agent_files(dest_dir))
+
     # Remove hooks configuration
     if target == "claude":
         try:
@@ -390,8 +438,8 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
             print(_msg(f"  ⚠ 移除 notify hook 时出错: {e}",
                        f"  ⚠ Error removing notify hook: {e}"))
         print(_msg(
-            "  ℹ config.toml 中的 project_doc_max_bytes / agent_max_threads / sqlite 配置已保留（可能被其他工具使用）。",
-            "  ℹ project_doc_max_bytes / agent_max_threads / sqlite kept in config.toml (may be used by other tools)."))
+            "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite 配置已保留（可能被其他工具使用）。",
+            "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite kept in config.toml (may be used by other tools)."))
 
     if removed:
         print(_msg(f"  已移除 {len(removed)} 个项目:",

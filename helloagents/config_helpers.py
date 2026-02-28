@@ -50,35 +50,46 @@ def _configure_codex_toml(dest_dir: Path) -> None:
 
 
 def _configure_codex_csv_batch(dest_dir: Path) -> None:
-    """Ensure config.toml has agent_max_threads >= 64 and sqlite feature enabled.
+    """Ensure config.toml has multi-agent settings for spawn_agents_on_csv.
 
-    Required for CSV batch processing (spawn_agents_on_csv).
-    - agent_max_threads: top-level key, controls max concurrent sub-agents
-    - sqlite: [features] key, enables CSV batch orchestration persistence
+    - agents.max_threads: top-level, max concurrent sub-agents (>= 64)
+    - agents.max_depth: top-level, sub-agent nesting depth (= 1)
+    - sqlite: [features], CSV batch orchestration persistence
     """
     config_path = dest_dir / "config.toml"
-    if not config_path.exists():
-        return
-
-    content = config_path.read_text(encoding="utf-8")
+    content = ""
+    if config_path.exists():
+        content = config_path.read_text(encoding="utf-8")
     changed = False
 
-    # --- agent_max_threads >= 64 ---
-    m = re.search(r'agent_max_threads\s*=\s*(\d+)', content)
+    # --- agents.max_threads >= 64 ---
+    m = re.search(r'agents\.max_threads\s*=\s*(\d+)', content)
     if m:
         if int(m.group(1)) < 64:
             content = re.sub(
-                r'agent_max_threads\s*=\s*\d+',
-                'agent_max_threads = 64',
+                r'agents\.max_threads\s*=\s*\d+',
+                'agents.max_threads = 64',
                 content)
             changed = True
     else:
-        # Insert before first [section] (top-level area)
         insert_pos = 0
         section_match = re.search(r'^\[', content, re.MULTILINE)
         if section_match:
             insert_pos = section_match.start()
-        line = "agent_max_threads = 64\n"
+        line = "agents.max_threads = 64\n"
+        if insert_pos > 0:
+            line += "\n"
+        content = content[:insert_pos] + line + content[insert_pos:]
+        changed = True
+
+    # --- agents.max_depth = 1 (prevent deep nesting) ---
+    md = re.search(r'agents\.max_depth\s*=\s*(\d+)', content)
+    if not md:
+        insert_pos = 0
+        section_match = re.search(r'^\[', content, re.MULTILINE)
+        if section_match:
+            insert_pos = section_match.start()
+        line = "agents.max_depth = 1\n"
         if insert_pos > 0:
             line += "\n"
         content = content[:insert_pos] + line + content[insert_pos:]
@@ -109,15 +120,18 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
         sqlite_added = True
 
     if changed:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(content, encoding="utf-8")
         msgs = []
         if not m or int(m.group(1)) < 64:
-            msgs.append("agent_max_threads = 64")
+            msgs.append("agents.max_threads = 64")
+        if not md:
+            msgs.append("agents.max_depth = 1")
         if sqlite_added:
             msgs.append("sqlite = true")
         print(_msg(
-            f"  已配置 CSV 批处理: {', '.join(msgs) if msgs else 'agent_max_threads + sqlite'}",
-            f"  Configured CSV batch: {', '.join(msgs) if msgs else 'agent_max_threads + sqlite'}"))
+            f"  已配置多代理: {', '.join(msgs)}",
+            f"  Configured multi-agent: {', '.join(msgs)}"))
 
 
 # ---------------------------------------------------------------------------

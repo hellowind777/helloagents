@@ -708,10 +708,13 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 ```yaml
 角色清单: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
+Claude Code agent 文件（安装时部署至 ~/.claude/agents/）:
+  reviewer → ha-reviewer.md | synthesizer → ha-synthesizer.md | kb_keeper → ha-kb-keeper.md
+  pkg_keeper → ha-pkg-keeper.md | writer → ha-writer.md
 原生子代理映射:
   代码探索 → Codex: spawn_agent(agent_type="explorer") | Claude: Task(subagent_type="Explore") | OpenCode: @explore | Gemini: codebase_investigator | Qwen: 自定义子代理
   代码实现 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
-  测试运行 → Codex: spawn_agent(agent_type="awaiter") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
+  测试运行 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
   方案评估 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
   方案设计 → Codex: Plan mode | Claude: Task(subagent_type="Plan") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
   监控轮询 → Codex: spawn_agent(agent_type="monitor") | Claude: Task(run_in_background=true) | OpenCode: — | Gemini: — | Qwen: —
@@ -745,6 +748,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 跳过条件: 仅当标注"跳过"的条件成立时可跳过，其余情况必须调用
 代理降级: 子代理调用失败 → 主代理直接执行，在 tasks.md 标记 [降级执行]
+语言传播: 构建子代理 prompt 时须包含当前 OUTPUT_LANGUAGE 设置，确保子代理输出语言与主代理一致
 ```
 
 ---
@@ -816,6 +820,7 @@ Worktree 隔离（Claude Code）: 当多个子代理需修改同一文件的不�
 
 prompt 构造模板:
   "[跳过指令] 直接执行以下任务，跳过路由评分。
+   [语言] 使用 {OUTPUT_LANGUAGE} 输出所有内容。
    [职责边界] 你负责: {按任务类型描述职责边界，见下方}。
    [任务内容] {具体要做什么}。
    [约束条件] {代码风格/格式/限制}。
@@ -867,7 +872,7 @@ helloagents 角色:
 示例（DEVELOP 步骤6 代码实现）:
   Task(
     subagent_type="general-purpose",
-    prompt="直接执行以下任务，跳过路由评分。
+    prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。
             你负责: 任务 1.1。操作范围: src/api/filter.py 中的空白判定函数。
             任务: 实现空白判定函数，处理空字符串和纯空格输入。
             约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
@@ -875,7 +880,7 @@ helloagents 角色:
   )
 
 示例（DESIGN 步骤10 方案构思，≥3 个并行调用在同一消息中发起）:
-  Task(subagent_type="general-purpose", prompt="直接执行以下任务，跳过路由评分。你负责: 独立构思一个实现方案。上下文: {Phase1 收集的项目上下文}。任务: 输出方案名称、核心思路、实现路径、优缺点。返回: {name, approach, impl_path, pros, cons}")
+  Task(subagent_type="general-purpose", prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。你负责: 独立构思一个实现方案。上下文: {Phase1 收集的项目上下文}。任务: 输出方案名称、核心思路、实现路径、优缺点。返回: {name, approach, impl_path, pros, cons}")
   Task(subagent_type="general-purpose", prompt="...你负责: 独立构思一个差异化方案，优先考虑不同的实现路径或架构模式。...")
   Task(subagent_type="general-purpose", prompt="...你负责: 独立构思一个差异化方案，优先考虑不同的权衡取舍（如性能vs可维护性）。...")
 ```
@@ -901,7 +906,7 @@ helloagents 角色:
 原生子代理:
   代码探索/依赖分析 → spawn_agent(agent_type="explorer", prompt="...")
   代码实现 → spawn_agent(agent_type="worker", prompt="...")
-  测试运行 → spawn_agent(agent_type="awaiter", prompt="...")
+  测试运行 → spawn_agent(agent_type="worker", prompt="...")
   方案设计 → Codex Plan mode（不需要 spawn）
   监控轮询 → spawn_agent(agent_type="monitor", prompt="...")  # 长时间运行的轮询任务
 
@@ -940,13 +945,13 @@ helloagents 角色:
 限制: Collab 特性门控（/experimental 开启），agents.max_depth=1（仅一层嵌套），spawn_agent ≤6 并发，spawn_agents_on_csv ≤{CSV_BATCH_MAX} 并发（上限 64，CSV_BATCH_MAX=0 时禁用）
 
 示例（spawn_agent 异构并行，每个子代理职责范围不重叠）:
-  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。你负责: 任务1.1。操作范围: filter.py 中的空白判定函数。任务: 实现空白判定逻辑。返回: {status, changes: [{file, type, scope}], issues, verification: {lint_passed, tests_passed}}")
-  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。你负责: 任务1.2。操作范围: validator.py 中的输入校验函数。任务: 实现输入校验逻辑。返回: {status, changes, issues, verification}")
+  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。你负责: 任务1.1。操作范围: filter.py 中的空白判定函数。任务: 实现空白判定逻辑。返回: {status, changes: [{file, type, scope}], issues, verification: {lint_passed, tests_passed}}")
+  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。你负责: 任务1.2。操作范围: validator.py 中的输入校验函数。任务: 实现输入校验逻辑。返回: {status, changes, issues, verification}")
   collab wait
 
 示例（spawn_agents_on_csv 同构批处理，批量审查 30 个文件）:
   # 主代理先生成 CSV: path,module,focus（每行一个任务，如 src/api/auth.py,auth,安全检查）
-  spawn_agents_on_csv(csv_path="/tmp/review_tasks.csv", instruction="审查 {path} 模块 {module}，重点关注 {focus}。返回: {{score: 1-10, issues: [...], suggestions: [...]}}", output_csv_path="/tmp/review_results.csv", max_concurrency=16)
+  spawn_agents_on_csv(csv_path="/tmp/review_tasks.csv", instruction="使用 {OUTPUT_LANGUAGE} 输出。审查 {path} 模块 {module}，重点关注 {focus}。返回: {{score: 1-10, issues: [...], suggestions: [...]}}", output_csv_path="/tmp/review_results.csv", max_concurrency=16)
   # 阻塞直到全部完成（agent_job_progress 事件持续更新），完成后读取 output CSV 汇总结果
 ```
 
@@ -977,10 +982,18 @@ Qwen Code:
 调度: 主代理作为 Team Lead → spawn teammates（原生+专有角色混合）→ 共享任务列表（映射 tasks.md）+ mailbox 通信
   → teammates 自行认领任务 → Team Lead 综合结果
   teammates: Explore（代码探索）| general-purpose × N（代码实现，每人负责不同文件集）| helloagents 专有角色
-  计划审批: 可要求 teammates 先规划再实施，Lead 审批/驳回计划
 
-成本意识: 每个 teammate 独立上下文窗口，Token 消耗显著高于 Task 子代理；建议 teammates 使用轻量模型，团队 3-5 人，每人 5-6 个任务
-  spawn 指令须提供充足上下文（teammates 不继承 Lead 对话历史）| 每个 teammate 负责不同文件集避免冲突
+典型场景:
+  并行审查 — 安全/性能/测试覆盖各一个 teammate，独立审查后 Lead 综合
+  竞争假设 — 多个 teammate 各持不同假设并行调查，互相质疑收敛到根因
+  跨层协调 — 前端/后端/数据层各一个 teammate，通过 mailbox 协调接口变更
+
+计划审批: 高风险任务可要求 teammate 先进入 plan 模式规划，Lead 审批后再实施
+  Lead 审批标准由主代理 prompt 指定（如"仅审批包含测试覆盖的计划"）
+
+成本意识: 每个 teammate 独立上下文窗口，Token 消耗约为 Task 子代理的 7 倍
+  团队 3-5 人，每人 5-6 个任务 | spawn 指令须提供充足上下文（teammates 不继承 Lead 对话历史）
+  每个 teammate 负责不同文件集避免冲突 | 任务完成后 Lead 执行团队清理释放资源
 选择标准: Task 子代理 = 结果只需返回主代理的聚焦任务（默认）| Agent Teams = 角色间需讨论/协作的复杂任务
 
 降级: Agent Teams 不可用时 → 退回 Task 子代理模式

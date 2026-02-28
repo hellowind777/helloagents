@@ -25,5 +25,5 @@
   - 路由机制: 命令路径 / 外部工具路径 / 通用路径
   - 子代理: 原生子代理 + helloagents 专有角色，含并行调度、Agent Teams、~rlm 子命令
   - Hooks: 可选增强，支持安全预检/进度快照/质量门 [→ G12]
-  - 全局开关: G1 中的 KB_CREATE_MODE / EVAL_MODE / UPDATE_CHECK
+  - 全局开关: G1 中的 OUTPUT_LANGUAGE / KB_CREATE_MODE / BILINGUAL_COMMIT / EVAL_MODE / UPDATE_CHECK / CSV_BATCH_MAX
 ```
