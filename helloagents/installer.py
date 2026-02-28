@@ -156,6 +156,8 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
                 removed.append(f"{skills_parent} (empty parent)")
 
     # --- Current-version stale rules files ---
+    # Only removes files confirmed to be HelloAGENTS-related (is_helloagents_file check).
+    # User-created files with the same name but without HELLOAGENTS_MARKER are never touched.
     all_rules_files = {cfg["rules_file"] for cfg in CLI_TARGETS.values()}
     stale_rules = all_rules_files - {current_rules_file}
     for name in stale_rules:
@@ -384,12 +386,29 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
 
     ok = True
     if plugin_dest.exists():
+        # Preserve user/ directory before removing plugin (contains user preferences)
+        user_dir = plugin_dest / "user"
+        user_backup = None
+        if user_dir.exists() and any(user_dir.iterdir()):
+            import tempfile
+            user_backup = Path(tempfile.mkdtemp()) / "user"
+            shutil.copytree(user_dir, user_backup)
+
         if win_safe_rmtree(plugin_dest):
             removed.append(str(plugin_dest))
         else:
             print(_msg(f"  ✗ 无法移除 {plugin_dest}（可能被 CLI 进程占用）",
                        f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
             ok = False
+
+        # Restore user/ directory if it was backed up
+        if user_backup and user_backup.exists():
+            restore_dir = plugin_dest / "user"
+            restore_dir.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(user_backup, restore_dir)
+            shutil.rmtree(user_backup.parent)
+            print(_msg(f"  已保留用户偏好目录: {restore_dir}",
+                       f"  Preserved user preferences: {restore_dir}"))
 
     if rules_dest.exists():
         if is_helloagents_file(rules_dest):

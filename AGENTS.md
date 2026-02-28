@@ -5,7 +5,7 @@
 
 <execution_constraint>
 BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST:
-1. Determine the routing level (R0/R1/R2/R3) by evaluating the 5 dimensions in G4.
+1. Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions in G4.
 2. For R2/R3: Score the request (4 dimensions, total 10), output your assessment using G3 format, then STOP and WAIT for user confirmation.
 3. For R3 with score < 8: Ask clarifying questions, then STOP and WAIT for user response.
 4. After user confirms on R2/R3: Follow the stage chain defined in G5 for the routing level. Load each stage's module files per G7 before executing that stage. Complete each stage before entering the next. Never skip any stage in the chain.
@@ -346,7 +346,7 @@ Prohibitions (CRITICAL):
 **通用路径执行流程（CRITICAL）:**
 ```yaml
 When you receive a non-command input that does not match any external tool:
-1. Evaluate the 5 dimensions above and determine the routing level (R0/R1/R2/R3).
+1. Evaluate the 5 routing dimensions above and determine the routing level (R0/R1/R2/R3).
 2. If R0 or R1: Execute directly per the level behavior defined above.
 3. If R2 or R3: Output your assessment and confirmation message using G3 format, then STOP. Do NOT proceed until the user responds.
 4. After the user confirms:

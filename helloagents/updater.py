@@ -43,6 +43,9 @@ def update(switch_branch: str = None) -> None:
     if sys.platform == "win32":
         _win_cleanup_bak()
 
+    # Snapshot installed targets before update. In deferred mode (Windows exe lock),
+    # these targets are passed as post_cmds to the deferred script. The slight timing
+    # gap is acceptable — users won't modify install state during an active update.
     pre_targets = _detect_installed_targets()
     total_steps = 3 if pre_targets else 1
 
