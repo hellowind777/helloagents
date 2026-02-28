@@ -238,6 +238,28 @@ def update(switch_branch: str = None) -> None:
 # status command
 # ---------------------------------------------------------------------------
 
+def _show_config_status() -> None:
+    """Display config.json override status."""
+    import json
+    global_cfg = Path.home() / ".helloagents" / "config.json"
+    project_cfg = Path.cwd() / ".helloagents" / "config.json"
+
+    for label, path in [
+        (_msg("全局配置", "Global config"), global_cfg),
+        (_msg("项目配置", "Project config"), project_cfg),
+    ]:
+        if path.exists():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                keys = ", ".join(data.keys()) if data else _msg("空", "empty")
+                print(f"  ✓ {label}: {path}")
+                print(f"    {_msg('覆盖项', 'Overrides')}: {keys}")
+            except Exception:
+                print(f"  ⚠ {label}: {path} ({_msg('解析失败', 'parse error')})")
+        else:
+            print(f"  · {label}: {_msg('未配置', 'not set')}")
+
+
 def status() -> None:
     """Show installation status for all CLIs."""
     _header(_msg("安装状态", "Installation Status"))
@@ -249,6 +271,9 @@ def status() -> None:
                    f"  Package version: {local_ver} ({branch})"))
     except Exception:
         print(_msg("  包版本: 未知", "  Package version: unknown"))
+
+    # Config override status
+    _show_config_status()
 
     print()
 
