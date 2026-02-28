@@ -125,8 +125,8 @@
     "任务进度: X/N 完成"
   ],
   "changes_made": [
-    "plan/xxx/proposal.md: 已创建",
-    "plan/xxx/tasks.md: 任务2 → [√]"
+    {"file": "plan/xxx/proposal.md", "type": "create", "description": "已创建"},
+    {"file": "plan/xxx/tasks.md", "type": "update", "description": "任务2 → [√]"}
   ],
   "issues_found": [
     "任务3 执行失败: {原因}"

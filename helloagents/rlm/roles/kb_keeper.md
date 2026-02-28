@@ -106,8 +106,8 @@ modules/{module}.md: 模块文档（职责、接口定义、行为规范、依�
     "关键变更: ..."
   ],
   "changes_made": [
-    "{KB_ROOT}/INDEX.md: 已更新",
-    "{KB_ROOT}/modules/xxx.md: 已创建"
+    {"file": "{KB_ROOT}/INDEX.md", "type": "update", "description": "已更新"},
+    {"file": "{KB_ROOT}/modules/xxx.md", "type": "create", "description": "已创建"}
   ],
   "issues_found": [
     "模块 xxx 文档与代码不一致"

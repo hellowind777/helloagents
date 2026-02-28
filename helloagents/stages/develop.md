@@ -95,7 +95,7 @@ TASK_COMPLEXITY 来源:
 
 ```yaml
 读取 CURRENT_PACKAGE/proposal.md 判断类型:
-  overview: [→ services/package.md Overview 类型处理]  # 仅 DIRECT 入口（~exec）触发；NATURAL 入口的 overview 在 DESIGN 阶段已归档处理
+  overview: [→ services/package.md Overview 类型处理]  # DIRECT 入口（~exec）触发，或 NATURAL 入口遗留 overview 未在 DESIGN 阶段处理时
   implementation: → 步骤4
 ```
 
@@ -122,7 +122,7 @@ KB_SKIPPED=true → 扫描项目现有资源
     已声明未安装 → 直接用项目包管理器安装
     任务明确需要的新依赖 → 用项目包管理器添加并更新依赖声明文件
     无法确定是否需要 → 告知用户依赖及原因，确认后安装
-  DO NOT: 混用包管理器 | 跳过依赖声明文件直接全局安装
+  **DO NOT:** 混用包管理器 | 跳过依赖声明文件直接全局安装
 ```
 
 ### 步骤6: 按任务清单执行改动
@@ -245,7 +245,7 @@ KB_SKIPPED=true → 扫描项目现有资源
 ### 步骤10: 更新 CHANGELOG
 
 ```yaml
-执行: 不受 KB_SKIPPED 影响 [→ services/knowledge.md CHANGELOG 更新规则]
+执行: 按 CHANGELOG 记录规则执行（KB_CREATE_MODE=0 且无 {KB_ROOT}/ 时跳过）[→ services/knowledge.md CHANGELOG 更新规则]
 ```
 
 ### 步骤11: 一致性审计

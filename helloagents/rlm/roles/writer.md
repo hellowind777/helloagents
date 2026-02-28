@@ -41,7 +41,8 @@
   "issues_found": [],
   "recommendations": [
     "后续完善: ..."
-  ]
+  ],
+  "needs_followup": false
 }
 ```
 

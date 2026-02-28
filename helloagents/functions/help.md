@@ -32,6 +32,8 @@ HelloAGENTS 是结构化任务工作流系统，支持需求评估、方案设�
   ~commit           提交代码变更
   ~test             运行测试
   ~review           代码审查
+  ~clean            清理会话缓存
+  ~rollback         回滚代码变更
   ~validatekb       验证知识库一致性
   ~upgradekb        升级知识库结构
   ~cleanplan        清理遗留方案包

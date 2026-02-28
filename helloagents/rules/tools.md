@@ -41,6 +41,14 @@ configure_codex.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/configure_codex.py'
   说明: Codex CLI 环境配置，非 Codex 环境跳过
 
+inject_context.py:
+  用法: Hook 脚本，由 Claude Code Hooks 自动调用（非手动执行）
+  说明: 双向上下文注入（UserPromptSubmit 规则强化 + SubagentStart 方案包上下文）
+
+ralph_loop.py:
+  用法: Hook 脚本，由 Claude Code SubagentStop Hook 自动调用（非手动执行）
+  说明: 质量验证循环，子代理完成时自动运行 lint/typecheck/test，失败则阻止停止
+
 session.py:
   用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/session.py' --info|--list|--cleanup [<hours>]
   说明: RLM Session 管理（位于 rlm/ 目录，非 scripts/）
@@ -48,6 +56,10 @@ session.py:
 shared_tasks.py:
   用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/shared_tasks.py' --status|--list|--available|--claim <id> --owner <sid>|--complete <id>|--add '<subject>' [--blocked-by <ids>]
   说明: 多终端协作任务管理，需 hellotasks 环境变量（位于 rlm/ 目录，非 scripts/）
+
+内部工具模块（被其他脚本 import，不由 AI 直接调用）:
+  utils.py: 通用工具函数（路径解析、方案包操作、ExecutionReport 基类）
+  template_utils.py: 模板加载、填充、解析功能
 ```
 
 ### 脚本存在性检查
@@ -72,6 +84,9 @@ shared_tasks.py:
   validate_package.py: 直接检查文件存在性和内容完整性
   project_stats.py: 文件查找和统计工具
   upgrade_wiki.py: 文件工具执行扫描/初始化/备份/写入
+  configure_codex.py: 跳过（仅 Codex CLI 环境配置，非核心流程）
+  inject_context.py: 不适用（Hook 脚本，由 Claude Code 自动调用）
+  ralph_loop.py: 不适用（Hook 脚本，由 Claude Code 自动调用）
 ```
 
 ---
@@ -108,7 +123,7 @@ shared_tasks.py:
 |------|---------------------|
 | create_package.py | 创建 plan/ 目录、方案包目录、proposal.md、tasks.md |
 | migrate_package.py | 创建归档目录、更新 tasks.md 状态、移动方案包、更新 _index.md |
-| validate_package.py | 输出验证结果 JSON（含 template_missing 标志） |
+| configure_codex.py | 写入 project_doc_max_bytes 配置 |
 
 ---
 

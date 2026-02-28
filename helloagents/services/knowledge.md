@@ -37,6 +37,7 @@
   status=migrated: 静默完成，输出: 提示（旧目录名已自动迁移至新目录名）
   status=conflict: 新旧目录同时存在 → 输出: 确认（让用户选择保留哪个）→ ⛔ END_TURN
   status=not_needed/not_found: 静默继续
+  status=error: 输出: 警告（迁移失败原因），按 not_found 继续
 
 步骤3 - 知识库版本检测:
   条件: {KB_ROOT}/ 存在

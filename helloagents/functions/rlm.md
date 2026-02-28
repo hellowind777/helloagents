@@ -1,6 +1,6 @@
 # ~rlm 命令
 
-> RLM（Recursive Language Model）子代理编排与多终端协作
+> RLM（Role-based Language Model）子代理编排与多终端协作
 
 ---
 
@@ -16,7 +16,7 @@
 **输出模板:**
 
 ```
-RLM（Recursive Language Model）— 子代理编排与多终端协作。
+RLM（Role-based Language Model）— 子代理编排与多终端协作。
 
 基础命令:
   ~rlm             显示此帮助

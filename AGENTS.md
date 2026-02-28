@@ -177,7 +177,8 @@ PowerShell 语法规范:
 | 快速流程 | ⚡ | 简化流程 | 📐 |
 | 标准流程 | 🔵 | 完成 | ✅ |
 | 警告 | ⚠️ | 错误 | ❌ |
-| 取消 | 🚫 | 外部工具 | 🔧 |
+| 信息 | ℹ️ | 取消 | 🚫 |
+| 外部工具 | 🔧 | | |
 
 **图标输出约束（CRITICAL）:** Icons MUST be output as emoji symbols per the table above. Never replace icons with words.
 
@@ -314,7 +315,7 @@ Prohibitions (CRITICAL):
     阶段链: DESIGN(含上下文收集+多方案对比)→DEVELOP(开发实施)→KB同步(按开关)→完成 [→ G5]
 命令路径映射:
   ~auto: 强制 R3（全阶段自动推进）
-  ~plan: 强制 R3（只到方案设计）
+  ~plan: 强制 R3（只到方案设计）；评估后实际为 R1 时提示用户选择直接执行或强制规划 [→ functions/plan.md]
   ~exec: 直接执行（执行已有方案包）
   其他轻量闸门命令: 需求理解 + EHRB 检测（不评分不追问）
 ```
@@ -627,7 +628,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | 会话启动 | ~/.helloagents/config.json, {CWD}/.helloagents/config.json, user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md, services/knowledge.md（CHANGELOG更新时） |
 | R2/R3 进入方案设计（入口） | stages/design.md |
-| DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex） |
+| DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex）, rules/tools.md（project_stats.py 调用时） |
 | DESIGN Phase2 按需 | services/package.md, services/templates.md, rules/state.md |
 | R2/R3 进入开发实施（入口） | stages/develop.md, services/package.md |
 | DEVELOP 按需 | services/knowledge.md（KB_SKIPPED=false）, services/attention.md（进度快照时）, rules/cache.md, rules/state.md |
@@ -645,7 +646,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | ~rlm | functions/rlm.md |
 | ~help | functions/help.md |
 | ~status | functions/status.md, services/memory.md |
-| ~clean | functions/clean.md, services/memory.md, rules/tools.md |
+| ~clean | functions/clean.md, services/memory.md |
 | ~rlm spawn | rlm/roles/{role}.md |
 | 调用脚本时 | rules/tools.md（脚本执行规范与降级处理） |
 | 自定义命令 | .helloagents/commands/{命令名}.md |
