@@ -11,6 +11,25 @@ from .cli import (
 
 
 # ---------------------------------------------------------------------------
+# Shared TOML helpers
+# ---------------------------------------------------------------------------
+
+def _insert_before_first_section(content: str, line: str) -> str:
+    """Insert a line before the first TOML [section] header, or at the top.
+
+    Adds a trailing blank line if inserting mid-file (before a section).
+    """
+    insert_pos = 0
+    section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
+    if section_match:
+        insert_pos = section_match.start()
+    text = line + "\n"
+    if insert_pos > 0:
+        text += "\n"
+    return content[:insert_pos] + text + content[insert_pos:]
+
+
+# ---------------------------------------------------------------------------
 # Codex config helper
 # ---------------------------------------------------------------------------
 
@@ -34,14 +53,8 @@ def _configure_codex_toml(dest_dir: Path) -> None:
             content)
     else:
         # Not present — insert before the first [section] or at the top
-        insert_pos = 0
-        section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
-        if section_match:
-            insert_pos = section_match.start()
-        line = "project_doc_max_bytes = 131072\n"
-        if insert_pos > 0:
-            line += "\n"
-        content = content[:insert_pos] + line + content[insert_pos:]
+        content = _insert_before_first_section(
+            content, "project_doc_max_bytes = 131072")
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
@@ -74,14 +87,8 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
                 content)
             changed = True
     else:
-        insert_pos = 0
-        section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
-        if section_match:
-            insert_pos = section_match.start()
-        line = "agents.max_threads = 64\n"
-        if insert_pos > 0:
-            line += "\n"
-        content = content[:insert_pos] + line + content[insert_pos:]
+        content = _insert_before_first_section(
+            content, "agents.max_threads = 64")
         changed = True
 
     # --- agents.max_depth = 1 (prevent deep nesting) ---
@@ -89,14 +96,8 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
     # users may intentionally set deeper nesting for advanced workflows.
     md = re.search(r'agents\.max_depth\s*=\s*(\d+)', content)
     if not md:
-        insert_pos = 0
-        section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
-        if section_match:
-            insert_pos = section_match.start()
-        line = "agents.max_depth = 1\n"
-        if insert_pos > 0:
-            line += "\n"
-        content = content[:insert_pos] + line + content[insert_pos:]
+        content = _insert_before_first_section(
+            content, "agents.max_depth = 1")
         changed = True
 
     # --- [features] sqlite = true ---
@@ -180,14 +181,26 @@ def _resolve_hook_placeholders(hooks: dict, scripts_dir: str) -> dict:
     Resolves:
     - {SCRIPTS_DIR} → actual installed scripts path
     - python3 → platform-appropriate Python command (Windows: python)
+
+    Uses recursive dict/list traversal instead of JSON string replacement
+    to avoid issues with special characters in paths.
     """
-    import json
     import sys
-    raw = json.dumps(hooks, ensure_ascii=False)
-    raw = raw.replace("{SCRIPTS_DIR}", scripts_dir)
-    if sys.platform == "win32":
-        raw = raw.replace("python3 ", "python ")
-    return json.loads(raw)
+    win = sys.platform == "win32"
+
+    def _replace(obj):
+        if isinstance(obj, str):
+            obj = obj.replace("{SCRIPTS_DIR}", scripts_dir)
+            if win:
+                obj = obj.replace("python3 ", "python ")
+            return obj
+        if isinstance(obj, dict):
+            return {k: _replace(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_replace(item) for item in obj]
+        return obj
+
+    return _replace(hooks)
 
 
 def _configure_claude_hooks(dest_dir: Path) -> None:
@@ -335,14 +348,7 @@ def _configure_codex_notify(dest_dir: Path) -> None:
         return
 
     # Not present — add before first TOML [section] header or at top
-    insert_pos = 0
-    section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
-    if section_match:
-        insert_pos = section_match.start()
-    line = notify_line + "\n"
-    if insert_pos > 0:
-        line += "\n"
-    content = content[:insert_pos] + line + content[insert_pos:]
+    content = _insert_before_first_section(content, notify_line)
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")

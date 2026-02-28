@@ -54,11 +54,11 @@
 
 扫描知识库:
   旧目录名迁移检测:
-    脚本: upgradewiki.py --migrate-root
+    脚本: upgrade_wiki.py --migrate-root
     status=migrated → 提示已自动迁移 helloagents/ → .helloagents/，继续
     status=conflict → 输出: 确认（新旧目录同时存在）→ 用户选择保留哪个 → ⛔ END_TURN
     status=not_needed/not_found → 静默继续
-  脚本: upgradewiki.py --scan
+  脚本: upgrade_wiki.py --scan
   获取: 目录结构和文件列表（JSON格式）
 ```
 
@@ -89,15 +89,15 @@
 ### 步骤3: 执行升级
 
 ```yaml
-备份: upgradewiki.py --backup（必须成功后才继续）
+备份: upgrade_wiki.py --backup（必须成功后才继续）
 
-创建目录结构: upgradewiki.py --init
+创建目录结构: upgrade_wiki.py --init
 
 AI 生成目标内容: 读取源 → 按模板格式重组 → 填充占位符
 
 写入文件:
   方式A: AI 直接写入每个目标文件
-  方式B（大量文件）: AI 生成操作计划 JSON → upgradewiki.py --write plan.json
+  方式B（大量文件）: AI 生成操作计划 JSON → upgrade_wiki.py --write plan.json
 
 清理（可选）: 用户确认后删除已迁移源文件
 ```
@@ -191,10 +191,10 @@ Codex CLI 配置（自动检测，非 Codex 环境跳过）:
 ## 脚本参考
 
 ```yaml
-扫描: upgradewiki.py --scan → JSON 文件列表和目录结构
-创建: upgradewiki.py --init → 标准目录结构
-备份: upgradewiki.py --backup → 备份结果（路径）
-写入: upgradewiki.py --write <plan.json> → 执行结果
+扫描: upgrade_wiki.py --scan → JSON 文件列表和目录结构
+创建: upgrade_wiki.py --init → 标准目录结构
+备份: upgrade_wiki.py --backup → 备份结果（路径）
+写入: upgrade_wiki.py --write <plan.json> → 执行结果
 ```
 
 ### 写入计划格式

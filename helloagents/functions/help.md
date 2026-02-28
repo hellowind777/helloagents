@@ -17,13 +17,33 @@
 
 ## 输出模板
 
-```yaml
-输出要素:
-  - 系统简介: 说明 HelloAGENTS 是结构化任务工作流系统，支持评估、设计、开发与验证
-  - 可用命令列表: 列出所有 ~ 命令
-  - 使用方式: ~命令+需求描述 或 直接描述需求（系统自动路由 R0~R3）
-  - 路由机制: 命令路径 / 外部工具路径 / 通用路径
-  - 子代理: 原生子代理 + helloagents 专有角色，含并行调度、Agent Teams、~rlm 子命令
-  - Hooks: 可选增强，支持安全预检/进度快照/质量门 [→ G12]
-  - 全局开关: G1 中的 OUTPUT_LANGUAGE / KB_CREATE_MODE / BILINGUAL_COMMIT / EVAL_MODE / UPDATE_CHECK / CSV_BATCH_MAX
+```
+ℹ️【HelloAGENTS】- 帮助
+
+HelloAGENTS 是结构化任务工作流系统，支持需求评估、方案设计、开发实施与验收验证。
+
+📋 可用命令:
+  ~help / ~?        显示此帮助
+  ~init             初始化项目知识库
+  ~auto <需求>      全自动执行（评估→设计→开发）
+  ~plan <需求>      全自动规划（评估→设计，不执行）
+  ~exec [方案包]    执行已有方案包
+  ~status           查看当前状态
+  ~commit           提交代码变更
+  ~test             运行测试
+  ~review           代码审查
+  ~validatekb       验证知识库一致性
+  ~upgradekb        升级知识库结构
+  ~cleanplan        清理遗留方案包
+  ~rlm              子代理编排与协作（输入 ~rlm 查看子命令）
+
+💡 使用方式:
+  命令路径: ~命令 + 需求描述（如 ~auto 实现用户登录）
+  通用路径: 直接描述需求，系统自动路由至 R0~R3 级别
+  外部工具: 调用 MCP/搜索等外部工具时自动识别
+
+⚙️ 全局开关（config.json 配置）:
+  OUTPUT_LANGUAGE / KB_CREATE_MODE / BILINGUAL_COMMIT / EVAL_MODE / UPDATE_CHECK / CSV_BATCH_MAX
+
+🔄 下一步: 输入需求开始工作，或使用 ~init 初始化知识库
 ```

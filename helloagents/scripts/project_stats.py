@@ -20,9 +20,12 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-# 确保能找到同目录下的 utils 模块
-sys.path.insert(0, str(Path(__file__).parent))
-from utils import setup_encoding, script_error_handler
+# 导入 utils 模块（优先直接导入，回退时添加脚本目录到路径）
+try:
+    from utils import setup_encoding, script_error_handler
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import setup_encoding, script_error_handler
 
 # 源代码文件扩展名
 SOURCE_EXTENSIONS = {

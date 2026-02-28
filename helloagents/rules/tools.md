@@ -34,8 +34,8 @@ list_packages.py:
 migrate_package.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/migrate_package.py' <package-name> [--status <completed|skipped>] [--all] [--path <路径>]
 
-upgradewiki.py:
-  用法: python -X utf8 '{SCRIPTS_DIR}/upgradewiki.py' --scan|--init|--backup|--write <json-file>|--migrate-root [--path <路径>]
+upgrade_wiki.py:
+  用法: python -X utf8 '{SCRIPTS_DIR}/upgrade_wiki.py' --scan|--init|--backup|--write <json-file>|--migrate-root [--path <路径>]
 
 configure_codex.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/configure_codex.py'
@@ -71,7 +71,7 @@ shared_tasks.py:
   migrate_package.py: 直接执行文件移动和索引更新
   validate_package.py: 直接检查文件存在性和内容完整性
   project_stats.py: 文件查找和统计工具
-  upgradewiki.py: 文件工具执行扫描/初始化/备份/写入
+  upgrade_wiki.py: 文件工具执行扫描/初始化/备份/写入
 ```
 
 ---
