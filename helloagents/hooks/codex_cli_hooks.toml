@@ -1,11 +1,36 @@
 # HelloAGENTS Codex CLI Hooks 参考配置
 # 将所需配置合并到 ~/.codex/config.toml 中启用。
 #
-# 当前 Codex CLI 仅支持 notify 配置项（agent-turn-complete 事件）。
-# 更多事件支持请关注 Codex CLI 更新。
-#
 # 角色调度规则见 G9/G10。
 
-# notify — 代理轮次完成时触发（当前唯一支持的 hook 事件）
+# ─── Hooks ───
+
+# notify — 代理轮次完成时触发
 # 格式: notify = ["命令路径"]（数组格式）
 notify = ["helloagents --check-update --silent"]
+
+# ─── 多代理配置（需 /experimental 开启 collab 特性）───
+
+# 全局代理限制
+# agents.max_threads = 16        # 最大并发子代理线程数（spawn_agent ≤6，CSV ≤64）
+# agents.max_depth = 1           # 嵌套深度（默认 1，仅一层）
+
+# 角色定义示例（按需取消注释并修改，模型名按实际可用模型填写）
+# [agents.explorer]
+# description = "代码探索和依赖分析"
+# model = "<轻量模型名>"
+# model_reasoning_effort = "medium"
+# sandbox_mode = "read-only"
+
+# [agents.worker]
+# description = "代码实现和修改"
+# model = "<主力模型名>"
+# model_reasoning_effort = "high"
+# sandbox_mode = "full"
+
+# [agents.reviewer]
+# description = "代码审查和质量检查"
+# config_file = ".codex/agents/reviewer.md"
+# model = "<主力模型名>"
+# model_reasoning_effort = "high"
+# sandbox_mode = "read-only"

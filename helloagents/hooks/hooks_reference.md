@@ -51,22 +51,61 @@ PreCompact — 上下文压缩前快照:
 
 ## Codex CLI Hooks 配置（~/.codex/config.toml）
 
-当前仅支持 `notify` 配置项（agent-turn-complete 事件），在代理完成一轮交互后触发:
+### notify 事件
+
+`notify` 在代理完成一轮交互后触发:
 
 ```toml
-# notify — 代理轮次完成时触发（当前 Codex CLI 唯一支持的 hook 事件）
+# notify — 代理轮次完成时触发
 notify = ["helloagents --check-update --silent"]
 # 作用: 代理完成时检查 HelloAGENTS 版本更新，有更新则显示提示
 ```
+
+### 多代理配置
+
+通过 `/experimental` 命令开启 collab 特性后可用:
+
+```toml
+# 全局代理限制
+agents.max_threads = 16   # 最大并发子代理线程数
+agents.max_depth = 1      # 嵌套深度（默认 1）
+
+# 角色定义（每个角色独立配置，模型名按实际可用模型填写）
+[agents.explorer]
+description = "代码探索和依赖分析"
+model = "<轻量模型名>"
+model_reasoning_effort = "medium"
+sandbox_mode = "read-only"
+
+[agents.worker]
+description = "代码实现和修改"
+model = "<主力模型名>"
+model_reasoning_effort = "high"
+sandbox_mode = "full"
+```
+
+### 审批传播
+
+父代理审批策略自动传播到子代理，可按类型自动拒绝特定审批请求。
+
+### 子代理昵称
+
+子代理自动分配随机昵称，用于线程切换和日志识别。
 
 ---
 
 ## 预留扩展接口
 
 ```yaml
-Codex CLI Hooks 系统持续发展中。以下功能已在 Claude Code 侧实现，
-当 Codex CLI 支持对应事件时可通过修改 config.toml 直接启用:
+Claude Code 持续发展中的 Hook 事件:
+  - TaskCompleted: Agent Teams teammate 完成任务时触发（exit code 2 可阻止完成）
+  - 子代理 frontmatter hooks: 在 .claude/agents/*.md 中为特定子代理定义专属 hooks
+
+Codex CLI 持续发展中的能力:
   - PostToolUse → 进度快照（等待 Codex CLI 支持工具调用后事件）
+  - agent_job_progress → CSV 批处理进度事件（已支持，可用于自定义进度展示）
+  - 结构化输出 → spawn_agents_on_csv 的 output_schema 强制执行（规划中）
+
 迁移方式: 将 Claude Code settings.json 中的 hook 逻辑移植为
 Codex CLI config.toml 格式，核心脚本/命令可复用。
 ```

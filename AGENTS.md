@@ -696,6 +696,8 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   测试运行 → Codex: spawn_agent(agent_type="awaiter") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
   方案评估 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
   方案设计 → Codex: Plan mode | Claude: Task(subagent_type="Plan") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
+  监控轮询 → Codex: spawn_agent(agent_type="monitor") | Claude: Task(run_in_background=true) | OpenCode: — | Gemini: — | Qwen: —
+  批量同构 → Codex: spawn_agents_on_csv | Claude: 多个并行 Task | OpenCode: 多个 @general | Gemini: 多个子代理 | Qwen: 多个子代理
 
 调用方式: 按 G10 定义的 CLI 通道执行，阶段文件中标注 [RLM:角色名] 的位置必须调用
 调用格式: [→ G10 调用通道]
@@ -735,9 +737,10 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | CLI | 通道 | 调用方式 |
 |-----|------|----------|
-| Claude Code | Task 工具 | `Task(subagent_type="general-purpose", prompt="[RLM:{角色}] {任务描述}")` |
-| Claude Code | Agent Teams | complex 级别，多角色协作需互相通信时（实验性）[→ Agent Teams 协议] |
-| Codex CLI | spawn_agent | Collab 子代理调度（实验性特性门控，MAX_DEPTH=1，最多6并发） |
+| Claude Code | Task 工具 | `Task(subagent_type="general-purpose", prompt="[RLM:{角色}] {任务描述}")`；支持文件级定义 .claude/agents/*.md |
+| Claude Code | Agent Teams | complex 级别，多角色协作需互相通信时（实验性，需 CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1）[→ Agent Teams 协议] |
+| Codex CLI | spawn_agent | Collab 子代理调度（/experimental 开启，agents.max_depth=1，≤6 并发）；支持 [agents] 角色配置 |
+| Codex CLI | spawn_agents_on_csv | CSV 批处理（需 collab+sqlite，≤64 并发），同构任务专用 |
 | OpenCode | 子代理 | 内置 General（通用）+ Explore（只读探索），主代理自动委派或 @mention 手动触发 |
 | Gemini CLI | 子代理 | 内置 codebase_investigator + generalist_agent（实验性），自定义 .gemini/agents/*.md |
 | Qwen Code | 子代理 | 自定义子代理框架，/agents create 创建，.qwen/agents/*.md 存储，主代理自动委派 |
@@ -822,14 +825,23 @@ prompt 构造模板:
   代码探索/依赖分析 → Task(subagent_type="Explore", prompt="...")
   代码实现 → Task(subagent_type="general-purpose", prompt="...")
   方案设计 → Task(subagent_type="Plan", prompt="...")
+  后台任务 → Task(subagent_type="general-purpose", run_in_background=true, prompt="...")
+
+文件级子代理定义（.claude/agents/*.md）:
+  作用域: --agents CLI 参数 > .claude/agents/（项目级）> ~/.claude/agents/（用户级）> 插件 agents/
+  关键字段: name, description, tools/disallowedTools, model(inherit 默认), skills, memory(user|project|local), background, isolation(worktree)
+  helloagents 角色持久化: 部署后调用 Task(subagent_type="ha-{角色名}") 替代 general-purpose + 角色 prompt 拼接
 
 helloagents 角色:
   执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
     1. 加载角色预设: 读取 rlm/roles/{角色}.md
     2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"
     3. 调用 Task 工具: subagent_type="general-purpose", prompt=上述内容
+       （若已部署文件级子代理: subagent_type="ha-{角色名}", prompt=任务描述）
     4. 接收结果: 解析子代理返回的结构化结果
     5. 记录调用: 通过 SessionManager.record_agent() 记录
+
+后台执行: run_in_background=true 非阻塞，适用于独立长时间任务；子代理可通过 agent ID 恢复（resume）
 
 并行调用: 多个子代理无依赖时，在同一消息中发起多个 Task 调用
 串行调用: 有依赖关系时，等待前一个完成后再调用下一个
@@ -853,31 +865,49 @@ helloagents 角色:
 ### Codex CLI 调用协议（CRITICAL）
 
 ```yaml
+多代理配置（~/.codex/config.toml [agents] 节）:
+  启用: /experimental 命令开启 collab 特性（需重启）
+  全局设置:
+    agents.max_threads: 最大并发子代理线程数（spawn_agent 上限 6，CSV 上限 64）
+    agents.max_depth: 嵌套深度（默认 1，仅一层）
+  角色定义（每个角色独立配置）:
+    [agents.my_role]
+    description = "何时使用此角色的指引"
+    config_file = "path/to/role-specific-config"
+    model = "<模型名>"
+    model_reasoning_effort = "high"
+    sandbox_mode = "read-only"
+  线程管理: /agent 命令在活跃子代理线程间切换
+  审批传播: 父代理审批策略自动传播到子代理
+
 原生子代理:
   代码探索/依赖分析 → spawn_agent(agent_type="explorer", prompt="...")
   代码实现 → spawn_agent(agent_type="worker", prompt="...")
   测试运行 → spawn_agent(agent_type="awaiter", prompt="...")
   方案设计 → Codex Plan mode（不需要 spawn）
+  监控轮询 → spawn_agent(agent_type="monitor", prompt="...")  # 长时间运行的轮询任务
 
-CSV 批处理编排（v0.105+，需 collab + sqlite 特性）:
+CSV 批处理编排（需 collab + sqlite 特性）:
   同构并行任务 → spawn_agents_on_csv(csv_path, instruction, ...)
   适用: 批量代码审查/批量测试/批量数据处理等每行任务结构相同的场景
   不适用: 异构任务（不同任务需不同工具/不同逻辑）→ 保留 spawn_agent 方式
   参数:
     csv_path: 输入 CSV 路径（每行一个任务，首行为列头）
     instruction: 指令模板，{column_name} 占位符自动替换为行值
-    id_column: 可选，指定用作任务 ID 的列名
+    id_column: 可选，指定用作任务 ID 的列名（默认行索引）
     output_csv_path: 可选，结果导出路径（默认自动生成）
     output_schema: 可选，worker 返回结果的 JSON Schema
-    max_concurrency: 并发数（默认 16，上限受 agent_max_threads 约束）
+    max_concurrency: 并发数（默认 16，可配置至 64）
     max_runtime_seconds: 单个 worker 超时（默认 1800s）
   执行流程:
     1. 主代理生成任务 CSV（从 tasks.md 提取同构任务行）
     2. 调用 spawn_agents_on_csv，阻塞直到全部完成
     3. 每个 worker 自动收到行数据 + 指令，执行后调用 report_agent_job_result 回报
-    4. 主代理读取 output CSV 汇总结果
-  进度监控: agent_job_progress 事件持续发出（pending/running/completed/failed/ETA）
+    4. 成功时自动导出结果 CSV；部分失败时仍导出（含失败摘要）
+    5. 主代理读取 output CSV 汇总结果
+  进度监控: agent_job_progress 事件持续发出（pending/running/completed/failed）
   状态持久化: SQLite 跟踪每个 item 状态，支持崩溃恢复
+  失败处理: 无响应 worker 自动回收 | spawn 失败立即标记 | report_agent_job_result 仅限 worker 会话调用
 
 helloagents 角色:
   执行步骤（同 Claude Code，仅调用方式不同）:
@@ -886,9 +916,10 @@ helloagents 角色:
 并行调用: 多个无依赖子代理 → 连续发起多个 spawn_agent → collab wait 等待全部完成（支持多ID单次等待）
 串行调用: 有依赖 → 逐个 spawn_agent → 等待完成再发下一个
 恢复暂停: 子代理超时/暂停 → resume_agent 恢复
-中断通信: send_input 向运行中的子代理发送消息（可选中断当前执行）
+中断通信: send_input 向运行中的子代理发送消息（可选中断当前执行，用于纠偏或补充指令）
 关闭子代理: close 关闭指定子代理
-限制: Collab 特性门控，MAX_DEPTH=1（仅一层嵌套），spawn_agent 最多 6 个并发，spawn_agents_on_csv 最多 16 个并发（可配置至 64）
+审批传播: 父代理审批策略自动传播到子代理，可按类型自动拒绝特定审批请求
+限制: Collab 特性门控（/experimental 开启），agents.max_depth=1（仅一层嵌套），spawn_agent ≤6 并发，spawn_agents_on_csv ≤64 并发（默认 16）
 
 示例（spawn_agent 异构并行，每个子代理职责范围不重叠）:
   spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。你负责: 任务1.1。操作范围: filter.py 中的空白判定函数。任务: 实现空白判定逻辑。返回: {status, changes: [{file, type, scope}], issues, verification: {lint_passed, tests_passed}}")
@@ -923,10 +954,17 @@ Qwen Code:
 
 ```yaml
 适用条件: TASK_COMPLEXITY=complex + 多角色需互相通信 + 任务可拆为 3+ 独立子任务 + 用户确认启用（实验性）
-前提: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
-调度: 主代理作为 Team Lead（delegate mode）→ spawn teammates（原生+专有角色混合）→ 共享任务列表（映射 tasks.md）+ mailbox 通信 → Team Lead 综合结果
-  teammates: Explore（代码探索）| general-purpose × N（代码实现，每人负责不同文件集）| helloagents 专有角色（reviewer/synthesizer/kb_keeper/pkg_keeper/writer）
+前提: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1（settings.json → env 字段）
+
+调度: 主代理作为 Team Lead → spawn teammates（原生+专有角色混合）→ 共享任务列表（映射 tasks.md）+ mailbox 通信
+  → teammates 自行认领任务 → Team Lead 综合结果
+  teammates: Explore（代码探索）| general-purpose × N（代码实现，每人负责不同文件集）| helloagents 专有角色
+  计划审批: 可要求 teammates 先规划再实施，Lead 审批/驳回计划
+
+成本意识: 每个 teammate 独立上下文窗口，Token 消耗显著高于 Task 子代理；建议 teammates 使用轻量模型，团队 3-5 人，每人 5-6 个任务
+  spawn 指令须提供充足上下文（teammates 不继承 Lead 对话历史）| 每个 teammate 负责不同文件集避免冲突
 选择标准: Task 子代理 = 结果只需返回主代理的聚焦任务（默认）| Agent Teams = 角色间需讨论/协作的复杂任务
+
 降级: Agent Teams 不可用时 → 退回 Task 子代理模式
 ```
 
@@ -1062,15 +1100,18 @@ HelloAGENTS 支持通过 CLI 原生 Hooks 系统增强以下功能。Hooks 为�
 | 功能 | Claude Code Hook | Codex CLI Hook | 无 Hook 降级 |
 |------|-----------------|----------------|-------------|
 | 子代理生命周期追踪 | SubagentStart/Stop | — | SessionManager 手动记录 |
+| 子代理专属 hooks | 子代理 frontmatter hooks 字段 | — | 主代理 prompt 内嵌约束 |
 | 进度快照自动触发 | PostToolUse | — | cache.md 手动触发 |
 | 版本更新提示 | SessionStart | notify (agent-turn-complete) | 启动时脚本检查 |
 | KB 同步触发 | Stop | notify (agent-turn-complete) | memory.md 触发点规则 |
 | CSV 批处理进度监控 | — | agent_job_progress 事件 | 主代理轮询任务状态 |
 | Agent Teams 空闲检测 | TeammateIdle | — | 主代理轮询 |
+| Agent Teams 任务完成 | TaskCompleted（exit 2 阻止完成） | — | 主代理审查 |
 | 上下文压缩前处理 | PreCompact | — | 手动快照 |
 | 主代理规则强化 | UserPromptSubmit | — | CLAUDE.md 规则由 compact 自然保留 |
 | 子代理上下文注入 | SubagentStart | — | 主代理 prompt 手动包含上下文 |
 | 质量验证循环 | SubagentStop | — | develop.md 步骤8 手动验证 |
+| 审批传播 | — | 父→子自动传播，可按类型拒绝 | 手动配置 |
 | Hook 阻断降级 | 被阻断→主代理执行 | 不适用 | 直接执行 |
 
 ### 降级原则
