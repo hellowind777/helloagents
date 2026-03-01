@@ -86,7 +86,7 @@ TASK_COMPLEXITY 来源:
   DIRECT入口: 本阶段首次评估，按 G9 复杂度判定标准（基于 tasks.md 任务数+涉及单元数）
 
 影响:
-  KB_SKIPPED=true: 步骤5从项目扫描获取上下文，步骤10/11标记跳过
+  KB_SKIPPED=true: 步骤5从项目扫描获取上下文，步骤10标记跳过
   步骤11 CHANGELOG 始终执行
   TASK_COMPLEXITY: 决定步骤6/7/8 子代理调度策略
 ```
