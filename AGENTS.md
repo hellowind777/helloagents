@@ -839,7 +839,7 @@ prompt 构造模板:
 
   标准返回格式（代码实现/测试编写类子代理强制，其他类型按需）:
     status: completed（全部完成）| partial（部分完成）| failed（失败）
-    changes: [{file: "路径", type: "modified|created|deleted", scope: "函数/类名"}]
+    changes: [{file: "路径", type: "create|modify|delete", scope: "函数/类名"}]
     issues: ["发现的问题或风险"]
     verification: {lint_passed: true|false|skipped, tests_passed: true|false|skipped}
     注: 此为 prompt 内嵌简化格式，完整字段定义见 rlm/schemas/agent_result.json（RLM 角色子代理使用完整 schema）
@@ -860,6 +860,15 @@ prompt 构造模板:
   helloagents 角色持久化: 部署后调用 Task(subagent_type="ha-{角色名}") 替代 general-purpose + 角色 prompt 拼接
 
 helloagents 角色:
+  代理文件与角色预设映射:
+    | 代理文件 (agents/) | 角色预设 (rlm/roles/) | 类型 |
+    |---|---|---|
+    | ha-reviewer.md | reviewer.md | 通用（自动/手动） |
+    | ha-synthesizer.md | synthesizer.md | 通用（只读） |
+    | ha-kb-keeper.md | kb_keeper.md | 服务绑定（KnowledgeService） |
+    | ha-pkg-keeper.md | pkg_keeper.md | 服务绑定（PackageService） |
+    | ha-writer.md | writer.md | 通用（仅手动） |
+    命名规则: 代理文件 ha-{name} 对应角色预设 {name}（连字符转下划线）
   执行步骤（阶段文件中遇到 [RLM:角色名] 标记时）:
     1. 加载角色预设: 读取 rlm/roles/{角色}.md
     2. 构造 prompt: "[RLM:{角色}] {从角色预设提取的约束} + {具体任务描述}"

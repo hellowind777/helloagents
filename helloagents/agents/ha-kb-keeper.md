@@ -18,6 +18,6 @@ tools: Read, Write, Edit, Grep, Glob
 
 **DO NOT:** 修改 plan/ 或 archive/（属于 PackageService）| 简化 CHANGELOG 格式 | 遗漏方案包链接 | 创建与代码不一致的文档。
 
-输出格式: {status, key_findings, changes_made:[{file, type, description}], issues_found, recommendations, needs_followup}。
+输出格式: {status, key_findings, changes_made:[{file, type, description, scope}], verification:{lint_passed, tests_passed}, issues_found, recommendations, needs_followup}。
 按主代理指定的回复语言（OUTPUT_LANGUAGE）输出所有内容。
 不要输出流程标题或路由标签，直接执行同步任务。

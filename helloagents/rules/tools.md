@@ -32,7 +32,7 @@ list_packages.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/list_packages.py' [--path <路径>] [--archive] [--format <table|json>]
 
 migrate_package.py:
-  用法: python -X utf8 '{SCRIPTS_DIR}/migrate_package.py' <package-name> [--status <completed|skipped>] [--all] [--path <路径>]
+  用法: python -X utf8 '{SCRIPTS_DIR}/migrate_package.py' [<package-name>] [--status <completed|skipped>] [--all] [--path <路径>]
 
 upgrade_wiki.py:
   用法: python -X utf8 '{SCRIPTS_DIR}/upgrade_wiki.py' --scan|--init|--backup|--write <json-file>|--migrate-root [--path <路径>]
@@ -50,8 +50,8 @@ ralph_loop.py:
   说明: 质量验证循环，子代理完成时自动运行 lint/typecheck/test，失败则阻止停止
 
 session.py:
-  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/session.py' --info|--list|--cleanup [<hours>]|--events [<N>]|--history [<N>]
-  说明: RLM Session 管理（位于 rlm/ 目录，非 scripts/）
+  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/session.py' [--new] [--id <session-id>] --info|--list|--cleanup <hours>|--events <N>|--history <N>
+  说明: RLM Session 管理（位于 rlm/ 目录，非 scripts/）；--new 创建新 Session，--id 指定 Session ID
 
 shared_tasks.py:
   用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/shared_tasks.py' --status|--list|--available|--claim <id> --owner <sid>|--complete <id>|--add '<subject>' [--blocked-by <ids>]

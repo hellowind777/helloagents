@@ -6,7 +6,7 @@ metadata:
 ---
 
 HelloAGENTS is a structured task workflow system that orchestrates AI sub-agents
-across multiple CLI environments (Claude Code, Codex CLI, OpenCode, etc.).
+across multiple CLI environments (Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI, Grok CLI).
 
 Core capabilities:
 - Multi-stage workflow: EVALUATE → DESIGN → DEVELOP (验收内嵌于 DEVELOP)

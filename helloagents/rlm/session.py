@@ -12,6 +12,7 @@ Session 隔离管理器 - 解决多 CLI 并发问题
 
 import json
 import os
+import sys
 import tempfile
 import uuid
 from datetime import datetime
@@ -113,7 +114,8 @@ class SessionManager:
             # 更新 metadata
             self._update_metadata("total_events", lambda x: (x or 0) + 1)
             return True
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] log_event failed: {e}", file=sys.stderr)
             return False
 
     def get_events(
@@ -137,7 +139,8 @@ class SessionManager:
                         event = json.loads(line)
                         if event_type is None or event.get("type") == event_type:
                             container.append(event)
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] get_events failed: {e}", file=sys.stderr)
             return []
 
         events = list(container)
@@ -181,7 +184,8 @@ class SessionManager:
             )
             self._update_metadata("last_active", datetime.now().isoformat())
             return True
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] save_state failed: {e}", file=sys.stderr)
             return False
 
     def load_state(self) -> Optional[Dict[str, Any]]:
@@ -191,10 +195,9 @@ class SessionManager:
 
         try:
             return json.loads(self.state_file.read_text(encoding='utf-8'))
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] load_state failed: {e}", file=sys.stderr)
             return None
-
-    # ==================== Agent 历史 ====================
 
     def record_agent(
         self,
@@ -227,7 +230,8 @@ class SessionManager:
             metadata["agent_history"] = metadata["agent_history"][-50:]
             self._save_metadata(metadata)
             return True
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] record_agent failed: {e}", file=sys.stderr)
             return False
 
     def get_agent_history(self, limit: int = 20) -> List[Dict[str, Any]]:
@@ -244,7 +248,8 @@ class SessionManager:
             return {}
         try:
             return json.loads(self.metadata_file.read_text(encoding='utf-8'))
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] _load_metadata failed: {e}", file=sys.stderr)
             return {}
 
     def _save_metadata(self, metadata: Dict[str, Any]):
@@ -289,7 +294,8 @@ class SessionManager:
             if self.session_dir.exists():
                 shutil.rmtree(self.session_dir)
             return True
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] cleanup failed: {e}", file=sys.stderr)
             return False
 
     @classmethod
@@ -310,7 +316,8 @@ class SessionManager:
                             "created_at": metadata.get("created_at"),
                             "last_active": metadata.get("last_active"),
                         })
-                    except Exception:
+                    except Exception as e:
+                        print(f"[HelloAGENTS] list_sessions read failed: {e}", file=sys.stderr)
                         continue
 
         # 按最后活跃时间排序
@@ -342,7 +349,8 @@ class SessionManager:
                         if last_active < cutoff:
                             shutil.rmtree(session_dir)
                             cleaned += 1
-                except Exception:
+                except Exception as e:
+                    print(f"[HelloAGENTS] cleanup_old_sessions failed: {e}", file=sys.stderr)
                     continue
 
         return cleaned
