@@ -17,6 +17,7 @@ from .config_helpers import (
     _configure_codex_toml, _configure_codex_csv_batch,
     _configure_codex_notify, _remove_codex_notify,
     _configure_claude_hooks, _remove_claude_hooks,
+    _configure_claude_permissions, _remove_claude_permissions,
 )
 from .win_helpers import (
     _cleanup_pip_remnants, _win_deferred_pip,
@@ -306,6 +307,11 @@ def install(target: str) -> bool:
         except Exception as e:
             print(_msg(f"  ⚠ 配置 Hooks 时出错: {e}",
                        f"  ⚠ Error configuring hooks: {e}"))
+        try:
+            _configure_claude_permissions(dest_dir)
+        except Exception as e:
+            print(_msg(f"  ⚠ 配置工具权限时出错: {e}",
+                       f"  ⚠ Error configuring tool permissions: {e}"))
     elif target == "codex":
         try:
             _configure_codex_toml(dest_dir)
@@ -456,6 +462,12 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
         except Exception as e:
             print(_msg(f"  ⚠ 移除 Hooks 时出错: {e}",
                        f"  ⚠ Error removing hooks: {e}"))
+        try:
+            if _remove_claude_permissions(dest_dir):
+                removed.append("permissions (settings.json)")
+        except Exception as e:
+            print(_msg(f"  ⚠ 移除工具权限时出错: {e}",
+                       f"  ⚠ Error removing tool permissions: {e}"))
     elif target == "codex":
         try:
             if _remove_codex_notify(dest_dir):

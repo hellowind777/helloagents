@@ -12,7 +12,7 @@ from .cli import (
     HOOKS_FINGERPRINT,
     _detect_installed_targets, _detect_install_method,
 )
-from .config_helpers import _is_helloagents_hook
+from .config_helpers import _is_helloagents_hook, _get_helloagents_permissions
 from .version_check import (
     # Used by update() / status()
     _detect_channel, _local_commit_id, _remote_commit_id,
@@ -295,6 +295,25 @@ def _show_claude_cli_details(cli_dir: Path) -> None:
     else:
         print(_msg("    ⚠ 未检测到 ha-*.md 子代理定义，建议重新安装",
                    "    ⚠ No ha-*.md agent definitions found, reinstall recommended"))
+    # Permissions check
+    try:
+        sp = cli_dir / "settings.json"
+        if sp.exists():
+            import json as _json
+            _st = _json.loads(sp.read_text(encoding="utf-8"))
+            allow = _st.get("permissions", {}).get("allow", [])
+            our_perms = _get_helloagents_permissions(cli_dir)
+            found = sum(1 for p in our_perms if p in allow)
+            if found == len(our_perms):
+                print(f"    permissions: {found} rule(s) ✓")
+            elif found > 0:
+                print(_msg(f"    ⚠ 工具权限不完整（{found}/{len(our_perms)}），建议重新安装",
+                           f"    ⚠ Permissions incomplete ({found}/{len(our_perms)}), reinstall recommended"))
+            else:
+                print(_msg("    ⚠ 未配置工具权限，建议重新安装",
+                           "    ⚠ No tool permissions configured, reinstall recommended"))
+    except Exception:
+        pass
 
 
 def _show_codex_cli_details(cli_dir: Path) -> None:

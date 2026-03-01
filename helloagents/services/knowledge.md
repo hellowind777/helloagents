@@ -70,7 +70,7 @@
 ### sync(changes)
 
 ```yaml
-触发: develop 阶段代码变更后（步骤9）
+触发: develop 阶段代码变更后（步骤10）
 参数: changes { files, modules, type(add|modify|delete) }
 流程: 检查 KB_SKIPPED → synthesizer 一致性检查 → kb_keeper 同步 → 验证结果
 
