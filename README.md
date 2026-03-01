@@ -128,6 +128,8 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 
 ## Quick Start
 
+> ⚠️ **Prerequisite:** All AI CLIs (Codex CLI / Claude Code, etc.) should be upgraded to the latest version with relevant feature flags enabled (e.g., sub-agents, CSV orchestration) to access all HelloAGENTS capabilities. VSCode extensions for these CLIs update more slowly — some newer features may require waiting for the extension to catch up. See CLI-specific compatibility notes below.
+
 ### Method A: One-line install script (recommended)
 
 **macOS / Linux:**
