@@ -31,8 +31,9 @@
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [How It Works](#how-it-works)
-- [In-Chat Workflow Commands](#in-chat-workflow-commands)
 - [Repository Guide](#repository-guide)
+- [In-Chat Workflow Commands](#in-chat-workflow-commands)
+- [Usage Guide](#usage-guide)
 - [FAQ](#faq)
 - [Troubleshooting](#troubleshooting)
 - [Version History](#version-history)
@@ -373,6 +374,145 @@ These commands run inside AI chat, not your system shell.
 | ~rlm | role orchestration (spawn / agents / resume / team) |
 | ~status / ~help | status and help |
 
+## Usage Guide
+
+### Three Workflow Modes
+
+| Mode | Description | When to use |
+|------|-------------|-------------|
+| `~auto` | Full autonomous flow from requirement to verified implementation (Evaluate → Design → Develop → Verify) | Clear requirement, want end-to-end delivery |
+| `~plan` | Planning only, generates a proposal package then stops — no code written | Want to review the plan before committing |
+| `~exec` | Skip evaluation and design, execute an existing plan package directly | After `~plan` review, ready to implement |
+
+Typical pattern: `~plan` first → review → `~exec` to implement. Or just `~auto` for one-shot delivery.
+
+### Interactive vs Delegated Mode
+
+When `~auto` or `~plan` presents its confirmation, you choose:
+
+- **Interactive (default):** pauses at key decision points (plan selection, failure handling)
+- **Delegated (fully automatic):** auto-advances all stages, auto-selects recommended options, only pauses on EHRB risk
+- **Plan-only delegated:** fully automatic but stops after design, never enters development
+
+Without `~` commands, plain-text input is automatically routed to R0–R3 based on complexity.
+
+### Requirement Evaluation
+
+Before R2/R3 tasks enter execution, the system scores requirements on four dimensions (scope 0–3, deliverable spec 0–3, implementation conditions 0–2, acceptance criteria 0–2, total 10). Score ≥ 8 proceeds to confirmation; < 8 triggers clarifying questions:
+
+- `EVAL_MODE=1` (default, progressive): asks 1 lowest-scoring dimension per round, up to 5 rounds
+- `EVAL_MODE=2` (one-shot): asks all low-scoring dimensions at once, up to 3 rounds
+
+Context inferred from the existing codebase counts toward the score automatically. Say "skip evaluation / just do it" to bypass the questioning phase.
+
+### Parallel Design Proposals
+
+In the R3 standard path, the design stage dispatches 3–6 sub-agents to independently generate competing implementation proposals. The main agent evaluates all proposals across four dimensions: user value, solution soundness, risk (including EHRB), and implementation cost. Weights are dynamically adjusted based on project characteristics (e.g., performance-critical systems weight soundness higher; MVPs weight cost higher).
+
+- Interactive mode: user selects a proposal or requests re-generation (max 1 retry)
+- Delegated mode: recommended proposal is auto-selected
+- R2 simplified path skips multi-proposal comparison and goes directly to planning
+
+### Auto Dependency Management
+
+During development, the system auto-detects the project's package manager via lockfiles (`yarn.lock` → yarn, `uv.lock` → uv, `Gemfile.lock` → bundler, etc.) and handles dependencies:
+
+- Declared but missing dependencies: auto-installed
+- New dependencies required by tasks: auto-added with declaration file updated
+- Ambiguous dependencies: user is asked before installing
+
+### Quality Verification (Ralph Loop & Break-loop)
+
+**Ralph Loop** (Claude Code, via SubagentStop Hook): after a sub-agent completes code changes, the project's verification command runs automatically. On failure, the sub-agent is blocked from exiting and must fix the issue (max 1 retry loop). Verification command priority: `.helloagents/verify.yaml` → `package.json` scripts → auto-detected.
+
+**Break-loop** (deep root cause analysis): triggered when a task fails repeatedly (after Ralph Loop + at least 1 manual fix attempt), performing five-dimension root cause analysis:
+
+1. Root cause classification (logic error / type mismatch / missing dependency / environment / design flaw)
+2. Why previous fixes didn't work
+3. Prevention mechanism suggestions
+4. Systemic scan — same issue in other modules?
+5. Lessons learned recorded in the acceptance report
+
+### Custom Command Extension
+
+Create `.helloagents/commands/` in your project and drop in Markdown files — the filename becomes the command name:
+
+    .helloagents/commands/deploy.md  →  ~deploy
+    .helloagents/commands/release.md →  ~release
+
+File content defines the execution rules. The system applies a lightweight gate (requirement understanding + EHRB check).
+
+### Smart Commit (~commit)
+
+`~commit` does more than generate a message:
+
+- Analyzes `git diff` to auto-generate Conventional Commits formatted messages
+- Pre-commit quality checks (code-doc consistency, test coverage, verification commands)
+- Auto-excludes sensitive files (`.env`, `*.pem`, `*.key`, etc.) — never runs `git add .`
+- Shows file list before staging, supports exclusion
+- Options: local commit only / commit + push / commit + push + create PR
+- Bilingual commit messages when `BILINGUAL_COMMIT=1`
+
+### Manual Sub-Agent Invocation
+
+Beyond automatic dispatch, you can manually invoke specific roles:
+
+    ~rlm spawn reviewer "review src/api/ for security issues"
+    ~rlm spawn writer "generate API reference docs"
+    ~rlm spawn reviewer,synthesizer "analyze and summarize the auth module"  # parallel
+
+Available roles: `reviewer` (code review), `synthesizer` (multi-source synthesis), `kb_keeper` (KB maintenance), `pkg_keeper` (plan package management), `writer` (documentation).
+
+### Multi-Terminal Collaboration
+
+Multiple terminals (across different CLIs) can share a task list:
+
+    # Terminal A
+    hellotasks=my-project codex
+
+    # Terminal B
+    hellotasks=my-project claude
+
+Commands once enabled:
+
+    ~rlm tasks                  # view shared task list
+    ~rlm tasks available        # see unclaimed tasks
+    ~rlm tasks claim <id>       # claim a task
+    ~rlm tasks complete <id>    # mark done
+    ~rlm tasks add "task title" # add a new task
+
+Tasks are stored in `{KB_ROOT}/tasks/` with file locking to prevent concurrent conflicts.
+
+### KB Auto-Sync & CHANGELOG
+
+The knowledge base syncs automatically at these points:
+
+- After every development stage, `kb_keeper` sub-agent syncs module docs to reflect actual code
+- After every R1/R2/R3 task completion, CHANGELOG is auto-appended
+- On session end (Claude Code Stop Hook), KB sync + L2 session summary write triggered asynchronously
+
+CHANGELOG uses semantic versioning (X.Y.Z). Version source priority: user-specified → project file (package.json, pyproject.toml, etc., supporting 15+ languages/frameworks) → git tag → last CHANGELOG entry → 0.1.0. R1 fast-path changes are recorded under a "Quick Modifications" category with file:line range.
+
+`KB_CREATE_MODE` controls automatic behavior: `0`=off, `1`=prompt on demand, `2`=auto on code changes (default), `3`=always auto.
+
+### Worktree Isolation
+
+When multiple sub-agents need to modify different regions of the same file simultaneously (Claude Code only), the system automatically uses `Task(isolation="worktree")` to create an independent git worktree for each sub-agent, preventing Edit tool conflicts. The main agent merges all worktree changes in the consolidation phase. Only activated when sub-agents have overlapping file writes; read-only tasks don't use it.
+
+### CSV Batch Orchestration (Codex CLI)
+
+When ≥6 structurally identical tasks exist in the same execution layer, the system auto-converts `tasks.md` into a task CSV and dispatches via `spawn_agents_on_csv`. Each worker receives its row data + instruction template, executes independently, and reports results.
+
+- Progress tracked in real-time via `agent_job_progress` events (pending/running/completed/failed/ETA)
+- State persisted in SQLite for crash recovery
+- Partial failures still export results with failure summary
+- Heterogeneous tasks automatically fall back to `spawn_agent` sequential dispatch
+- Configure concurrency via `CSV_BATCH_MAX` (default 16, max 64, set to 0 to disable)
+
+### Update Check
+
+On the first response of each session, the system silently checks for new versions. Results are cached at `~/.helloagents/.update_cache`, valid for the duration set by `UPDATE_CHECK` (default 72 hours, set to 0 to disable). When a new version is available, `⬆️ New version {version} available` appears in the response footer. Any errors during the check are silently skipped and never interrupt normal usage.
+
 ## FAQ
 
 - Q: Is this a Python CLI tool or prompt package?
@@ -444,62 +584,7 @@ These commands run inside AI chat, not your system shell.
 
 ### v2.2.13
 
-- R3 design proposals default ≥3 parallel, parallel batch limit ≤6, explicit sub-agent count principle (count = independent work units, no vague wording), add sub-agent orchestration config tips to README
-
-### v2.2.12
-
-- Comprehensive parallel sub-agent orchestration across all flows and commands, extend G10 coverage, eliminate hardcoded agent counts, add universal parallel information gathering principle
-
-### v2.2.11
-
-- Three-stage gate model: merge analysis into design stage (EVALUATE → DESIGN → DEVELOP), optimize stop points and fix sub-agent orchestration consistency
-
-### v2.2.10
-
-- Streamline sub-agent roles and integrate native multi-agent orchestration for all supported CLIs
-
-### v2.2.9
-
-- Comprehensive Windows file-locking fix: preemptive unlock and rename-aside fallback for install/update/uninstall/clean
-
-### v2.2.8
-
-- Codex CLI attention optimization for more stable HelloAGENTS execution
-
-### v2.2.7
-
-- **G12 Hooks integration spec:** 9 Claude Code lifecycle hooks + Codex CLI notify hook
-- **Auto-deploy Hooks:** auto-deploy and clean up Hooks config during install/uninstall
-- **Codex CLI native sub-agent:** G10 adds spawn_agent protocol with cross-CLI parallel scheduling
-- **Agent Teams protocol:** G10 adds Claude Code multi-role collaboration protocol
-- **SKILL integration:** auto-deploy SKILL.md to skills discovery directory for all CLI targets
-- **RLM command expansion:** add ~rlm agents/resume/team subcommands with parallel multi-role dispatch
-- **Stage parallel optimization:** parallel rules for develop stage, serial annotation for design
-- **Memory v2 bridge:** add Codex Memory v2 bridge protocol
-- **Script modularization:** extract config_helpers.py module
-
-### v2.2.5
-
-- **RLM sub-agent system:** 5 specialized roles + native sub-agents with automatic dispatch and session isolation
-- **Five-dimension routing (R0–R3):** replaces legacy three-layer routing
-- **Four-stage workflow + R1 fast flow:** stage chain (Evaluate → Analyze → Design → Develop) with R1 fast flow for single-point operations
-- **Three-layer memory:** L0 user preferences, L1 project knowledge base, L2 session summaries
-- **Three-layer EHRB:** keyword + semantic + tool-output safety detection
-- **Package-first installer:** pip/uv install with `helloagents` interactive menu
-- **15 workflow commands:** added ~rlm, ~validatekb, ~status
-- **6 CLI targets:** added OpenCode support
-- **Interactive installation menu:** multi-select target CLIs with one command
-- **Auto locale detection:** CLI messages switch between Chinese and English based on system locale
-- **Windows encoding fix:** UTF-8 safe subprocess handling on all platforms
-- **Knowledge base service:** structured project docs auto-synced from code changes
-- **Attention service:** live status tracking and progress snapshots
-
-### v2.0.1 (legacy multi-bundle baseline)
-
-- Multi-bundle distribution with manual copy-based installation
-- Three-layer routing (Context → Tools → Intent)
-- 4 workflow stages, 12 commands, 5 CLI targets
-- No sub-agent system, no persistent memory
+- R3 design proposals default ≥3 parallel, parallel batch limit ≤6, explicit sub-agent count principle
 
 ## Contributing
 
