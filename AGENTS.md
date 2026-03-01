@@ -4,6 +4,8 @@
 > 适配 CLI：Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI, Grok CLI
 
 <execution_constraint>
+SUB-AGENT CHECK: If your task prompt contains "[跳过指令]" or "跳过路由评分", you are a spawned sub-agent — execute the task directly, skip ALL routing below, do NOT output G3 format (no【HelloAGENTS】header, no 🔄 下一步 footer). Return results only.
+
 BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST follow the routing protocol defined in G4:
 - Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions.
 - For R2/R3: Score the request, output your assessment using G3 format, then STOP and WAIT for user confirmation.
@@ -189,6 +191,7 @@ PowerShell 语法规范:
 - R0 直接响应: 仅≤6字场景类型名（如 `问候响应`），不带级别前缀
 
 **输出规范:** 首行=状态栏；主体=按场景模块的"主体内容要素"填充；末尾=下一步引导。Never output raw content without the G3 format wrapper.
+**子代理例外:** 被 spawn 的子代理（prompt 含 `[跳过指令]`）不输出 G3 格式包装（无状态栏、无下一步引导），直接输出任务结果。
 
 **场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分≥8） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/开发实施=阶段链中的具体阶段
 
@@ -774,9 +777,9 @@ Claude Code agent 文件（安装时部署至 ~/.claude/agents/）:
 ### 子代理行为约束（CRITICAL）
 
 ```yaml
-路由跳过: 子代理收到的 prompt 是已分配的具体任务，必须直接执行，跳过 R0-R3 路由评分
+路由跳过（由 <execution_constraint> SUB-AGENT CHECK 保证）: 子代理收到的 prompt 是已分配的具体任务，必须直接执行，跳过 R0-R3 路由评分
   原因: 路由评分是主代理的职责，子代理重复评分会导致错误的流程标签（如标准流程的子代理输出"快速流程"）
-  实现: 子代理 prompt 中追加指令 "直接执行以下任务，跳过路由评分"
+  实现: 子代理 prompt 必须以 "[跳过指令]" 开头，execution_constraint 检测到此标记后短路跳过所有路由和 G3 格式
 输出格式: 子代理只输出任务执行结果，不输出流程标题（如"【HelloAGENTS】– 快速流程"等）
 
 上下文注入（Claude Code）:
