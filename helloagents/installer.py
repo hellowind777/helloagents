@@ -451,11 +451,13 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
                            f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
                 ok = False
 
-            # Restore user/ directory if it was backed up
+            # Restore user/ directory if it was backed up (skip if still exists
+            # from a failed win_safe_rmtree — the original user/ is intact)
             if user_backup and user_backup.exists():
                 restore_dir = plugin_dest / "user"
-                restore_dir.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copytree(user_backup, restore_dir)
+                if not restore_dir.exists():
+                    restore_dir.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copytree(user_backup, restore_dir)
                 print(_msg(f"  已保留用户偏好目录: {restore_dir}",
                            f"  Preserved user preferences: {restore_dir}"))
         finally:
@@ -492,7 +494,11 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
 
     # Remove agent definition files (Claude Code only)
     if target == "claude":
-        removed.extend(_remove_agent_files(dest_dir))
+        try:
+            removed.extend(_remove_agent_files(dest_dir))
+        except Exception as e:
+            print(_msg(f"  ⚠ 移除子代理定义时出错: {e}",
+                       f"  ⚠ Error removing agent definitions: {e}"))
 
     # Remove split rule files (Claude Code only)
     if target == "claude":
