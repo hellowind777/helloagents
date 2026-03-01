@@ -172,8 +172,12 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
     sqlite_added = False
     features_match = re.search(r'^\[features\]', content, re.MULTILINE)
     if features_match:
+        # Scope search to [features] section only (until next section header)
+        after_features = content[features_match.end():]
+        next_sec_feat = re.search(r'^\[[\w]', after_features, re.MULTILINE)
+        features_scope = after_features[:next_sec_feat.start()] if next_sec_feat else after_features
         sqlite_match = re.search(
-            r'^sqlite\s*=', content[features_match.end():], re.MULTILINE)
+            r'^sqlite\s*=', features_scope, re.MULTILINE)
         if not sqlite_match:
             # Find end of [features] section (next TOML [section] header or EOF)
             # Use ^\[[\w] to avoid matching TOML array values like ["..."]
@@ -479,9 +483,6 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
 # ---------------------------------------------------------------------------
 # Claude Code permissions helpers
 # ---------------------------------------------------------------------------
-
-# Fingerprint prefix to identify HelloAGENTS-managed permission entries
-_PERM_FINGERPRINT = "HelloAGENTS:"
 
 def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
     """Return the list of permissions.allow entries HelloAGENTS needs.
