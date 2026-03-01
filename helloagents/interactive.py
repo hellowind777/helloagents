@@ -33,45 +33,46 @@ def _interactive_install() -> bool:
 
     print()
     prompt = _msg(
-        "  请输入编号，可多选（如 1 3 5）或 all 全选，直接回车跳过: ",
-        "  Enter numbers, multi-select supported (e.g. 1 3 5) or 'all', press Enter to skip: ",
+        "  请输入编号，可多选（如 1 3 5 或 1、3、5）或 all 全选，直接回车跳过: ",
+        "  Enter numbers, multi-select supported (e.g. 1 3 5 or 1,3,5) or 'all', press Enter to skip: ",
     )
 
-    try:
-        choice = input(prompt).strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        print(_msg("  已取消。", "  Cancelled."))
-        return True
+    selected = []
+    while not selected:
+        try:
+            choice = input(prompt).strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            print(_msg("  已取消。", "  Cancelled."))
+            return True
 
-    if not choice:
-        print(_msg("  已跳过安装。", "  Skipped."))
-        return True
+        if not choice:
+            print(_msg("  已跳过安装。", "  Skipped."))
+            return True
 
-    if choice.lower() == "all":
-        selected = targets
-    else:
-        nums = choice.replace(",", " ").split()
-        seen = set()
-        selected = []
-        for n in nums:
-            try:
-                idx = int(n)
-                if 1 <= idx <= len(targets):
-                    name = targets[idx - 1]
-                    if name not in seen:
-                        seen.add(name)
-                        selected.append(name)
-                else:
-                    print(_msg(f"  忽略无效编号: {n}",
-                               f"  Ignoring invalid number: {n}"))
-            except ValueError:
-                print(_msg(f"  忽略无效输入: {n}",
-                           f"  Ignoring invalid input: {n}"))
+        if choice.lower() == "all":
+            selected = targets
+        else:
+            nums = choice.replace(",", " ").replace("、", " ").replace("，", " ").split()
+            seen = set()
+            for n in nums:
+                try:
+                    idx = int(n)
+                    if 1 <= idx <= len(targets):
+                        name = targets[idx - 1]
+                        if name not in seen:
+                            seen.add(name)
+                            selected.append(name)
+                    else:
+                        print(_msg(f"  忽略无效编号: {n}",
+                                   f"  Ignoring invalid number: {n}"))
+                except ValueError:
+                    print(_msg(f"  忽略无效输入: {n}",
+                               f"  Ignoring invalid input: {n}"))
 
-    if not selected:
-        print(_msg("  未选择任何目标。", "  No targets selected."))
-        return True
+        if not selected:
+            print(_msg("  未选择有效目标，请重新输入。",
+                       "  No valid targets selected, please try again."))
 
     _header(_msg(f"步骤 2/3: 执行安装（共 {len(selected)} 个目标）",
                  f"Step 2/3: Installing ({len(selected)} target(s))"))
@@ -144,46 +145,47 @@ def _interactive_uninstall() -> bool:
 
     print()
     prompt = _msg(
-        "  请输入要卸载的编号，可多选（如 1 3 5）或 all 全选，直接回车跳过: ",
-        "  Enter numbers to uninstall, multi-select supported (e.g. 1 3 5) "
+        "  请输入要卸载的编号，可多选（如 1 3 5 或 1、3、5）或 all 全选，直接回车跳过: ",
+        "  Enter numbers to uninstall, multi-select supported (e.g. 1 3 5 or 1,3,5) "
         "or 'all', press Enter to skip: ",
     )
 
-    try:
-        choice = input(prompt).strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        print(_msg("  已取消。", "  Cancelled."))
-        return True
+    selected = []
+    while not selected:
+        try:
+            choice = input(prompt).strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            print(_msg("  已取消。", "  Cancelled."))
+            return True
 
-    if not choice:
-        print(_msg("  已跳过。", "  Skipped."))
-        return True
+        if not choice:
+            print(_msg("  已跳过。", "  Skipped."))
+            return True
 
-    if choice.lower() == "all":
-        selected = installed
-    else:
-        nums = choice.replace(",", " ").split()
-        seen = set()
-        selected = []
-        for n in nums:
-            try:
-                idx = int(n)
-                if 1 <= idx <= len(installed):
-                    name = installed[idx - 1]
-                    if name not in seen:
-                        seen.add(name)
-                        selected.append(name)
-                else:
-                    print(_msg(f"  忽略无效编号: {n}",
-                               f"  Ignoring invalid number: {n}"))
-            except ValueError:
-                print(_msg(f"  忽略无效输入: {n}",
-                           f"  Ignoring invalid input: {n}"))
+        if choice.lower() == "all":
+            selected = installed
+        else:
+            nums = choice.replace(",", " ").replace("、", " ").replace("，", " ").split()
+            seen = set()
+            for n in nums:
+                try:
+                    idx = int(n)
+                    if 1 <= idx <= len(installed):
+                        name = installed[idx - 1]
+                        if name not in seen:
+                            seen.add(name)
+                            selected.append(name)
+                    else:
+                        print(_msg(f"  忽略无效编号: {n}",
+                                   f"  Ignoring invalid number: {n}"))
+                except ValueError:
+                    print(_msg(f"  忽略无效输入: {n}",
+                               f"  Ignoring invalid input: {n}"))
 
-    if not selected:
-        print(_msg("  未选择任何目标。", "  No targets selected."))
-        return True
+        if not selected:
+            print(_msg("  未选择有效目标，请重新输入。",
+                       "  No valid targets selected, please try again."))
 
     _header(_msg(f"步骤 2/3: 执行卸载（共 {len(selected)} 个目标）",
                  f"Step 2/3: Uninstalling ({len(selected)} target(s))"))
