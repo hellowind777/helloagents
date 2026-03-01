@@ -6,9 +6,9 @@
 
 <div align="center">
 
-**A multi-CLI workflow system that keeps going until tasks are implemented and verified.**
+**Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.2.17-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.0-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -26,113 +26,20 @@
 
 ## Table of Contents
 
-- [Why HelloAGENTS](#why-helloagents)
-- [What Changed vs Legacy Repo](#what-changed-vs-legacy-repo)
-- [Features](#features)
-- [Before and After (Snake Demo)](#before-and-after-snake-demo)
+- [Before and After](#before-and-after)
+- [Core Features](#core-features)
 - [Quick Start](#quick-start)
+- [Configuration](#configuration)
 - [How It Works](#how-it-works)
-- [Repository Guide](#repository-guide)
 - [In-Chat Workflow Commands](#in-chat-workflow-commands)
+- [Repository Guide](#repository-guide)
 - [FAQ](#faq)
 - [Troubleshooting](#troubleshooting)
 - [Version History](#version-history)
 - [Contributing](#contributing)
 - [License](#license)
 
-## Why HelloAGENTS
-
-Many assistants can analyze tasks but often stop before real delivery. HelloAGENTS adds strict routing, staged execution, and verification gates.
-
-| Challenge | Without HelloAGENTS | With HelloAGENTS |
-|---|---|---|
-| Stops at planning | Ends with suggestions | Pushes to implementation and validation |
-| Output drift | Different structure every prompt | Unified routing and stage chain |
-| Risky operations | Easier to make destructive mistakes | EHRB risk detection and escalation |
-| Knowledge continuity | Context gets scattered | Built-in KB and session memory |
-| Reusability | Prompt-by-prompt effort | Commandized reusable workflow |
-
-<div align="center">
-  <img src="./readme_images/06-divider.svg" width="420" alt="divider">
-</div>
-
-## What Changed vs Legacy Repo
-
-Compared with legacy multi-bundle releases, the v2.x line is now package-first with a fundamentally different architecture.
-
-| Area | Legacy repo | Current repo |
-|---|---|---|
-| Distribution | Multiple bundle folders per CLI | One Python package + installer CLI |
-| Installation | Manual copy of config and skill folders | pip/uv install + `helloagents` interactive menu |
-| Routing | Three-layer (Context → Tools → Intent) | Five-dimension scoring (R0–R3) |
-| Workflow stages | 4 stages (Evaluate, Analyze, Design, Develop) | 3 stages (Evaluate, Design, Develop) + R1 fast flow, with sub-agent dispatch |
-| Agent system | None | RLM with 5 specialized roles + native sub-agents and session isolation |
-| Memory | No persistence | Three-layer: L0 user, L1 project KB, L2 session |
-| Safety | Basic EHRB | Three-layer EHRB (keyword + semantic + tool output) |
-| Hooks | None | Auto-deploy lifecycle hooks (Claude Code 9 events + Codex CLI notify) |
-| CLI targets | 5 visible bundle targets | 6 targets: codex, claude, gemini, qwen, grok, opencode |
-| Commands | 12 | 15 workflow commands |
-
-> ⚠️ **Migration notice:** Because repository structure and installation workflow changed in v2.x, legacy versions were moved to **helloagents-archive**: https://github.com/hellowind777/helloagents-archive
-
-## Features
-
-<table>
-<tr>
-<td width="50%" valign="top">
-<img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
-
-**RLM sub-agent orchestration**
-
-5 specialized roles (reviewer, synthesizer, kb_keeper, pkg_keeper, writer) plus host CLI native sub-agents (explore/implement/test/design) are dispatched automatically based on task complexity, with session isolation per CLI instance. Tasks are scheduled via DAG dependency analysis with layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
-
-**Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
-</td>
-<td width="50%" valign="top">
-<img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
-
-**Five-dimension routing (R0–R3)**
-
-Every input is scored on action need, target clarity, decision scope, impact range, and EHRB risk — then routed to R0 direct response, R1 fast flow, R2 simplified flow, or R3 standard flow.
-
-**Your gain:** proportional effort — simple queries stay fast, complex tasks get full process.
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-<img src="./readme_images/04-feature-icon-safety.svg" width="48" align="left">
-
-**Three-layer safety detection (EHRB)**
-
-Keyword scan, semantic analysis, and tool-output inspection catch destructive operations before execution. Interactive and delegated modes enforce user confirmation.
-
-**Your gain:** safer defaults with zero-config protection.
-</td>
-<td width="50%" valign="top">
-<img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
-
-**Three-layer memory model**
-
-L0 user memory (global preferences), L1 project knowledge base (structured docs synced from code), and L2 session summaries (auto-persisted at stage transitions).
-
-**Your gain:** context survives across sessions and projects.
-</td>
-</tr>
-</table>
-
-### Data points from this repo
-
-- 6 CLI targets from helloagents/cli.py
-- 15 workflow commands from helloagents/functions
-- 5 RLM roles from helloagents/rlm/roles
-- 2 stage definitions from helloagents/stages
-- 5 core services from helloagents/services
-- 4 rule modules from helloagents/rules
-- 11 helper scripts from helloagents/scripts
-- 2 hooks configs from helloagents/hooks
-- 13 KB/plan templates from helloagents/templates
-
-## Before and After (Snake Demo)
+## Before and After
 
 <table>
 <tr>
@@ -152,6 +59,72 @@ L0 user memory (global preferences), L1 project knowledge base (structured docs 
 </td>
 </tr>
 </table>
+
+| Challenge | Without HelloAGENTS | With HelloAGENTS |
+|-----------|-------------------|-----------------|
+| Stops at planning | Ends with suggestions | Pushes to implementation and validation |
+| Output drift | Different structure every prompt | Unified routing and stage chain |
+| Risky operations | Easier to make destructive mistakes | EHRB risk detection and escalation |
+| Knowledge continuity | Context gets scattered | Built-in KB and session memory |
+| Reusability | Prompt-by-prompt effort | Commandized reusable workflow |
+
+## Core Features
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
+
+**RLM Sub-Agent Orchestration**
+
+5 specialized roles (reviewer / synthesizer / kb_keeper / pkg_keeper / writer) plus host CLI native sub-agents (explore / implement / test / design) are dispatched automatically based on task complexity. Tasks are scheduled via DAG dependency analysis with topological sort and layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
+
+**Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
+</td>
+<td width="50%" valign="top">
+<img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
+
+**Structured Workflow (Evaluate → Design → Develop)**
+
+Every input is scored on five dimensions and routed to R0 direct response, R1 fast flow, R2 simplified flow, or R3 standard flow. R2/R3 enter the full stage chain with explicit entry conditions, deliverables, and verification gates. Supports interactive and fully delegated modes.
+
+**Your gain:** proportional effort — simple queries stay fast, complex tasks get full process with verification at every step.
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="./readme_images/04-feature-icon-safety.svg" width="48" align="left">
+
+**Three-Layer Safety Detection (EHRB)**
+
+Keyword scan, semantic analysis, and tool-output inspection catch destructive operations before execution. Interactive and delegated modes enforce user confirmation.
+
+**Your gain:** safer defaults with zero-config protection.
+</td>
+<td width="50%" valign="top">
+<img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
+
+**Three-Layer Memory Model**
+
+L0 user memory (global preferences), L1 project knowledge base (structured docs synced from code), and L2 session summaries (auto-persisted at stage transitions).
+
+**Your gain:** context survives across sessions and projects.
+</td>
+</tr>
+</table>
+
+### Sub-Agent Native Mapping
+
+| CLI | Native Sub-Agent Mechanism | RLM Mapping |
+|-----|---------------------------|-------------|
+| Claude Code | Task tool (explore / code / shell) | Direct mapping, supports Agent Teams |
+| Codex CLI | spawn_agent / Collab (multi-thread) | spawn_agent parallel scheduling, CSV batch orchestration |
+| OpenCode | Built-in agent mode | Fallback to sequential execution |
+| Gemini CLI | Built-in tool calls | Fallback to sequential execution |
+| Qwen CLI | Built-in tool calls | Fallback to sequential execution |
+| Grok CLI | Built-in tool calls | Fallback to sequential execution |
+
+Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action need, target clarity, decision scope, impact range, EHRB risk) to automatically determine processing depth for each input; **6 CLI targets** (Claude Code / Codex CLI / OpenCode / Gemini CLI / Qwen CLI / Grok CLI) with one rule set across all; **Hooks integration** (Claude Code 9 lifecycle hooks + Codex CLI notify hook) with automatic graceful degradation when unavailable.
 
 ## Quick Start
 
@@ -323,6 +296,38 @@ To install from the `beta` branch, append `@beta` to the repository URL:
     # pip
     pip install git+https://github.com/hellowind777/helloagents.git@beta && helloagents
 
+## Configuration
+
+Customize workflow behavior via `config.json` after installation. Only include keys you want to override — missing keys use defaults.
+
+**Storage locations (highest priority first):**
+
+1. Project-level: `{project_root}/.helloagents/config.json` — current project only
+2. Global: `~/.helloagents/config.json` — all projects
+3. Built-in defaults
+
+**Available keys:**
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `OUTPUT_LANGUAGE` | string | `zh-CN` | Language for AI output and KB files |
+| `KB_CREATE_MODE` | int | `2` | KB creation: `0`=OFF, `1`=on-demand (prompt ~init), `2`=auto on code changes, `3`=always auto |
+| `BILINGUAL_COMMIT` | int | `1` | Commit language: `0`=OUTPUT_LANGUAGE only, `1`=OUTPUT_LANGUAGE + English |
+| `EVAL_MODE` | int | `1` | Clarification mode: `1`=progressive (1 question/round, max 5), `2`=one-shot (all at once, max 3) |
+| `UPDATE_CHECK` | int | `72` | Update check cache TTL in hours: `0`=OFF |
+| `CSV_BATCH_MAX` | int | `16` | CSV batch max concurrency: `0`=OFF, cap 64 (Codex CLI only) |
+
+**Example:**
+
+```json
+{
+  "KB_CREATE_MODE": 0,
+  "EVAL_MODE": 2
+}
+```
+
+> File missing or unparseable is silently skipped with defaults applied. Unknown keys produce a warning and are ignored.
+
 ## How It Works
 
 1. Install the package (script/pip/uv) and run `helloagents` to launch an interactive menu for selecting target CLIs (or specify directly with `helloagents install <target>`). Hooks and SKILL.md are auto-deployed during installation.
@@ -337,7 +342,7 @@ To install from the `beta` branch, append `@beta` to the repository URL:
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.2.17)
+- pyproject.toml: package metadata (v2.3.0)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -402,10 +407,11 @@ These commands run inside AI chat, not your system shell.
 
 ## Version History
 
-### v2.2.17 (current)
+### v2.3.0 (current)
 
-- Auto context injection for sub-agents and rule reinforcement for main agent
+- Comprehensive cross-audit fix: unified role output format, normalized path references, code-doc consistency alignment
 - Quality verification loop (Ralph Loop): auto-verify after sub-agent completion, block and feedback on failure
+- Auto context injection for sub-agents and rule reinforcement for main agent
 - Deep 5-dimension root cause analysis on repeated failures (break-loop)
 - Auto-inject project technical guidelines before sub-agent development
 - Pre-commit quality checks (code-doc consistency, test coverage, verification commands)
