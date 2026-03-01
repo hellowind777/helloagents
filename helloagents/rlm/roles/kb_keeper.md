@@ -106,7 +106,7 @@ modules/{module}.md: 模块文档（职责、接口定义、行为规范、依�
     "关键变更: ..."
   ],
   "changes_made": [
-    {"file": "{KB_ROOT}/INDEX.md", "type": "update", "description": "已更新", "scope": "INDEX.md"},
+    {"file": "{KB_ROOT}/INDEX.md", "type": "modify", "description": "已更新", "scope": "INDEX.md"},
     {"file": "{KB_ROOT}/modules/xxx.md", "type": "create", "description": "已创建", "scope": "xxx 模块文档"}
   ],
   "verification": {

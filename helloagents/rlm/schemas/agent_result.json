@@ -101,7 +101,7 @@
     },
     "followup_context": {
       "type": "string",
-      "description": "后续跟进上下文（可选）"
+      "description": "后续跟进上下文（needs_followup=true 时使用）"
     },
     "progress_snapshot": {
       "type": "string",
@@ -167,7 +167,8 @@
         {
           "file": "src/api/routes.py",
           "type": "modify",
-          "description": "优化了数据库查询逻辑"
+          "description": "优化了数据库查询逻辑",
+          "scope": "query_users()"
         }
       ],
       "issues_found": [

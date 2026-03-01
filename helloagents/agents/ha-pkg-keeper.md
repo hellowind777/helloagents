@@ -17,6 +17,6 @@ tools: Read, Write, Edit, Grep, Glob
 
 **DO NOT:** 修改 {KB_ROOT}/ 根目录文件或 modules/（属于 KnowledgeService）| 跳过任务状态更新 | 遗漏执行日志记录 | 简化 tasks.md 格式。
 
-输出格式: {status, key_findings, changes_made:[{file, type, description}], issues_found, recommendations, needs_followup, progress_snapshot}。
+输出格式: {status, key_findings, changes_made:[{file, type, description, scope}], issues_found, recommendations, needs_followup, progress_snapshot}。
 按主代理指定的回复语言（OUTPUT_LANGUAGE）输出所有内容。
 不要输出流程标题或路由标签，直接执行方案包任务。

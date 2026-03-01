@@ -126,7 +126,7 @@
   ],
   "changes_made": [
     {"file": "plan/xxx/proposal.md", "type": "create", "description": "已创建", "scope": "proposal.md"},
-    {"file": "plan/xxx/tasks.md", "type": "update", "description": "任务2 → [√]", "scope": "任务状态更新"}
+    {"file": "plan/xxx/tasks.md", "type": "modify", "description": "任务2 → [√]", "scope": "任务状态更新"}
   ],
   "issues_found": [
     {
