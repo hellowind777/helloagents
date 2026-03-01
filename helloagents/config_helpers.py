@@ -6,6 +6,7 @@ from pathlib import Path
 from .cli import (
     _msg,
     HOOKS_FINGERPRINT, CODEX_NOTIFY_CMD, PLUGIN_DIR_NAME,
+    HELLOAGENTS_RULE_MARKER,
     get_helloagents_module_path,
 )
 
@@ -262,7 +263,9 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
 
     try:
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        print(_msg(f"  ⚠ 无法读取 {settings_path}: {e}",
+                   f"  ⚠ Cannot read {settings_path}: {e}"))
         return False
 
     hooks = settings.get("hooks")
@@ -286,9 +289,14 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
         del settings["hooks"]
 
     if removed_count > 0:
-        settings_path.write_text(
-            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8")
+        try:
+            settings_path.write_text(
+                json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8")
+        except PermissionError:
+            print(_msg(f"  ⚠ 无法写入 {settings_path}（文件被占用，请关闭 Claude Code 后重试）",
+                       f"  ⚠ Cannot write {settings_path} (file locked, close Claude Code and retry)"))
+            return False
         print(_msg(f"  已移除 {removed_count} 个 HelloAGENTS Hooks ({settings_path.name})",
                    f"  Removed {removed_count} HelloAGENTS hook(s) ({settings_path.name})"))
         return True
@@ -366,7 +374,12 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
     if not config_path.exists():
         return False
 
-    content = config_path.read_text(encoding="utf-8")
+    try:
+        content = config_path.read_text(encoding="utf-8")
+    except Exception as e:
+        print(_msg(f"  ⚠ 无法读取 {config_path}: {e}",
+                   f"  ⚠ Cannot read {config_path}: {e}"))
+        return False
 
     # Try array format first, then old string format
     m_arr = re.search(r'^notify\s*=\s*\[([^\]]*)\]', content, re.MULTILINE)
@@ -382,7 +395,12 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
         return False
 
     content = re.sub(matched, '', content, count=1, flags=re.MULTILINE)
-    config_path.write_text(content, encoding="utf-8")
+    try:
+        config_path.write_text(content, encoding="utf-8")
+    except PermissionError:
+        print(_msg(f"  ⚠ 无法写入 {config_path}（文件被占用，请关闭 Codex CLI 后重试）",
+                   f"  ⚠ Cannot write {config_path} (file locked, close Codex CLI and retry)"))
+        return False
     print(_msg("  已移除 notify hook (config.toml)",
                "  Removed notify hook (config.toml)"))
     return True
@@ -470,7 +488,9 @@ def _remove_claude_permissions(dest_dir: Path) -> bool:
 
     try:
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        print(_msg(f"  ⚠ 无法读取 {settings_path}: {e}",
+                   f"  ⚠ Cannot read {settings_path}: {e}"))
         return False
 
     perms = settings.get("permissions", {})
@@ -486,9 +506,137 @@ def _remove_claude_permissions(dest_dir: Path) -> bool:
 
     removed = len(allow) - len(new_allow)
     perms["allow"] = new_allow
-    settings_path.write_text(
-        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8")
+    try:
+        settings_path.write_text(
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
+    except PermissionError:
+        print(_msg(f"  ⚠ 无法写入 {settings_path}（文件被占用，请关闭 Claude Code 后重试）",
+                   f"  ⚠ Cannot write {settings_path} (file locked, close Claude Code and retry)"))
+        return False
     print(_msg(f"  已移除 {removed} 条 HelloAGENTS 工具权限 (settings.json)",
                f"  Removed {removed} HelloAGENTS tool permission(s) (settings.json)"))
     return True
+
+
+# ---------------------------------------------------------------------------
+# Claude Code split rules deployment
+# ---------------------------------------------------------------------------
+
+# Mapping: output filename -> list of G section numbers
+_RULE_FILE_MAP = {
+    "config.md": [1, 2, 3],
+    "stages.md": [5, 6, 7, 8],
+    "subagent.md": [9, 10],
+    "attention.md": [11, 12],
+}
+
+_RULE_MARKER_LINE = f"<!-- {HELLOAGENTS_RULE_MARKER} -->\n"
+
+
+def _split_agents_md(content: str) -> dict[str, str]:
+    """Split AGENTS.md content into root file and rule files.
+
+    Splits by ``## G{N}`` section headers. Returns a dict mapping
+    filename to content:
+
+    - ``CLAUDE.md``:    preamble + G4
+    - ``config.md``:    G1 + G2 + G3
+    - ``stages.md``:    G5 + G6 + G7 + G8
+    - ``subagent.md``:  G9 + G10
+    - ``attention.md``: G11 + G12
+    """
+    pattern = re.compile(r'^## G(\d+)', re.MULTILINE)
+    matches = list(pattern.finditer(content))
+
+    if not matches:
+        return {"CLAUDE.md": content}
+
+    # Preamble: everything before first ## G section
+    preamble = content[:matches[0].start()]
+
+    # Extract each G section (from header to next header or EOF)
+    sections: dict[int, str] = {}
+    for i, m in enumerate(matches):
+        g_num = int(m.group(1))
+        start = m.start()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(content)
+        sections[g_num] = content[start:end]
+
+    # Root file: preamble + G4
+    result: dict[str, str] = {
+        "CLAUDE.md": preamble + sections.get(4, ""),
+    }
+
+    # Rule files: grouped G sections with marker header
+    for filename, g_nums in _RULE_FILE_MAP.items():
+        parts = [_RULE_MARKER_LINE]
+        for g in g_nums:
+            if g in sections:
+                parts.append(sections[g])
+        result[filename] = "".join(parts)
+
+    return result
+
+
+def _deploy_claude_rules(dest_dir: Path, agents_md_path: Path) -> int:
+    """Split AGENTS.md and deploy as root + rule files for Claude Code.
+
+    Writes:
+    - ``dest_dir/CLAUDE.md`` (preamble + G4)
+    - ``dest_dir/rules/helloagents/*.md`` (grouped G sections)
+
+    Returns the total number of files deployed.
+    """
+    content = agents_md_path.read_text(encoding="utf-8")
+    files = _split_agents_md(content)
+
+    # Write root file
+    (dest_dir / "CLAUDE.md").write_text(files["CLAUDE.md"], encoding="utf-8")
+
+    # Write rule files
+    rules_dir = dest_dir / "rules" / "helloagents"
+    rules_dir.mkdir(parents=True, exist_ok=True)
+    count = 1  # CLAUDE.md already counted
+    for filename, file_content in files.items():
+        if filename == "CLAUDE.md":
+            continue
+        (rules_dir / filename).write_text(file_content, encoding="utf-8")
+        count += 1
+
+    return count
+
+
+def _remove_claude_rules(dest_dir: Path) -> bool:
+    """Remove HelloAGENTS split rule files from rules/helloagents/.
+
+    Only removes files that contain the HELLOAGENTS_RULE marker.
+    Cleans up empty parent directories afterwards.
+
+    Returns True if any files were removed.
+    """
+    rules_dir = dest_dir / "rules" / "helloagents"
+    if not rules_dir.exists():
+        return False
+
+    removed_any = False
+    for f in rules_dir.glob("*.md"):
+        try:
+            head = f.read_text(encoding="utf-8", errors="ignore")[:256]
+            if HELLOAGENTS_RULE_MARKER in head:
+                f.unlink()
+                removed_any = True
+        except Exception:
+            pass
+
+    # Clean up empty directories
+    if rules_dir.exists() and not any(rules_dir.iterdir()):
+        rules_dir.rmdir()
+        rules_parent = dest_dir / "rules"
+        if rules_parent.exists() and not any(rules_parent.iterdir()):
+            rules_parent.rmdir()
+
+    if removed_any:
+        print(_msg("  已移除拆分规则文件 (rules/helloagents/)",
+                   "  Removed split rule files (rules/helloagents/)"))
+    return removed_any

@@ -9,7 +9,7 @@ import sys
 from .cli import (
     _msg,
     CLI_TARGETS, PLUGIN_DIR_NAME, HELLOAGENTS_MARKER,
-    is_helloagents_file, backup_user_file,
+    is_helloagents_file, is_helloagents_rule, backup_user_file,
     get_agents_md_path, get_skill_md_path, get_helloagents_module_path,
     detect_installed_clis, _detect_installed_targets, _detect_install_method,
 )
@@ -18,6 +18,7 @@ from .config_helpers import (
     _configure_codex_notify, _remove_codex_notify,
     _configure_claude_hooks, _remove_claude_hooks,
     _configure_claude_permissions, _remove_claude_permissions,
+    _deploy_claude_rules, _remove_claude_rules,
 )
 from .win_helpers import (
     _cleanup_pip_remnants, _win_deferred_pip,
@@ -176,6 +177,20 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
                 if win_safe_rmtree(cache_dir):
                     removed.append(str(cache_dir))
 
+    # --- Clean stale rules/helloagents/ split rule files ---
+    rules_ha_dir = dest_dir / "rules" / "helloagents"
+    if rules_ha_dir.exists():
+        for f in rules_ha_dir.glob("*.md"):
+            if is_helloagents_rule(f):
+                try:
+                    f.unlink()
+                    removed.append(f"{f} (stale rule)")
+                except Exception:
+                    pass
+        if rules_ha_dir.exists() and not any(rules_ha_dir.iterdir()):
+            rules_ha_dir.rmdir()
+            removed.append(f"{rules_ha_dir} (empty)")
+
     return removed
 
 
@@ -251,24 +266,34 @@ def install(target: str) -> bool:
             shutil.copytree(user_backup, target_user)
             shutil.rmtree(user_backup.parent)
 
-        # Copy and rename AGENTS.md to target rules file
+        # Deploy rules
         if agents_md_src.exists():
-            if rules_dest.exists():
-                if is_helloagents_file(rules_dest):
-                    shutil.copy2(agents_md_src, rules_dest)
-                    print(_msg(f"  已更新规则: {rules_dest}",
-                               f"  Updated rules: {rules_dest}"))
-                else:
+            if target == "claude":
+                # Split deployment for Claude Code (avoid 40k char warning)
+                if rules_dest.exists() and not is_helloagents_file(rules_dest):
                     backup = backup_user_file(rules_dest)
                     print(_msg(f"  已备份现有规则到: {backup}",
                                f"  Backed up existing rules to: {backup}"))
+                count = _deploy_claude_rules(dest_dir, agents_md_src)
+                print(_msg(f"  已部署拆分规则: {count} 个文件 (CLAUDE.md + rules/helloagents/)",
+                           f"  Deployed split rules: {count} file(s) (CLAUDE.md + rules/helloagents/)"))
+            else:
+                if rules_dest.exists():
+                    if is_helloagents_file(rules_dest):
+                        shutil.copy2(agents_md_src, rules_dest)
+                        print(_msg(f"  已更新规则: {rules_dest}",
+                                   f"  Updated rules: {rules_dest}"))
+                    else:
+                        backup = backup_user_file(rules_dest)
+                        print(_msg(f"  已备份现有规则到: {backup}",
+                                   f"  Backed up existing rules to: {backup}"))
+                        shutil.copy2(agents_md_src, rules_dest)
+                        print(_msg(f"  已安装规则到: {rules_dest}",
+                                   f"  Installed rules to: {rules_dest}"))
+                else:
                     shutil.copy2(agents_md_src, rules_dest)
                     print(_msg(f"  已安装规则到: {rules_dest}",
                                f"  Installed rules to: {rules_dest}"))
-            else:
-                shutil.copy2(agents_md_src, rules_dest)
-                print(_msg(f"  已安装规则到: {rules_dest}",
-                           f"  Installed rules to: {rules_dest}"))
         else:
             print(_msg(f"  警告: 未找到 AGENTS.md ({agents_md_src})",
                        f"  Warning: AGENTS.md not found at {agents_md_src}"))
@@ -453,6 +478,15 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
     # Remove agent definition files (Claude Code only)
     if target == "claude":
         removed.extend(_remove_agent_files(dest_dir))
+
+    # Remove split rule files (Claude Code only)
+    if target == "claude":
+        try:
+            if _remove_claude_rules(dest_dir):
+                removed.append("rules/helloagents/ (split rules)")
+        except Exception as e:
+            print(_msg(f"  ⚠ 移除拆分规则时出错: {e}",
+                       f"  ⚠ Error removing split rules: {e}"))
 
     # Remove hooks configuration
     if target == "claude":

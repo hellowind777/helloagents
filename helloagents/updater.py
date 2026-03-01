@@ -295,6 +295,14 @@ def _show_claude_cli_details(cli_dir: Path) -> None:
     else:
         print(_msg("    ⚠ 未检测到 ha-*.md 子代理定义，建议重新安装",
                    "    ⚠ No ha-*.md agent definitions found, reinstall recommended"))
+    # Split rule files check
+    rules_ha_dir = cli_dir / "rules" / "helloagents"
+    ha_rules = list(rules_ha_dir.glob("*.md")) if rules_ha_dir.exists() else []
+    if ha_rules:
+        print(f"    rules: {len(ha_rules)} file(s) ✓")
+    else:
+        print(_msg("    ⚠ 未检测到拆分规则文件，建议重新安装",
+                   "    ⚠ No split rule files found, reinstall recommended"))
     # Permissions check
     try:
         sp = cli_dir / "settings.json"
