@@ -22,6 +22,7 @@ from .config_helpers import (
 )
 from .win_helpers import (
     _cleanup_pip_remnants, _win_deferred_pip,
+    _win_schedule_exe_cleanup,
     build_pip_cleanup_cmd,
     win_preemptive_unlock, win_finish_unlock, win_safe_rmtree,
     win_exe_retry,  # noqa: F401 — backward-compatible re-export
@@ -54,6 +55,7 @@ def _self_uninstall() -> bool:
                        "  ✓ helloagents package removed."))
             _cleanup_pip_remnants()
             win_finish_unlock(bak, True)
+            _win_schedule_exe_cleanup(bak)
             return True
 
         stderr = result.stderr.strip()

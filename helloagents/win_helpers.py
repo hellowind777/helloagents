@@ -157,13 +157,96 @@ def win_finish_unlock(bak: Path | None, success: bool) -> None:
             if bak.exists():
                 bak.unlink()
         except OSError:
-            pass  # will be cleaned up on next run
+            pass  # caller should schedule deferred cleanup for uninstall
     else:
         try:
             if not exe.exists() and bak.exists():
                 bak.rename(exe)
         except OSError:
             pass
+
+
+def _win_schedule_exe_cleanup(bak: Path | None = None) -> None:
+    """Schedule deletion of helloagents exe/bak after the current process exits.
+
+    After _self_uninstall, the running exe (or its .bak rename) cannot be
+    deleted by the current process. This launches a background pythonw script
+    that polls until the current PID disappears, then removes the files.
+
+    Args:
+        bak: The .exe.bak path from win_preemptive_unlock(), or None if
+             the preemptive unlock was not performed / failed.
+    """
+    if sys.platform != "win32":
+        return
+
+    # Determine exe and bak paths to clean up
+    if bak is not None:
+        exe_path = bak.with_suffix(".exe")
+        bak_path = bak
+    else:
+        exe_path = _win_find_exe()
+        if exe_path is None:
+            exe_path = Path(sys.executable).parent / "Scripts" / "helloagents.exe"
+        bak_path = exe_path.with_suffix(".exe.bak")
+
+    # Nothing to do if both are already gone
+    if not exe_path.exists() and not bak_path.exists():
+        return
+
+    import os
+    import subprocess
+    import tempfile
+
+    pid = os.getpid()
+    pythonw = Path(sys.executable).with_name("pythonw.exe")
+    if not pythonw.exists():
+        pythonw = Path(sys.executable)
+
+    # Escape backslashes for embedding in the script string
+    exe_esc = str(exe_path).replace("\\", "\\\\")
+    bak_esc = str(bak_path).replace("\\", "\\\\")
+
+    script_lines = [
+        "import os, time, subprocess, sys",
+        "",
+        f"pid = {pid}",
+        "",
+        "# Wait for parent process to exit",
+        "for _ in range(120):",
+        "    r = subprocess.run(",
+        '        ["tasklist", "/fi", f"PID eq {pid}", "/nh"],',
+        "        capture_output=True, text=True, creationflags=0x08000000,",
+        "    )",
+        "    if str(pid) not in r.stdout:",
+        "        break",
+        "    time.sleep(1)",
+        "",
+        "# Delete exe and bak",
+        f'for p in ["{exe_esc}", "{bak_esc}"]:',
+        "    try:",
+        "        if os.path.exists(p):",
+        "            os.unlink(p)",
+        "    except OSError:",
+        "        pass",
+        "",
+        "# Self-delete",
+        "try:",
+        "    os.unlink(sys.argv[0])",
+        "except OSError:",
+        "    pass",
+    ]
+
+    try:
+        fd, script_path = tempfile.mkstemp(suffix=".pyw", prefix="helloagents_")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("\n".join(script_lines))
+        subprocess.Popen(
+            [str(pythonw), script_path],
+            creationflags=0x08000000,
+        )
+    except OSError:
+        pass
 
 
 # ---------------------------------------------------------------------------
