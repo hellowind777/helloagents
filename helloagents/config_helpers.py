@@ -386,3 +386,109 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
     print(_msg("  已移除 notify hook (config.toml)",
                "  Removed notify hook (config.toml)"))
     return True
+
+
+# ---------------------------------------------------------------------------
+# Claude Code permissions helpers
+# ---------------------------------------------------------------------------
+
+# Fingerprint prefix to identify HelloAGENTS-managed permission entries
+_PERM_FINGERPRINT = "HelloAGENTS:"
+
+def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
+    """Return the list of permissions.allow entries HelloAGENTS needs.
+
+    Based on Claude Code permission rule syntax:
+    - Read operations are auto-approved (no rules needed)
+    - Edit rules cover both Edit and Write tools (gitignore patterns)
+    - Bash rules support glob with * wildcard
+    - Path prefixes: ~/ = home, / = project root, ./ or bare = CWD
+
+    Covers:
+    - Script & RLM execution (Bash)
+    - HelloAGENTS CLI commands (Bash)
+    - Global config cache read via cat (Bash)
+    - Project knowledge base writes (Edit)
+    - Global config writes (Edit)
+    """
+    plugin_posix = (dest_dir / PLUGIN_DIR_NAME).as_posix()
+    home_ha = "~/.helloagents"
+    return [
+        # Bash: Python script execution (with and without -X utf8)
+        f'Bash(python "{plugin_posix}/scripts/*")',
+        f'Bash(python -X utf8 "{plugin_posix}/scripts/*")',
+        f'Bash(python "{plugin_posix}/rlm/*")',
+        f'Bash(python -X utf8 "{plugin_posix}/rlm/*")',
+        # Bash: CLI commands & cache read
+        "Bash(helloagents *)",
+        f"Bash(cat {home_ha}/*)",
+        # Edit (covers Write too): project knowledge base
+        "Edit(.helloagents/**)",
+        # Edit: global config directory
+        f"Edit({home_ha}/**)",
+    ]
+
+
+def _configure_claude_permissions(dest_dir: Path) -> None:
+    """Add HelloAGENTS tool permissions to Claude Code settings.json.
+
+    Merges into permissions.allow without duplicating or removing
+    user-defined entries. Idempotent: re-running updates existing entries.
+    """
+    import json
+    settings_path = dest_dir / "settings.json"
+
+    settings = {}
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+
+    perms = settings.setdefault("permissions", {})
+    allow = perms.setdefault("allow", [])
+
+    our_entries = _get_helloagents_permissions(dest_dir)
+
+    # Remove old HelloAGENTS entries (exact match), then add current ones
+    allow[:] = [e for e in allow if e not in our_entries]
+    allow.extend(our_entries)
+
+    settings_path.write_text(
+        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    print(_msg(f"  已配置 {len(our_entries)} 条工具权限 (settings.json)",
+               f"  Configured {len(our_entries)} tool permission(s) (settings.json)"))
+
+
+def _remove_claude_permissions(dest_dir: Path) -> bool:
+    """Remove HelloAGENTS tool permissions from Claude Code settings.json."""
+    import json
+    settings_path = dest_dir / "settings.json"
+    if not settings_path.exists():
+        return False
+
+    try:
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+
+    perms = settings.get("permissions", {})
+    allow = perms.get("allow", [])
+    if not allow:
+        return False
+
+    our_entries = set(_get_helloagents_permissions(dest_dir))
+    new_allow = [e for e in allow if e not in our_entries]
+
+    if len(new_allow) == len(allow):
+        return False
+
+    removed = len(allow) - len(new_allow)
+    perms["allow"] = new_allow
+    settings_path.write_text(
+        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    print(_msg(f"  已移除 {removed} 条 HelloAGENTS 工具权限 (settings.json)",
+               f"  Removed {removed} HelloAGENTS tool permission(s) (settings.json)"))
+    return True

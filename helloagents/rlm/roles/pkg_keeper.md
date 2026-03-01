@@ -76,7 +76,7 @@
 ### 4. 方案包归档（archive 接口）
 
 ```yaml
-触发: develop 阶段步骤13
+触发: develop 阶段步骤14
 输入: packagePath
 任务:
   - 验证方案包状态
