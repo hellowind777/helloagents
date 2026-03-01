@@ -63,43 +63,110 @@ def _configure_codex_toml(dest_dir: Path) -> None:
                "  Configured project_doc_max_bytes = 131072 (prevent AGENTS.md truncation)"))
 
 
+def _get_agents_section_val(content: str, key: str) -> int | None:
+    """Get a key's integer value from a TOML ``[agents]`` section, or None."""
+    sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+    if not sec:
+        return None
+    after = content[sec.end():]
+    next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
+    scope = after[:next_sec.start()] if next_sec else after
+    m = re.search(rf'^{re.escape(key)}\s*=\s*(\d+)', scope, re.MULTILINE)
+    return int(m.group(1)) if m else None
+
+
+def _cleanup_codex_agents_dotted(content: str) -> tuple[str, bool]:
+    """Remove dotted ``agents.xxx`` keys that conflict with ``[agents]`` section.
+
+    Returns (cleaned_content, was_changed).
+    """
+    cleaned = content
+    changed = False
+    for dotted in ('agents.max_threads', 'agents.max_depth'):
+        cleaned, n = re.subn(
+            rf'^{re.escape(dotted)}\s*=\s*\d+\s*\n?', '',
+            cleaned, flags=re.MULTILINE)
+        if n:
+            changed = True
+    if changed:
+        cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    return cleaned, changed
+
+
 def _configure_codex_csv_batch(dest_dir: Path) -> None:
     """Ensure config.toml has multi-agent settings for spawn_agents_on_csv.
 
-    - agents.max_threads: top-level, max concurrent sub-agents (>= 64)
-    - agents.max_depth: top-level, sub-agent nesting depth (= 1)
-    - sqlite: [features], CSV batch orchestration persistence
+    Always uses ``[agents]`` section format.  Dotted keys
+    (``agents.max_threads``) are migrated into the section and removed
+    to prevent TOML duplicate-key errors.
+
+    - ``[agents]`` max_threads >= 64 (CSV batch orchestration)
+    - ``[agents]`` max_depth = 1 (prevent deep nesting)
+    - ``[features]`` sqlite = true (persistence)
     """
     config_path = dest_dir / "config.toml"
     content = ""
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
     changed = False
+    mt_changed = False
+    md_changed = False
 
-    # --- agents.max_threads >= 64 (minimum required for CSV batch orchestration) ---
-    # Enforces minimum: overwrites values < 64. This differs from max_depth which
-    # only adds when absent, because max_threads has a hard minimum for CSV batching.
-    m = re.search(r'agents\.max_threads\s*=\s*(\d+)', content)
-    if m:
-        if int(m.group(1)) < 64:
-            content = re.sub(
-                r'agents\.max_threads\s*=\s*\d+',
-                'agents.max_threads = 64',
-                content)
-            changed = True
+    # ── Step 1: Harvest values from dotted keys before removing them ──
+    dotted_mt = re.search(r'agents\.max_threads\s*=\s*(\d+)', content)
+    dotted_md = re.search(r'agents\.max_depth\s*=\s*(\d+)', content)
+    dotted_mt_val = int(dotted_mt.group(1)) if dotted_mt else None
+    dotted_md_val = int(dotted_md.group(1)) if dotted_md else None
+
+    # ── Step 2: Remove all dotted agents.xxx keys ──
+    content, did_clean = _cleanup_codex_agents_dotted(content)
+    if did_clean:
+        changed = True
+
+    # ── Step 3: Ensure [agents] section exists ──
+    if not re.search(r'^\[agents\]', content, re.MULTILINE):
+        # Insert [agents] section before the first existing [section]
+        first_sec = re.search(r'^\[[\w]', content, re.MULTILINE)
+        mt_val = max(dotted_mt_val or 0, 64)
+        md_val = dotted_md_val if dotted_md_val is not None else 1
+        section_block = f"[agents]\nmax_threads = {mt_val}\nmax_depth = {md_val}\n\n"
+        if first_sec:
+            content = content[:first_sec.start()] + section_block + content[first_sec.start():]
+        else:
+            content = content.rstrip() + "\n\n" + section_block
+        changed = True
+        mt_changed = True
+        md_changed = True
     else:
-        content = _insert_before_first_section(
-            content, "agents.max_threads = 64")
-        changed = True
+        # [agents] section exists — ensure keys are present with correct values
 
-    # --- agents.max_depth = 1 (prevent deep nesting) ---
-    # Only adds when absent — does NOT overwrite user-customized values, since
-    # users may intentionally set deeper nesting for advanced workflows.
-    md = re.search(r'agents\.max_depth\s*=\s*(\d+)', content)
-    if not md:
-        content = _insert_before_first_section(
-            content, "agents.max_depth = 1")
-        changed = True
+        # max_threads >= 64
+        mt_val = _get_agents_section_val(content, 'max_threads')
+        if mt_val is None:
+            # Use migrated dotted value if available, otherwise default 64
+            val = max(dotted_mt_val or 0, 64)
+            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+            content = content[:sec.end()] + f'\nmax_threads = {val}' + content[sec.end():]
+            changed = True
+            mt_changed = True
+        elif mt_val < 64:
+            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+            after = content[sec.end():]
+            new_after = re.sub(
+                r'^(max_threads\s*=\s*)\d+', r'\g<1>64',
+                after, count=1, flags=re.MULTILINE)
+            content = content[:sec.end()] + new_after
+            changed = True
+            mt_changed = True
+
+        # max_depth (add if absent, don't overwrite)
+        md_val = _get_agents_section_val(content, 'max_depth')
+        if md_val is None:
+            val = dotted_md_val if dotted_md_val is not None else 1
+            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+            content = content[:sec.end()] + f'\nmax_depth = {val}' + content[sec.end():]
+            changed = True
+            md_changed = True
 
     # --- [features] sqlite = true ---
     sqlite_added = False
@@ -130,15 +197,18 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(content, encoding="utf-8")
         msgs = []
-        if not m or int(m.group(1)) < 64:
-            msgs.append("agents.max_threads = 64")
-        if not md:
-            msgs.append("agents.max_depth = 1")
+        if mt_changed:
+            final_mt = _get_agents_section_val(content, 'max_threads') or 64
+            msgs.append(f"agents.max_threads = {final_mt}")
+        if md_changed:
+            final_md = _get_agents_section_val(content, 'max_depth') or 1
+            msgs.append(f"agents.max_depth = {final_md}")
         if sqlite_added:
             msgs.append("sqlite = true")
-        print(_msg(
-            f"  已配置多代理: {', '.join(msgs)}",
-            f"  Configured multi-agent: {', '.join(msgs)}"))
+        if msgs:
+            print(_msg(
+                f"  已配置多代理: {', '.join(msgs)}",
+                f"  Configured multi-agent: {', '.join(msgs)}"))
 
 
 # ---------------------------------------------------------------------------
