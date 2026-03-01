@@ -19,6 +19,7 @@ from .config_helpers import (
     _configure_claude_hooks, _remove_claude_hooks,
     _configure_claude_permissions, _remove_claude_permissions,
     _deploy_claude_rules, _remove_claude_rules,
+    _cleanup_codex_agents_dotted,
 )
 from .win_helpers import (
     _cleanup_pip_remnants, _win_deferred_pip,
@@ -192,6 +193,18 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
         if rules_ha_dir.exists() and not any(rules_ha_dir.iterdir()):
             rules_ha_dir.rmdir()
             removed.append(f"{rules_ha_dir} (empty)")
+
+    # --- Clean dotted agents.xxx keys in config.toml (Codex) ---
+    config_toml = dest_dir / "config.toml"
+    if config_toml.exists():
+        try:
+            content = config_toml.read_text(encoding="utf-8")
+            cleaned, did_clean = _cleanup_codex_agents_dotted(content)
+            if did_clean:
+                config_toml.write_text(cleaned, encoding="utf-8")
+                removed.append("config.toml dotted agents.xxx keys (migrated to [agents])")
+        except Exception:
+            pass
 
     return removed
 
@@ -511,6 +524,19 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
         except Exception as e:
             print(_msg(f"  ⚠ 移除 notify hook 时出错: {e}",
                        f"  ⚠ Error removing notify hook: {e}"))
+        # Clean up dotted agents.xxx keys (migrate to [agents] section format)
+        try:
+            config_toml = dest_dir / "config.toml"
+            if config_toml.exists():
+                content = config_toml.read_text(encoding="utf-8")
+                cleaned, did_clean = _cleanup_codex_agents_dotted(content)
+                if did_clean:
+                    config_toml.write_text(cleaned, encoding="utf-8")
+                    print(_msg("  已清理 config.toml 中的 dotted agents.xxx 键",
+                               "  Cleaned dotted agents.xxx keys from config.toml"))
+        except Exception as e:
+            print(_msg(f"  ⚠ 清理 dotted agents 键时出错: {e}",
+                       f"  ⚠ Error cleaning dotted agents keys: {e}"))
         print(_msg(
             "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite 配置已保留（可能被其他工具使用）。",
             "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite kept in config.toml (may be used by other tools)."))

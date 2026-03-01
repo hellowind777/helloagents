@@ -346,9 +346,15 @@ def _show_codex_cli_details(cli_dir: Path) -> None:
                        "    ⚠ notify not configured, reinstall recommended"))
         # --- multi-agent config check ---
         ma_items = []
-        if re.search(r'agents\.max_threads\s*=', ct_text):
+        has_mt = (re.search(r'agents\.max_threads\s*=', ct_text)
+                  or re.search(r'^\[agents\]', ct_text, re.MULTILINE)
+                  and re.search(r'^max_threads\s*=', ct_text, re.MULTILINE))
+        if has_mt:
             ma_items.append("agents.max_threads")
-        if re.search(r'agents\.max_depth\s*=', ct_text):
+        has_md = (re.search(r'agents\.max_depth\s*=', ct_text)
+                  or re.search(r'^\[agents\]', ct_text, re.MULTILINE)
+                  and re.search(r'^max_depth\s*=', ct_text, re.MULTILINE))
+        if has_md:
             ma_items.append("agents.max_depth")
         if re.search(r'^sqlite\s*=\s*true', ct_text, re.MULTILINE):
             ma_items.append("sqlite")
