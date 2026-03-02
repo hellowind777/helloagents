@@ -1,13 +1,13 @@
 """HelloAGENTS Windows Helpers - Platform-specific utilities and pip cleanup tools.
 
-Leaf module: only depends on stdlib + cli._msg.
+Leaf module: only depends on stdlib + _common._msg.
 """
 
 import shutil
 import sys
 from pathlib import Path
 
-from .cli import _msg
+from .._common import _msg
 
 
 # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 """HelloAGENTS Version Check - Version detection, comparison, and update cache.
 
-Leaf module: only depends on stdlib + cli.REPO_API_LATEST.
+Leaf module: only depends on stdlib + _common.REPO_API_LATEST.
 All output from check_update() is pure English to ensure AI CLI keyword matching
 works regardless of system locale.
 """
@@ -11,7 +11,7 @@ from pathlib import Path
 from importlib.metadata import version as get_version
 from urllib.request import urlopen, Request
 
-from .cli import REPO_API_LATEST
+from .._common import REPO_API_LATEST
 
 
 # ---------------------------------------------------------------------------
