@@ -8,7 +8,7 @@
 
 **Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.3.1-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.2-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -31,9 +31,9 @@
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [How It Works](#how-it-works)
-- [Repository Guide](#repository-guide)
 - [In-Chat Workflow Commands](#in-chat-workflow-commands)
 - [Usage Guide](#usage-guide)
+- [Repository Guide](#repository-guide)
 - [FAQ](#faq)
 - [Troubleshooting](#troubleshooting)
 - [Version History](#version-history)
@@ -131,6 +131,8 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 
 > ⚠️ **Prerequisite:** All AI CLIs (Codex CLI / Claude Code, etc.) should be upgraded to the latest version with relevant feature flags enabled (e.g., sub-agents, CSV orchestration) to access all HelloAGENTS capabilities. VSCode extensions for these CLIs update more slowly — some newer features may require waiting for the extension to catch up. See CLI-specific compatibility notes below.
 
+> ⚠️ **Windows PowerShell 5.1** does not support `&&`. Run commands on each side of `&&` separately, or upgrade to [PowerShell 7+](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+
 ### Method A: One-line install script (recommended)
 
 **macOS / Linux:**
@@ -143,19 +145,33 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 
 > The script auto-detects `uv` or `pip`, installs the HelloAGENTS package, and launches an interactive menu for you to select target CLIs. Re-running performs an update.
 
-**Update:**
+**Update:** re-run the install command above.
 
-    helloagents update
+**Uninstall:** `uv tool uninstall helloagents` or `pip uninstall helloagents` (depends on what the script detected)
+
+**Switch branch:**
+
+    # macOS / Linux
+    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
+
+    # Windows PowerShell
+    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
 
 ### Method B: npx (Node.js >= 16)
 
     npx helloagents
 
-> Installs the Python package and launches an interactive menu. You can also specify directly: `npx helloagents install codex` (or use `npx -y` to auto-download without prompting)
+> Installs the Python package via pip and launches an interactive menu. You can also specify directly: `npx helloagents install codex` (or use `npx -y` to auto-download without prompting)
 
 > Requires Python >= 3.10. After first install, use the native `helloagents` command directly.
 
 > **Acknowledgment:** Thanks to @setsuna1106 for generously transferring the npm `helloagents` package ownership.
+
+**Update:** `npx helloagents@latest`
+
+**Uninstall:** `pip uninstall helloagents`
+
+**Switch branch:** `npx helloagents@beta`
 
 ### Method C: UV (isolated environment)
 
@@ -169,17 +185,17 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 
 > After installing UV, restart your terminal to make the `uv` command available.
 
-> ⚠️ Windows PowerShell 5.1 does not support `&&`. Please run commands separately, or upgrade to [PowerShell 7+](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
-
 **Install and select targets (one command):**
 
     uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents
 
 > Installs the package and launches an interactive menu for you to select target CLIs. You can also specify directly: `helloagents install codex`
 
-**Update:**
+**Update:** `uv tool install --from git+https://github.com/hellowind777/helloagents helloagents --force`
 
-    helloagents update
+**Uninstall:** `uv tool uninstall helloagents`
+
+**Switch branch:** `uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents --force`
 
 ### Method D: pip (Python >= 3.10)
 
@@ -189,33 +205,26 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 
 > Installs the package and launches an interactive menu for you to select target CLIs. You can also specify directly: `helloagents install codex`
 
-**Update:**
+**Update:** `pip install --upgrade git+https://github.com/hellowind777/helloagents.git`
 
-    pip install --upgrade git+https://github.com/hellowind777/helloagents.git
+**Uninstall:** `pip uninstall helloagents`
 
-### Install HelloAgents for different CLI targets
+**Switch branch:** `pip install --upgrade git+https://github.com/hellowind777/helloagents.git@beta`
+
+### HelloAGENTS commands (after installation)
+
+> ⚠️ These commands depend on the installed package. If a remote update causes issues, use the native install/update/uninstall commands from your installation method above.
 
     helloagents                  # interactive menu
-
     helloagents install codex    # specify target directly
-
     helloagents install --all    # install to all detected CLIs
-
-### Verify
-
-    helloagents status
-
-    helloagents version
-
-### Uninstall
-
-    helloagents uninstall codex
-
-    helloagents uninstall --all
-
-### Clean caches
-
-    helloagents clean
+    helloagents status           # check installation status
+    helloagents version          # check version
+    helloagents update           # update + auto-sync all targets
+    helloagents update beta      # switch branch + auto-sync
+    helloagents uninstall codex  # uninstall from a CLI target
+    helloagents uninstall --all  # uninstall from all targets
+    helloagents clean            # clean caches
 
 ### Codex CLI example
 
@@ -283,26 +292,6 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 > - Agent Teams collaboration mode requires environment variable: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
 > - Parallel sub-agent count is managed automatically by the model, no user-side limit config needed
 
-### Beta branch
-
-To install from the `beta` branch, append `@beta` to the repository URL:
-
-    # One-line script (auto-launches interactive menu after install)
-    # macOS / Linux
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
-
-    # Windows PowerShell
-    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
-
-    # npx (or use npx -y to auto-download without prompting)
-    npx helloagents@beta
-
-    # UV
-    uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents && helloagents
-
-    # pip
-    pip install git+https://github.com/hellowind777/helloagents.git@beta && helloagents
-
 ## Configuration
 
 Customize workflow behavior via `config.json` after installation. Only include keys you want to override — missing keys use defaults.
@@ -344,21 +333,6 @@ Customize workflow behavior via `config.json` after installation. Only include k
 5. EHRB scans each step for destructive operations; risky actions require explicit user confirmation. Hooks provide additional pre-tool safety checks when available.
 6. Three-layer memory (user / project KB / session) preserves context across sessions.
 7. Stage chain completes with verified output and optional knowledge base sync.
-
-## Repository Guide
-
-- AGENTS.md: router and workflow protocol
-- SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.1)
-- helloagents/cli.py: installer entry
-- helloagents/functions: workflow commands
-- helloagents/stages: design, develop
-- helloagents/services: knowledge, package, memory and support services
-- helloagents/rules: state, cache, tools, scaling
-- helloagents/rlm: role library and orchestration helpers
-- helloagents/hooks: Claude Code and Codex CLI hooks configs
-- helloagents/scripts: automation scripts
-- helloagents/templates: KB and plan templates
 
 ## In-Chat Workflow Commands
 
@@ -517,6 +491,21 @@ When ≥6 structurally identical tasks exist in the same execution layer, the sy
 
 On the first response of each session, the system silently checks for new versions. Results are cached at `~/.helloagents/.update_cache`, valid for the duration set by `UPDATE_CHECK` (default 72 hours, set to 0 to disable). When a new version is available, `⬆️ New version {version} available` appears in the response footer. Any errors during the check are silently skipped and never interrupt normal usage.
 
+## Repository Guide
+
+- AGENTS.md: router and workflow protocol
+- SKILL.md: skill discovery metadata for CLI targets
+- pyproject.toml: package metadata (v2.3.2)
+- helloagents/cli.py: installer entry
+- helloagents/functions: workflow commands (15)
+- helloagents/stages: design, develop
+- helloagents/services: knowledge, package, memory and support services
+- helloagents/rules: state, cache, tools, scaling, evaluation, sub-agent protocols
+- helloagents/rlm: role library and orchestration helpers
+- helloagents/hooks: Claude Code and Codex CLI hooks configs
+- helloagents/scripts: automation scripts
+- helloagents/templates: KB and plan templates
+
 ## FAQ
 
 - Q: Is this a Python CLI tool or prompt package?
@@ -553,7 +542,7 @@ On the first response of each session, the system silently checks for new versio
 
 ## Version History
 
-### v2.3.1 (current)
+### v2.3.2 (current)
 
 - AGENTS.md slimmed from 1186 to ~700 lines (-41%), reducing risk of LLMs selectively ignoring rules
 - G4 evaluation details, G9/G10 sub-agent protocols extracted to on-demand module files via G7
