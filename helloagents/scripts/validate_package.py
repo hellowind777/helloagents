@@ -21,9 +21,12 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-# 确保能找到同目录下的 utils 模块
-sys.path.insert(0, str(Path(__file__).parent))
-from utils import setup_encoding, get_plan_path, script_error_handler, validate_base_path, get_template_loader
+# 导入 utils 模块（优先直接导入，回退时添加脚本目录到路径）
+try:
+    from utils import setup_encoding, get_plan_path, script_error_handler, validate_base_path, get_template_loader
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import setup_encoding, get_plan_path, script_error_handler, validate_base_path, get_template_loader
 
 # 任务状态符号
 TASK_STATUS = {
@@ -53,8 +56,8 @@ def parse_tasks(tasks_content: str) -> dict:
         "items": []
     }
 
-    # 匹配任务行: - [ ] 任务描述 或 - [√] 任务描述
-    task_pattern = re.compile(r'^[-*]\s*\[([ √X\-?])\]\s*(.+)$', re.MULTILINE)
+    # 匹配任务行: - [ ] 任务描述 或 - [√] 任务描述（支持缩进的子任务）
+    task_pattern = re.compile(r'^\s*[-*]\s*\[([ √X\-?])\]\s*(.+)$', re.MULTILINE)
 
     for match in task_pattern.finditer(tasks_content):
         status_char = match.group(1)
@@ -110,7 +113,7 @@ def parse_proposal(proposal_content: str) -> dict:
         # 移除编号前缀（如 "1. "）和可选标记（如 "（可选）"）
         core = re.sub(r'^\d+\.\s*', '', section)
         core = re.sub(r'[（(].*?[）)]', '', core).strip()
-        if core and core in proposal_content:
+        if core and re.search(rf'^##\s+.*{re.escape(core)}', proposal_content, re.MULTILINE):
             proposal["sections_found"] += 1
 
     # 提取决策ID（语言无关：#D001格式）

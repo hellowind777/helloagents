@@ -157,13 +157,77 @@ def win_finish_unlock(bak: Path | None, success: bool) -> None:
             if bak.exists():
                 bak.unlink()
         except OSError:
-            pass  # will be cleaned up on next run
+            pass  # caller should schedule deferred cleanup for uninstall
     else:
         try:
             if not exe.exists() and bak.exists():
                 bak.rename(exe)
         except OSError:
             pass
+
+
+def _win_schedule_exe_cleanup(bak: Path | None = None) -> None:
+    """Schedule deletion of helloagents exe/bak after the current process exits.
+
+    After ``_self_uninstall``, the running exe (or its ``.bak`` rename) cannot
+    be deleted by the current process because Windows locks running executables.
+
+    **Reuses the proven ``_win_deferred_pip`` mechanism**: a background
+    ``pythonw.exe`` script that waits for the current PID to exit, then runs
+    the cleanup command.  The cleanup command itself retries deletion up to 30
+    times with 1-second intervals, handling the brief delay between
+    ``python.exe`` exit and ``helloagents.exe`` launcher exit / file-lock
+    release.
+
+    Falls back to ``MoveFileExW(MOVEFILE_DELAY_UNTIL_REBOOT)`` as a
+    belt-and-suspenders backup (schedules deletion on next system reboot).
+
+    Args:
+        bak: The ``.exe.bak`` path from ``win_preemptive_unlock()``, or
+             ``None`` if the preemptive unlock was not performed / failed.
+    """
+    if sys.platform != "win32":
+        return
+
+    # Determine target files to clean up
+    if bak is not None:
+        targets = [bak, bak.with_suffix(".exe")]
+    else:
+        exe = _win_find_exe()
+        if exe is None:
+            exe = Path(sys.executable).parent / "Scripts" / "helloagents.exe"
+        targets = [exe, exe.with_suffix(".exe.bak")]
+
+    targets = [str(t) for t in targets if t.exists()]
+    if not targets:
+        return
+
+    # --- Layer 1: reuse _win_deferred_pip (proven mechanism) ---
+    # Build a Python -c script that retries deletion up to 30 times.
+    # _win_deferred_pip waits for our PID (python.exe) to exit first;
+    # the retry loop handles the brief extra delay before helloagents.exe
+    # (the parent launcher that holds the file lock) fully exits.
+    cleanup_script = (
+        "import os,time\n"
+        f"T={targets!r}\n"
+        "for _ in range(30):\n"
+        " R=[p for p in T if os.path.exists(p)]\n"
+        " if not R: break\n"
+        " for p in R:\n"
+        "  try: os.unlink(p)\n"
+        "  except OSError: pass\n"
+        " time.sleep(1)\n"
+    )
+    _win_deferred_pip([sys.executable, "-c", cleanup_script])
+
+    # --- Layer 2: MoveFileEx fallback (schedules deletion on next reboot) ---
+    try:
+        import ctypes
+        for t in targets:
+            if Path(t).exists():
+                ctypes.windll.kernel32.MoveFileExW(t, None, 0x4)
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -240,10 +304,13 @@ def _win_deferred_pip(pip_args: list[str],
     python_exe = sys.executable
 
     # Prefer pythonw.exe (GUI, no console window) over python.exe
-    pythonw = Path(python_exe).with_name(
-        "pythonw.exe" if python_exe.endswith("python.exe")
-        else Path(python_exe).name.replace("python", "pythonw")
-    )
+    # Use case-insensitive matching (Windows may have Python.EXE etc.)
+    exe_name_lower = Path(python_exe).name.lower()
+    if exe_name_lower == "python.exe":
+        pythonw_name = "pythonw.exe"
+    else:
+        pythonw_name = exe_name_lower.replace("python", "pythonw")
+    pythonw = Path(python_exe).with_name(pythonw_name)
     if not pythonw.exists():
         pythonw = Path(python_exe)  # fallback to python.exe
 

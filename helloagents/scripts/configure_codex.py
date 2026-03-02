@@ -9,23 +9,18 @@ HelloAGENTS - Codex CLI 配置工具
 import sys
 import os
 import re
-import io
-
-# === 编码设置 ===
-if sys.platform == 'win32':
-    if hasattr(sys.stdout, 'buffer'):
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    if hasattr(sys.stderr, 'buffer'):
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 from pathlib import Path
 
-# 导入 ExecutionReport
+# 导入 ExecutionReport 和编码设置
 try:
-    from utils import ExecutionReport, script_error_handler
+    from utils import ExecutionReport, script_error_handler, setup_encoding
 except ImportError:
     sys.path.insert(0, str(Path(__file__).parent))
-    from utils import ExecutionReport, script_error_handler
+    from utils import ExecutionReport, script_error_handler, setup_encoding
+
+# Windows UTF-8 编码设置（含 stdout/stderr/stdin）
+setup_encoding()
 
 
 # === 常量 ===

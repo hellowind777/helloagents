@@ -9,6 +9,35 @@
 服务类型: 基础设施服务
 适用范围: 所有涉及任务进度跟踪的场景（DEVELOP 阶段强制，其他阶段按需）
 核心职责: 维护 LIVE_STATUS 区域、管理执行日志、提供进度快照
+执行者: 主代理直接执行（无专用角色）
+```
+
+---
+
+## 服务接口
+
+### updateStatus(taskInfo)
+
+```yaml
+触发: 任务开始/完成/状态变更时
+参数: taskInfo { status, current_task, completed, total }
+流程: 定位 LIVE_STATUS 标记 → 替换中间内容 → 更新时间戳
+```
+
+### appendLog(entry)
+
+```yaml
+触发: 每次任务状态变更后
+参数: entry { time, task, status, note }
+流程: 追加到 tasks.md 底部日志表 → 超过5条时删除最早记录
+```
+
+### restore()
+
+```yaml
+触发: 上下文丢失或压缩后
+流程: 读取 LIVE_STATUS → 解析进度 → 扫描任务标记 → 返回断点信息
+返回: { status, progress, current_task, completed_tasks }
 ```
 
 ---

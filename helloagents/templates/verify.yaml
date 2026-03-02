@@ -1,0 +1,7 @@
+# 质量验证命令（Ralph Loop 使用）
+# 子代理完成代码改动后自动执行，全部通过才允许完成
+# 将此文件放置在项目的 .helloagents/verify.yaml 中启用
+commands:
+  # - npm run lint
+  # - npm run typecheck
+  # - npm test

@@ -128,7 +128,8 @@ class SharedTasksManager:
                         return {"list_id": self.list_id, "tasks": [],
                                 "_error": "Failed to acquire lock"}
                     return json.load(f)
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] _read_tasks failed: {e}", file=sys.stderr)
             return {"list_id": self.list_id, "tasks": [],
                     "_error": "Failed to read tasks"}
 
@@ -144,7 +145,8 @@ class SharedTasksManager:
                         return False
                     json.dump(data, f, ensure_ascii=False, indent=2)
                     return True
-        except Exception:
+        except Exception as e:
+            print(f"[HelloAGENTS] _write_tasks failed: {e}", file=sys.stderr)
             return False
 
     def _find_task(self, task_id: str) -> tuple:
@@ -338,7 +340,8 @@ def _resolve_owner() -> str:
         import importlib
         return importlib.import_module(
             "helloagents.rlm.session").get_current_session().session_id
-    except Exception:
+    except Exception as e:
+        print(f"[HelloAGENTS] _resolve_owner failed: {e}", file=sys.stderr)
         return "cli"
 
 

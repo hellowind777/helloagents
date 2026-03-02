@@ -5,9 +5,29 @@ from pathlib import Path
 
 from .cli import (
     _msg,
-    HOOKS_FINGERPRINT, CODEX_NOTIFY_CMD,
+    HOOKS_FINGERPRINT, CODEX_NOTIFY_CMD, PLUGIN_DIR_NAME,
+    HELLOAGENTS_RULE_MARKER,
     get_helloagents_module_path,
 )
+
+
+# ---------------------------------------------------------------------------
+# Shared TOML helpers
+# ---------------------------------------------------------------------------
+
+def _insert_before_first_section(content: str, line: str) -> str:
+    """Insert a line before the first TOML [section] header, or at the top.
+
+    Adds a trailing blank line if inserting mid-file (before a section).
+    """
+    insert_pos = 0
+    section_match = re.search(r'^\[[\w]', content, re.MULTILINE)
+    if section_match:
+        insert_pos = section_match.start()
+    text = line + "\n"
+    if insert_pos > 0:
+        text += "\n"
+    return content[:insert_pos] + text + content[insert_pos:]
 
 
 # ---------------------------------------------------------------------------
@@ -34,19 +54,165 @@ def _configure_codex_toml(dest_dir: Path) -> None:
             content)
     else:
         # Not present — insert before the first [section] or at the top
-        insert_pos = 0
-        section_match = re.search(r'^\[', content, re.MULTILINE)
-        if section_match:
-            insert_pos = section_match.start()
-        line = "project_doc_max_bytes = 131072\n"
-        if insert_pos > 0:
-            line += "\n"
-        content = content[:insert_pos] + line + content[insert_pos:]
+        content = _insert_before_first_section(
+            content, "project_doc_max_bytes = 131072")
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
     print(_msg("  已配置 project_doc_max_bytes = 131072 (防止 AGENTS.md 被截断)",
                "  Configured project_doc_max_bytes = 131072 (prevent AGENTS.md truncation)"))
+
+
+def _get_agents_section_val(content: str, key: str) -> int | None:
+    """Get a key's integer value from a TOML ``[agents]`` section, or None."""
+    sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+    if not sec:
+        return None
+    after = content[sec.end():]
+    next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
+    scope = after[:next_sec.start()] if next_sec else after
+    m = re.search(rf'^{re.escape(key)}\s*=\s*(\d+)', scope, re.MULTILINE)
+    return int(m.group(1)) if m else None
+
+
+def _cleanup_codex_agents_dotted(content: str) -> tuple[str, bool]:
+    """Remove dotted ``agents.xxx`` keys that conflict with ``[agents]`` section.
+
+    Returns (cleaned_content, was_changed).
+    """
+    cleaned = content
+    changed = False
+    for dotted in ('agents.max_threads', 'agents.max_depth'):
+        cleaned, n = re.subn(
+            rf'^{re.escape(dotted)}\s*=\s*\d+\s*\n?', '',
+            cleaned, flags=re.MULTILINE)
+        if n:
+            changed = True
+    if changed:
+        cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    return cleaned, changed
+
+
+def _configure_codex_csv_batch(dest_dir: Path) -> None:
+    """Ensure config.toml has multi-agent settings for spawn_agents_on_csv.
+
+    Always uses ``[agents]`` section format.  Dotted keys
+    (``agents.max_threads``) are migrated into the section and removed
+    to prevent TOML duplicate-key errors.
+
+    - ``[agents]`` max_threads >= 64 (CSV batch orchestration)
+    - ``[agents]`` max_depth = 1 (prevent deep nesting)
+    - ``[features]`` sqlite = true (persistence)
+    """
+    config_path = dest_dir / "config.toml"
+    content = ""
+    if config_path.exists():
+        content = config_path.read_text(encoding="utf-8")
+    changed = False
+    mt_changed = False
+    md_changed = False
+
+    # ── Step 1: Harvest values from dotted keys before removing them ──
+    dotted_mt = re.search(r'agents\.max_threads\s*=\s*(\d+)', content)
+    dotted_md = re.search(r'agents\.max_depth\s*=\s*(\d+)', content)
+    dotted_mt_val = int(dotted_mt.group(1)) if dotted_mt else None
+    dotted_md_val = int(dotted_md.group(1)) if dotted_md else None
+
+    # ── Step 2: Remove all dotted agents.xxx keys ──
+    content, did_clean = _cleanup_codex_agents_dotted(content)
+    if did_clean:
+        changed = True
+
+    # ── Step 3: Ensure [agents] section exists ──
+    if not re.search(r'^\[agents\]', content, re.MULTILINE):
+        # Insert [agents] section before the first existing [section]
+        first_sec = re.search(r'^\[[\w]', content, re.MULTILINE)
+        mt_val = max(dotted_mt_val or 0, 64)
+        md_val = dotted_md_val if dotted_md_val is not None else 1
+        section_block = f"[agents]\nmax_threads = {mt_val}\nmax_depth = {md_val}\n\n"
+        if first_sec:
+            content = content[:first_sec.start()] + section_block + content[first_sec.start():]
+        else:
+            content = content.rstrip() + "\n\n" + section_block
+        changed = True
+        mt_changed = True
+        md_changed = True
+    else:
+        # [agents] section exists — ensure keys are present with correct values
+
+        # max_threads >= 64
+        mt_val = _get_agents_section_val(content, 'max_threads')
+        if mt_val is None:
+            # Use migrated dotted value if available, otherwise default 64
+            val = max(dotted_mt_val or 0, 64)
+            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+            content = content[:sec.end()] + f'\nmax_threads = {val}' + content[sec.end():]
+            changed = True
+            mt_changed = True
+        elif mt_val < 64:
+            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+            after = content[sec.end():]
+            new_after = re.sub(
+                r'^(max_threads\s*=\s*)\d+', r'\g<1>64',
+                after, count=1, flags=re.MULTILINE)
+            content = content[:sec.end()] + new_after
+            changed = True
+            mt_changed = True
+
+        # max_depth (add if absent, don't overwrite)
+        md_val = _get_agents_section_val(content, 'max_depth')
+        if md_val is None:
+            val = dotted_md_val if dotted_md_val is not None else 1
+            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+            content = content[:sec.end()] + f'\nmax_depth = {val}' + content[sec.end():]
+            changed = True
+            md_changed = True
+
+    # --- [features] sqlite = true ---
+    sqlite_added = False
+    features_match = re.search(r'^\[features\]', content, re.MULTILINE)
+    if features_match:
+        # Scope search to [features] section only (until next section header)
+        after_features = content[features_match.end():]
+        next_sec_feat = re.search(r'^\[[\w]', after_features, re.MULTILINE)
+        features_scope = after_features[:next_sec_feat.start()] if next_sec_feat else after_features
+        sqlite_match = re.search(
+            r'^sqlite\s*=', features_scope, re.MULTILINE)
+        if not sqlite_match:
+            # Find end of [features] section (next TOML [section] header or EOF)
+            # Use ^\[[\w] to avoid matching TOML array values like ["..."]
+            next_section = re.search(
+                r'^\[[\w]', content[features_match.end():], re.MULTILINE)
+            if next_section:
+                pos = features_match.end() + next_section.start()
+            else:
+                pos = len(content)
+            insert = "sqlite = true\n"
+            content = content[:pos] + insert + content[pos:]
+            changed = True
+            sqlite_added = True
+    else:
+        # No [features] section — append one
+        content = content.rstrip() + "\n\n[features]\nsqlite = true\n"
+        changed = True
+        sqlite_added = True
+
+    if changed:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path.write_text(content, encoding="utf-8")
+        msgs = []
+        if mt_changed:
+            final_mt = _get_agents_section_val(content, 'max_threads') or 64
+            msgs.append(f"agents.max_threads = {final_mt}")
+        if md_changed:
+            final_md = _get_agents_section_val(content, 'max_depth') or 1
+            msgs.append(f"agents.max_depth = {final_md}")
+        if sqlite_added:
+            msgs.append("sqlite = true")
+        if msgs:
+            print(_msg(
+                f"  已配置多代理: {', '.join(msgs)}",
+                f"  Configured multi-agent: {', '.join(msgs)}"))
 
 
 # ---------------------------------------------------------------------------
@@ -84,11 +250,40 @@ def _is_helloagents_hook(hook: dict) -> bool:
     return False
 
 
+def _resolve_hook_placeholders(hooks: dict, scripts_dir: str) -> dict:
+    """Replace placeholders in hook commands with actual values.
+
+    Resolves:
+    - {SCRIPTS_DIR} → actual installed scripts path
+    - python3 → platform-appropriate Python command (Windows: python)
+
+    Uses recursive dict/list traversal instead of JSON string replacement
+    to avoid issues with special characters in paths.
+    """
+    import sys
+    win = sys.platform == "win32"
+
+    def _replace(obj):
+        if isinstance(obj, str):
+            obj = obj.replace("{SCRIPTS_DIR}", scripts_dir)
+            if win:
+                obj = obj.replace("python3 ", "python ")
+            return obj
+        if isinstance(obj, dict):
+            return {k: _replace(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_replace(item) for item in obj]
+        return obj
+
+    return _replace(hooks)
+
+
 def _configure_claude_hooks(dest_dir: Path) -> None:
     """Merge HelloAGENTS hooks into Claude Code settings.json.
 
     - Preserves all user-defined hooks
     - Replaces old HelloAGENTS hooks with current version (idempotent)
+    - Resolves {SCRIPTS_DIR} placeholder to actual installed scripts path
     - Identifies our hooks by HOOKS_FINGERPRINT in description field
     """
     import json
@@ -106,6 +301,10 @@ def _configure_claude_hooks(dest_dir: Path) -> None:
     our_hooks = _load_hooks_source()
     if not our_hooks:
         return
+
+    # Resolve {SCRIPTS_DIR} to actual installed path
+    scripts_path = (dest_dir / PLUGIN_DIR_NAME / "scripts").as_posix()
+    our_hooks = _resolve_hook_placeholders(our_hooks, scripts_path)
 
     existing_hooks = settings.get("hooks", {})
 
@@ -138,7 +337,9 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
 
     try:
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        print(_msg(f"  ⚠ 无法读取 {settings_path}: {e}",
+                   f"  ⚠ Cannot read {settings_path}: {e}"))
         return False
 
     hooks = settings.get("hooks")
@@ -162,9 +363,14 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
         del settings["hooks"]
 
     if removed_count > 0:
-        settings_path.write_text(
-            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8")
+        try:
+            settings_path.write_text(
+                json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8")
+        except PermissionError:
+            print(_msg(f"  ⚠ 无法写入 {settings_path}（文件被占用，请关闭 Claude Code 后重试）",
+                       f"  ⚠ Cannot write {settings_path} (file locked, close Claude Code and retry)"))
+            return False
         print(_msg(f"  已移除 {removed_count} 个 HelloAGENTS Hooks ({settings_path.name})",
                    f"  Removed {removed_count} HelloAGENTS hook(s) ({settings_path.name})"))
         return True
@@ -223,15 +429,8 @@ def _configure_codex_notify(dest_dir: Path) -> None:
                    "  Skipped notify config (user-defined value exists)"))
         return
 
-    # Not present — add before first [section] or at top
-    insert_pos = 0
-    section_match = re.search(r'^\[', content, re.MULTILINE)
-    if section_match:
-        insert_pos = section_match.start()
-    line = notify_line + "\n"
-    if insert_pos > 0:
-        line += "\n"
-    content = content[:insert_pos] + line + content[insert_pos:]
+    # Not present — add before first TOML [section] header or at top
+    content = _insert_before_first_section(content, notify_line)
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
@@ -249,7 +448,12 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
     if not config_path.exists():
         return False
 
-    content = config_path.read_text(encoding="utf-8")
+    try:
+        content = config_path.read_text(encoding="utf-8")
+    except Exception as e:
+        print(_msg(f"  ⚠ 无法读取 {config_path}: {e}",
+                   f"  ⚠ Cannot read {config_path}: {e}"))
+        return False
 
     # Try array format first, then old string format
     m_arr = re.search(r'^notify\s*=\s*\[([^\]]*)\]', content, re.MULTILINE)
@@ -265,7 +469,245 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
         return False
 
     content = re.sub(matched, '', content, count=1, flags=re.MULTILINE)
-    config_path.write_text(content, encoding="utf-8")
+    try:
+        config_path.write_text(content, encoding="utf-8")
+    except PermissionError:
+        print(_msg(f"  ⚠ 无法写入 {config_path}（文件被占用，请关闭 Codex CLI 后重试）",
+                   f"  ⚠ Cannot write {config_path} (file locked, close Codex CLI and retry)"))
+        return False
     print(_msg("  已移除 notify hook (config.toml)",
                "  Removed notify hook (config.toml)"))
     return True
+
+
+# ---------------------------------------------------------------------------
+# Claude Code permissions helpers
+# ---------------------------------------------------------------------------
+
+def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
+    """Return the list of permissions.allow entries HelloAGENTS needs.
+
+    Based on Claude Code permission rule syntax:
+    - Read operations are auto-approved (no rules needed)
+    - Edit rules cover both Edit and Write tools (gitignore patterns)
+    - Bash rules support glob with * wildcard
+    - Path prefixes: ~/ = home, / = project root, ./ or bare = CWD
+
+    Covers:
+    - Script & RLM execution (Bash)
+    - HelloAGENTS CLI commands (Bash)
+    - Global config cache read via cat (Bash)
+    - Project knowledge base writes (Edit)
+    - Global config writes (Edit)
+    """
+    plugin_posix = (dest_dir / PLUGIN_DIR_NAME).as_posix()
+    home_ha = "~/.helloagents"
+    return [
+        # Bash: Python script execution (with and without -X utf8)
+        f'Bash(python "{plugin_posix}/scripts/*")',
+        f'Bash(python -X utf8 "{plugin_posix}/scripts/*")',
+        f'Bash(python "{plugin_posix}/rlm/*")',
+        f'Bash(python -X utf8 "{plugin_posix}/rlm/*")',
+        # Bash: CLI commands & cache read
+        "Bash(helloagents *)",
+        f"Bash(cat {home_ha}/*)",
+        # Edit (covers Write too): project knowledge base
+        "Edit(.helloagents/**)",
+        # Edit: global config directory
+        f"Edit({home_ha}/**)",
+    ]
+
+
+def _configure_claude_permissions(dest_dir: Path) -> None:
+    """Add HelloAGENTS tool permissions to Claude Code settings.json.
+
+    Merges into permissions.allow without duplicating or removing
+    user-defined entries. Idempotent: re-running updates existing entries.
+    """
+    import json
+    settings_path = dest_dir / "settings.json"
+
+    settings = {}
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+
+    perms = settings.setdefault("permissions", {})
+    allow = perms.setdefault("allow", [])
+
+    our_entries = _get_helloagents_permissions(dest_dir)
+
+    # Remove old HelloAGENTS entries (exact match), then add current ones
+    allow[:] = [e for e in allow if e not in our_entries]
+    allow.extend(our_entries)
+
+    settings_path.write_text(
+        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    print(_msg(f"  已配置 {len(our_entries)} 条工具权限 (settings.json)",
+               f"  Configured {len(our_entries)} tool permission(s) (settings.json)"))
+
+
+def _remove_claude_permissions(dest_dir: Path) -> bool:
+    """Remove HelloAGENTS tool permissions from Claude Code settings.json."""
+    import json
+    settings_path = dest_dir / "settings.json"
+    if not settings_path.exists():
+        return False
+
+    try:
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(_msg(f"  ⚠ 无法读取 {settings_path}: {e}",
+                   f"  ⚠ Cannot read {settings_path}: {e}"))
+        return False
+
+    perms = settings.get("permissions", {})
+    allow = perms.get("allow", [])
+    if not allow:
+        return False
+
+    our_entries = set(_get_helloagents_permissions(dest_dir))
+    new_allow = [e for e in allow if e not in our_entries]
+
+    if len(new_allow) == len(allow):
+        return False
+
+    removed = len(allow) - len(new_allow)
+    perms["allow"] = new_allow
+    try:
+        settings_path.write_text(
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
+    except PermissionError:
+        print(_msg(f"  ⚠ 无法写入 {settings_path}（文件被占用，请关闭 Claude Code 后重试）",
+                   f"  ⚠ Cannot write {settings_path} (file locked, close Claude Code and retry)"))
+        return False
+    print(_msg(f"  已移除 {removed} 条 HelloAGENTS 工具权限 (settings.json)",
+               f"  Removed {removed} HelloAGENTS tool permission(s) (settings.json)"))
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Claude Code split rules deployment
+# ---------------------------------------------------------------------------
+
+# Mapping: output filename -> list of G section numbers
+_RULE_FILE_MAP = {
+    "config.md": [1, 2, 3],
+    "stages.md": [5, 6, 7, 8],
+    "subagent.md": [9, 10],
+    "attention.md": [11, 12],
+}
+
+_RULE_MARKER_LINE = f"<!-- {HELLOAGENTS_RULE_MARKER} -->\n"
+
+
+def _split_agents_md(content: str) -> dict[str, str]:
+    """Split AGENTS.md content into root file and rule files.
+
+    Splits by ``## G{N}`` section headers. Returns a dict mapping
+    filename to content:
+
+    - ``CLAUDE.md``:    preamble + G4
+    - ``config.md``:    G1 + G2 + G3
+    - ``stages.md``:    G5 + G6 + G7 + G8
+    - ``subagent.md``:  G9 + G10
+    - ``attention.md``: G11 + G12
+    """
+    pattern = re.compile(r'^## G(\d+)', re.MULTILINE)
+    matches = list(pattern.finditer(content))
+
+    if not matches:
+        return {"CLAUDE.md": content}
+
+    # Preamble: everything before first ## G section
+    preamble = content[:matches[0].start()]
+
+    # Extract each G section (from header to next header or EOF)
+    sections: dict[int, str] = {}
+    for i, m in enumerate(matches):
+        g_num = int(m.group(1))
+        start = m.start()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(content)
+        sections[g_num] = content[start:end]
+
+    # Root file: preamble + G4
+    result: dict[str, str] = {
+        "CLAUDE.md": preamble + sections.get(4, ""),
+    }
+
+    # Rule files: grouped G sections with marker header
+    for filename, g_nums in _RULE_FILE_MAP.items():
+        parts = [_RULE_MARKER_LINE]
+        for g in g_nums:
+            if g in sections:
+                parts.append(sections[g])
+        result[filename] = "".join(parts)
+
+    return result
+
+
+def _deploy_claude_rules(dest_dir: Path, agents_md_path: Path) -> int:
+    """Split AGENTS.md and deploy as root + rule files for Claude Code.
+
+    Writes:
+    - ``dest_dir/CLAUDE.md`` (preamble + G4)
+    - ``dest_dir/rules/helloagents/*.md`` (grouped G sections)
+
+    Returns the total number of files deployed.
+    """
+    content = agents_md_path.read_text(encoding="utf-8")
+    files = _split_agents_md(content)
+
+    # Write root file
+    (dest_dir / "CLAUDE.md").write_text(files["CLAUDE.md"], encoding="utf-8")
+
+    # Write rule files
+    rules_dir = dest_dir / "rules" / "helloagents"
+    rules_dir.mkdir(parents=True, exist_ok=True)
+    count = 1  # CLAUDE.md already counted
+    for filename, file_content in files.items():
+        if filename == "CLAUDE.md":
+            continue
+        (rules_dir / filename).write_text(file_content, encoding="utf-8")
+        count += 1
+
+    return count
+
+
+def _remove_claude_rules(dest_dir: Path) -> bool:
+    """Remove HelloAGENTS split rule files from rules/helloagents/.
+
+    Only removes files that contain the HELLOAGENTS_RULE marker.
+    Cleans up empty parent directories afterwards.
+
+    Returns True if any files were removed.
+    """
+    rules_dir = dest_dir / "rules" / "helloagents"
+    if not rules_dir.exists():
+        return False
+
+    removed_any = False
+    for f in rules_dir.glob("*.md"):
+        try:
+            head = f.read_text(encoding="utf-8", errors="ignore")[:256]
+            if HELLOAGENTS_RULE_MARKER in head:
+                f.unlink()
+                removed_any = True
+        except Exception:
+            pass
+
+    # Clean up empty directories
+    if rules_dir.exists() and not any(rules_dir.iterdir()):
+        rules_dir.rmdir()
+        rules_parent = dest_dir / "rules"
+        if rules_parent.exists() and not any(rules_parent.iterdir()):
+            rules_parent.rmdir()
+
+    if removed_any:
+        print(_msg("  已移除拆分规则文件 (rules/helloagents/)",
+                   "  Removed split rule files (rules/helloagents/)"))
+    return removed_any

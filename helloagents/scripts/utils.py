@@ -9,12 +9,16 @@ import re
 import os
 import sys
 import io
+import json
 import functools
+from pathlib import Path
+from datetime import datetime
+from typing import Optional, Tuple, List, Dict, Callable, Any
 
 
 def setup_encoding():
     """
-    设置 stdout/stderr 编码为 UTF-8
+    设置 stdout/stderr/stdin 编码为 UTF-8
     解决 Windows 命令行中文输出乱码问题
     """
     if sys.platform == 'win32':
@@ -23,12 +27,8 @@ def setup_encoding():
             sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
         if hasattr(sys.stderr, 'buffer'):
             sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
-
-
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, Tuple, List, Dict, Callable, Any
-import json
+        if hasattr(sys.stdin, 'buffer'):
+            sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
 
 
 # === 执行报告机制 ===
@@ -362,7 +362,7 @@ def count_tasks(task_file: Path) -> int:
 
     content = task_file.read_text(encoding='utf-8')
     # 匹配任务行: - [ ] 或 * [ ] 或 - [x] 或 - [√] 等
-    tasks = re.findall(r'^[-*]\s*\[.\]', content, re.MULTILINE)
+    tasks = re.findall(r'^\s*[-*]\s*\[.\]', content, re.MULTILINE)
     return len(tasks)
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-HelloAGENTS-RLM: Recursive Language Model
+HelloAGENTS-RLM: Role-based Language Model
 
 子代理编排与多终端协作模块。
 

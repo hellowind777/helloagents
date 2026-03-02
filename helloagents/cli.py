@@ -39,6 +39,9 @@ CODEX_NOTIFY_CMD = "helloagents --check-update --silent"
 # Fingerprint marker to identify HelloAGENTS-created files
 HELLOAGENTS_MARKER = "HELLOAGENTS_ROUTER:"
 
+# Marker for split rule files deployed to .claude/rules/helloagents/
+HELLOAGENTS_RULE_MARKER = "HELLOAGENTS_RULE"
+
 
 # ---------------------------------------------------------------------------
 # Locale & messaging
@@ -95,6 +98,15 @@ def is_helloagents_file(file_path: Path) -> bool:
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")[:1024]
         return HELLOAGENTS_MARKER in content
+    except Exception:
+        return False
+
+
+def is_helloagents_rule(file_path: Path) -> bool:
+    """Check if a file is a HelloAGENTS split rule file."""
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="ignore")[:256]
+        return HELLOAGENTS_RULE_MARKER in content
     except Exception:
         return False
 
@@ -383,6 +395,13 @@ def main() -> None:
     elif cmd == "update":
         switch = sys.argv[2] if len(sys.argv) >= 3 else None
         update(switch)
+    elif cmd == "_post_update":
+        # Internal command: runs Phase 2+3 in a new process after package update.
+        # Called by update() re-exec and Windows deferred path.
+        from .updater import _post_update_sync
+        branch = sys.argv[2] if len(sys.argv) >= 3 else None
+        total = int(sys.argv[3]) if len(sys.argv) >= 4 else None
+        _post_update_sync(branch, total)
     elif cmd == "clean":
         clean()
     elif cmd == "status":
