@@ -8,10 +8,10 @@
 
 **Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.3.3-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.4-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
-[![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
+[![Commands](https://img.shields.io/badge/commands-15-6366f1.svg)](./helloagents/functions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
@@ -495,9 +495,11 @@ On the first response of each session, the system silently checks for new versio
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.3)
-- helloagents/cli.py: installer entry
-- helloagents/functions: workflow commands (15)
+- pyproject.toml: package metadata (v2.3.4)
+- helloagents/cli.py: CLI entry point
+- helloagents/_common.py: shared constants and utilities
+- helloagents/core/: CLI management modules (install, uninstall, update, status)
+- helloagents/functions: command definitions (15)
 - helloagents/stages: design, develop
 - helloagents/services: knowledge, package, memory and support services
 - helloagents/rules: state, cache, tools, scaling, evaluation, sub-agent protocols
@@ -542,7 +544,15 @@ On the first response of each session, the system silently checks for new versio
 
 ## Version History
 
-### v2.3.3 (current)
+### v2.3.4 (current)
+
+- Split 3 oversized files (>450 lines) into 6 independent modules
+- Consolidated 9 CLI management scripts into core/ subpackage
+- Extracted shared constants and utilities into dedicated module, eliminating circular dependencies
+- Removed redundant backward-compatible re-exports
+- Elevated Codex CLI routing protocol priority to prevent system prompt override
+
+### v2.3.3
 
 - AGENTS.md slimmed from 1186 to ~700 lines (-41%), reducing risk of LLMs selectively ignoring rules
 - G4 evaluation details, G9/G10 sub-agent protocols extracted to on-demand module files via G7
