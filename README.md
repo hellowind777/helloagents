@@ -8,7 +8,7 @@
 
 **Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.3.2-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.3-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -495,7 +495,7 @@ On the first response of each session, the system silently checks for new versio
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.2)
+- pyproject.toml: package metadata (v2.3.3)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands (15)
 - helloagents/stages: design, develop
@@ -542,7 +542,7 @@ On the first response of each session, the system silently checks for new versio
 
 ## Version History
 
-### v2.3.2 (current)
+### v2.3.3 (current)
 
 - AGENTS.md slimmed from 1186 to ~700 lines (-41%), reducing risk of LLMs selectively ignoring rules
 - G4 evaluation details, G9/G10 sub-agent protocols extracted to on-demand module files via G7
