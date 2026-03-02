@@ -166,9 +166,10 @@ def update(switch_branch: str = None) -> None:
                 # Preemptive unlock failed or not Windows — last resort deferred
                 if sys.platform == "win32" and (
                         "WinError" in stderr or "helloagents.exe" in stderr):
+                    # Let the new code detect targets itself via _post_update
                     post = [[sys.executable, "-m", "helloagents.cli",
-                             "install", t] for t in pre_targets]
-                    all_post = (post or []) + [build_pip_cleanup_cmd()]
+                             "_post_update", branch]]
+                    all_post = post + [build_pip_cleanup_cmd()]
                     if _win_deferred_pip(pip_cmd, post_cmds=all_post):
                         print(_msg(
                             "  helloagents.exe 被当前进程锁定，"
@@ -191,7 +192,7 @@ def update(switch_branch: str = None) -> None:
     # Finish preemptive unlock: clean .bak on success, restore on failure
     win_finish_unlock(bak, updated)
 
-    # Clean up pip remnants created during upgrade
+    # Clean up pip remnants created during upgrade (pure file cleanup, safe with old code)
     _cleanup_pip_remnants()
 
     if not updated:
@@ -200,15 +201,55 @@ def update(switch_branch: str = None) -> None:
         print(f"    pip install --upgrade --no-cache-dir {pip_url}")
         return
 
-    # Update succeeded — clear stale update cache
+    # Re-exec: launch a NEW process for Phase 2+3 so that the freshly
+    # installed code on disk is what actually runs (cache write, target
+    # detection, sync).  This avoids stale in-memory code after branch switch.
+    env = os.environ.copy()
+    env["HELLOAGENTS_NO_UPDATE_CHECK"] = "1"
+    subprocess.run(
+        [sys.executable, "-m", "helloagents.cli",
+         "_post_update", branch, str(total_steps)],
+        env=env,
+    )
+    return
+
+
+# ---------------------------------------------------------------------------
+# _post_update_sync – Phase 2+3 entry point (runs in new process after update)
+# ---------------------------------------------------------------------------
+
+def _post_update_sync(branch: str | None = None,
+                      total_steps: int | None = None) -> None:
+    """Execute Phase 2+3 after a successful package update.
+
+    This function is designed to be called from a *new* process so that the
+    freshly-installed code on disk is what actually runs.  It covers:
+      - Writing the update cache with the new version
+      - Detecting currently installed targets (using new code)
+      - Syncing each target via ``helloagents install``
+      - Printing a summary
+    """
+    import subprocess
+
+    # Resolve branch if not provided
+    if not branch:
+        branch = _detect_channel()
+
+    # Write update cache with new version
     try:
         new_ver = get_version("helloagents")
     except Exception:
-        new_ver = local_ver
+        new_ver = "unknown"
     _write_update_cache(False, new_ver, new_ver, branch)
 
-    # ── Phase 2: Sync installed targets ──
+    # Detect targets using new code
     targets = _detect_installed_targets()
+
+    # Resolve total_steps if not provided
+    if total_steps is None:
+        total_steps = 3 if targets else 1
+
+    # ── Phase 2: Sync installed targets ──
     if targets:
         _header(_msg(
             f"步骤 2/{total_steps}: 同步已安装的 CLI 工具（共 {len(targets)} 个）",
