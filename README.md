@@ -249,6 +249,10 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 > - `[features]` `multi_agent = true` — must be enabled for sub-agent orchestration to work
 > - `[features]` `sqlite = true` — must be enabled for CSV batch orchestration (spawn_agents_on_csv)
 > - Collab sub-agent scheduling requires Codex CLI feature gate to be enabled
+>
+> 💡 **Best practices:**
+> - HelloAGENTS is optimized for Codex CLI — supports `high` and below reasoning effort levels. `xhigh` reasoning is **not supported** and may cause instruction-following issues
+> - Use the terminal/CLI version of Codex for the best experience. The VSCode extension updates lag behind the CLI — newer features (e.g., CSV batch orchestration, Collab multi-agent) may require waiting for the extension to catch up
 
 ### Claude Code example
 
