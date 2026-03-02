@@ -8,7 +8,7 @@
 
 **Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.3.0-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.1-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/workflow_commands-15-6366f1.svg)](./helloagents/functions)
@@ -349,7 +349,7 @@ Customize workflow behavior via `config.json` after installation. Only include k
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.0)
+- pyproject.toml: package metadata (v2.3.1)
 - helloagents/cli.py: installer entry
 - helloagents/functions: workflow commands
 - helloagents/stages: design, develop
@@ -553,7 +553,15 @@ On the first response of each session, the system silently checks for new versio
 
 ## Version History
 
-### v2.3.0 (current)
+### v2.3.1 (current)
+
+- AGENTS.md slimmed from 1186 to ~700 lines (-41%), reducing risk of LLMs selectively ignoring rules
+- G4 evaluation details, G9/G10 sub-agent protocols extracted to on-demand module files via G7
+- Sub-agent rule file (subagent.md) reduced from 26KB to 1.4KB (-94%)
+- Eliminated cross-module reference risks by inlining critical rules at usage sites
+- inject_context.py gains module-load signals to ensure rule recovery after context compaction
+
+### v2.3.0
 
 - Comprehensive cross-audit fix: unified role output format, normalized path references, code-doc consistency alignment
 - Quality verification loop (Ralph Loop): auto-verify after sub-agent completion, block and feedback on failure
@@ -577,18 +585,6 @@ On the first response of each session, the system silently checks for new versio
 - Streamlined execution paths with shorter stage chains and step-level on-demand module loading
 - Adjusted Codex CLI memory limit to 128 KiB to prevent rules file truncation
 - Improved recommendation option generation rules, proposal differentiation requirements, and evaluation scoring criteria
-
-### v2.2.14
-
-- DAG dependency scheduling for task execution (depends_on, topological sort, layer-by-layer parallel dispatch with failure propagation)
-- Graded retry and standardized sub-agent return format with scope verification
-- Sub-agent orchestration paradigm: four-step method, prompt template, behavior constraints (route-skip, output format)
-- Execution path hardening: explicit R1 upgrade triggers, DESIGN retry limits, DEVELOP entry/exit conditions
-- Workflow rule audit: terminology and format consistency, redundancy cleanup
-
-### v2.2.13
-
-- R3 design proposals default ≥3 parallel, parallel batch limit ≤6, explicit sub-agent count principle
 
 ## Contributing
 
