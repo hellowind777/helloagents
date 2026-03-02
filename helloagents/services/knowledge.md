@@ -33,10 +33,11 @@
 
 步骤2 - 旧目录名迁移:
   检测: 项目根目录是否存在 helloagents/（旧版目录名）
-  脚本: upgradewiki.py --migrate-root
+  脚本: upgrade_wiki.py --migrate-root
   status=migrated: 静默完成，输出: 提示（旧目录名已自动迁移至新目录名）
   status=conflict: 新旧目录同时存在 → 输出: 确认（让用户选择保留哪个）→ ⛔ END_TURN
   status=not_needed/not_found: 静默继续
+  status=error: 输出: 警告（迁移失败原因），按 not_found 继续
 
 步骤3 - 知识库版本检测:
   条件: {KB_ROOT}/ 存在
@@ -61,7 +62,7 @@
 
 ```yaml
 触发: ~init 命令
-流程: 检查 {KB_ROOT}/ → upgradewiki.py --init → kb_keeper 扫描填充 → 验证完整性
+流程: 检查 {KB_ROOT}/ → upgrade_wiki.py --init → kb_keeper 扫描填充 → 验证完整性
 返回: success, kb_path, files_created, errors
 保证: 知识库结构完整，文档反映项目实际状态
 ```
@@ -69,7 +70,7 @@
 ### sync(changes)
 
 ```yaml
-触发: develop 阶段代码变更后（步骤9）
+触发: develop 阶段代码变更后（步骤10）
 参数: changes { files, modules, type(add|modify|delete) }
 流程: 检查 KB_SKIPPED → synthesizer 一致性检查 → kb_keeper 同步 → 验证结果
 
@@ -163,27 +164,33 @@
 ## [X.Y.Z] - YYYY-MM-DD
 
 ### 新增
-- **[{模块名}]**: {变更描述}
+- **[{模块名}]**: {变更描述} — by {git_user_name}
   - 方案: [{YYYYMMDDHHMM}_{feature}](archive/{YYYY-MM}/{YYYYMMDDHHMM}_{feature}/)
   - 决策: {feature}#D001({决策摘要})
 
 ### 修复
-- **[{模块名}]**: {修复描述}
+- **[{模块名}]**: {修复描述} — by {git_user_name}
   - 方案: [{YYYYMMDDHHMM}_{fix}](archive/{YYYY-MM}/{YYYYMMDDHHMM}_{fix}/)
 
 ### 快速修改
-- **[{模块名}]**: {修改描述}
+- **[{模块名}]**: {修改描述} — by {git_user_name}
   - 类型: 快速修改（无方案包）
   - 文件: {文件路径}:{行号范围}
 
 ### 回滚
-- **[{模块名}]**: 回滚至 {版本/提交}
+- **[{模块名}]**: 回滚至 {版本/提交} — by {git_user_name}
   - 原因: {回滚原因}
 ```
 
 **DO:** 严格按格式模板更新，包含所有必填字段，方案包链接使用相对路径，决策ID格式正确
 
 **DO NOT:** 简化或省略格式，只写一行简单描述，省略方案包链接
+
+**作者信息获取规则:**
+```yaml
+作者信息: 执行 git config user.name 获取，失败时使用 "unknown"
+格式: " — by {name}" 追加在变更描述末尾
+```
 
 ### 记录规则
 

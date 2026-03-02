@@ -190,7 +190,7 @@ def _write_update_cache(has_update: bool, local_ver: str,
     from datetime import datetime, timezone, timedelta
     try:
         now = time.time()
-        if cache_ttl_hours:
+        if cache_ttl_hours is not None:
             expires_at = datetime.now(timezone.utc) + timedelta(hours=cache_ttl_hours)
         else:
             # Preserve existing expires_at from prior cache

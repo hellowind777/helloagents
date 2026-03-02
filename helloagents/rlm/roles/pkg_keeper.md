@@ -26,6 +26,7 @@
 3. **追溯完整**: 确保每个状态变更有记录
 4. **快照精准**: 进度快照必须简洁且信息完整
 5. **生命周期完整**: 管理从创建到归档的完整流程
+6. **语言一致**: 所有输出按主代理指定的 {OUTPUT_LANGUAGE} 输出
 
 ## 职责范围
 
@@ -75,7 +76,7 @@
 ### 4. 方案包归档（archive 接口）
 
 ```yaml
-触发: develop 阶段步骤13
+触发: develop 阶段步骤14
 输入: packagePath
 任务:
   - 验证方案包状态
@@ -93,7 +94,7 @@
 
 ## 任务状态符号
 
-`[ ]` 待执行 | `[√]` 已完成 | `[X]` 失败 | `[-]` 跳过 | `[?]` 待确认
+`[ ]` 待执行 | `[√]` 已完成 | `[X]` 失败 | `[-]` 已跳过 | `[?]` 待确认
 
 ## 进度快照格式
 
@@ -124,11 +125,16 @@
     "任务进度: X/N 完成"
   ],
   "changes_made": [
-    "plan/xxx/proposal.md: 已创建",
-    "plan/xxx/tasks.md: 任务2 → [√]"
+    {"file": "plan/xxx/proposal.md", "type": "create", "description": "已创建", "scope": "proposal.md"},
+    {"file": "plan/xxx/tasks.md", "type": "modify", "description": "任务2 → [√]", "scope": "任务状态更新"}
   ],
   "issues_found": [
-    "任务3 执行失败: {原因}"
+    {
+      "severity": "medium",
+      "description": "任务3 执行失败: {原因}",
+      "location": "plan/xxx/tasks.md",
+      "suggestion": "检查任务3的失败原因并重试"
+    }
   ],
   "recommendations": [
     "建议检查任务3的失败原因"

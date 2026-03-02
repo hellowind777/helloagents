@@ -37,10 +37,28 @@
           "description": {
             "type": "string",
             "description": "变更描述"
+          },
+          "scope": {
+            "type": "string",
+            "description": "变更范围（函数/类名，代码实现类子代理使用）"
           }
         }
       },
       "description": "文件变更记录"
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "lint_passed": {
+          "description": "lint 检查结果",
+          "enum": [true, false, "skipped"]
+        },
+        "tests_passed": {
+          "description": "测试检查结果",
+          "enum": [true, false, "skipped"]
+        }
+      },
+      "description": "质量验证结果（代码实现/测试编写类子代理使用，RLM 角色子代理可省略）"
     },
     "issues_found": {
       "type": "array",
@@ -83,7 +101,11 @@
     },
     "followup_context": {
       "type": "string",
-      "description": "后续跟进上下文（可选）"
+      "description": "后续跟进上下文（needs_followup=true 时使用）"
+    },
+    "progress_snapshot": {
+      "type": "string",
+      "description": "进度快照（pkg_keeper 角色使用，格式: 📊 进度快照 | 完成: X | 失败: Y | 跳过: Z | 总计: N）"
     },
     "metadata": {
       "type": "object",
@@ -145,7 +167,8 @@
         {
           "file": "src/api/routes.py",
           "type": "modify",
-          "description": "优化了数据库查询逻辑"
+          "description": "优化了数据库查询逻辑",
+          "scope": "query_users()"
         }
       ],
       "issues_found": [

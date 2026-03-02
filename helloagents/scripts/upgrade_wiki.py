@@ -7,18 +7,18 @@ HelloAGENTS 知识库工具（纯文件操作）
 内容分析由 AI 通过 ~upgradekb 命令执行。
 
 Usage:
-    python upgradewiki.py --scan [--path <base-path>]
-    python upgradewiki.py --init [--path <base-path>]
-    python upgradewiki.py --backup [--path <base-path>]
-    python upgradewiki.py --write <json-file> [--path <base-path>]
-    python upgradewiki.py --migrate-root [--path <base-path>]
+    python upgrade_wiki.py --scan [--path <base-path>]
+    python upgrade_wiki.py --init [--path <base-path>]
+    python upgrade_wiki.py --backup [--path <base-path>]
+    python upgrade_wiki.py --write <json-file> [--path <base-path>]
+    python upgrade_wiki.py --migrate-root [--path <base-path>]
 
 Examples:
-    python upgradewiki.py --scan                    # 扫描知识库目录，返回文件列表
-    python upgradewiki.py --init                    # 创建标准目录结构
-    python upgradewiki.py --backup                  # 备份现有知识库
-    python upgradewiki.py --write plan.json         # 按计划写入文件
-    python upgradewiki.py --migrate-root            # 检测并迁移旧目录名 helloagents/ → .helloagents/
+    python upgrade_wiki.py --scan                    # 扫描知识库目录，返回文件列表
+    python upgrade_wiki.py --init                    # 创建标准目录结构
+    python upgrade_wiki.py --backup                  # 备份现有知识库
+    python upgrade_wiki.py --write plan.json         # 按计划写入文件
+    python upgrade_wiki.py --migrate-root            # 检测并迁移旧目录名 helloagents/ → .helloagents/
 """
 
 import argparse
@@ -29,9 +29,12 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional
 
-# 确保能找到同目录下的 utils 模块
-sys.path.insert(0, str(Path(__file__).parent))
-from utils import get_workspace_path, setup_encoding, print_error, print_success, validate_base_path
+# 导入 utils 模块（优先直接导入，回退时添加脚本目录到路径）
+try:
+    from utils import get_workspace_path, setup_encoding, print_error, print_success, validate_base_path
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from utils import get_workspace_path, setup_encoding, print_error, print_success, validate_base_path
 
 # 旧版知识库目录名（v2.2.2 之前使用 helloagents/，v2.2.3 起改为 .helloagents/）
 LEGACY_WORKSPACE = "helloagents"
@@ -204,8 +207,35 @@ def write_files(workspace: Path, plan_file: Path) -> Dict:
 
     operations = plan.get("operations", [])
 
+    def _is_safe_path(p: str, ws: Path) -> bool:
+        """Validate that a relative path resolves within the workspace."""
+        try:
+            resolved = (ws / p).resolve()
+            return resolved.is_relative_to(ws.resolve())
+        except (ValueError, OSError):
+            return False
+
     for op in operations:
         action = op.get("action")
+
+        # Path traversal guard: validate all path parameters before execution
+        paths_to_check = []
+        if action in ("write", "delete", "mkdir"):
+            if "path" in op:
+                paths_to_check.append(op["path"])
+        elif action == "rename":
+            if "from" in op:
+                paths_to_check.append(op["from"])
+            if "to" in op:
+                paths_to_check.append(op["to"])
+
+        unsafe = [p for p in paths_to_check if not _is_safe_path(p, workspace)]
+        if unsafe:
+            result["errors"].append(
+                f"路径遍历拒绝 (path traversal blocked): {unsafe}")
+            result["success"] = False
+            continue
+
         try:
             if action == "write":
                 file_path = workspace / op["path"]
