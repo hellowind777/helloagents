@@ -395,6 +395,13 @@ def main() -> None:
     elif cmd == "update":
         switch = sys.argv[2] if len(sys.argv) >= 3 else None
         update(switch)
+    elif cmd == "_post_update":
+        # Internal command: runs Phase 2+3 in a new process after package update.
+        # Called by update() re-exec and Windows deferred path.
+        from .updater import _post_update_sync
+        branch = sys.argv[2] if len(sys.argv) >= 3 else None
+        total = int(sys.argv[3]) if len(sys.argv) >= 4 else None
+        _post_update_sync(branch, total)
     elif cmd == "clean":
         clean()
     elif cmd == "status":
