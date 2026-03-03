@@ -88,109 +88,108 @@ def _cleanup_codex_agents_dotted(content: str) -> tuple[str, bool]:
     return cleaned, changed
 
 
+def _ensure_agents_section(
+    content: str,
+    dotted_mt_val: int | None,
+    dotted_md_val: int | None,
+) -> tuple[str, bool, bool]:
+    """Ensure ``[agents]`` section has max_threads >= 64 and max_depth.
+
+    Returns (content, mt_changed, md_changed).
+    """
+    mt_changed = md_changed = False
+
+    if not re.search(r'^\[agents\]', content, re.MULTILINE):
+        first_sec = re.search(r'^\[[\w]', content, re.MULTILINE)
+        mt_val = max(dotted_mt_val or 0, 64)
+        md_val = dotted_md_val if dotted_md_val is not None else 1
+        block = f"[agents]\nmax_threads = {mt_val}\nmax_depth = {md_val}\n\n"
+        if first_sec:
+            content = content[:first_sec.start()] + block + content[first_sec.start():]
+        else:
+            content = content.rstrip() + "\n\n" + block
+        return content, True, True
+
+    # max_threads >= 64
+    mt_val = _get_agents_section_val(content, 'max_threads')
+    if mt_val is None:
+        val = max(dotted_mt_val or 0, 64)
+        sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+        content = content[:sec.end()] + f'\nmax_threads = {val}' + content[sec.end():]
+        mt_changed = True
+    elif mt_val < 64:
+        sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+        after = content[sec.end():]
+        new_after = re.sub(
+            r'^(max_threads\s*=\s*)\d+', r'\g<1>64',
+            after, count=1, flags=re.MULTILINE)
+        content = content[:sec.end()] + new_after
+        mt_changed = True
+
+    # max_depth (add if absent, don't overwrite)
+    md_val = _get_agents_section_val(content, 'max_depth')
+    if md_val is None:
+        val = dotted_md_val if dotted_md_val is not None else 1
+        sec = re.search(r'^\[agents\]', content, re.MULTILINE)
+        content = content[:sec.end()] + f'\nmax_depth = {val}' + content[sec.end():]
+        md_changed = True
+
+    return content, mt_changed, md_changed
+
+
+def _ensure_feature_sqlite(content: str) -> tuple[str, bool]:
+    """Ensure ``[features]`` section has ``sqlite = true``.
+
+    Returns (content, sqlite_added).
+    """
+    features_match = re.search(r'^\[features\]', content, re.MULTILINE)
+    if features_match:
+        after = content[features_match.end():]
+        next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
+        scope = after[:next_sec.start()] if next_sec else after
+        if re.search(r'^sqlite\s*=', scope, re.MULTILINE):
+            return content, False
+        # Insert before next section or at EOF
+        next_section = re.search(r'^\[[\w]', content[features_match.end():], re.MULTILINE)
+        pos = (features_match.end() + next_section.start()) if next_section else len(content)
+        content = content[:pos] + "sqlite = true\n" + content[pos:]
+        return content, True
+
+    content = content.rstrip() + "\n\n[features]\nsqlite = true\n"
+    return content, True
+
+
 def _configure_codex_csv_batch(dest_dir: Path) -> None:
     """Ensure config.toml has multi-agent settings for spawn_agents_on_csv.
 
-    Always uses ``[agents]`` section format.  Dotted keys
-    (``agents.max_threads``) are migrated into the section and removed
-    to prevent TOML duplicate-key errors.
-
-    - ``[agents]`` max_threads >= 64 (CSV batch orchestration)
-    - ``[agents]`` max_depth = 1 (prevent deep nesting)
-    - ``[features]`` sqlite = true (persistence)
+    - ``[agents]`` max_threads >= 64, max_depth = 1
+    - ``[features]`` sqlite = true
+    - Migrates dotted keys (``agents.max_threads``) into ``[agents]`` section
     """
     config_path = dest_dir / "config.toml"
     content = ""
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
     changed = False
-    mt_changed = False
-    md_changed = False
 
-    # ── Step 1: Harvest values from dotted keys before removing them ──
+    # Harvest dotted values before removing them
     dotted_mt = re.search(r'agents\.max_threads\s*=\s*(\d+)', content)
     dotted_md = re.search(r'agents\.max_depth\s*=\s*(\d+)', content)
     dotted_mt_val = int(dotted_mt.group(1)) if dotted_mt else None
     dotted_md_val = int(dotted_md.group(1)) if dotted_md else None
 
-    # ── Step 2: Remove all dotted agents.xxx keys ──
     content, did_clean = _cleanup_codex_agents_dotted(content)
     if did_clean:
         changed = True
 
-    # ── Step 3: Ensure [agents] section exists ──
-    if not re.search(r'^\[agents\]', content, re.MULTILINE):
-        # Insert [agents] section before the first existing [section]
-        first_sec = re.search(r'^\[[\w]', content, re.MULTILINE)
-        mt_val = max(dotted_mt_val or 0, 64)
-        md_val = dotted_md_val if dotted_md_val is not None else 1
-        section_block = f"[agents]\nmax_threads = {mt_val}\nmax_depth = {md_val}\n\n"
-        if first_sec:
-            content = content[:first_sec.start()] + section_block + content[first_sec.start():]
-        else:
-            content = content.rstrip() + "\n\n" + section_block
+    content, mt_changed, md_changed = _ensure_agents_section(
+        content, dotted_mt_val, dotted_md_val)
+    if mt_changed or md_changed:
         changed = True
-        mt_changed = True
-        md_changed = True
-    else:
-        # [agents] section exists — ensure keys are present with correct values
 
-        # max_threads >= 64
-        mt_val = _get_agents_section_val(content, 'max_threads')
-        if mt_val is None:
-            # Use migrated dotted value if available, otherwise default 64
-            val = max(dotted_mt_val or 0, 64)
-            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
-            content = content[:sec.end()] + f'\nmax_threads = {val}' + content[sec.end():]
-            changed = True
-            mt_changed = True
-        elif mt_val < 64:
-            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
-            after = content[sec.end():]
-            new_after = re.sub(
-                r'^(max_threads\s*=\s*)\d+', r'\g<1>64',
-                after, count=1, flags=re.MULTILINE)
-            content = content[:sec.end()] + new_after
-            changed = True
-            mt_changed = True
-
-        # max_depth (add if absent, don't overwrite)
-        md_val = _get_agents_section_val(content, 'max_depth')
-        if md_val is None:
-            val = dotted_md_val if dotted_md_val is not None else 1
-            sec = re.search(r'^\[agents\]', content, re.MULTILINE)
-            content = content[:sec.end()] + f'\nmax_depth = {val}' + content[sec.end():]
-            changed = True
-            md_changed = True
-
-    # --- [features] sqlite = true ---
-    sqlite_added = False
-    features_match = re.search(r'^\[features\]', content, re.MULTILINE)
-    if features_match:
-        # Scope search to [features] section only (until next section header)
-        after_features = content[features_match.end():]
-        next_sec_feat = re.search(r'^\[[\w]', after_features, re.MULTILINE)
-        features_scope = after_features[:next_sec_feat.start()] if next_sec_feat else after_features
-        sqlite_match = re.search(
-            r'^sqlite\s*=', features_scope, re.MULTILINE)
-        if not sqlite_match:
-            # Find end of [features] section (next TOML [section] header or EOF)
-            # Use ^\[[\w] to avoid matching TOML array values like ["..."]
-            next_section = re.search(
-                r'^\[[\w]', content[features_match.end():], re.MULTILINE)
-            if next_section:
-                pos = features_match.end() + next_section.start()
-            else:
-                pos = len(content)
-            insert = "sqlite = true\n"
-            content = content[:pos] + insert + content[pos:]
-            changed = True
-            sqlite_added = True
-    else:
-        # No [features] section — append one
-        content = content.rstrip() + "\n\n[features]\nsqlite = true\n"
+    content, sqlite_added = _ensure_feature_sqlite(content)
+    if sqlite_added:
         changed = True
-        sqlite_added = True
 
     if changed:
         config_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,6 @@
 """HelloAGENTS Claude Config - Claude Code settings.json configuration helpers."""
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -18,7 +19,6 @@ from .._common import (
 
 def _load_hooks_source() -> dict:
     """Load HelloAGENTS hooks definition from the package."""
-    import json
     hooks_file = get_helloagents_module_path() / "hooks" / "claude_code_hooks.json"
     if not hooks_file.exists():
         return {}
@@ -85,7 +85,6 @@ def _configure_claude_hooks(dest_dir: Path) -> None:
     - Resolves {SCRIPTS_DIR} placeholder to actual installed scripts path
     - Identifies our hooks by HOOKS_FINGERPRINT in description field
     """
-    import json
     settings_path = dest_dir / "settings.json"
 
     settings = {}
@@ -129,7 +128,6 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
 
     Returns True if any hooks were removed.
     """
-    import json
     settings_path = dest_dir / "settings.json"
     if not settings_path.exists():
         return False
@@ -220,7 +218,6 @@ def _configure_claude_permissions(dest_dir: Path) -> None:
     Merges into permissions.allow without duplicating or removing
     user-defined entries. Idempotent: re-running updates existing entries.
     """
-    import json
     settings_path = dest_dir / "settings.json"
 
     settings = {}
@@ -248,7 +245,6 @@ def _configure_claude_permissions(dest_dir: Path) -> None:
 
 def _remove_claude_permissions(dest_dir: Path) -> bool:
     """Remove HelloAGENTS tool permissions from Claude Code settings.json."""
-    import json
     settings_path = dest_dir / "settings.json"
     if not settings_path.exists():
         return False

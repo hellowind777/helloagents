@@ -5,6 +5,7 @@
 
 Usage:
     python migrate_package.py <package-name> [--path <base-path>] [--status <completed|skipped>]
+    python migrate_package.py --all [--path <base-path>] [--status <completed|skipped>]
 
 Examples:
     python migrate_package.py 202512191430_login

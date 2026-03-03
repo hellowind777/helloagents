@@ -107,6 +107,68 @@ def _remove_agent_files(dest_dir: Path) -> list[str]:
     return removed
 
 
+def _uninstall_claude_extras(dest_dir: Path) -> list[str]:
+    """Remove Claude Code specific items (agents, rules, hooks, permissions)."""
+    removed = []
+    try:
+        removed.extend(_remove_agent_files(dest_dir))
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除子代理定义时出错: {e}",
+                   f"  ⚠ Error removing agent definitions: {e}"))
+    try:
+        if _remove_claude_rules(dest_dir):
+            removed.append("rules/helloagents/ (split rules)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除拆分规则时出错: {e}",
+                   f"  ⚠ Error removing split rules: {e}"))
+    try:
+        if _remove_claude_hooks(dest_dir):
+            removed.append("hooks (settings.json)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 Hooks 时出错: {e}",
+                   f"  ⚠ Error removing hooks: {e}"))
+    try:
+        if _remove_claude_permissions(dest_dir):
+            removed.append("permissions (settings.json)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除工具权限时出错: {e}",
+                   f"  ⚠ Error removing tool permissions: {e}"))
+    return removed
+
+
+def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
+    """Remove Codex CLI specific items (notify, developer_instructions, dotted keys)."""
+    removed = []
+    try:
+        if _remove_codex_notify(dest_dir):
+            removed.append("notify hook (config.toml)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 notify hook 时出错: {e}",
+                   f"  ⚠ Error removing notify hook: {e}"))
+    try:
+        if _remove_codex_developer_instructions(dest_dir):
+            removed.append("developer_instructions (config.toml)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 developer_instructions 时出错: {e}",
+                   f"  ⚠ Error removing developer_instructions: {e}"))
+    try:
+        config_toml = dest_dir / "config.toml"
+        if config_toml.exists():
+            content = config_toml.read_text(encoding="utf-8")
+            cleaned, did_clean = _cleanup_codex_agents_dotted(content)
+            if did_clean:
+                config_toml.write_text(cleaned, encoding="utf-8")
+                print(_msg("  已清理 config.toml 中的 dotted agents.xxx 键",
+                           "  Cleaned dotted agents.xxx keys from config.toml"))
+    except Exception as e:
+        print(_msg(f"  ⚠ 清理 dotted agents 键时出错: {e}",
+                   f"  ⚠ Error cleaning dotted agents keys: {e}"))
+    print(_msg(
+        "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories 配置已保留（可能被其他工具使用）。",
+        "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories kept in config.toml (may be used by other tools)."))
+    return removed
+
+
 # ---------------------------------------------------------------------------
 # Uninstall
 # ---------------------------------------------------------------------------
@@ -200,66 +262,11 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
                        f"  ✗ Cannot remove {skills_dir} (may be locked by CLI)"))
             ok = False
 
-    # Remove agent definition files (Claude Code only)
+    # Target-specific cleanup
     if target == "claude":
-        try:
-            removed.extend(_remove_agent_files(dest_dir))
-        except Exception as e:
-            print(_msg(f"  ⚠ 移除子代理定义时出错: {e}",
-                       f"  ⚠ Error removing agent definitions: {e}"))
-
-    # Remove split rule files (Claude Code only)
-    if target == "claude":
-        try:
-            if _remove_claude_rules(dest_dir):
-                removed.append("rules/helloagents/ (split rules)")
-        except Exception as e:
-            print(_msg(f"  ⚠ 移除拆分规则时出错: {e}",
-                       f"  ⚠ Error removing split rules: {e}"))
-
-    # Remove hooks configuration
-    if target == "claude":
-        try:
-            if _remove_claude_hooks(dest_dir):
-                removed.append("hooks (settings.json)")
-        except Exception as e:
-            print(_msg(f"  ⚠ 移除 Hooks 时出错: {e}",
-                       f"  ⚠ Error removing hooks: {e}"))
-        try:
-            if _remove_claude_permissions(dest_dir):
-                removed.append("permissions (settings.json)")
-        except Exception as e:
-            print(_msg(f"  ⚠ 移除工具权限时出错: {e}",
-                       f"  ⚠ Error removing tool permissions: {e}"))
+        removed.extend(_uninstall_claude_extras(dest_dir))
     elif target == "codex":
-        try:
-            if _remove_codex_notify(dest_dir):
-                removed.append("notify hook (config.toml)")
-        except Exception as e:
-            print(_msg(f"  ⚠ 移除 notify hook 时出错: {e}",
-                       f"  ⚠ Error removing notify hook: {e}"))
-        try:
-            if _remove_codex_developer_instructions(dest_dir):
-                removed.append("developer_instructions (config.toml)")
-        except Exception as e:
-            print(_msg(f"  ⚠ 移除 developer_instructions 时出错: {e}",
-                       f"  ⚠ Error removing developer_instructions: {e}"))
-        # Clean up dotted agents.xxx keys (migrate to [agents] section format)
-        try:
-            config_toml = dest_dir / "config.toml"
-            if config_toml.exists():
-                content = config_toml.read_text(encoding="utf-8")
-                cleaned, did_clean = _cleanup_codex_agents_dotted(content)
-                if did_clean:
-                    config_toml.write_text(cleaned, encoding="utf-8")
-                    print(_msg("  已清理 config.toml 中的 dotted agents.xxx 键",
-                               "  Cleaned dotted agents.xxx keys from config.toml"))
-        except Exception as e:
-            print(_msg(f"  ⚠ 清理 dotted agents 键时出错: {e}",
-                       f"  ⚠ Error cleaning dotted agents keys: {e}"))
-        print(_msg(
-            "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite 配置已保留（可能被其他工具使用）。",
-            "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite kept in config.toml (may be used by other tools)."))
+        removed.extend(_uninstall_codex_extras(dest_dir))
 
     if removed:
         print(_msg(f"  已移除 {len(removed)} 个项目:",

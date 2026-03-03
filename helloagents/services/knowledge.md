@@ -29,7 +29,8 @@
 
 ```yaml
 步骤1 - 知识库开关检查:
-  KB_CREATE_MODE=0 且无 {KB_ROOT}/: KB_SKIPPED=true，跳过后续检查
+  KB_CREATE_MODE=0 且无 {KB_ROOT}/: KB_SKIPPED=true，跳过后续所有步骤
+  KB_CREATE_MODE=0 且有 {KB_ROOT}/: 允许读取已有知识库，但禁止创建新文件/目录
 
 步骤2 - 旧目录名迁移:
   检测: 项目根目录是否存在 helloagents/（旧版目录名）

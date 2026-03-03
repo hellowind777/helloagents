@@ -25,7 +25,7 @@ from .win_helpers import (
 # update command
 # ---------------------------------------------------------------------------
 
-def update(switch_branch: str = None) -> None:
+def update(switch_branch: str | None = None) -> None:
     """Update HelloAGENTS to the latest version, then auto-sync installed targets."""
     import subprocess
 
