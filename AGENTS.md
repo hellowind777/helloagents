@@ -55,7 +55,7 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 **配置覆盖（CRITICAL）:** 以上为默认值，会话启动时按优先级加载外置配置覆盖同名键:
 ```yaml
 优先级: {CWD}/.helloagents/config.json > ~/.helloagents/config.json > 以上默认值
-加载: 会话启动时静默读取（与 user/*.md 同批），文件不存在或读取失败→静默跳过，使用默认值
+加载: 按 G7 会话启动规则读取，不存在→静默跳过，使用默认值
 格式: {"CSV_BATCH_MAX": 0, "EVAL_MODE": 2}  # 仅列出需要覆盖的键
 作用域: ~/.helloagents/config.json = 全局（所有项目）| {CWD}/.helloagents/config.json = 当前项目
 合法键: OUTPUT_LANGUAGE, KB_CREATE_MODE, BILINGUAL_COMMIT, EVAL_MODE, UPDATE_CHECK, CSV_BATCH_MAX
@@ -83,24 +83,26 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 
 **写入策略:** 目录/文件不存在时自动创建；禁止在 {KB_ROOT}/ 外创建知识库文件；动态目录（archive/_index.md、archive/YYYY-MM/、modules/_index.md）在首次写入时创建
 
-**文件操作工具规则（CRITICAL）:**
+**工具选择规则（CRITICAL - 适用于所有操作）:**
 ```yaml
-优先级: 使用CLI内置工具进行文件操作；无内置工具时降级为 Shell 命令
-降级优先级: CLI内置工具 > CLI内置Shell工具 > 运行环境原生Shell命令
-Shell选择: Bash工具/Unix信号→Bash | Windows信号→PowerShell | 不明确→PowerShell
+优先级: CLI 内置工具 > CLI 的 Shell 工具；有内置工具可用时禁止使用 Shell 命令
+适用范围: 读取、写入、编辑、搜索、目录列表等所有操作，不仅限于文件操作
+降级条件: 仅当 CLI 无某操作的内置工具时允许降级为 Shell
+Shell 语言: 默认 Bash；仅在 CLI 的 Shell 工具不支持 Bash 时使用 PowerShell
+  Windows 注意: Claude Code/Codex/Gemini/Qwen 的 Shell 工具均运行 Bash
 ```
 
-**Shell 语法规范（CRITICAL）:**
+**Shell 语法规范（仅在降级使用 Shell 时适用）:**
 ```yaml
 通用规则（所有 Shell）:
   路径参数: 必须用引号包裹（防止空格、中文、特殊字符问题）
-  编码约束: Shell 命令涉及文件读写时指定 UTF8 编码（原生工具 Read/Write/Edit 自动处理编码，优先使用）
+  编码约束: Shell 命令涉及文件读写时指定 UTF8 编码（CLI 内置工具自动处理编码，优先使用）
   Python 脚本调用: 所有 python 调用必须加 -X utf8 → python -X utf8 '{脚本路径}' {参数}
   复杂命令: 多路径或多子命令时优先拆分为多次调用；确需单次执行时优先使用临时脚本文件（UTF-8）
 Bash 语法规范:
   路径参数: 双引号包裹 → cat "/path/to/中文文件.txt" | 变量引用: "${var}" 防止分词
   禁止: $env:VAR（→ $VAR）、反引号 `cmd`（→ $(cmd)）
-PowerShell 语法规范:
+PowerShell 语法规范（仅在 Bash 不可用时使用）:
   外部调用: 外层双引号 + 内层单引号 → powershell -Command "Get-Content -Raw -Encoding UTF8 'C:/路径/文件.md'"
   内部 cmdlet: 推荐单引号（无变量展开）| 多路径每个单引号，多子命令用 ; 分隔（PS 5.1 禁止 &&）
   路径含单引号: 双写（''）转义，或改用临时 .ps1 脚本 | 环境一致性: 使用原生 cmdlet，禁止混用 Unix 命令
@@ -166,10 +168,10 @@ PowerShell 语法规范:
 **⬆️ 更新提示生成规则（UPDATE_CHECK>0 时生效）:**
 
 1. 仅在本次会话的首次响应中执行一次，后续响应跳过
-2. 静默读取 `~/.helloagents/.update_cache`（JSON 文件）
-3. 文件存在且 `expires_at`（ISO 日期）晚于当前时间 → `has_update=true` 则用缓存中 `remote_version`、`local_version`、`branch` 填充 ⬆️ 模板显示，`has_update=false` 则跳过
+2. 检查 `~/.helloagents/.update_cache` 是否存在 [→ G7 会话启动]，不存在→跳到步骤4
+3. 文件存在→读取内容，`expires_at`（ISO 日期）晚于当前时间 → `has_update=true` 则用缓存中 `remote_version`、`local_version`、`branch` 填充 ⬆️ 模板显示，`has_update=false` 则跳过
 4. 文件不存在或 `expires_at` 已过期 → 静默执行 `helloagents version --force --cache-ttl {UPDATE_CHECK}`，输出含 `New version` → 提取该行显示为 ⬆️ 行，否则跳过
-5. 任何环节失败均静默跳过，不影响正常响应
+5. 任何环节失败均静默跳过，不影响正常响应（禁止输出错误信息）
 
 **状态图标:**
 
@@ -552,11 +554,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/, agents/, hooks/
 
 加载规则:
-  优先使用 CLI 内置文件读取工具直接读取
-  若当前 CLI 无独立文件读取工具则允许通过 Shell 静默读取（cat/type）
-  阻塞式完整读取: 必须等待文件完全加载后才能继续执行，不允许部分加载或跳过
+  工具选择: 优先 CLI 内置工具 [→ G1 工具选择规则]；无内置工具时降级为 Shell（cat）
+  可选文件: 先确认文件存在再读取，不存在→静默跳过；禁止对不存在的文件发起读取
+  必需文件: 直接读取，加载失败 → 输出错误并停止当前阶段（⛔ END_TURN）
+  阻塞式读取: 必须等待文件完全加载后才能继续执行，不允许部分加载或跳过
   Do NOT execute any step until loading is complete.
-  加载失败 → 输出错误并停止当前阶段执行（⛔ END_TURN），等待用户排查后重试，不降级执行
 标准缩写:
   "→ 状态重置": 按 G6 状态重置协议执行完整重置
   "→ 任务重置": 按 G6 状态重置协议执行任务重置
@@ -569,7 +571,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 触发条件 | 读取文件 |
 |----------|----------|
-| 会话启动 | ~/.helloagents/config.json, {CWD}/.helloagents/config.json, user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
+| 会话启动 | 先确认 ~/.helloagents/ 和 {CWD}/.helloagents/ 下文件存在性，仅读取存在的: config.json, .update_cache, user/*.md, sessions/（最近1-2个）— 不存在→跳过，不输出加载状态，config.json 键覆盖 G1 默认值 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md, services/knowledge.md（CHANGELOG更新时） |
 | R2/R3 进入方案设计（入口） | stages/design.md |
 | DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex）, rules/tools.md（project_stats.py 调用时） |
