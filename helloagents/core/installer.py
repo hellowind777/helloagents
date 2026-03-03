@@ -20,7 +20,11 @@ from .codex_config import (
 from .claude_config import (
     _configure_claude_hooks,
     _configure_claude_permissions,
+    _configure_claude_auto_memory,
     _deploy_claude_rules,
+)
+from .settings_hooks import (
+    _configure_gemini_hooks, _configure_qwen_hooks, _configure_grok_hooks,
 )
 from .win_helpers import win_safe_rmtree
 
@@ -265,6 +269,7 @@ def install(target: str) -> bool:
         "claude": [
             (_configure_claude_hooks,       "Hooks",       "Hooks"),
             (_configure_claude_permissions, "工具权限",    "tool permissions"),
+            (_configure_claude_auto_memory, "autoMemory",  "autoMemory"),
         ],
         "codex": [
             (_configure_codex_toml,                   "config.toml",              "config.toml"),
@@ -272,6 +277,15 @@ def install(target: str) -> bool:
             (_configure_codex_csv_batch,              "CSV 批处理",              "CSV batch"),
             (_configure_codex_developer_instructions, "developer_instructions",   "developer_instructions"),
             (_configure_codex_memories,               "[memories]",               "[memories]"),
+        ],
+        "gemini": [
+            (_configure_gemini_hooks, "Hooks", "Hooks"),
+        ],
+        "qwen": [
+            (_configure_qwen_hooks, "Hooks", "Hooks"),
+        ],
+        "grok": [
+            (_configure_grok_hooks, "Hooks", "Hooks"),
         ],
     }
     for fn, cn_label, en_label in _POST_INSTALL.get(target, []):

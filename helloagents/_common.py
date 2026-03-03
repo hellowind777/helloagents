@@ -41,6 +41,10 @@ AGENT_PREFIX = "ha-"
 HOOKS_FINGERPRINT = "HelloAGENTS"  # description field marker to identify our hooks
 CODEX_NOTIFY_CMD = "helloagents --check-update --silent"
 
+# Hooks JSON filenames for each CLI
+GEMINI_HOOKS_JSON = "gemini_hooks.json"
+GROK_HOOKS_JSON = "grok_hooks.json"
+
 # Fingerprint marker to identify HelloAGENTS-created files
 HELLOAGENTS_MARKER = "HELLOAGENTS_ROUTER:"
 
@@ -147,6 +151,49 @@ def get_skill_md_path() -> Path:
 def get_helloagents_module_path() -> Path:
     """Get the path to the helloagents module directory."""
     return Path(str(files("helloagents")))
+
+
+# ---------------------------------------------------------------------------
+# Shared hooks helpers (used by claude_config.py and settings_hooks.py)
+# ---------------------------------------------------------------------------
+
+def is_helloagents_hook(hook: dict) -> bool:
+    """Check if a hook entry belongs to HelloAGENTS (by description fingerprint).
+
+    Works with both flat hook objects and matcher-group objects.
+    """
+    if HOOKS_FINGERPRINT in hook.get("description", ""):
+        return True
+    inner = hook.get("hooks", [])
+    if isinstance(inner, list):
+        for h in inner:
+            if HOOKS_FINGERPRINT in h.get("description", ""):
+                return True
+    return False
+
+
+def resolve_hook_placeholders(hooks: dict, scripts_dir: str) -> dict:
+    """Replace placeholders in hook commands with actual values.
+
+    Resolves:
+    - {SCRIPTS_DIR} → actual installed scripts path
+    - python3 → platform-appropriate Python command (Windows: python)
+    """
+    win = sys.platform == "win32"
+
+    def _replace(obj):
+        if isinstance(obj, str):
+            obj = obj.replace("{SCRIPTS_DIR}", scripts_dir)
+            if win:
+                obj = obj.replace("python3 ", "python ")
+            return obj
+        if isinstance(obj, dict):
+            return {k: _replace(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_replace(item) for item in obj]
+        return obj
+
+    return _replace(hooks)
 
 
 # ---------------------------------------------------------------------------

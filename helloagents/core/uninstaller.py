@@ -15,6 +15,10 @@ from .codex_config import _cleanup_codex_agents_dotted, _remove_codex_notify
 from .codex_config import _remove_codex_developer_instructions
 from .claude_config import (
     _remove_claude_hooks, _remove_claude_permissions, _remove_claude_rules,
+    _remove_claude_auto_memory,
+)
+from .settings_hooks import (
+    _remove_gemini_hooks, _remove_qwen_hooks, _remove_grok_hooks,
 )
 from .win_helpers import (
     _cleanup_pip_remnants, _win_deferred_pip,
@@ -133,6 +137,48 @@ def _uninstall_claude_extras(dest_dir: Path) -> list[str]:
     except Exception as e:
         print(_msg(f"  ⚠ 移除工具权限时出错: {e}",
                    f"  ⚠ Error removing tool permissions: {e}"))
+    try:
+        if _remove_claude_auto_memory(dest_dir):
+            removed.append("autoMemory (settings.json)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 恢复 autoMemory 时出错: {e}",
+                   f"  ⚠ Error restoring autoMemory: {e}"))
+    return removed
+
+
+def _uninstall_gemini_extras(dest_dir: Path) -> list[str]:
+    """Remove Gemini CLI specific items (hooks)."""
+    removed = []
+    try:
+        if _remove_gemini_hooks(dest_dir):
+            removed.append("hooks (settings.json)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 Gemini Hooks 时出错: {e}",
+                   f"  ⚠ Error removing Gemini hooks: {e}"))
+    return removed
+
+
+def _uninstall_qwen_extras(dest_dir: Path) -> list[str]:
+    """Remove Qwen Code specific items (hooks)."""
+    removed = []
+    try:
+        if _remove_qwen_hooks(dest_dir):
+            removed.append("hooks (settings.json)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 Qwen Hooks 时出错: {e}",
+                   f"  ⚠ Error removing Qwen hooks: {e}"))
+    return removed
+
+
+def _uninstall_grok_extras(dest_dir: Path) -> list[str]:
+    """Remove Grok CLI specific items (hooks)."""
+    removed = []
+    try:
+        if _remove_grok_hooks(dest_dir):
+            removed.append("hooks (settings.json)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 Grok Hooks 时出错: {e}",
+                   f"  ⚠ Error removing Grok hooks: {e}"))
     return removed
 
 
@@ -267,6 +313,12 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
         removed.extend(_uninstall_claude_extras(dest_dir))
     elif target == "codex":
         removed.extend(_uninstall_codex_extras(dest_dir))
+    elif target == "gemini":
+        removed.extend(_uninstall_gemini_extras(dest_dir))
+    elif target == "qwen":
+        removed.extend(_uninstall_qwen_extras(dest_dir))
+    elif target == "grok":
+        removed.extend(_uninstall_grok_extras(dest_dir))
 
     if removed:
         print(_msg(f"  已移除 {len(removed)} 个项目:",

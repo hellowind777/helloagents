@@ -108,6 +108,61 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/pre_tool_guard.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 危险命令安全防护"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
+            "async": true,
+            "timeout": 10,
+            "description": "HelloAGENTS 会话结束最终清理"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/notify.py\"",
+            "async": true,
+            "timeout": 5,
+            "description": "HelloAGENTS 桌面通知"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/tool_failure_helper.py\"",
+            "async": true,
+            "timeout": 5,
+            "description": "HelloAGENTS 工具失败恢复建议"
+          }
+        ]
+      }
     ]
   }
 }

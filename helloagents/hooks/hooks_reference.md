@@ -6,7 +6,7 @@
 
 ## Claude Code Hooks 配置（.claude/settings.json）
 
-HelloAGENTS 预定义以下 Hook 配置供用户可选启用:
+HelloAGENTS 预定义以下 12 个 Hook 配置供用户可选启用:
 
 ```yaml
 SessionStart — 版本更新检查:
@@ -45,6 +45,29 @@ TeammateIdle — Agent Teams 空闲检测:
 PreCompact — 上下文压缩前快照:
   事件: PreCompact | 异步: async=false（必须在压缩前完成）
   动作: command hook，上下文压缩前自动保存进度快照到 cache.md
+
+PreToolUse — 危险命令安全防护:
+  事件: PreToolUse | 匹配: Bash
+  动作: command hook，检测 Bash 命令中的高危模式（rm -rf /、git push --force main 等），
+        匹配时返回 permissionDecision=deny 拦截执行
+  超时: 3s | 脚本: pre_tool_guard.py
+
+SessionEnd — 会话结束最终清理:
+  事件: SessionEnd | 异步: async=true
+  动作: command hook，会话彻底结束时执行 KB 同步 + 摘要写入 + 临时计数器文件清理
+  超时: 10s | 脚本: session_end.py（复用 Stop 脚本，通过 hookEventName 区分）
+
+Notification — 桌面通知:
+  事件: Notification | 匹配: idle_prompt
+  动作: command hook，Claude Code 等待用户输入时发送桌面通知
+        Windows: BurntToast / 降级 bell | macOS: osascript | Linux: notify-send / 降级 bell
+  超时: 5s | 异步: async=true | 脚本: notify.py
+
+PostToolUseFailure — 工具失败恢复建议:
+  事件: PostToolUseFailure | 匹配: 所有工具
+  动作: command hook，匹配已知错误模式（权限、文件未找到、编码、磁盘空间、冲突、模块缺失等），
+        注入 additionalContext 恢复建议
+  超时: 5s | 异步: async=true | 脚本: tool_failure_helper.py
 ```
 
 ---
@@ -94,6 +117,55 @@ sandbox_mode = "full"
 
 ---
 
+## Gemini CLI Hooks 配置（~/.gemini/settings.json）
+
+Gemini CLI 使用 settings.json 格式，Qwen Code 复用相同配置。
+
+```yaml
+SessionStart — 版本更新检查:
+  事件: SessionStart
+  动作: helloagents --check-update --silent
+  超时: 5s
+
+BeforeAgent — 上下文注入:
+  事件: BeforeAgent（等效 Claude Code UserPromptSubmit）
+  动作: inject_context.py，通过事件名映射注入规则强化上下文
+  超时: 3s
+
+AfterAgent — KB 同步 + 会话摘要:
+  事件: AfterAgent（等效 Claude Code Stop）
+  动作: session_end.py，触发 KB 同步和 L2 摘要写入
+  超时: 10s | 异步: async=true
+
+PreCompress — 压缩前进度快照:
+  事件: PreCompress（等效 Claude Code PreCompact）
+  动作: pre_compact.py，压缩前自动保存进度快照
+  超时: 10s | 异步: async=false
+```
+
+---
+
+## Grok CLI Hooks 配置（~/.grok/settings.json）
+
+```yaml
+UserPromptSubmit — 规则强化:
+  事件: UserPromptSubmit
+  动作: inject_context.py，注入规则强化上下文
+  超时: 3s
+
+PreToolUse — 危险命令安全防护:
+  事件: PreToolUse | 匹配: Bash
+  动作: pre_tool_guard.py，检测高危命令模式
+  超时: 3s
+
+PostToolUse — 进度快照:
+  事件: PostToolUse | 匹配: Write|Edit
+  动作: progress_snapshot.py，写操作计数+阈值快照
+  超时: 10s | 异步: async=true
+```
+
+---
+
 ## 预留扩展接口
 
 ```yaml
@@ -107,5 +179,5 @@ Codex CLI 持续发展中的能力:
   - 结构化输出 → spawn_agents_on_csv 的 output_schema 强制执行（规划中）
 
 迁移方式: 将 Claude Code settings.json 中的 hook 逻辑移植为
-Codex CLI config.toml 格式，核心脚本/命令可复用。
+各 CLI 的 settings.json/config.toml 格式，核心脚本/命令可复用。
 ```
