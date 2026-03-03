@@ -276,6 +276,10 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
                     shutil.copytree(user_backup, restore_dir)
                 print(_msg(f"  已保留用户偏好目录: {restore_dir}",
                            f"  Preserved user preferences: {restore_dir}"))
+        except Exception as e:
+            print(_msg(f"  ⚠ 移除插件目录时出错: {e}",
+                       f"  ⚠ Error removing plugin directory: {e}"))
+            ok = False
         finally:
             # Always clean up temp directory
             if user_backup and user_backup.parent.exists():
@@ -297,15 +301,20 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
     # Remove skills/helloagents/ directory (SKILL.md deployment)
     skills_dir = dest_dir / "skills" / "helloagents"
     if skills_dir.exists():
-        if win_safe_rmtree(skills_dir):
-            removed.append(str(skills_dir))
-            skills_parent = dest_dir / "skills"
-            if skills_parent.exists() and not any(skills_parent.iterdir()):
-                skills_parent.rmdir()
-                removed.append(f"{skills_parent} (empty parent)")
-        else:
-            print(_msg(f"  ✗ 无法移除 {skills_dir}（可能被 CLI 进程占用）",
-                       f"  ✗ Cannot remove {skills_dir} (may be locked by CLI)"))
+        try:
+            if win_safe_rmtree(skills_dir):
+                removed.append(str(skills_dir))
+                skills_parent = dest_dir / "skills"
+                if skills_parent.exists() and not any(skills_parent.iterdir()):
+                    skills_parent.rmdir()
+                    removed.append(f"{skills_parent} (empty parent)")
+            else:
+                print(_msg(f"  ✗ 无法移除 {skills_dir}（可能被 CLI 进程占用）",
+                           f"  ✗ Cannot remove {skills_dir} (may be locked by CLI)"))
+                ok = False
+        except Exception as e:
+            print(_msg(f"  ⚠ 移除 skills 目录时出错: {e}",
+                       f"  ⚠ Error removing skills directory: {e}"))
             ok = False
 
     # Target-specific cleanup
