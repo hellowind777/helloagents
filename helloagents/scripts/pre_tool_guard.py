@@ -69,10 +69,6 @@ def main():
     except (json.JSONDecodeError, ValueError):
         sys.exit(0)
 
-    tool_name = data.get("tool_name", "")
-    if tool_name != "Bash":
-        sys.exit(0)
-
     tool_input = data.get("tool_input", {})
     command = tool_input.get("command", "") if isinstance(tool_input, dict) else ""
     if not command:

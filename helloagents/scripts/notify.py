@@ -16,7 +16,6 @@ Linux: notify-send / 降级 terminal bell
 
 import sys
 import io
-import json
 import subprocess
 
 # Windows UTF-8 编码设置
@@ -48,7 +47,7 @@ def _notify_windows():
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
     # 降级: terminal bell
-    print("\a", end="", flush=True)
+    print("\a", end="", file=sys.stderr, flush=True)
 
 
 def _notify_macos():
@@ -60,7 +59,7 @@ def _notify_macos():
             capture_output=True, timeout=4,
         )
     except (FileNotFoundError, subprocess.TimeoutExpired):
-        print("\a", end="", flush=True)
+        print("\a", end="", file=sys.stderr, flush=True)
 
 
 def _notify_linux():
@@ -74,22 +73,15 @@ def _notify_linux():
             return
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
-    print("\a", end="", flush=True)
+    print("\a", end="", file=sys.stderr, flush=True)
 
 
 def main():
+    # 消费 stdin（避免 broken pipe），不需要解析内容
     try:
-        raw = sys.stdin.read()
-        if not raw.strip():
-            sys.exit(0)
-        data = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
-        sys.exit(0)
-
-    # 仅处理 idle_prompt 类型的通知
-    notification_type = data.get("type", "")
-    if notification_type and notification_type != "idle_prompt":
-        sys.exit(0)
+        sys.stdin.read()
+    except Exception:
+        pass
 
     if sys.platform == "win32":
         _notify_windows()

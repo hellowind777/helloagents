@@ -10,8 +10,9 @@ from .._common import (
     _msg, _header,
     CLI_TARGETS, PLUGIN_DIR_NAME,
     _detect_installed_targets,
+    is_helloagents_hook as _is_helloagents_hook,
 )
-from .claude_config import _is_helloagents_hook, _get_helloagents_permissions
+from .claude_config import _get_helloagents_permissions
 from .win_helpers import win_safe_rmtree
 
 
