@@ -81,7 +81,7 @@ def main():
     except (json.JSONDecodeError, ValueError):
         sys.exit(0)
 
-    tool_name = data.get("tool_name", "")
+    tool_name = data.get("tool_name", "") or "Unknown"
     error = data.get("error", "")
     if not error:
         sys.exit(0)

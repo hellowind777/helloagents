@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .._common import (
     _msg,
-    PLUGIN_DIR_NAME, HOOKS_FINGERPRINT,
+    PLUGIN_DIR_NAME,
     GEMINI_HOOKS_JSON, GROK_HOOKS_JSON,
     get_helloagents_module_path,
     is_helloagents_hook, resolve_hook_placeholders,
@@ -66,9 +66,14 @@ def _configure_settings_hooks(dest_dir: Path, hooks_json_name: str) -> None:
         existing_hooks[event] = event_hooks
 
     settings["hooks"] = existing_hooks
-    settings_path.write_text(
-        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8")
+    try:
+        settings_path.write_text(
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
+    except PermissionError:
+        print(_msg("  ⚠ 无法写入 settings.json（文件被占用，请关闭对应 CLI 后重试）",
+                   "  ⚠ Cannot write settings.json (file locked, close the CLI and retry)"))
+        return
 
     count = sum(len(v) for v in our_hooks.values())
     print(_msg(f"  已配置 {count} 个 Hooks ({settings_path.name})",

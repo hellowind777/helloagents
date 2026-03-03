@@ -373,7 +373,6 @@ def main():
     # 事件名映射: 其他 CLI 事件 → Claude Code 等效事件
     EVENT_MAP = {
         "BeforeAgent": "UserPromptSubmit",   # Gemini/Qwen → Claude 等效
-        "BeforeTool": "UserPromptSubmit",    # Grok → Claude 等效
     }
 
     event = data.get("hookEventName", "")
