@@ -1,6 +1,7 @@
 """HelloAGENTS Claude Config - Claude Code settings.json configuration helpers."""
 
 import re
+import sys
 from pathlib import Path
 
 from .._common import (
@@ -24,7 +25,9 @@ def _load_hooks_source() -> dict:
     try:
         data = json.loads(hooks_file.read_text(encoding="utf-8"))
         return data.get("hooks", {})
-    except Exception:
+    except Exception as e:
+        print(f"[HelloAGENTS] Warning: failed to parse hooks JSON: {e}",
+              file=sys.stderr)
         return {}
 
 

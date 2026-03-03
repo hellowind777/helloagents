@@ -34,6 +34,9 @@ CLI_TARGETS = {
 
 PLUGIN_DIR_NAME = "helloagents"
 
+# Agent definition files prefix (Claude Code only)
+AGENT_PREFIX = "ha-"
+
 # Hooks identification
 HOOKS_FINGERPRINT = "HelloAGENTS"  # description field marker to identify our hooks
 CODEX_NOTIFY_CMD = "helloagents --check-update --silent"

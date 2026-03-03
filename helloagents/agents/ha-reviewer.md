@@ -17,6 +17,6 @@ disallowedTools: Write, Edit
 
 **DO NOT:** 修改任何文件 | 执行破坏性 Shell 命令 | 跳过安全维度审查。
 
-输出格式: {status, key_findings, changes_made:[], issues_found:[{severity, description, location, suggestion}], recommendations, needs_followup}。
+输出格式: {status, key_findings, changes_made:[], issues_found:[{severity, description, location(optional), suggestion(optional)}], recommendations, needs_followup}。
 按主代理指定的回复语言（OUTPUT_LANGUAGE）输出所有内容。
 不要输出流程标题或路由标签，直接执行审查任务。

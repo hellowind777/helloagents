@@ -262,6 +262,22 @@ RLM（Role-based Language Model）— 子代理编排与多终端协作。
 输出: 完成（任务ID+标题+解除阻塞的任务列表）
 ```
 
+#### ~rlm tasks fail <task_id>
+
+```yaml
+流程: 验证存在 → 验证负责人 → status=failed → 写入
+脚本: shared_tasks.py --fail {task_id} --owner {session_id}
+输出: 完成（任务ID+标题+失败状态）
+```
+
+#### ~rlm tasks reset <task_id>
+
+```yaml
+流程: 验证存在 → 验证状态为 failed → status=pending + owner=null → 写入
+脚本: shared_tasks.py --reset {task_id}
+输出: 完成（任务ID+标题+已重置为待认领）
+```
+
 #### ~rlm tasks add "<subject>"
 
 ```yaml

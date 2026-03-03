@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .._common import (
     _msg,
-    CLI_TARGETS, PLUGIN_DIR_NAME, HELLOAGENTS_MARKER,
+    CLI_TARGETS, PLUGIN_DIR_NAME, HELLOAGENTS_MARKER, AGENT_PREFIX,
     is_helloagents_file,
     _detect_installed_targets, _detect_install_method,
 )
@@ -91,8 +91,6 @@ def _self_uninstall() -> bool:
 # Agent definition files (Claude Code only)
 # ---------------------------------------------------------------------------
 
-_AGENT_PREFIX = "ha-"  # HelloAGENTS agent files use this prefix
-
 
 def _remove_agent_files(dest_dir: Path) -> list[str]:
     """Remove HelloAGENTS agent definition files from ~/.claude/agents/."""
@@ -100,7 +98,7 @@ def _remove_agent_files(dest_dir: Path) -> list[str]:
     removed = []
     if not agents_dir.exists():
         return removed
-    for f in agents_dir.glob(f"{_AGENT_PREFIX}*.md"):
+    for f in agents_dir.glob(f"{AGENT_PREFIX}*.md"):
         f.unlink()
         removed.append(str(f))
     if agents_dir.exists() and not any(agents_dir.iterdir()):
