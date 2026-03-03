@@ -73,12 +73,15 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
     # --- Clean skills/helloagents/ directory (will be re-deployed fresh if needed) ---
     legacy_skills_dir = dest_dir / "skills" / "helloagents"
     if legacy_skills_dir.exists():
-        if win_safe_rmtree(legacy_skills_dir):
-            removed.append(f"{legacy_skills_dir} (stale)")
-            skills_parent = dest_dir / "skills"
-            if skills_parent.exists() and not any(skills_parent.iterdir()):
-                skills_parent.rmdir()
-                removed.append(f"{skills_parent} (empty parent)")
+        try:
+            if win_safe_rmtree(legacy_skills_dir):
+                removed.append(f"{legacy_skills_dir} (stale)")
+                skills_parent = dest_dir / "skills"
+                if skills_parent.exists() and not any(skills_parent.iterdir()):
+                    skills_parent.rmdir()
+                    removed.append(f"{skills_parent} (empty parent)")
+        except Exception:
+            pass
 
     # --- Current-version stale rules files ---
     # Only removes files confirmed to be HelloAGENTS-related (is_helloagents_file check).
@@ -89,8 +92,11 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
         stale_path = dest_dir / name
         if stale_path.exists() and stale_path.is_file():
             if is_helloagents_file(stale_path):
-                stale_path.unlink()
-                removed.append(str(stale_path))
+                try:
+                    stale_path.unlink()
+                    removed.append(str(stale_path))
+                except Exception:
+                    pass
 
     # --- __pycache__ under helloagents plugin dir ---
     plugin_dir = dest_dir / PLUGIN_DIR_NAME
@@ -110,9 +116,12 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
                     removed.append(f"{f} (stale rule)")
                 except Exception:
                     pass
-        if rules_ha_dir.exists() and not any(rules_ha_dir.iterdir()):
-            rules_ha_dir.rmdir()
-            removed.append(f"{rules_ha_dir} (empty)")
+        try:
+            if rules_ha_dir.exists() and not any(rules_ha_dir.iterdir()):
+                rules_ha_dir.rmdir()
+                removed.append(f"{rules_ha_dir} (empty)")
+        except Exception:
+            pass
 
     # --- Clean dotted agents.xxx keys in config.toml (Codex) ---
     config_toml = dest_dir / "config.toml"

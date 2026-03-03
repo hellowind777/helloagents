@@ -156,9 +156,14 @@ def _configure_claude_auto_memory(dest_dir: Path) -> None:
         return  # 已配置，幂等跳过
 
     settings["autoMemoryEnabled"] = False
-    settings_path.write_text(
-        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8")
+    try:
+        settings_path.write_text(
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
+    except PermissionError:
+        print(_msg("  ⚠ 无法写入 settings.json（文件被占用，请关闭 Claude Code 后重试）",
+                   "  ⚠ Cannot write settings.json (file locked, close Claude Code and retry)"))
+        return
     print(_msg("  已关闭 autoMemory (settings.json)",
                "  Disabled autoMemory (settings.json)"))
 
@@ -253,9 +258,14 @@ def _configure_claude_permissions(dest_dir: Path) -> None:
     allow[:] = [e for e in allow if e not in our_entries]
     allow.extend(our_entries)
 
-    settings_path.write_text(
-        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8")
+    try:
+        settings_path.write_text(
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
+    except PermissionError:
+        print(_msg("  ⚠ 无法写入 settings.json（文件被占用，请关闭 Claude Code 后重试）",
+                   "  ⚠ Cannot write settings.json (file locked, close Claude Code and retry)"))
+        return
     print(_msg(f"  已配置 {len(our_entries)} 条工具权限 (settings.json)",
                f"  Configured {len(our_entries)} tool permission(s) (settings.json)"))
 
