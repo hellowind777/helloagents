@@ -10,6 +10,8 @@ from .._common import (
     HOOKS_FINGERPRINT, PLUGIN_DIR_NAME,
     HELLOAGENTS_RULE_MARKER,
     get_helloagents_module_path,
+    is_helloagents_hook as _is_helloagents_hook_common,
+    resolve_hook_placeholders as _resolve_hook_placeholders_common,
 )
 
 
@@ -34,47 +36,17 @@ def _load_hooks_source() -> dict:
 def _is_helloagents_hook(hook: dict) -> bool:
     """Check if a hook entry belongs to HelloAGENTS (by description fingerprint).
 
-    Works with both flat hook objects and matcher-group objects.
-    A matcher group is ours if any hook inside its 'hooks' array has the fingerprint.
+    Delegates to shared implementation in _common.
     """
-    # Flat hook object (legacy or inner hook)
-    if HOOKS_FINGERPRINT in hook.get("description", ""):
-        return True
-    # Matcher group: check inner hooks array
-    inner = hook.get("hooks", [])
-    if isinstance(inner, list):
-        for h in inner:
-            if HOOKS_FINGERPRINT in h.get("description", ""):
-                return True
-    return False
+    return _is_helloagents_hook_common(hook)
 
 
 def _resolve_hook_placeholders(hooks: dict, scripts_dir: str) -> dict:
     """Replace placeholders in hook commands with actual values.
 
-    Resolves:
-    - {SCRIPTS_DIR} → actual installed scripts path
-    - python3 → platform-appropriate Python command (Windows: python)
-
-    Uses recursive dict/list traversal instead of JSON string replacement
-    to avoid issues with special characters in paths.
+    Delegates to shared implementation in _common.
     """
-    import sys
-    win = sys.platform == "win32"
-
-    def _replace(obj):
-        if isinstance(obj, str):
-            obj = obj.replace("{SCRIPTS_DIR}", scripts_dir)
-            if win:
-                obj = obj.replace("python3 ", "python ")
-            return obj
-        if isinstance(obj, dict):
-            return {k: _replace(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [_replace(item) for item in obj]
-        return obj
-
-    return _replace(hooks)
+    return _resolve_hook_placeholders_common(hooks, scripts_dir)
 
 
 def _configure_claude_hooks(dest_dir: Path) -> None:
@@ -172,6 +144,62 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
                    f"  Removed {removed_count} HelloAGENTS hook(s) ({settings_path.name})"))
         return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Auto-memory configuration
+# ---------------------------------------------------------------------------
+
+def _configure_claude_auto_memory(dest_dir: Path) -> None:
+    """在 settings.json 设置 autoMemoryEnabled: false，防止与 AGENTS.md 规则冲突。"""
+    settings_path = dest_dir / "settings.json"
+
+    settings = {}
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        except Exception:
+            print(_msg("  ⚠ settings.json 格式异常，跳过 autoMemory 配置",
+                       "  ⚠ settings.json malformed, skipping autoMemory config"))
+            return
+
+    if settings.get("autoMemoryEnabled") is False:
+        return  # 已配置，幂等跳过
+
+    settings["autoMemoryEnabled"] = False
+    settings_path.write_text(
+        json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+    print(_msg("  已关闭 autoMemory (settings.json)",
+               "  Disabled autoMemory (settings.json)"))
+
+
+def _remove_claude_auto_memory(dest_dir: Path) -> bool:
+    """卸载时删除 autoMemoryEnabled 键，恢复 Claude Code 默认行为。"""
+    settings_path = dest_dir / "settings.json"
+    if not settings_path.exists():
+        return False
+
+    try:
+        settings = json.loads(settings_path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+
+    if "autoMemoryEnabled" not in settings:
+        return False
+
+    del settings["autoMemoryEnabled"]
+    try:
+        settings_path.write_text(
+            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8")
+    except PermissionError:
+        print(_msg("  ⚠ 无法写入 settings.json（文件被占用）",
+                   "  ⚠ Cannot write settings.json (file locked)"))
+        return False
+    print(_msg("  已恢复 autoMemory 默认设置 (settings.json)",
+               "  Restored autoMemory default (settings.json)"))
+    return True
 
 
 # ---------------------------------------------------------------------------

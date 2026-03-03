@@ -358,7 +358,10 @@ def handle_subagent_start(cwd: str) -> dict:
 
 
 def main():
-    """主入口: 从 stdin 读取 hook 事件 JSON，按 hookEventName 分发处理。"""
+    """主入口: 从 stdin 读取 hook 事件 JSON，按 hookEventName 分发处理。
+
+    支持事件名映射，使 Gemini/Grok 等 CLI 的事件名映射到等效的 Claude Code 事件。
+    """
     try:
         raw = sys.stdin.read()
         if not raw.strip():
@@ -367,7 +370,14 @@ def main():
     except (json.JSONDecodeError, ValueError):
         sys.exit(0)
 
+    # 事件名映射: 其他 CLI 事件 → Claude Code 等效事件
+    EVENT_MAP = {
+        "BeforeAgent": "UserPromptSubmit",   # Gemini/Qwen → Claude 等效
+        "BeforeTool": "UserPromptSubmit",    # Grok → Claude 等效
+    }
+
     event = data.get("hookEventName", "")
+    event = EVENT_MAP.get(event, event)
     cwd = data.get("cwd", ".")
 
     if event == "UserPromptSubmit":
