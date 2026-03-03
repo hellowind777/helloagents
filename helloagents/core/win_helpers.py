@@ -3,6 +3,7 @@
 Leaf module: only depends on stdlib + _common._msg.
 """
 
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -62,7 +63,6 @@ def _cleanup_pip_remnants() -> None:
                     # Windows: try removing read-only attributes and retry
                     if sys.platform == "win32":
                         try:
-                            import os
                             import stat
                             for root, dirs, files in os.walk(remnant):
                                 for f in files:
@@ -257,7 +257,6 @@ def win_safe_rmtree(path: Path) -> bool:
             return False
 
     # Rename-aside: free the original path
-    import os
     import time
     suffix = f"{os.getpid()}.{int(time.time())}"
     aside = path.with_name(f"~{path.name}.old.{suffix}")
@@ -296,7 +295,6 @@ def _win_deferred_pip(pip_args: list[str],
 
     Returns True if the deferred command was scheduled successfully.
     """
-    import os
     import subprocess
     import tempfile
 

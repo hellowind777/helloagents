@@ -4,6 +4,7 @@
 HelloAGENTS-RLM Shared Tasks Manager
 多终端协作任务管理器 — 默认隔离，协作模式通过 hellotasks 环境变量启用。
 """
+from __future__ import annotations
 
 import json
 import os
@@ -20,7 +21,6 @@ except ImportError:  # Non-Windows
     msvcrt = None
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 
 # ==================== 跨平台文件锁 ====================
@@ -91,7 +91,7 @@ class SharedTasksManager:
     任务存储: {项目目录}/.helloagents/tasks/{list_id}.json
     """
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(self, project_root: Path | None = None):
         self.project_root = project_root or Path.cwd()
         self.tasks_dir = self.project_root / ".helloagents" / "tasks"
 
@@ -115,7 +115,7 @@ class SharedTasksManager:
 
     # ==================== 文件读写 ====================
 
-    def _read_tasks(self) -> Dict[str, Any]:
+    def _read_tasks(self) -> dict[str, Any]:
         """读取任务列表（带共享锁）"""
         if not self.is_collaborative:
             return {"tasks": []}
@@ -133,7 +133,7 @@ class SharedTasksManager:
             return {"list_id": self.list_id, "tasks": [],
                     "_error": "Failed to read tasks"}
 
-    def _write_tasks(self, data: Dict[str, Any]) -> bool:
+    def _write_tasks(self, data: dict[str, Any]) -> bool:
         """写入任务列表（带排他锁）"""
         if not self.is_collaborative:
             return False
@@ -163,9 +163,9 @@ class SharedTasksManager:
         self,
         subject: str,
         description: str = "",
-        blocks: Optional[List[str]] = None,
-        blocked_by: Optional[List[str]] = None,
-    ) -> Optional[str]:
+        blocks: list[str] | None = None,
+        blocked_by: list[str] | None = None,
+    ) -> str | None:
         """添加任务，返回任务 ID，失败返回 None"""
         if not self.is_collaborative:
             return None
@@ -223,8 +223,8 @@ class SharedTasksManager:
     def update_task(
         self,
         task_id: str,
-        status: Optional[str] = None,
-        owner: Optional[str] = None,
+        status: str | None = None,
+        owner: str | None = None,
     ) -> bool:
         """更新任务状态 (pending/in_progress/completed/failed)"""
         if not self.is_collaborative:
@@ -254,7 +254,7 @@ class SharedTasksManager:
             self._resolve_dependencies(data, task_id)
         return self._atomic_update(task_id, check, update)
 
-    def _resolve_dependencies(self, data: Dict[str, Any], completed_task_id: str):
+    def _resolve_dependencies(self, data: dict[str, Any], completed_task_id: str):
         """解除依赖：将 completed_task_id 从其他任务的 blocked_by 中移除"""
         for task in data["tasks"]:
             if completed_task_id in task.get("blocked_by", []):
@@ -289,7 +289,7 @@ class SharedTasksManager:
             task["owner"] = None
         return self._atomic_update(task_id, check, update)
 
-    def get_available_tasks(self) -> List[Dict[str, Any]]:
+    def get_available_tasks(self) -> list[dict[str, Any]]:
         """获取可认领的任务（无阻塞、未被认领）"""
         if not self.is_collaborative:
             return []
@@ -299,13 +299,13 @@ class SharedTasksManager:
                 and not t.get("owner")
                 and not t.get("blocked_by")]
 
-    def get_task_list(self) -> List[Dict[str, Any]]:
+    def get_task_list(self) -> list[dict[str, Any]]:
         """获取完整任务列表"""
         if not self.is_collaborative:
             return []
         return self._read_tasks().get("tasks", [])
 
-    def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+    def get_task(self, task_id: str) -> dict[str, Any] | None:
         """获取单个任务详情"""
         if not self.is_collaborative:
             return None
@@ -314,7 +314,7 @@ class SharedTasksManager:
 
     # ==================== 状态查询 ====================
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """获取任务列表状态"""
         if not self.is_collaborative:
             return {
@@ -345,14 +345,14 @@ class SharedTasksManager:
             "error": data.get("_error"),
         }
 
-    def refresh(self) -> List[Dict[str, Any]]:
+    def refresh(self) -> list[dict[str, Any]]:
         """强制刷新任务列表（从文件重新读取）"""
         return self.get_task_list()
 
 
 # ==================== 便捷函数 ====================
 
-def get_task_manager(project_root: Optional[str] = None) -> SharedTasksManager:
+def get_task_manager(project_root: str | None = None) -> SharedTasksManager:
     """获取任务管理器实例"""
     return SharedTasksManager(
         project_root=Path(project_root) if project_root else None

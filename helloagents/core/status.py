@@ -1,5 +1,6 @@
 """HelloAGENTS Status - Installation status display and cache cleaning."""
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -20,7 +21,6 @@ from .win_helpers import win_safe_rmtree
 
 def _show_config_status() -> None:
     """Display config.json override status."""
-    import json
     global_cfg = Path.home() / ".helloagents" / "config.json"
     project_cfg = Path.cwd() / ".helloagents" / "config.json"
 
@@ -43,7 +43,6 @@ def _show_config_status() -> None:
 def _show_claude_cli_details(cli_dir: Path) -> None:
     """Show Claude Code specific status details (hooks + agent definitions)."""
     try:
-        import json
         sp = cli_dir / "settings.json"
         if sp.exists():
             st = json.loads(sp.read_text(encoding="utf-8"))
@@ -82,8 +81,7 @@ def _show_claude_cli_details(cli_dir: Path) -> None:
     try:
         sp = cli_dir / "settings.json"
         if sp.exists():
-            import json as _json
-            _st = _json.loads(sp.read_text(encoding="utf-8"))
+            _st = json.loads(sp.read_text(encoding="utf-8"))
             allow = _st.get("permissions", {}).get("allow", [])
             our_perms = _get_helloagents_permissions(cli_dir)
             found = sum(1 for p in our_perms if p in allow)
