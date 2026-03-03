@@ -71,6 +71,8 @@
   L0: 移除目标条目或清空文件
 用户取消: 不做操作 → 状态重置
 
+Codex CLI 补充: 如需清理 Codex 内置记忆（独立于 HelloAGENTS L0/L1/L2），运行 codex debug clear-memories
+
 输出: 完成（已清理数量 + 剩余数量）
 → 状态重置
 ```

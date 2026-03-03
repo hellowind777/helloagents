@@ -274,6 +274,36 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
                "  Configured developer_instructions (HelloAGENTS routing protocol)"))
 
 
+def _configure_codex_memories(dest_dir: Path) -> None:
+    """Ensure config.toml has [memories] section with sensible defaults.
+
+    Codex two-phase memory pipeline:
+    - Phase 1: per-rollout extraction
+    - Phase 2: global consolidation with diff-based forgetting
+
+    HelloAGENTS L0/L1/L2 layers complement (not replace) Codex Memory.
+    """
+    config_path = dest_dir / "config.toml"
+    content = ""
+    if config_path.exists():
+        content = config_path.read_text(encoding="utf-8")
+
+    if re.search(r'^\[memories\]', content, re.MULTILINE):
+        return  # User already has [memories] configured — don't touch
+
+    section = (
+        "[memories]\n"
+        "# HelloAGENTS L0/L1/L2 layers complement Codex Memory\n"
+        "# enabled = true (default)\n"
+    )
+    content = content.rstrip() + "\n\n" + section
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(content, encoding="utf-8")
+    print(_msg("  已配置 [memories] 节（Codex 记忆系统默认值）",
+               "  Configured [memories] section (Codex memory defaults)"))
+
+
 def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
     """Remove HelloAGENTS developer_instructions from config.toml.
 
