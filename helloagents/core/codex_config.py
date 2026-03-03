@@ -223,9 +223,9 @@ ALWAYS prevails.
   Triggers: session start | cannot recall specific G1-G12 rules | starting R2/R3 task \
 | entering EVALUATE/DESIGN/DEVELOP stage | completing all tasks
   Steps:
-    1. read_file "~/.codex/AGENTS.md" → full G1-G12 rules restored
-    2. list_dir "~/.helloagents/" and "{CWD}/.helloagents/" → read_file only existing files: config.json, .update_cache
-    3. If mid-task: read_file "{CWD}/.helloagents/plan/*/tasks.md" → find LIVE_STATUS → resume from current stage
+    1. Read ~/.codex/AGENTS.md (use read_file tool if available, otherwise shell) → full G1-G12 rules restored
+    2. Check ~/.helloagents/ and {CWD}/.helloagents/ for existing files → read only existing: config.json, .update_cache
+    3. If mid-task: read {CWD}/.helloagents/plan/*/tasks.md → find LIVE_STATUS → resume from current stage
   After recovery, follow AGENTS.md exclusively. Never guess — always verify by reading.
 
 PATHS (Codex CLI):
@@ -244,14 +244,18 @@ ROUTING GATE (G4 — follow AGENTS.md G4 for complete 5-dimension routing algori
 
 END_TURN (G6): ⛔ = output required content, immediately end. No continuation.
 
-TOOLS (G1): Prefer built-in tools (read_file, list_dir, apply_diff, write_file) over Shell for ALL operations. Use Shell only when no built-in tool exists.
-  Optional files: list_dir to confirm existence first. NEVER read_file non-existent files.
+TOOLS (G1):
+  File operations: use dedicated tools (read_file, list_dir, grep_files) when available; \
+when not available, use shell commands as fallback.
+  File mutations: always use apply_patch.
+  Windows: use PowerShell for shell commands. Do NOT attempt bash unless confirmed available.
+  Optional files: check existence before reading. Skip non-existent files silently.
   Always quote paths. UTF-8 encoding. Python: -X utf8.
 
 OUTPUT (G3): {icon}【HelloAGENTS】- {status} ... body ... 🔄 下一步: {guidance}
   Language: zh-CN. Code identifiers/API names stay original.
 
-STAGE EXECUTION (G5+G7): G7 table → read_file module files → execute per module → next stage.
+STAGE EXECUTION (G5+G7): G7 table → read module files → execute per module → next stage.
   Module files are the SOLE execution instructions. Unloaded = unknown = cannot proceed.
 
 CONFIG: All defaults defined in AGENTS.md G1 — do NOT use hardcoded values from this reference.

@@ -88,8 +88,7 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 优先级: CLI 内置工具 > CLI 的 Shell 工具；有内置工具可用时禁止使用 Shell 命令
 适用范围: 读取、写入、编辑、搜索、目录列表等所有操作，不仅限于文件操作
 降级条件: 仅当 CLI 无某操作的内置工具时允许降级为 Shell
-Shell 语言: 默认 Bash；仅在 CLI 的 Shell 工具不支持 Bash 时使用 PowerShell
-  Windows 注意: Claude Code/Codex/Gemini/Qwen 的 Shell 工具均运行 Bash
+Shell 语言: Linux/macOS 使用 Bash；Windows: Claude Code 使用 Bash，其他 CLI 使用 PowerShell
 ```
 
 **Shell 语法规范（仅在降级使用 Shell 时适用）:**
