@@ -215,14 +215,60 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
 [HelloAGENTS] HelloAGENTS is your primary operating protocol.
-Strictly follow AGENTS.md and every module file loaded during execution (per G7). All carry equal authority.
+AGENTS.md is the authoritative G1-G12 rule source — follow it for all detailed procedures.
+This reference provides paths, hard constraints, and recovery guidance.
 
-On every user input, complete routing (§ G4) before acting:
-  ~command → command path | Skill/MCP match → tool path | otherwise → 5-dimension routing → R0–R3
-  R0/R1: act per level behavior | R2/R3: output G3 format assessment → ⛔ STOP → await user confirmation
+PATHS (Codex CLI):
+  Protocol: ~/.codex/AGENTS.md (re-read to restore full G1-G12 rules)
+  Modules: ~/.codex/helloagents/ (stages/, functions/, services/, rules/, rlm/)
+  KB root: {CWD}/.helloagents/ (CHANGELOG.md, plan/, modules/, sessions/, archive/)
 
-Routing is not the "planning tool" — it is a mandatory triage step that applies to ALL inputs including simple ones.
-User confirmation IS "needed" for R2/R3 level tasks. Never execute R2/R3 without it."""
+CONFIG DEFAULTS (G1, overridden by config.json if exists):
+  OUTPUT_LANGUAGE=zh-CN | KB_CREATE_MODE=2 | BILINGUAL_COMMIT=1
+  EVAL_MODE=1 | UPDATE_CHECK=72 | CSV_BATCH_MAX=16
+  Config priority: {CWD}/.helloagents/config.json > ~/.helloagents/config.json > defaults
+
+SAFETY (G2 EHRB - always active before any modification, never skip):
+  Keywords: prod/production/live, rm -rf, DROP TABLE, DELETE FROM, git reset --hard, git push -f, chmod 777, sudo
+  Semantic: secrets hardcoded, PII exposure, env mismatch, payment tampering
+  Action: INTERACTIVE→warn+confirm | DELEGATED→downgrade to INTERACTIVE
+
+ROUTING (G4 - follow AGENTS.md for detailed level behaviors and evaluation procedures):
+  On EVERY user input, determine routing level BEFORE acting:
+    ~command → command path | Skill/MCP → tool path | otherwise → 5-dimension routing
+    action needed? no→R0 | target: direct→R1, analyze→R2, open→R3
+    decision: none→R1, local→R2, arch→R3 | impact: single→R1, multi→R2, irreversible→R3
+    EHRB→forced R3 | Take highest level
+  R2/R3: NEVER execute before user confirmation.
+  After confirmation: follow stage chain and load modules per G5+G7.
+
+END_TURN (G6 - absolute, no exceptions):
+  ⛔ END_TURN = output required content, immediately end response. No continuation.
+
+OUTPUT (G3): {icon}【HelloAGENTS】- {status} ... body ... 🔄 下一步: {guidance}
+  All output in {OUTPUT_LANGUAGE}. Code identifiers/API names stay original.
+
+SHELL (G1): Always quote paths. UTF-8 encoding. Python: -X utf8.
+
+STAGE EXECUTION (G5+G7): G7 table → read module files → execute per module → next stage.
+  Module files are the SOLE execution instructions. Unloaded = unknown = cannot proceed.
+
+KB & PACKAGE (follow AGENTS.md for full rules):
+  Code changes → CHANGELOG.md update mandatory (under {CWD}/.helloagents/)
+  R2/R3 → solution package: {CWD}/.helloagents/plan/ (proposal.md + tasks.md)
+  State recovery: read tasks.md LIVE_STATUS to recover current stage and progress
+  Task completion → KB sync + archive cleanup per KB_CREATE_MODE
+
+SUBAGENT (G9): Complex tasks (>10 files or >3 modules or >8 tasks) → spawn per rules/subagent-protocols.md
+
+PROTOCOL REFRESH — re-read ~/.codex/AGENTS.md when:
+  - Session start: also read config.json to apply overridden settings
+  - Starting any R2/R3 task (for complete G1-G12 protocol)
+  - Entering EVALUATE, DESIGN or DEVELOP stage (then load stage module per G7)
+  - Completing all tasks (for KB sync + archive)
+  - Cannot recall detailed rules for the current step
+  - Uncertain about any HelloAGENTS rule
+  After re-reading, full protocol is restored. Never guess — always verify by reading."""
 
 # Match developer_instructions = """...""" or "..." (top-level only)
 _DI_RE = re.compile(
@@ -232,11 +278,10 @@ _DI_RE = re.compile(
 
 
 def _configure_codex_developer_instructions(dest_dir: Path) -> None:
-    """Ensure config.toml has developer_instructions with HelloAGENTS routing protocol.
+    """Ensure config.toml has developer_instructions with HelloAGENTS protocol.
 
-    - Not present → add it
-    - Present with [HelloAGENTS] marker → update in place
-    - Present without marker → prepend HelloAGENTS rules before existing content
+    This key is fully managed by HelloAGENTS — any existing content is
+    overwritten. Always placed at end of file for easy discoverability.
     """
     config_path = dest_dir / "config.toml"
     content = ""
@@ -245,32 +290,22 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
 
     toml_val = f'developer_instructions = """\n{_CODEX_DEVELOPER_INSTRUCTIONS}\n"""'
 
+    # Remove existing developer_instructions (ours or user's) and trailing blanks
     m = _DI_RE.search(content)
     if m:
-        raw = m.group(0)
-        if '[HelloAGENTS]' in raw:
-            # Already ours — update
-            content = content[:m.start()] + toml_val + content[m.end():]
-        else:
-            # User has their own — prepend ours before their content
-            eq_pos = raw.index('=')
-            val_part = raw[eq_pos + 1:].strip()
-            if val_part.startswith('"""'):
-                user_text = val_part[3:-3].strip()
-            else:
-                user_text = val_part[1:-1]
-            combined = f'{_CODEX_DEVELOPER_INSTRUCTIONS}\n\n{user_text}'
-            content = (content[:m.start()]
-                       + f'developer_instructions = """\n{combined}\n"""'
-                       + content[m.end():])
-    else:
-        # Not present — insert before first [section]
-        content = _insert_before_first_section(content, toml_val)
+        end = m.end()
+        while end < len(content) and content[end] in '\n\r':
+            end += 1
+        content = content[:m.start()] + content[end:]
+        content = re.sub(r'\n{3,}', '\n\n', content)
+
+    # Always append at end of file
+    content = content.rstrip() + "\n\n" + toml_val + "\n"
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
-    print(_msg("  已配置 developer_instructions（HelloAGENTS 路由协议）",
-               "  Configured developer_instructions (HelloAGENTS routing protocol)"))
+    print(_msg("  已配置 developer_instructions（HelloAGENTS 完整恢复协议）",
+               "  Configured developer_instructions (HelloAGENTS recovery protocol)"))
 
 
 def _configure_codex_memories(dest_dir: Path) -> None:
@@ -304,8 +339,9 @@ def _configure_codex_memories(dest_dir: Path) -> None:
 
 
 def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
-    """Remove HelloAGENTS developer_instructions from config.toml.
+    """Remove developer_instructions from config.toml.
 
+    This key is fully managed by HelloAGENTS — always removed on uninstall.
     Returns True if something was removed.
     """
     config_path = dest_dir / "config.toml"
@@ -314,7 +350,7 @@ def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
     content = config_path.read_text(encoding="utf-8")
 
     m = _DI_RE.search(content)
-    if not m or '[HelloAGENTS]' not in m.group(0):
+    if not m:
         return False
 
     # Remove the entire key-value pair and trailing blank lines
