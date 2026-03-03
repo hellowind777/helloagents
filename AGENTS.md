@@ -41,7 +41,7 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 |------|---|------|
 | KB_CREATE_MODE | 0 | KB_SKIPPED=true，跳过所有知识库操作（已有 {KB_ROOT}/ 时仍更新 CHANGELOG） |
 | KB_CREATE_MODE | 1 | 知识库不存在时提示"建议执行 ~init" |
-| KB_CREATE_MODE | 2 | 代码结构变更时自动创建/更新，其余同模式1 |
+| KB_CREATE_MODE | 2 | 编程任务时自动创建/更新，其余同模式1。编程任务=请求涉及代码创建/修改/删除/重构/测试编写；非编程=纯文档/设计/分析/翻译等不产生代码变更的任务 |
 | KB_CREATE_MODE | 3 | 始终自动创建 |
 | EVAL_MODE | 1 | 渐进式追问（默认）：每轮追问1个最低分维度问题，最多5轮 |
 | EVAL_MODE | 2 | 一次性追问：一次性展示所有低分维度问题，用户回答后重新评分，最多3轮 |
@@ -118,7 +118,7 @@ PowerShell 语法规范:
 
 ---
 
-## G2 | 安全规则
+## G2 | 安全规则（CRITICAL）
 
 ### EHRB 检测规则（CRITICAL - 始终生效）
 
@@ -181,6 +181,14 @@ PowerShell 语法规范:
 | 警告 | ⚠️ | 错误 | ❌ |
 | 信息 | ℹ️ | 取消 | 🚫 |
 | 外部工具 | 🔧 | | |
+
+**严重度标记映射（工作流 ↔ 报告）:**
+
+| 工作流（不确定性处理表） | 报告输出（~review / ~validatekb） |
+|------------------------|-------------------------------|
+| ⛔ 阻断性 | Critical |
+| ⚠️ 警告性 | Warning |
+| ℹ️ 信息性 | Info |
 
 **图标输出约束（CRITICAL）:** Icons MUST be output as emoji symbols per the table above. Never replace icons with words.
 
@@ -301,6 +309,7 @@ Prohibitions (CRITICAL):
       - 涉及设计决策或技术选型（非单纯代码修改）
       - 影响范围扩展到其他模块（跨模块影响）
       - EHRB 检测到风险
+      升级时已执行变更保留，从 DESIGN 阶段开始，Phase1 上下文收集须包含已执行变更
     R2→R3 升级判定: 执行中发现以下任一情况 → 升级为 R3:
       - 架构级重构（需重新设计模块边界或数据流）
       - 影响范围扩展到 >3 个模块或涉及核心模块

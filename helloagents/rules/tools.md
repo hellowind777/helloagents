@@ -54,7 +54,7 @@ session.py:
   说明: RLM Session 管理（位于 rlm/ 目录，非 scripts/）；--new 创建新 Session，--id 指定 Session ID
 
 shared_tasks.py:
-  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/shared_tasks.py' --status|--list|--available|--claim <id> --owner <sid>|--complete <id>|--add '<subject>' [--blocked-by <ids>]
+  用法: python -X utf8 '{HELLOAGENTS_ROOT}/rlm/shared_tasks.py' --status|--list|--available|--claim <id> --owner <sid>|--complete <id>|--fail <id> --owner <sid>|--reset <id>|--add '<subject>' [--blocked-by <ids>]
   说明: 多终端协作任务管理，需 hellotasks 环境变量（位于 rlm/ 目录，非 scripts/）
 
 内部工具模块（被其他脚本 import，不由 AI 直接调用）:

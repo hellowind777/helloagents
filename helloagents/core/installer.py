@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .._common import (
     _msg,
-    CLI_TARGETS, PLUGIN_DIR_NAME,
+    CLI_TARGETS, PLUGIN_DIR_NAME, AGENT_PREFIX,
     is_helloagents_file, is_helloagents_rule, backup_user_file,
     get_agents_md_path, get_skill_md_path, get_helloagents_module_path,
     detect_installed_clis,
@@ -28,7 +28,6 @@ from .win_helpers import win_safe_rmtree
 # Agent definition files (Claude Code only)
 # ---------------------------------------------------------------------------
 
-_AGENT_PREFIX = "ha-"  # HelloAGENTS agent files use this prefix
 
 
 def _deploy_agent_files(dest_dir: Path) -> None:
@@ -39,7 +38,7 @@ def _deploy_agent_files(dest_dir: Path) -> None:
     agents_dest = dest_dir / "agents"
     agents_dest.mkdir(parents=True, exist_ok=True)
     count = 0
-    for src_file in agents_src.glob(f"{_AGENT_PREFIX}*.md"):
+    for src_file in agents_src.glob(f"{AGENT_PREFIX}*.md"):
         shutil.copy2(src_file, agents_dest / src_file.name)
         count += 1
     if count:
@@ -261,38 +260,26 @@ def install(target: str) -> bool:
                    "  ℹ Custom settings can be saved to ~/.helloagents/config.json (preserved across updates)."))
 
     # Target-specific post-install: hooks & config
-    if target == "claude":
+    _POST_INSTALL = {
+        "claude": [
+            (_configure_claude_hooks,       "Hooks",       "Hooks"),
+            (_configure_claude_permissions, "工具权限",    "tool permissions"),
+        ],
+        "codex": [
+            (_configure_codex_toml,                   "config.toml",              "config.toml"),
+            (_configure_codex_notify,                 "notify hook",              "notify hook"),
+            (_configure_codex_csv_batch,              "CSV 批处理",              "CSV batch"),
+            (_configure_codex_developer_instructions, "developer_instructions",   "developer_instructions"),
+        ],
+    }
+    for fn, cn_label, en_label in _POST_INSTALL.get(target, []):
         try:
-            _configure_claude_hooks(dest_dir)
+            fn(dest_dir)
         except Exception as e:
-            print(_msg(f"  ⚠ 配置 Hooks 时出错: {e}",
-                       f"  ⚠ Error configuring hooks: {e}"))
-        try:
-            _configure_claude_permissions(dest_dir)
-        except Exception as e:
-            print(_msg(f"  ⚠ 配置工具权限时出错: {e}",
-                       f"  ⚠ Error configuring tool permissions: {e}"))
-    elif target == "codex":
-        try:
-            _configure_codex_toml(dest_dir)
-        except Exception as e:
-            print(_msg(f"  ⚠ 配置 config.toml 时出错: {e}",
-                       f"  ⚠ Error configuring config.toml: {e}"))
-        try:
-            _configure_codex_notify(dest_dir)
-        except Exception as e:
-            print(_msg(f"  ⚠ 配置 notify hook 时出错: {e}",
-                       f"  ⚠ Error configuring notify hook: {e}"))
-        try:
-            _configure_codex_csv_batch(dest_dir)
-        except Exception as e:
-            print(_msg(f"  ⚠ 配置 CSV 批处理时出错: {e}",
-                       f"  ⚠ Error configuring CSV batch: {e}"))
-        try:
-            _configure_codex_developer_instructions(dest_dir)
-        except Exception as e:
-            print(_msg(f"  ⚠ 配置 developer_instructions 时出错: {e}",
-                       f"  ⚠ Error configuring developer_instructions: {e}"))
+            print(_msg(f"  ⚠ 配置 {cn_label} 时出错: {e}",
+                       f"  ⚠ Error configuring {en_label}: {e}"))
+
+    if target == "codex":
         print(_msg("  提示: 需在 Codex CLI 中执行 /experimental 开启多代理功能。",
                    "  Note: Run /experimental in Codex CLI to enable multi-agent features."))
         print(_msg("  提示: VS Code Codex 插件对 HelloAGENTS 系统的支持可能与 CLI 不同，建议优先在 Codex CLI 中使用。",

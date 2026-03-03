@@ -105,7 +105,7 @@ DESIGN 阶段步骤10:
   - complex+评估维度≥3 时强制调用
   - 综合多方案评估结果，生成对比结论
 
-DEVELOP 阶段步骤9（间接参与）:
+DEVELOP 阶段步骤10（间接参与）:
   - KnowledgeService.sync() 内部调用，非阶段级直接调用
   - KB_SKIPPED=false 时，在 kb_keeper 同步前执行一致性对照
   - 不在 G9 强制调用规则中，由 KnowledgeService 内部编排
