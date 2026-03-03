@@ -240,6 +240,22 @@ class SessionManager:
         history = metadata.get("agent_history", [])
         return history[-limit:] if limit else history
 
+    def get_active_agents(self) -> List[Dict[str, Any]]:
+        """获取当前会话中尚未完成的子代理列表（用于 compaction 后状态恢复）"""
+        history = self.get_agent_history(limit=50)
+        # 按 agent_id 分组，取最新状态
+        latest: Dict[str, Dict[str, Any]] = {}
+        for record in history:
+            aid = record.get("agent_id", "")
+            if aid:
+                latest[aid] = record
+        # 过滤出非终态的代理
+        active = [
+            r for r in latest.values()
+            if r.get("status") not in ("completed", "failed", "cancelled")
+        ]
+        return active
+
     # ==================== Metadata 操作 ====================
 
     def _load_metadata(self) -> Dict[str, Any]:

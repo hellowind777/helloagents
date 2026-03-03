@@ -157,6 +157,47 @@ def extract_critical_rules(content: str) -> str:
     return result
 
 
+def _get_active_agents_context() -> str:
+    """从 SessionManager 读取活跃子代理信息，用于 compaction 后状态恢复。"""
+    try:
+        import tempfile
+        session_root = Path(tempfile.gettempdir()) / "helloagents_rlm"
+        if not session_root.is_dir():
+            return ""
+        # 找最新的 session 目录
+        sessions = sorted(
+            [d for d in session_root.iterdir() if d.is_dir() and d.name.startswith("session_")],
+            key=lambda d: d.stat().st_mtime,
+        )
+        if not sessions:
+            return ""
+        metadata_file = sessions[-1] / "metadata.json"
+        if not metadata_file.is_file():
+            return ""
+        metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+        history = metadata.get("agent_history", [])
+        if not history:
+            return ""
+        # 按 agent_id 取最新状态，过滤出非终态
+        latest = {}
+        for r in history:
+            aid = r.get("agent_id", "")
+            if aid:
+                latest[aid] = r
+        active = [
+            r for r in latest.values()
+            if r.get("status") not in ("completed", "failed", "cancelled")
+        ]
+        if not active:
+            return ""
+        lines = ["[活跃子代理]"]
+        for a in active:
+            lines.append(f"- {a.get('agent_id','?')}: role={a.get('role','?')}, task={a.get('task','?')[:60]}, status={a.get('status','?')}")
+        return "\n".join(lines)
+    except Exception:
+        return ""
+
+
 def handle_user_prompt_submit(cwd: str) -> dict:
     """
     路径1: UserPromptSubmit — 主代理规则强化（阶段感知）
@@ -174,20 +215,29 @@ def handle_user_prompt_submit(cwd: str) -> dict:
     # 1. 阶段检测
     stage = detect_stage(cwd)
 
-    # 2. 阶段规则注入（优先于通用 CRITICAL 提取）
+    # 2. 活跃子代理状态（compaction 后恢复）
+    agents_ctx = _get_active_agents_context()
+
+    # 3. 阶段规则注入（优先于通用 CRITICAL 提取）
     if stage == "DEVELOP":
+        ctx = DEVELOP_RULES
+        if agents_ctx:
+            ctx += "\n\n" + agents_ctx
         return {
             "hookSpecificOutput": {
                 "hookEventName": "UserPromptSubmit",
-                "additionalContext": DEVELOP_RULES,
+                "additionalContext": ctx,
             },
         }
 
     if stage == "DESIGN":
+        ctx = DESIGN_RULES
+        if agents_ctx:
+            ctx += "\n\n" + agents_ctx
         return {
             "hookSpecificOutput": {
                 "hookEventName": "UserPromptSubmit",
-                "additionalContext": DESIGN_RULES,
+                "additionalContext": ctx,
             },
         }
 
@@ -209,6 +259,8 @@ def handle_user_prompt_submit(cwd: str) -> dict:
 
     # 通用规则 + CRITICAL 提取
     summary = GENERIC_RULES + "\n---\n" + extract_critical_rules(content)
+    if agents_ctx:
+        summary += "\n\n" + agents_ctx
     if len(summary) > MAX_MAIN_AGENT_CHARS:
         summary = summary[:MAX_MAIN_AGENT_CHARS] + "\n...(已截断)"
 

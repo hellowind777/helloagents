@@ -65,7 +65,7 @@ Claude Code agent 文件（安装时部署至 ~/.claude/agents/）:
 输出格式: 子代理只输出任务执行结果，不输出流程标题（如"【HelloAGENTS】– 快速流程"等）
 
 上下文注入（Claude Code）:
-  主代理: UserPromptSubmit hook 在每次用户消息时注入 CLAUDE.md 关键规则摘要，确保 compact 后规则不丢失
+  主代理: UserPromptSubmit hook 在每次用户消息时注入阶段规则摘要 + 活跃子代理状态，确保 compact 后规则和子代理进度不丢失
   子代理: SubagentStart hook 自动注入当前方案包上下文（proposal.md + tasks.md + context.md）+ 技术指南（guidelines.md），
     主代理构建子代理 prompt 时仍需包含任务描述和约束条件，hook 注入的上下文作为补充而非替代
     技术指南: .helloagents/guidelines.md 存放项目级编码约定（框架规范/代码风格/架构约束），子代理开发前自动获取
@@ -223,6 +223,18 @@ helloagents 角色:
   方案设计 → Codex Plan mode（不需要 spawn）
   监控轮询 → spawn_agent(agent_type="monitor", prompt="...")  # 长时间运行的轮询任务
 
+上下文分叉策略（fork_context）:
+  fork_context=true（子代理继承父代理完整对话历史作为背景）:
+    - reviewer: 审查需要理解完整任务上下文和已执行变更
+    - synthesizer: 方案对比需要理解评估阶段收集的全部信息
+    - writer: 文档编写需要理解项目背景和决策历史
+    - DAG 任务中的实现子代理: 需要理解整体方案和已完成任务的上下文
+  fork_context=false（默认，子代理从任务描述获取全部信息）:
+    - kb_keeper: 纯服务操作，任务描述中包含完整的文件变更列表
+    - pkg_keeper: 纯服务操作，任务描述中包含方案包路径和操作指令
+    - CSV 批处理 worker: 同构任务，每行 CSV 自包含全部信息
+  调用示例: spawn_agent(agent_type="worker", fork_context=true, prompt="...")
+
 CSV 批处理编排（需 collab + sqlite 特性）:
   同构并行任务 → spawn_agents_on_csv(csv_path, instruction, ...)
   适用: 批量代码审查/批量测试/批量数据处理等每行任务结构相同的场景
@@ -266,6 +278,18 @@ helloagents 角色:
   # 主代理先生成 CSV: path,module,focus（每行一个任务，如 src/api/auth.py,auth,安全检查）
   spawn_agents_on_csv(csv_path="/tmp/review_tasks.csv", instruction="使用 {OUTPUT_LANGUAGE} 输出。审查 {path} 模块 {module}，重点关注 {focus}。返回: {{score: 1-10, issues: [...], suggestions: [...]}}", output_csv_path="/tmp/review_results.csv", max_concurrency=16)
   # 阻塞直到全部完成（agent_job_progress 事件持续更新），完成后读取 output CSV 汇总结果
+```
+
+### Codex CLI 子代理交互策略
+
+```yaml
+request_user_input:
+  子代理可通过 request_user_input 向用户发起确认请求
+  HelloAGENTS 策略:
+    DELEGATED 模式: 默认禁止（子代理不得中断自动化流程），审批配置自动拒绝
+    INTERACTIVE 模式: 允许（用户可在 /agent 切换线程后响应）
+    EHRB Critical: 始终允许（安全优先，无论模式）
+  配置: 父代理审批策略自动传播到子代理
 ```
 
 ### OpenCode / Gemini CLI / Qwen Code 调用协议

@@ -191,7 +191,7 @@ KB_SKIPPED=true → 扫描项目现有资源
   检查: 不安全模式(eval/exec/SQL拼接) + 敏感信息硬编码 + EHRB 风险 [→ G2]
   检测到 EHRB → 按 G2 处理流程执行
   子代理调用（按 G9 复杂度判定）:
-    complex+涉及核心/安全模块 → [RLM:reviewer] 执行代码审查（强制）[→ G10 调用通道]
+    complex+涉及核心/安全模块 → [RLM:reviewer] 执行代码审查（强制，Codex CLI 使用 fork_context=true）[→ G10 调用通道]
     其他 → 主代理直接执行安全检查
 
 非编程任务:
