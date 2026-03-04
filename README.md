@@ -541,6 +541,7 @@ On the first response of each session, the system silently checks for new versio
 - target not detected: launch target CLI once to create config directory
 - custom rules overwritten: restore from timestamped backup in CLI config dir
 - images not rendering: keep relative paths and commit readme_images files
+- CCswitch users: CCswitch automatically saves and restores CLI settings files (e.g., `settings.json`, `config.toml`). If HelloAGENTS configurations (hooks, permissions, rules, etc.) were saved by CCswitch before uninstalling, switching CCswitch profiles after uninstalling HelloAGENTS will restore those configurations. Please manually clean up any HelloAGENTS-related settings saved in CCswitch after uninstalling
 
 ## Version History
 
