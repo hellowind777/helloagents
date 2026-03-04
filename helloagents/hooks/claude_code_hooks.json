@@ -77,6 +77,13 @@
             "async": true,
             "timeout": 10,
             "description": "HelloAGENTS KB 同步 + L2 会话摘要写入"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" complete",
+            "async": true,
+            "timeout": 5,
+            "description": "HelloAGENTS 声音通知（完成）"
           }
         ]
       }
@@ -146,6 +153,13 @@
             "async": true,
             "timeout": 5,
             "description": "HelloAGENTS 桌面通知"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" idle",
+            "async": true,
+            "timeout": 5,
+            "description": "HelloAGENTS 声音通知（等待输入）"
           }
         ]
       }
@@ -160,6 +174,13 @@
             "async": true,
             "timeout": 5,
             "description": "HelloAGENTS 工具失败恢复建议"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" error",
+            "async": true,
+            "timeout": 5,
+            "description": "HelloAGENTS 声音通知（错误）"
           }
         ]
       }

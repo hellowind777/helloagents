@@ -13,6 +13,7 @@ from .._common import (
 )
 from .codex_config import _cleanup_codex_agents_dotted, _remove_codex_notify
 from .codex_config import _remove_codex_developer_instructions
+from .codex_config import _remove_codex_tui_notification
 from .claude_config import (
     _remove_claude_hooks, _remove_claude_permissions, _remove_claude_rules,
     _remove_claude_auto_memory,
@@ -197,6 +198,12 @@ def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
     except Exception as e:
         print(_msg(f"  ⚠ 移除 developer_instructions 时出错: {e}",
                    f"  ⚠ Error removing developer_instructions: {e}"))
+    try:
+        if _remove_codex_tui_notification(dest_dir):
+            removed.append("tui.notification_method (config.toml)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 tui.notification_method 时出错: {e}",
+                   f"  ⚠ Error removing tui.notification_method: {e}"))
     try:
         config_toml = dest_dir / "config.toml"
         if config_toml.exists():

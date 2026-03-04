@@ -39,7 +39,7 @@ AGENT_PREFIX = "ha-"
 
 # Hooks identification
 HOOKS_FINGERPRINT = "HelloAGENTS"  # description field marker to identify our hooks
-CODEX_NOTIFY_CMD = "helloagents --check-update --silent"
+CODEX_NOTIFY_CMD = 'python3 "{SCRIPTS_DIR}/codex_notify.py"'
 
 # Hooks JSON filenames for each CLI
 GEMINI_HOOKS_JSON = "gemini_hooks.json"

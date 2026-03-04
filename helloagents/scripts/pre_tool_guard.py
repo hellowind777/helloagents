@@ -14,6 +14,8 @@ import sys
 import io
 import json
 import re
+import subprocess
+from pathlib import Path
 
 # Windows UTF-8 编码设置
 if sys.platform == 'win32':
@@ -76,6 +78,18 @@ def main():
 
     is_dangerous, reason = check_command(command)
     if is_dangerous:
+        # 播放警告声音（非阻塞）
+        sound_script = Path(__file__).parent / "sound_notify.py"
+        if sound_script.exists():
+            try:
+                subprocess.Popen(
+                    [sys.executable, str(sound_script), "warning"],
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except Exception:
+                pass
         result = {
             "permissionDecision": "deny",
             "reason": f"[HelloAGENTS] 危险命令被拦截: {reason}",

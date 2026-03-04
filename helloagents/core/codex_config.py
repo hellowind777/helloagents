@@ -1,9 +1,10 @@
 """HelloAGENTS Codex Config - Codex CLI config.toml configuration helpers."""
 
 import re
+import sys
 from pathlib import Path
 
-from .._common import _msg, CODEX_NOTIFY_CMD
+from .._common import _msg, CODEX_NOTIFY_CMD, PLUGIN_DIR_NAME
 
 
 # ---------------------------------------------------------------------------
@@ -347,6 +348,19 @@ def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
 # Codex notify hook
 # ---------------------------------------------------------------------------
 
+def _resolve_codex_notify_cmd(dest_dir: Path) -> str:
+    """Resolve CODEX_NOTIFY_CMD template to a concrete command string.
+
+    Replaces {SCRIPTS_DIR} with the actual scripts path and
+    python3 with python on Windows.
+    """
+    scripts_dir = (dest_dir / PLUGIN_DIR_NAME / "scripts").as_posix()
+    cmd = CODEX_NOTIFY_CMD.replace("{SCRIPTS_DIR}", scripts_dir)
+    if sys.platform == "win32":
+        cmd = cmd.replace("python3 ", "python ")
+    return cmd
+
+
 def _configure_codex_notify(dest_dir: Path) -> None:
     """Add HelloAGENTS notify hook to Codex CLI config.toml.
 
@@ -361,7 +375,10 @@ def _configure_codex_notify(dest_dir: Path) -> None:
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
 
-    notify_line = f'notify = ["{CODEX_NOTIFY_CMD}"]'
+    resolved_cmd = _resolve_codex_notify_cmd(dest_dir)
+    # Escape inner double quotes for TOML basic string
+    toml_cmd = resolved_cmd.replace('"', '\\"')
+    notify_line = f'notify = ["{toml_cmd}"]'
 
     # Match both old string format and new array format
     m_str = re.search(r'^notify\s*=\s*"([^"]*)"', content, re.MULTILINE)
@@ -386,7 +403,7 @@ def _configure_codex_notify(dest_dir: Path) -> None:
         # Array format — check if ours
         arr_content = m_arr.group(1)
         if "helloagents" in arr_content:
-            if f'"{CODEX_NOTIFY_CMD}"' not in arr_content:
+            if "codex_notify" not in arr_content:
                 content = re.sub(
                     r'^notify\s*=\s*\[[^\]]*\]',
                     notify_line,
@@ -447,4 +464,86 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
         return False
     print(_msg("  已移除 notify hook (config.toml)",
                "  Removed notify hook (config.toml)"))
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Codex TUI notification method (suppress BEL bell)
+# ---------------------------------------------------------------------------
+
+def _configure_codex_tui_notification(dest_dir: Path) -> None:
+    """Set tui.notification_method = "osc9" to suppress BEL bell.
+
+    Codex CLI default notification uses BEL (\\a) bell character.
+    Setting osc9 replaces it with OSC9 escape sequence (silent in most terminals),
+    allowing HelloAGENTS sound notifications to be the sole audio feedback.
+    """
+    config_path = dest_dir / "config.toml"
+    content = ""
+    if config_path.exists():
+        content = config_path.read_text(encoding="utf-8")
+
+    # Check if already set
+    if re.search(r'tui\.notification_method\s*=', content):
+        return
+
+    # Check for [tui] section
+    tui_match = re.search(r'^\[tui\]', content, re.MULTILINE)
+    if tui_match:
+        # Insert after [tui] header
+        content = (content[:tui_match.end()]
+                   + '\nnotification_method = "osc9"'
+                   + content[tui_match.end():])
+    else:
+        # Add [tui] section before first section or at end
+        section = '[tui]\nnotification_method = "osc9"\n'
+        first_sec = re.search(r'^\[[\w]', content, re.MULTILINE)
+        if first_sec:
+            content = content[:first_sec.start()] + section + "\n" + content[first_sec.start():]
+        else:
+            content = content.rstrip() + "\n\n" + section
+
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(content, encoding="utf-8")
+    print(_msg("  已配置 tui.notification_method = osc9（抑制 BEL 铃声）",
+               "  Configured tui.notification_method = osc9 (suppress BEL bell)"))
+
+
+def _remove_codex_tui_notification(dest_dir: Path) -> bool:
+    """Remove tui.notification_method setting from config.toml.
+
+    Only removes if the value is "osc9" (set by HelloAGENTS).
+    Returns True if removed.
+    """
+    config_path = dest_dir / "config.toml"
+    if not config_path.exists():
+        return False
+
+    content = config_path.read_text(encoding="utf-8")
+
+    # Only remove if it's our "osc9" value
+    m = re.search(r'^notification_method\s*=\s*"osc9"\s*\n?', content, re.MULTILINE)
+    if not m:
+        # Also check dotted form
+        m = re.search(r'^tui\.notification_method\s*=\s*"osc9"\s*\n?', content, re.MULTILINE)
+    if not m:
+        return False
+
+    content = content[:m.start()] + content[m.end():]
+
+    # Clean up empty [tui] section if nothing left in it
+    tui_match = re.search(r'^\[tui\]\s*\n', content, re.MULTILINE)
+    if tui_match:
+        after = content[tui_match.end():]
+        next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
+        scope = after[:next_sec.start()] if next_sec else after
+        if not scope.strip():
+            # Section is empty — remove it
+            end = tui_match.end() + (next_sec.start() if next_sec else len(after))
+            content = content[:tui_match.start()] + content[end:]
+
+    content = re.sub(r'\n{3,}', '\n\n', content)
+    config_path.write_text(content, encoding="utf-8")
+    print(_msg("  已移除 tui.notification_method (config.toml)",
+               "  Removed tui.notification_method (config.toml)"))
     return True
