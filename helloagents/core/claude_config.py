@@ -206,11 +206,11 @@ def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
     Based on Claude Code permission rule syntax:
     - Read operations are auto-approved (no rules needed)
     - Edit rules cover both Edit and Write tools (gitignore patterns)
-    - Bash rules support glob with * wildcard
+    - Bash rules support glob with ** for recursive matching
     - Path prefixes: ~/ = home, / = project root, ./ or bare = CWD
 
     Covers:
-    - Script & RLM execution (Bash)
+    - Script & RLM execution (Bash, supports subdirectories)
     - HelloAGENTS CLI commands (Bash)
     - Global config cache read via cat (Bash)
     - Project knowledge base writes (Edit)
@@ -219,11 +219,11 @@ def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
     plugin_posix = (dest_dir / PLUGIN_DIR_NAME).as_posix()
     home_ha = "~/.helloagents"
     return [
-        # Bash: Python script execution (with and without -X utf8)
-        f'Bash(python "{plugin_posix}/scripts/*")',
-        f'Bash(python -X utf8 "{plugin_posix}/scripts/*")',
-        f'Bash(python "{plugin_posix}/rlm/*")',
-        f'Bash(python -X utf8 "{plugin_posix}/rlm/*")',
+        # Bash: Python script execution (with and without -X utf8, supports subdirectories)
+        f'Bash(python "{plugin_posix}/scripts/**")',
+        f'Bash(python -X utf8 "{plugin_posix}/scripts/**")',
+        f'Bash(python "{plugin_posix}/rlm/**")',
+        f'Bash(python -X utf8 "{plugin_posix}/rlm/**")',
         # Bash: CLI commands & cache read
         "Bash(helloagents *)",
         f"Bash(cat {home_ha}/*)",
