@@ -55,7 +55,7 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 **配置覆盖（CRITICAL）:** 以上为默认值，会话启动时按优先级加载外置配置覆盖同名键:
 ```yaml
 优先级: {CWD}/.helloagents/config.json > ~/.helloagents/config.json > 以上默认值
-加载: 按 G7 会话启动规则读取，不存在→静默跳过，使用默认值
+加载: 按 G7 会话启动规则静默读取，不存在→静默跳过，使用默认值
 格式: {"CSV_BATCH_MAX": 0, "EVAL_MODE": 2}  # 仅列出需要覆盖的键
 作用域: ~/.helloagents/config.json = 全局（所有项目）| {CWD}/.helloagents/config.json = 当前项目
 合法键: OUTPUT_LANGUAGE, KB_CREATE_MODE, BILINGUAL_COMMIT, EVAL_MODE, UPDATE_CHECK, CSV_BATCH_MAX
@@ -167,7 +167,7 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 **⬆️ 更新提示生成规则（UPDATE_CHECK>0 时生效）:**
 
 1. 仅在本次会话的首次响应中执行一次，后续响应跳过
-2. 检查 `~/.helloagents/.update_cache` 是否存在 [→ G7 会话启动]，不存在→跳到步骤4
+2. 静默检查 `~/.helloagents/.update_cache` 是否存在 [→ G7 会话启动]，不存在→跳到步骤4
 3. 文件存在→读取内容，`expires_at`（ISO 日期）晚于当前时间 → `has_update=true` 则用缓存中 `remote_version`、`local_version`、`branch` 填充 ⬆️ 模板显示，`has_update=false` 则跳过
 4. 文件不存在或 `expires_at` 已过期 → 静默执行 `helloagents version --force --cache-ttl {UPDATE_CHECK}`，输出含 `New version` → 提取该行显示为 ⬆️ 行，否则跳过
 5. 任何环节失败均静默跳过，不影响正常响应（禁止输出错误信息）
@@ -553,9 +553,9 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/, agents/, hooks/
 
 加载规则:
-  工具选择: 优先 CLI 内置工具 [→ G1 工具选择规则]；无内置工具时降级为 Shell（cat）
-  可选文件: 先确认文件存在再读取，不存在→静默跳过；禁止对不存在的文件发起读取
-  必需文件: 直接读取，加载失败 → 输出错误并停止当前阶段（⛔ END_TURN）
+  工具选择: 优先 CLI 内置工具 [→ G1 工具选择规则]；无内置工具时降级为 Shell 静默读取
+  可选文件（config.json、user/*.md、sessions/*）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时→静默跳过；
+  必需文件（HelloAgents规则/模块/脚本/模板）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时 → 输出错误并停止当前阶段（⛔ END_TURN）
   阻塞式读取: 必须等待文件完全加载后才能继续执行，不允许部分加载或跳过
   Do NOT execute any step until loading is complete.
 标准缩写:
@@ -570,7 +570,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 触发条件 | 读取文件 |
 |----------|----------|
-| 会话启动 | 先确认 ~/.helloagents/ 和 {CWD}/.helloagents/ 下文件存在性，仅读取存在的: config.json, .update_cache, user/*.md, sessions/（最近1-2个）— 不存在→跳过，不输出加载状态，config.json 键覆盖 G1 默认值 |
+| 会话启动 | ~/.helloagents/config.json, {CWD}/.helloagents/config.json, user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md, services/knowledge.md（CHANGELOG更新时） |
 | R2/R3 进入方案设计（入口） | stages/design.md |
 | DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex）, rules/tools.md（project_stats.py 调用时） |
