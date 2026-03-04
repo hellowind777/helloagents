@@ -15,13 +15,13 @@ Claude Code agent 文件（安装时部署至 ~/.claude/agents/）:
   reviewer → ha-reviewer.md | synthesizer → ha-synthesizer.md | kb_keeper → ha-kb-keeper.md
   pkg_keeper → ha-pkg-keeper.md | writer → ha-writer.md
 原生子代理映射（角色→类型映射，调用语法详见各 CLI 调用协议）:
-  代码探索 → Codex: spawn_agent(agent_type="explorer") | Claude: Task(subagent_type="Explore") | OpenCode: @explore | Gemini: codebase_investigator | Qwen: 自定义子代理
-  代码实现 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
-  测试运行 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
-  方案评估 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: @general | Gemini: generalist_agent | Qwen: 自定义子代理
-  方案设计 → Codex: Plan mode | Claude: Task(subagent_type="Plan") | OpenCode: @general | Gemini: 自定义子代理 | Qwen: 自定义子代理
+  代码探索 → Codex: spawn_agent(agent_type="explorer") | Claude: Task(subagent_type="Explore") | OpenCode: task（只读） | Gemini: codebase_investigator | Qwen: general-purpose
+  代码实现 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: coder | Gemini: generalist | Qwen: general-purpose
+  测试运行 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: coder | Gemini: 自定义子代理 | Qwen: 自定义子代理
+  方案评估 → Codex: spawn_agent(agent_type="worker") | Claude: Task(subagent_type="general-purpose") | OpenCode: coder | Gemini: generalist | Qwen: general-purpose
+  方案设计 → Codex: Plan mode | Claude: Task(subagent_type="Plan") | OpenCode: coder | Gemini: 自定义子代理 | Qwen: 自定义子代理
   监控轮询 → Codex: spawn_agent(agent_type="monitor") | Claude: Task(run_in_background=true) | OpenCode: — | Gemini: — | Qwen: —
-  批量同构 → Codex: spawn_agents_on_csv | Claude: 多个并行 Task | OpenCode: 多个 @general | Gemini: 多个子代理 | Qwen: 多个子代理
+  批量同构 → Codex: spawn_agents_on_csv | Claude: 多个并行 Task | OpenCode: 多个 coder | Gemini: 多个子代理 | Qwen: 多个子代理
 调用方式: 阶段文件中标注 [RLM:角色名] 的位置必须调用角色子代理，各 CLI 调用通道按下文协议执行
 ```
 
@@ -140,10 +140,10 @@ prompt 构造模板:
 | Claude Code | Agent Teams | complex 级别，多角色协作需互相通信时（实验性，需 CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1）[→ Agent Teams 协议] |
 | Codex CLI | spawn_agent | Collab 子代理调度（/experimental 开启，agents.max_depth=1，≤6 并发）；支持 [agents] 角色配置 |
 | Codex CLI | spawn_agents_on_csv | CSV 批处理（需 collab+sqlite，≤64 并发），同构任务专用 |
-| OpenCode | 子代理 | 内置 General（通用）+ Explore（只读探索），主代理自动委派或 @mention 手动触发 |
-| Gemini CLI | 子代理 | 内置 codebase_investigator + generalist_agent（实验性），自定义 .gemini/agents/*.md |
-| Qwen Code | 子代理 | 自定义子代理框架，/agents create 创建，.qwen/agents/*.md 存储，主代理自动委派 |
-| Grok CLI | 代理降级 | 主代理直接执行 |
+| OpenCode | 子代理 | 内置 coder + task；自定义 .opencode/agents/*.md（前瞻），MCP 服务器 |
+| Gemini CLI | 子代理 | 内置 codebase_investigator + generalist + cli_help + browser_agent（实验性），自定义 .gemini/agents/*.md，A2A 远程代理 |
+| Qwen Code | 子代理 | 内置 general-purpose，自定义 .qwen/agents/*.md，/agents create 创建，主代理按 description 自动委派 |
+| Grok CLI | 子代理 | 主代理直接执行；自定义 .grok/agents/*.md（前瞻），MCP 服务器 |
 
 ### Claude Code 调用协议（CRITICAL）
 
@@ -176,6 +176,17 @@ helloagents 角色:
        （若已部署文件级子代理: subagent_type="ha-{角色名}", prompt=任务描述）
     4. 接收结果: 解析子代理返回的结构化结果
     5. 记录调用: 通过 SessionManager.record_agent() 记录
+
+用户自定义代理（当前会话可用的非 ha-* 代理）:
+  调用方式: Task(subagent_type="{agent-name}", prompt="{任务描述}")
+  与 RLM 角色的关系:
+    互补: 用户代理处理 RLM 角色未覆盖的领域（如 security-auditor、performance-tester）
+    替代: 用户代理 description 覆盖某 RLM 角色能力 → 用户代理优先
+    共存: 同一任务可同时调度用户代理 + RLM 角色
+  命名冲突: 用户代理名与 ha-* 重名 → ha-* 优先（HelloAGENTS 预设不可被覆盖）
+  降级: 用户代理执行失败 → 降级到 RLM 角色或主代理直接执行
+  Skill/MCP 辅助: DEVELOP 阶段识别到可用 Skill/MCP 可加速当前子任务 → 主动调用（非强制）
+  用户扩展: 自定义子代理调度规则同 G9 用户代理分配规则 | Skills（.claude/skills/）| MCP 服务器 | 插件（Extensions）
 
 后台执行: run_in_background=true 非阻塞，适用于独立长时间任务；子代理可通过 agent ID 恢复（resume）
 
@@ -261,6 +272,19 @@ helloagents 角色:
   执行步骤（同 Claude Code，仅调用方式不同）:
     3. 调用 spawn_agent: prompt=上述内容（其余步骤同 Claude Code 协议）
 
+用户自定义代理（config.toml [agents.{role}] 中非 ha-* 的角色）:
+  调用方式: spawn_agent(agent_type="{custom-role}", prompt="{任务描述}")
+  配置来源: ~/.codex/config.toml [agents.{role}] 节（用户自行定义 description/model/sandbox_mode 等）
+  与 RLM 角色的关系:
+    互补: 用户角色处理 RLM 角色未覆盖的领域（如 security-auditor、performance-tester）
+    替代: 用户角色 description 覆盖某 RLM 角色能力 → 用户角色优先
+    共存: 同一任务可同时调度用户角色 + RLM 角色
+  命名冲突: 用户角色名与 ha-* 重名 → ha-* 优先（HelloAGENTS 预设不可被覆盖）
+  CSV 批处理: 用户角色可作为 spawn_agents_on_csv 的 worker → 同构任务批量分配给自定义角色
+  降级: 用户角色执行失败 → 降级到 RLM 角色或主代理直接执行
+  Skill/MCP 辅助: DEVELOP 阶段识别到可用 Skill/MCP 可加速当前子任务 → 主动调用（非强制）
+  用户扩展: 自定义子代理调度规则同 G9 用户代理分配规则 | Skills（Codex Skills）| MCP 服务器（不支持插件，扩展能力通过 Skill + MCP 实现）
+
 并行调用: 多个无依赖子代理 → 连续发起多个 spawn_agent → collab wait 等待全部完成（支持多ID单次等待）
 串行调用: 有依赖 → 逐个 spawn_agent → 等待完成再发下一个
 恢复暂停: 子代理超时/暂停 → resume_agent 恢复
@@ -292,22 +316,34 @@ request_user_input:
   配置: 父代理审批策略自动传播到子代理
 ```
 
-### OpenCode / Gemini CLI / Qwen Code 调用协议
+### OpenCode / Gemini CLI / Qwen Code / Grok CLI 调用协议
 
 ```yaml
 通用规则: helloagents 角色执行步骤同 Claude Code 协议，仅调用方式不同
+用户扩展通用规则: 所有 CLI 均按 G9 用户代理分配规则调度自定义子代理和 Skills，CLI 原生尚未支持时视为前瞻性路径
 
 OpenCode:
-  原生子代理: @explore（只读，代码搜索定位）| @general（完整工具权限，可修改文件）
-  调用方式: 主代理自动委派 | 用户 @mention 手动触发 | 子代理创建独立 child session
+  原生子代理: coder（主交互代理，完整工具权限）| task（只读搜索子代理，由 coder 通过 agent 工具调用）
+  调用方式: 主代理自动委派（coder 内部调用 task 进行代码搜索定位）
+  自定义子代理: .opencode/agents/*.md（项目级）| ~/.config/opencode/agents/*.md（用户级）
+  用户扩展: 自定义子代理调度规则同 G9 用户代理分配规则 | Skills（.opencode/skills/）| MCP 服务器（.opencode.json 配置）
+  注: 项目已归档，后继为 Crush；自定义子代理和 Skills 为前瞻性路径规划
 
-Gemini CLI（实验性）:
-  原生子代理: codebase_investigator（代码库分析和逆向依赖）| generalist_agent（自动路由）
-  自定义子代理: .gemini/agents/*.md（项目级）| ~/.gemini/agents/*.md（用户级）| 支持 A2A 协议远程委派
+Gemini CLI:
+  原生子代理: codebase_investigator（代码库分析）| generalist（通用代理，完整工具）| cli_help（CLI 帮助）| browser_agent（浏览器自动化，实验性）
+  自定义子代理: .gemini/agents/*.md（项目级）| ~/.gemini/agents/*.md（用户级）| 支持 A2A 协议远程代理（kind: remote）
+  用户扩展: 自定义子代理调度规则同 G9 用户代理分配规则 | Skills（.gemini/skills/，基于 agentskills.io 标准）| MCP 服务器 | Extensions（gemini-extension.json，含 MCP/Skills/Commands/Hooks/Agents）
 
 Qwen Code:
-  原生子代理: 无固定内置类型，/agents create 创建，主代理按 description 自动匹配委派
-  自定义子代理: .qwen/agents/*.md（项目级）| ~/.qwen/agents/*.md（用户级）
+  原生子代理: general-purpose（通用研究和代码分析）
+  自定义子代理: .qwen/agents/*.md（项目级）| ~/.qwen/agents/*.md（用户级）| /agents create 引导创建
+  用户扩展: 自定义子代理调度规则同 G9 用户代理分配规则 | Skills（.qwen/skills/，实验性）| MCP 服务器 | Extensions（qwen-extension.json，兼容 Gemini + Claude 生态）
+
+Grok CLI:
+  原生子代理: 无内置子代理类型，主代理直接执行所有任务
+  自定义子代理: .grok/agents/*.md（项目级）| ~/.grok/agents/*.md（用户级）
+  用户扩展: 自定义子代理调度规则同 G9 用户代理分配规则 | Skills（.grok/skills/）| MCP 服务器（.grok/settings.json 配置）
+  注: 自定义子代理和 Skills 为前瞻性路径规划，当前版本主代理直接执行
 ```
 
 ### Claude Code Agent Teams 协议
