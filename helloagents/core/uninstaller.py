@@ -251,14 +251,19 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
 
     ok = True
     if plugin_dest.exists():
-        # Preserve user/ directory before removing plugin (contains user preferences)
-        user_dir = plugin_dest / "user"
-        user_backup = None
+        # Preserve user/ and commands/ directories (user data)
+        import tempfile
+        _preserve_dirs = ("user", "commands")
+        _backups: dict[str, Path | None] = {}
         try:
-            if user_dir.exists() and any(user_dir.iterdir()):
-                import tempfile
-                user_backup = Path(tempfile.mkdtemp()) / "user"
-                shutil.copytree(user_dir, user_backup)
+            for _dname in _preserve_dirs:
+                _src = plugin_dest / _dname
+                if _src.exists() and any(_src.iterdir()):
+                    _bak = Path(tempfile.mkdtemp()) / _dname
+                    shutil.copytree(_src, _bak)
+                    _backups[_dname] = _bak
+                else:
+                    _backups[_dname] = None
 
             if win_safe_rmtree(plugin_dest):
                 removed.append(str(plugin_dest))
@@ -267,23 +272,23 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
                            f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
                 ok = False
 
-            # Restore user/ directory if it was backed up (skip if still exists
-            # from a failed win_safe_rmtree — the original user/ is intact)
-            if user_backup and user_backup.exists():
-                restore_dir = plugin_dest / "user"
-                if not restore_dir.exists():
-                    restore_dir.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(user_backup, restore_dir)
-                print(_msg(f"  已保留用户偏好目录: {restore_dir}",
-                           f"  Preserved user preferences: {restore_dir}"))
+            # Restore preserved directories
+            for _dname, _bak in _backups.items():
+                if _bak and _bak.exists():
+                    _restore = plugin_dest / _dname
+                    if not _restore.exists():
+                        _restore.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copytree(_bak, _restore)
+                    print(_msg(f"  已保留用户目录: {_restore}",
+                               f"  Preserved user directory: {_restore}"))
         except Exception as e:
             print(_msg(f"  ⚠ 移除插件目录时出错: {e}",
                        f"  ⚠ Error removing plugin directory: {e}"))
             ok = False
         finally:
-            # Always clean up temp directory
-            if user_backup and user_backup.parent.exists():
-                shutil.rmtree(user_backup.parent, ignore_errors=True)
+            for _bak in _backups.values():
+                if _bak and _bak.parent.exists():
+                    shutil.rmtree(_bak.parent, ignore_errors=True)
 
     if rules_dest.exists():
         if is_helloagents_file(rules_dest):

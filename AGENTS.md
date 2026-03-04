@@ -71,14 +71,18 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 ├── modules/ (_index.md, {module}.md)
 ├── plan/ (YYYYMMDDHHMM_<feature>/ → proposal.md, tasks.md)
 ├── sessions/ ({session_id}.md)
+├── user/ (项目级用户偏好，覆盖全局 user/)
 └── archive/ (_index.md, YYYY-MM/)
 ```
 
-**全局记忆目录:**
+**全局用户目录（安装时部署，更新/卸载时保留用户数据）:**
 ```
 {HELLOAGENTS_ROOT}/user/
 ├── profile.md (L0 用户记忆)
 └── sessions/ (无项目上下文时的会话摘要)
+{HELLOAGENTS_ROOT}/commands/
+├── _example.md (示例模板)
+└── {命令名}.md (用户自定义命令 → ~命令名)
 ```
 
 **写入策略:** 目录/文件不存在时自动创建；禁止在 {KB_ROOT}/ 外创建知识库文件；动态目录（archive/_index.md、archive/YYYY-MM/、modules/_index.md）在首次写入时创建
@@ -236,6 +240,8 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 ### 一步路由
 
 ```yaml
+恢复路径: {KB_ROOT}/plan/ 下存在未完成方案包（LIVE_STATUS != completed）→ 读取其状态作为上下文，结合用户输入判断是否恢复
+  例外: ~命令 | 用户明确说停止/取消/新任务/重来
 命令路径: 输入中包含 ~xxx → 提取命令 → 匹配命令处理器 → 状态机流程
 外部工具路径: 语义匹配可用 Skill/MCP/插件 → 命中 → 按工具协议执行
 通用路径: 其余所有输入 → 级别判定 → 按级别行为执行（R0/R1 直接执行，R2/R3 先确认再执行）
@@ -392,7 +398,7 @@ User: (上一轮输出了确认选项 1/2/3 并 END_TURN) "先改打包工具再
 
 **自定义命令扩展:**
 ```yaml
-自定义命令: 匹配内置命令失败后 → 扫描 .helloagents/commands/*.md
+自定义命令: 匹配内置命令失败后 → 扫描 {HELLOAGENTS_ROOT}/commands/*.md（跳过 _ 开头的文件）
   文件名即命令名（如 deploy.md → ~deploy）
   闸门等级: 轻量（需求理解 + EHRB，不评分不追问）
   加载: 读取对应 .md 文件作为执行规则
@@ -550,7 +556,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   {TEMPLATES_DIR}: {HELLOAGENTS_ROOT}/templates
   {SCRIPTS_DIR}: {HELLOAGENTS_ROOT}/scripts
 
-子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/, agents/, hooks/
+子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/, commands/, agents/, hooks/
 
 加载规则:
   工具选择: 优先 CLI 内置工具 [→ G1 工具选择规则]；无内置工具时降级为 Shell 静默读取
@@ -594,7 +600,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | ~clean | functions/clean.md, services/memory.md, services/knowledge.md（前置迁移检查） |
 | ~rlm spawn | rlm/roles/{role}.md |
 | 调用脚本时 | rules/tools.md（脚本执行规范与降级处理） |
-| 自定义命令 | .helloagents/commands/{命令名}.md |
+| 自定义命令 | {HELLOAGENTS_ROOT}/commands/{命令名}.md |
 | R2/R3 评估开始（级别判定后、评分前） | rules/evaluation.md |
 | 子代理调度（模块文件中遇到 `[→ G10]` 或 `[RLM:角色名]` 标记时） | rules/subagent-protocols.md |
 
@@ -668,10 +674,10 @@ RLM 角色: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
 ```yaml
 活状态区格式:
   <!-- LIVE_STATUS_BEGIN -->
-  状态: {pending|in_progress|paused|completed|failed} | 进度: {完成数}/{总数} ({百分比}%) | 更新: {YYYY-MM-DD HH:MM:SS}
+  流程: {ROUTING_LEVEL} {流程名} | 模式: {WORKFLOW_MODE} | 阶段: {CURRENT_STAGE} | 状态: {pending|in_progress|paused|completed|failed} | 进度: {完成数}/{总数} ({百分比}%) | 更新: {YYYY-MM-DD HH:MM:SS}
   当前: {正在执行的任务描述}
   <!-- LIVE_STATUS_END -->
-更新时机: 任务开始、状态变更、遇到错误、阶段切换
+更新时机: 任务开始、状态变更、遇到错误、阶段切换、流程/模式变更（如 ~auto 切换委托、R1→R2 升级）
 状态恢复: 缺少上下文时，读取 tasks.md 状态文件恢复进度
 ```
 

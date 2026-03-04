@@ -235,7 +235,10 @@ STARTUP FILES (read after AGENTS.md; skip silently if not found):
   {CWD}/.helloagents/plan/*/tasks.md → task resume (find LIVE_STATUS)
 
 CONTEXT RECOVERY (after context compression or rule uncertainty):
-  Re-read ~/.codex/AGENTS.md → all rules fully restored. Never guess — always re-read.
+  Auto-trigger: when you see "context compacted" or "⚠ Heads up: Long threads and multiple compactions" messages.
+  1. Re-read ~/.codex/AGENTS.md → restore all rules.
+  2. Read {CWD}/.helloagents/plan/*/tasks.md (if exists) → understand current stage and progress.
+  Never guess current state — always verify by reading files.
 
 SAFETY (active before AGENTS.md is loaded):
   Before ANY destructive operation: warn user and get explicit confirmation.
