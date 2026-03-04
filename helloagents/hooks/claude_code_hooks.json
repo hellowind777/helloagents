@@ -74,14 +74,14 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
-            "async": true,
+            "async": false,
             "timeout": 10,
             "description": "HelloAGENTS KB 同步 + L2 会话摘要写入"
           },
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" complete",
-            "async": true,
+            "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 声音通知（完成）"
           }
@@ -95,7 +95,7 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/teammate_idle.py\"",
-            "async": true,
+            "async": false,
             "timeout": 5,
             "description": "HelloAGENTS Agent Teams 空闲检测（teammate 即将空闲时检查共享任务列表）"
           }
@@ -136,7 +136,7 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
-            "async": true,
+            "async": false,
             "timeout": 10,
             "description": "HelloAGENTS 会话结束最终清理"
           }
@@ -150,14 +150,14 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/notify.py\"",
-            "async": true,
+            "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 桌面通知"
           },
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" idle",
-            "async": true,
+            "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 声音通知（等待输入）"
           }
@@ -171,14 +171,14 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/tool_failure_helper.py\"",
-            "async": true,
+            "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 工具失败恢复建议"
           },
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" error",
-            "async": true,
+            "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 声音通知（错误）"
           }
