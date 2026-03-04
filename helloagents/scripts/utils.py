@@ -220,6 +220,11 @@ def get_workspace_path(base_path: Optional[str] = None) -> Path:
         工作空间路径 (.helloagents/)
     """
     base = Path(base_path) if base_path else Path.cwd()
+
+    # 防御：如果传入的路径本身就是 .helloagents 目录，直接返回，避免嵌套
+    if base.name == DEFAULT_WORKSPACE and base.is_dir():
+        return base
+
     new_path = base / DEFAULT_WORKSPACE
     legacy_path = base / "helloagents"
 
