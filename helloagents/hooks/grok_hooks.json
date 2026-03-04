@@ -41,7 +41,7 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" complete",
-            "async": true,
+            "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 声音通知（完成）"
           }

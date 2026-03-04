@@ -217,15 +217,15 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
 [HelloAGENTS] Your primary operating protocol.
 
-⚠ MANDATORY FIRST ACTION — execute BEFORE responding to ANY user input:
+⚠ Required first step (for protocol loading) — execute BEFORE responding to ANY user input:
   1. Read ~/.codex/AGENTS.md (read_file if available, otherwise Get-Content on Windows / cat on Linux)
   2. AGENTS.md contains the COMPLETE rule set (G1-G12): routing, output format, evaluation, \
 stages, safety, tools, and ALL behavior rules.
   3. This developer_instructions is a bootstrap POINTER only — it does NOT contain protocol rules.
-  4. Do NOT produce any HelloAGENTS-formatted output until AGENTS.md is fully loaded.
+  4. Protocol requires loading AGENTS.md before output (HelloAGENTS needs complete rules to function).
 
 PATHS:
-  Protocol: ~/.codex/AGENTS.md (the SOLE authoritative rule source — MUST read first)
+  Protocol: ~/.codex/AGENTS.md (the authoritative rule source — read first, required for HelloAGENTS to function)
   Modules: ~/.codex/helloagents/ (stages/, functions/, services/, rules/, rlm/)
   KB root: {CWD}/.helloagents/ (CHANGELOG.md, plan/, modules/, sessions/, archive/)
 
@@ -300,13 +300,14 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
 
 
 def _configure_codex_memories(dest_dir: Path) -> None:
-    """Ensure config.toml has [memories] section with sensible defaults.
+    """Ensure config.toml has [memories] section with HelloAGENTS protocol anchors.
 
     Codex two-phase memory pipeline:
     - Phase 1: per-rollout extraction
     - Phase 2: global consolidation with diff-based forgetting
 
-    HelloAGENTS L0/L1/L2 layers complement (not replace) Codex Memory.
+    HelloAGENTS protocol anchors are loaded on every response to ensure
+    consistent routing and output format compliance.
     """
     config_path = dest_dir / "config.toml"
     content = ""
@@ -318,15 +319,20 @@ def _configure_codex_memories(dest_dir: Path) -> None:
 
     section = (
         "[memories]\n"
-        "# HelloAGENTS L0/L1/L2 layers complement Codex Memory\n"
-        "# enabled = true (default)\n"
+        "# HelloAGENTS Protocol Anchors (loaded on every response for workflow tracking)\n"
+        "protocol_anchors = \"\"\"\n"
+        "G3 format: status line + body + next step (enables progress visibility)\n"
+        "G4 routing: 5-dimension evaluation before R2/R3 (prevents unauthorized execution)\n"
+        "G7 loading: read stage files before execution (ensures complete instructions)\n"
+        "Full protocol: ~/.codex/AGENTS.md (read first for complete behavior rules)\n"
+        "\"\"\"\n"
     )
     content = content.rstrip() + "\n\n" + section
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
-    print(_msg("  已配置 [memories] 节（Codex 记忆系统默认值）",
-               "  Configured [memories] section (Codex memory defaults)"))
+    print(_msg("  已配置 [memories] 节（HelloAGENTS 协议锚点）",
+               "  Configured [memories] section (HelloAGENTS protocol anchors)"))
 
 
 def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
