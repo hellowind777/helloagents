@@ -604,6 +604,10 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | R2/R3 评估开始（级别判定后、评分前） | rules/evaluation.md |
 | 子代理调度（模块文件中遇到 `[→ G10]` 或 `[RLM:角色名]` 标记时） | rules/subagent-protocols.md |
 
+**注释:**
+- `{role}` 合法值: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
+- 文件不存在时: 输出错误并终止当前 RLM 调用，主代理继续执行
+
 ---
 
 ## G8 | 验收标准（CRITICAL）

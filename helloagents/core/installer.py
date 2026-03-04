@@ -8,7 +8,7 @@ from .._common import (
     CLI_TARGETS, PLUGIN_DIR_NAME, AGENT_PREFIX,
     is_helloagents_file, is_helloagents_rule, backup_user_file,
     get_agents_md_path, get_skill_md_path, get_helloagents_module_path,
-    detect_installed_clis,
+    detect_installed_clis, clean_skills_dir,
 )
 from .codex_config import (
     _configure_codex_toml, _configure_codex_csv_batch,
@@ -72,17 +72,10 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
     removed = []
 
     # --- Clean skills/helloagents/ directory (will be re-deployed fresh if needed) ---
-    legacy_skills_dir = dest_dir / "skills" / "helloagents"
-    if legacy_skills_dir.exists():
-        try:
-            if win_safe_rmtree(legacy_skills_dir):
-                removed.append(f"{legacy_skills_dir} (stale)")
-                skills_parent = dest_dir / "skills"
-                if skills_parent.exists() and not any(skills_parent.iterdir()):
-                    skills_parent.rmdir()
-                    removed.append(f"{skills_parent} (empty parent)")
-        except Exception:
-            pass
+    try:
+        removed.extend(clean_skills_dir(dest_dir))
+    except Exception:
+        pass
 
     # --- Current-version stale rules files ---
     # Only removes files confirmed to be HelloAGENTS-related (is_helloagents_file check).

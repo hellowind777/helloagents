@@ -46,7 +46,7 @@ class _FileLock:
     def __exit__(self, *args):
         if not self.locked:
             return
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             if msvcrt is None:
                 return
             try:
@@ -61,7 +61,7 @@ class _FileLock:
                 pass
 
     def _try_lock(self) -> bool:
-        if platform.system() == "Windows":
+        if sys.platform == "win32":
             if msvcrt is None:
                 return True
             mode = msvcrt.LK_NBLCK if self.exclusive else msvcrt.LK_NBRLCK

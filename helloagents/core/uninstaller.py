@@ -8,7 +8,7 @@ from pathlib import Path
 from .._common import (
     _msg,
     CLI_TARGETS, PLUGIN_DIR_NAME, HELLOAGENTS_MARKER, AGENT_PREFIX,
-    is_helloagents_file,
+    is_helloagents_file, clean_skills_dir, cleanup_empty_parent,
     _detect_installed_targets, _detect_install_method,
 )
 from .codex_config import _cleanup_codex_agents_dotted, _remove_codex_notify
@@ -106,8 +106,7 @@ def _remove_agent_files(dest_dir: Path) -> list[str]:
     for f in agents_dir.glob(f"{AGENT_PREFIX}*.md"):
         f.unlink()
         removed.append(str(f))
-    if agents_dir.exists() and not any(agents_dir.iterdir()):
-        agents_dir.rmdir()
+    if cleanup_empty_parent(agents_dir):
         removed.append(f"{agents_dir} (empty parent)")
     return removed
 
@@ -216,6 +215,16 @@ def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
     except Exception as e:
         print(_msg(f"  ⚠ 清理 dotted agents 键时出错: {e}",
                    f"  ⚠ Error cleaning dotted agents keys: {e}"))
+    # Note: The following config keys are intentionally preserved during uninstall:
+    # - project_doc_max_bytes: May be used by other project documentation tools
+    # - agents.max_threads / agents.max_depth: Generic multi-agent settings
+    # - [features] sqlite: May be used by other Codex features
+    # - [memories]: Codex native memory system (not HelloAGENTS-exclusive)
+    # These keys correspond to installer functions:
+    # - _configure_codex_toml() → project_doc_max_bytes (preserved)
+    # - _configure_codex_csv_batch() → agents.max_threads/max_depth (preserved)
+    # - _configure_codex_memories() → [memories] section (preserved)
+    # Users can manually remove these if desired.
     print(_msg(
         "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories 配置已保留（可能被其他工具使用）。",
         "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories kept in config.toml (may be used by other tools)."))
@@ -311,23 +320,12 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
                        f"  Kept {rules_dest} (user-created, not HelloAGENTS)"))
 
     # Remove skills/helloagents/ directory (SKILL.md deployment)
-    skills_dir = dest_dir / "skills" / "helloagents"
-    if skills_dir.exists():
-        try:
-            if win_safe_rmtree(skills_dir):
-                removed.append(str(skills_dir))
-                skills_parent = dest_dir / "skills"
-                if skills_parent.exists() and not any(skills_parent.iterdir()):
-                    skills_parent.rmdir()
-                    removed.append(f"{skills_parent} (empty parent)")
-            else:
-                print(_msg(f"  ✗ 无法移除 {skills_dir}（可能被 CLI 进程占用）",
-                           f"  ✗ Cannot remove {skills_dir} (may be locked by CLI)"))
-                ok = False
-        except Exception as e:
-            print(_msg(f"  ⚠ 移除 skills 目录时出错: {e}",
-                       f"  ⚠ Error removing skills directory: {e}"))
-            ok = False
+    try:
+        removed.extend(clean_skills_dir(dest_dir))
+    except Exception as e:
+        print(_msg(f"  ⚠ 移除 skills 目录时出错: {e}",
+                   f"  ⚠ Error removing skills directory: {e}"))
+        ok = False
 
     # Target-specific cleanup
     if target == "claude":

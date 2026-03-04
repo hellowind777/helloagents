@@ -12,6 +12,27 @@ from .._common import _msg
 
 
 # ---------------------------------------------------------------------------
+# Windows file lock error handling
+# ---------------------------------------------------------------------------
+
+def handle_file_lock_error(path: Path, operation: str = "操作") -> None:
+    """Unified error handler for Windows file lock issues.
+
+    Provides consistent user guidance when files are locked by running processes.
+
+    Args:
+        path: The file or directory that is locked
+        operation: Description of the operation that failed (Chinese)
+    """
+    print(_msg(
+        f"  ⚠ {operation}失败: {path.name} 被占用",
+        f"  ⚠ {operation} failed: {path.name} is locked"))
+    print(_msg(
+        "  → 请关闭相关 CLI 进程后重试",
+        "  → Please close related CLI processes and retry"))
+
+
+# ---------------------------------------------------------------------------
 # pip remnant cleanup
 # ---------------------------------------------------------------------------
 
