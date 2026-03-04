@@ -1,7 +1,7 @@
-"""HelloAGENTS Settings Hooks — 通用 settings.json hooks 配置工具（Gemini/Qwen/Grok）。
+"""HelloAGENTS Settings Hooks - Generic settings.json hooks configuration (Gemini/Qwen/Grok).
 
-Gemini CLI、Qwen Code、Grok CLI 均使用 settings.json 格式存储 hooks，
-本模块提供通用的配置/移除函数，避免三份重复实现。
+Gemini CLI, Qwen Code, and Grok CLI all use settings.json format for hooks.
+This module provides shared configuration logic for these CLIs.
 """
 
 import json
@@ -36,7 +36,11 @@ def _load_hooks_json(hooks_json_name: str) -> dict:
 
 
 def _configure_settings_hooks(dest_dir: Path, hooks_json_name: str) -> None:
-    """通用: 加载指定 hooks JSON → 解析占位符 → 合并到 settings.json。"""
+    """Generic: Load hooks JSON, resolve placeholders, merge into settings.json.
+
+    Idempotent: Uses "remove old + add new" strategy. This ensures clean updates
+    but does not preserve user modifications to HelloAGENTS hooks.
+    """
     settings_path = dest_dir / "settings.json"
 
     settings = {}
@@ -81,7 +85,7 @@ def _configure_settings_hooks(dest_dir: Path, hooks_json_name: str) -> None:
 
 
 def _remove_settings_hooks(dest_dir: Path) -> bool:
-    """通用: 从 settings.json 移除所有 HelloAGENTS hooks。"""
+    """Generic: Remove all HelloAGENTS hooks from settings.json."""
     settings_path = dest_dir / "settings.json"
     if not settings_path.exists():
         return False
@@ -139,7 +143,11 @@ def _remove_gemini_hooks(dest_dir: Path) -> bool:
 
 
 def _configure_qwen_hooks(dest_dir: Path) -> None:
-    """Configure Qwen Code hooks (reuses Gemini hooks JSON)."""
+    """Configure Qwen Code hooks (reuses Gemini hooks JSON).
+
+    Qwen Code and Gemini CLI share the same settings.json hook event schema,
+    verified compatible as of 2026-03.
+    """
     _configure_settings_hooks(dest_dir, GEMINI_HOOKS_JSON)
 
 

@@ -4,7 +4,7 @@ import re
 import sys
 from pathlib import Path
 
-from .._common import _msg, CODEX_NOTIFY_CMD, PLUGIN_DIR_NAME
+from .._common import _msg, CODEX_NOTIFY_CMD, PLUGIN_DIR_NAME, get_python_cmd
 
 
 # ---------------------------------------------------------------------------
@@ -270,8 +270,19 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
 
     toml_val = f'developer_instructions = """\n{_CODEX_DEVELOPER_INSTRUCTIONS}\n"""'
 
-    # Remove existing developer_instructions (ours or user's) and trailing blanks
+    # Check if existing developer_instructions is user-defined (not ours)
     m = _DI_RE.search(content)
+    if m:
+        existing = m.group(0)
+        if "HelloAGENTS" not in existing:
+            # User-defined content — backup before overwriting
+            backup_path = config_path.parent / "developer_instructions.bak"
+            backup_path.write_text(existing, encoding="utf-8")
+            print(_msg(
+                f"  ⚠ 已备份现有 developer_instructions 到: {backup_path}",
+                f"  ⚠ Backed up existing developer_instructions to: {backup_path}"))
+
+    # Remove existing developer_instructions (ours or user's) and trailing blanks
     if m:
         end = m.end()
         while end < len(content) and content[end] in '\n\r':
@@ -356,7 +367,8 @@ def _resolve_codex_notify_cmd(dest_dir: Path) -> str:
     """
     scripts_dir = (dest_dir / PLUGIN_DIR_NAME / "scripts").as_posix()
     cmd = CODEX_NOTIFY_CMD.replace("{SCRIPTS_DIR}", scripts_dir)
-    if sys.platform == "win32":
+    python_cmd = get_python_cmd()
+    if python_cmd == "python":
         cmd = cmd.replace("python3 ", "python ")
     return cmd
 
@@ -366,6 +378,11 @@ def _configure_codex_notify(dest_dir: Path) -> None:
 
     Codex CLI expects notify as an array: notify = ["command"]
 
+    Format history:
+    - v2.3.0-: Used string format notify = "command"
+    - v2.3.1+: Migrated to array format notify = ["command"]
+
+    This function handles both formats for backward compatibility:
     - If notify is not set → add it
     - If notify is ours (old string or array format) → update to array format
     - If notify is user-defined → skip (don't overwrite)

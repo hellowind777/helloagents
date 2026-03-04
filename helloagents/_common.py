@@ -129,6 +129,51 @@ def backup_user_file(file_path: Path) -> Path:
     return backup_path
 
 
+def clean_skills_dir(dest_dir: Path) -> list[str]:
+    """Remove skills/helloagents/ directory and empty parent if needed.
+
+    Returns list of removed paths.
+    """
+    from .core.win_helpers import win_safe_rmtree
+    removed = []
+    skills_dir = dest_dir / "skills" / "helloagents"
+    if skills_dir.exists():
+        if win_safe_rmtree(skills_dir):
+            removed.append(str(skills_dir))
+            skills_parent = dest_dir / "skills"
+            if skills_parent.exists() and not any(skills_parent.iterdir()):
+                skills_parent.rmdir()
+                removed.append(f"{skills_parent} (empty parent)")
+    return removed
+
+
+def get_python_cmd() -> str:
+    """Return platform-appropriate Python command name.
+
+    Returns 'python' on Windows, 'python3' elsewhere.
+    """
+    return "python" if sys.platform == "win32" else "python3"
+
+
+def is_windows() -> bool:
+    """Check if running on Windows platform.
+
+    Use this instead of platform.system() == "Windows" for consistency.
+    """
+    return sys.platform == "win32"
+
+
+def cleanup_empty_parent(path: Path) -> bool:
+    """Remove parent directory if it's empty after child removal.
+
+    Returns True if parent was removed, False otherwise.
+    """
+    if path.exists() and not any(path.iterdir()):
+        path.rmdir()
+        return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Path helpers
 # ---------------------------------------------------------------------------
@@ -178,14 +223,21 @@ def resolve_hook_placeholders(hooks: dict, scripts_dir: str) -> dict:
     Resolves:
     - {SCRIPTS_DIR} → actual installed scripts path
     - python3 → platform-appropriate Python command (Windows: python)
+
+    Validates that all placeholders are resolved and warns if issues found.
     """
     win = sys.platform == "win32"
+    unresolved = []
 
     def _replace(obj):
         if isinstance(obj, str):
+            original = obj
             obj = obj.replace("{SCRIPTS_DIR}", scripts_dir)
             if win:
                 obj = obj.replace("python3 ", "python ")
+            # Check for unresolved placeholders
+            if "{" in obj and "}" in obj:
+                unresolved.append(original)
             return obj
         if isinstance(obj, dict):
             return {k: _replace(v) for k, v in obj.items()}
@@ -193,7 +245,13 @@ def resolve_hook_placeholders(hooks: dict, scripts_dir: str) -> dict:
             return [_replace(item) for item in obj]
         return obj
 
-    return _replace(hooks)
+    result = _replace(hooks)
+
+    if unresolved:
+        print(f"[HelloAGENTS] Warning: unresolved placeholders in hooks: {unresolved[:3]}",
+              file=sys.stderr)
+
+    return result
 
 
 # ---------------------------------------------------------------------------

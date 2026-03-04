@@ -16,8 +16,18 @@ Linux: aplay -q → paplay 降级链
 """
 
 import sys
+import io
 import os
 from pathlib import Path
+
+# Windows UTF-8 编码设置
+if sys.platform == 'win32':
+    if hasattr(sys.stdin, 'buffer'):
+        sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
+    if hasattr(sys.stdout, 'buffer'):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'buffer'):
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 声音文件目录
 SOUNDS_DIR = Path(__file__).parent.parent / "assets" / "sounds"

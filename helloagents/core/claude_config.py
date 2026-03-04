@@ -315,8 +315,8 @@ def _remove_claude_permissions(dest_dir: Path) -> bool:
 
 # Mapping: output filename -> list of G section numbers
 _RULE_FILE_MAP = {
-    "config.md": [1, 2, 3],
-    "stages.md": [5, 6, 7, 8],
+    "config.md": [1, 2, 3, 7],
+    "stages.md": [5, 6, 8],
     "subagent.md": [9, 10],
     "attention.md": [11, 12],
 }
@@ -380,6 +380,18 @@ def _deploy_claude_rules(dest_dir: Path, agents_md_path: Path) -> int:
     """
     content = agents_md_path.read_text(encoding="utf-8")
     files = _split_agents_md(content)
+
+    # Verify split completeness: check that G4 exists in CLAUDE.md
+    if "## G4" not in files.get("CLAUDE.md", ""):
+        print(_msg("  ⚠ AGENTS.md 拆分警告: G4 章节未找到",
+                   "  ⚠ AGENTS.md split warning: G4 section not found"))
+
+    # Verify expected rule files were generated
+    expected_files = set(_RULE_FILE_MAP.keys())
+    actual_files = set(f for f in files.keys() if f != "CLAUDE.md")
+    if expected_files != actual_files:
+        print(_msg(f"  ⚠ 拆分规则文件不完整: 预期 {expected_files}, 实际 {actual_files}",
+                   f"  ⚠ Incomplete rule files: expected {expected_files}, got {actual_files}"))
 
     # Write root file
     (dest_dir / "CLAUDE.md").write_text(files["CLAUDE.md"], encoding="utf-8")
