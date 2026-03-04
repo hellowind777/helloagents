@@ -243,7 +243,7 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 恢复路径: {KB_ROOT}/plan/ 下存在未完成方案包（LIVE_STATUS != completed）→ 读取其状态作为上下文，结合用户输入判断是否恢复
   例外: ~命令 | 用户明确说停止/取消/新任务/重来
 命令路径: 输入中包含 ~xxx → 提取命令 → 匹配命令处理器 → 状态机流程
-外部工具路径: 语义匹配可用 Skill/MCP/插件 → 命中 → 按工具协议执行
+外部工具路径: 匹配当前会话可用的 Skill/MCP/插件（含用户自定义） → 命中 → 按工具协议执行
 通用路径: 其余所有输入 → 级别判定 → 按级别行为执行（R0/R1 直接执行，R2/R3 先确认再执行）
 记忆层: 会话启动时自动加载 L0+L2 记忆 [→ services/memory.md]  # 此处 L0/L2 为记忆层级，非路由级别
 通用规则:
@@ -254,7 +254,7 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 ### 外部工具路径行为（CRITICAL）
 
 ```yaml
-触发: 语义匹配到可用 Skill/MCP/插件
+触发: 匹配到当前会话可用的 Skill/MCP/插件（用户自定义的已由 CLI 自动注册，可直接匹配使用）
 执行: 按工具自身协议执行，不进入级别判定
 图标: 🔧
 输出: 仅包装状态栏 + 下一步引导，主体内容完全由工具生成
@@ -653,6 +653,13 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ```yaml
 RLM 角色: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
 调用: 阶段文件中 [RLM:角色名] 处必须调用角色子代理，[→ G10] 处按通道协议调度原生子代理
+用户代理: 当前会话中可用的用户自定义子代理（非 ha-* 前缀），任务分配时作为候选执行者
+分配规则:
+  匹配: 任务描述与用户代理的 description 语义匹配度高 → 优先分配给该用户代理
+  冲突: 用户代理与 RLM 角色能力重叠 → 用户代理优先（用户意图 > 系统预设）
+  回退: 无匹配用户代理 → 回退到 RLM 角色或原生子代理
+  显式: 用户在 prompt 中指定使用某代理 → 强制使用
+Skill/MCP 辅助: DEVELOP 阶段识别到可用 Skill/MCP 可加速当前子任务 → 主动调用（非强制）
 代理降级: 子代理调用失败 → 主代理直接执行，在 tasks.md 标记 [降级执行]
 语言传播: 子代理 prompt 须包含当前 OUTPUT_LANGUAGE 设置
 完整调用协议（强制调用规则、编排范式、CLI 通道）: 加载 rules/subagent-protocols.md [→ G7 子代理调度时加载]
