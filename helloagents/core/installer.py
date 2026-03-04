@@ -177,13 +177,18 @@ def install(target: str) -> bool:
             print(f"    - {r}")
 
     try:
-        # Preserve user/ directory (contains user preferences, not overwritable)
-        user_dir = plugin_dest / "user"
-        user_backup = None
-        if user_dir.exists():
-            import tempfile
-            user_backup = Path(tempfile.mkdtemp()) / "user"
-            shutil.copytree(user_dir, user_backup)
+        # Preserve user/ and commands/ directories (user data, not overwritable)
+        import tempfile
+        _preserve_dirs = ("user", "commands")
+        _backups: dict[str, Path | None] = {}
+        for _dname in _preserve_dirs:
+            _src = plugin_dest / _dname
+            if _src.exists():
+                _bak = Path(tempfile.mkdtemp()) / _dname
+                shutil.copytree(_src, _bak)
+                _backups[_dname] = _bak
+            else:
+                _backups[_dname] = None
 
         # Remove old module directory completely before copying
         if plugin_dest.exists():
@@ -206,13 +211,14 @@ def install(target: str) -> bool:
         print(_msg(f"  已安装模块到: {plugin_dest}",
                    f"  Installed module to: {plugin_dest}"))
 
-        # Restore user/ directory (overwrite template with user data)
-        if user_backup and user_backup.exists():
-            target_user = plugin_dest / "user"
-            if target_user.exists():
-                shutil.rmtree(target_user)
-            shutil.copytree(user_backup, target_user)
-            shutil.rmtree(user_backup.parent)
+        # Restore user/ and commands/ directories (overwrite templates with user data)
+        for _dname, _bak in _backups.items():
+            if _bak and _bak.exists():
+                _target = plugin_dest / _dname
+                if _target.exists():
+                    shutil.rmtree(_target)
+                shutil.copytree(_bak, _target)
+                shutil.rmtree(_bak.parent)
 
         # Deploy rules
         if agents_md_src.exists():
@@ -260,9 +266,10 @@ def install(target: str) -> bool:
         if target == "claude":
             _deploy_agent_files(dest_dir)
     except Exception as e:
-        # Clean up temp directory on failure
-        if user_backup and user_backup.parent.exists():
-            shutil.rmtree(user_backup.parent, ignore_errors=True)
+        # Clean up temp directories on failure
+        for _bak in _backups.values():
+            if _bak and _bak.parent.exists():
+                shutil.rmtree(_bak.parent, ignore_errors=True)
         print(_msg(f"  ✗ 安装失败: {e}", f"  ✗ Installation failed: {e}"))
         return False
 
