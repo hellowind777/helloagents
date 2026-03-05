@@ -6,7 +6,7 @@
 <execution_constraint>
 SUB-AGENT CHECK: If your task prompt contains "[跳过指令]" or "跳过路由评分", you are a spawned sub-agent — execute the task directly, skip ALL routing below, do NOT output G3 format (no【HelloAGENTS】header, no 🔄 下一步 footer). Return results only.
 
-ALL outputs MUST use G3 format (status line + body + next step), including simple greetings and R0 responses. Never output raw content without G3 wrapper.
+G3 FORMAT TIMING: Apply G3 format wrapper (status line + body + next step) ONLY ONCE when your response is complete. During streaming output or multi-step execution, output content directly without G3 wrapper until the final output.
 
 BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST follow the routing protocol defined in G4:
 - Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions.
@@ -158,7 +158,9 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 
 ## G3 | 输出格式（CRITICAL）
 
-**适用范围（CRITICAL）:** G3 格式适用于所有输出场景，包括 R0 直接响应、R1/R2/R3 流程、命令路径、外部工具路径，无例外。
+**适用范围（CRITICAL）:** 所有完成的响应必须使用 G3 格式，包括 R0 直接响应、R1/R2/R3 流程、命令路径、外部工具路径。流式输出过程中的中间片段除外（见下方流式输出规则）。
+
+**流式输出规则（CRITICAL）:** 在流式输出或多步骤执行过程中，直接输出内容，不包装 G3 格式。仅在响应完成时输出一次完整的 G3 格式。
 
 ```
 {图标}【HelloAGENTS】- {状态描述}  ← 必有
@@ -259,16 +261,18 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 
 ```yaml
 触发: 匹配到当前会话可用的 Skill/MCP/插件（用户自定义的已由 CLI 自动注册，可直接匹配使用）
-执行: 调用工具获取内容（不进入级别判定），然后用 G3 格式包装输出（MUST）
+执行: 调用工具获取内容（不进入级别判定）
 图标: 🔧
 
 输出格式（CRITICAL）:
+  工具执行完成后: 用 G3 格式包装最终输出（状态栏 + 主体 + 下一步）
+  工具执行过程中: 直接透传工具输出，不包装 G3 格式
   状态栏: 🔧【HelloAGENTS】- {工具名}：{工具内部状态|执行}
   主体内容: 完全由工具/技能生成，HelloAGENTS 不插入任何自有内容
   下一步引导: 🔄 下一步: {工具输出的引导 | 通用引导}
 
-DO: 始终输出完整的 G3 格式（状态栏 + 主体 + 下一步），即使工具已经有自己的格式
-DO NOT: 直接输出工具内容而不包装 | 跳过状态栏或下一步引导
+DO: 仅在工具执行完成后输出一次完整的 G3 格式
+DO NOT: 在工具执行过程中的每次中间输出都包装 G3 格式 | 直接输出工具内容而不包装最终输出
 
 Prohibitions (CRITICAL):
   - Do NOT enter level routing (R0/R1/R2/R3)
