@@ -33,12 +33,12 @@ PostToolUse — 进度快照:
   事件: PostToolUse | 匹配: toolName 匹配 Write|Edit|NotebookEdit
   动作: command hook，检查距上次快照是否超过阈值(5次写操作)，超过则生成进度快照
 
-Stop — KB 同步 + L2 写入:
-  事件: Stop | 异步: async=true
-  动作: command hook，触发 KnowledgeService 同步和 L2 摘要写入
+Stop — KB 同步 + L2 写入 + 声音通知:
+  事件: Stop
+  动作: command hook，触发 KnowledgeService 同步和 L2 摘要写入，播放完成声音
 
 TeammateIdle — Agent Teams 空闲检测:
-  事件: TeammateIdle | 异步: async=true
+  事件: TeammateIdle
   动作: command hook，teammate 即将空闲时检查共享任务列表是否有未认领任务
   前提: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
@@ -53,7 +53,7 @@ PreToolUse — 危险命令安全防护:
   超时: 3s | 脚本: pre_tool_guard.py
 
 SessionEnd — 会话结束最终清理:
-  事件: SessionEnd | 异步: async=true
+  事件: SessionEnd
   动作: command hook，会话彻底结束时执行 KB 同步 + 摘要写入 + 临时计数器文件清理
   超时: 10s | 脚本: session_end.py（复用 Stop 脚本，通过 hookEventName 区分）
 
@@ -61,13 +61,13 @@ Notification — 声音通知（等待输入）:
   事件: Notification | 匹配: idle_prompt
   动作: command hook，Claude Code 等待用户输入时播放声音提醒
         跨平台: Windows winsound 同步播放 | macOS afplay | Linux aplay/paplay | 全失败降级 bell
-  超时: 5s | 异步: async=true | 脚本: sound_notify.py idle
+  超时: 5s | 脚本: sound_notify.py idle
 
 PostToolUseFailure — 工具失败恢复建议 + 声音通知:
   事件: PostToolUseFailure | 匹配: 所有工具
   动作: command hook，匹配已知错误模式（权限、文件未找到、编码、磁盘空间、冲突、模块缺失等），
         注入 additionalContext 恢复建议，并播放错误提示音
-  超时: 5s | 异步: async=true | 脚本: tool_failure_helper.py + sound_notify.py error
+  超时: 5s | 脚本: tool_failure_helper.py + sound_notify.py error
 ```
 
 ---
@@ -84,36 +84,107 @@ notify = ["helloagents --check-update --silent"]
 # 作用: 代理完成时检查 HelloAGENTS 版本更新，有更新则显示提示
 ```
 
+**notify JSON payload（v0.107+）:**
+```json
+{
+  "type": "agent-turn-complete",
+  "thread-id": "...",
+  "turn-id": "...",
+  "cwd": "/path/to/project",
+  "client": "codex-tui",
+  "input-messages": [...],
+  "last-assistant-message": "..."
+}
+```
+
+`client` 字段（v0.107 新增）: TUI 报告 `codex-tui`，app-server 报告 `initialize.clientInfo.name`（如 `vscode`、`xcode`）。
+HelloAGENTS 的 `codex_notify.py` 根据 `client` 字段过滤：IDE 来源跳过声音通知（IDE 有自己的通知机制）。
+
 ### 多代理配置
 
-通过 `/experimental` 命令开启 collab 特性后可用:
+通过 `/agent` 命令（v0.110+）或 `/experimental` 开启:
 
 ```toml
 # 全局代理限制
 agents.max_threads = 16   # 最大并发子代理线程数
 agents.max_depth = 1      # 嵌套深度（默认 1）
 
-# 角色定义（每个角色独立配置，模型名按实际可用模型填写）
+# 原生角色（每个角色独立配置，模型名按实际可用模型填写）
 [agents.explorer]
 description = "代码探索和依赖分析"
 model = "<轻量模型名>"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
+nickname_candidates = ["探索者", "Scout", "Pathfinder"]
 
 [agents.worker]
 description = "代码实现和修改"
 model = "<主力模型名>"
 model_reasoning_effort = "high"
 sandbox_mode = "full"
+nickname_candidates = ["工匠", "Builder", "Forge"]
+
+[agents.monitor]
+description = "长时间运行的监控和轮询任务"
+model = "<轻量模型名>"
+model_reasoning_effort = "low"
+sandbox_mode = "read-only"
+nickname_candidates = ["哨兵", "Watcher", "Radar"]
+
+# HelloAGENTS RLM 角色
+[agents.reviewer]
+description = "代码审查和质量检查"
+model = "<主力模型名>"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+nickname_candidates = ["审查员", "Inspector", "Sentinel"]
+
+[agents.synthesizer]
+description = "多方案评估与综合分析"
+model = "<主力模型名>"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+nickname_candidates = ["综合师", "Synthesizer", "Oracle"]
+
+[agents.kb_keeper]
+description = "知识库同步与维护"
+model = "<主力模型名>"
+model_reasoning_effort = "medium"
+sandbox_mode = "full"
+nickname_candidates = ["档案员", "Librarian", "Keeper"]
+
+[agents.pkg_keeper]
+description = "方案包生命周期管理"
+model = "<主力模型名>"
+model_reasoning_effort = "medium"
+sandbox_mode = "full"
+nickname_candidates = ["管家", "Steward", "Curator"]
+
+[agents.writer]
+description = "独立文档生成与编写"
+model = "<主力模型名>"
+model_reasoning_effort = "high"
+sandbox_mode = "full"
+nickname_candidates = ["笔者", "Scribe", "Quill"]
 ```
 
-### 审批传播
+### nickname_candidates（v0.110 新增）
 
-父代理审批策略自动传播到子代理，可按类型自动拒绝特定审批请求。
+角色可定义语义化昵称池，子代理生成时从池中分配，替代默认随机昵称。
+用于线程切换和日志识别，提升多代理场景的可读性。
 
-### 子代理昵称
+HelloAGENTS 角色昵称映射:
 
-子代理自动分配随机昵称，用于线程切换和日志识别。
+| 角色 | 类型 | 昵称候选 |
+|------|------|----------|
+| explorer | 原生 | 探索者, Scout, Pathfinder |
+| worker | 原生 | 工匠, Builder, Forge |
+| monitor | 原生 | 哨兵, Watcher, Radar |
+| reviewer | RLM | 审查员, Inspector, Sentinel |
+| synthesizer | RLM | 综合师, Synthesizer, Oracle |
+| kb_keeper | RLM | 档案员, Librarian, Keeper |
+| pkg_keeper | RLM | 管家, Steward, Curator |
+| writer | RLM | 笔者, Scribe, Quill |
 
 ---
 
@@ -132,10 +203,10 @@ BeforeAgent — 上下文注入:
   动作: inject_context.py，通过事件名映射注入规则强化上下文
   超时: 3s
 
-AfterAgent — KB 同步 + 会话摘要:
+AfterAgent — KB 同步 + 会话摘要 + 声音通知:
   事件: AfterAgent（等效 Claude Code Stop）
-  动作: session_end.py，触发 KB 同步和 L2 摘要写入
-  超时: 10s | 异步: async=true
+  动作: session_end.py，触发 KB 同步和 L2 摘要写入；sound_notify.py 播放完成声音
+  超时: 10s
 
 PreCompress — 压缩前进度快照:
   事件: PreCompress（等效 Claude Code PreCompact）
@@ -161,7 +232,7 @@ PreToolUse — 危险命令安全防护:
 PostToolUse — 进度快照:
   事件: PostToolUse | 匹配: Write|Edit
   动作: progress_snapshot.py，写操作计数+阈值快照
-  超时: 10s | 异步: async=true
+  超时: 10s
 ```
 
 ---

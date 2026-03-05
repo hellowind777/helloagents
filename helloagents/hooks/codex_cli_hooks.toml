@@ -10,9 +10,14 @@
 
 # notify — 代理轮次完成时触发
 # 格式: notify = ["命令路径"]（数组格式）
+# JSON payload 包含: type, thread-id, turn-id, cwd, client (v0.107+)
 notify = ["helloagents --check-update --silent"]
 
-# ─── 多代理配置（需 /experimental 开启 collab 特性）───
+# tui.notifications — 事件类型过滤（可选）
+# 格式: 布尔或事件类型数组
+# tui.notifications = ["agent-turn-complete", "approval-requested"]
+
+# ─── 多代理配置（需 /experimental 或 /agent 开启）───
 
 # 全局代理限制
 # agents.max_threads = 16        # 最大并发子代理线程数（spawn_agent ≤6，CSV ≤64）
@@ -24,12 +29,14 @@ notify = ["helloagents --check-update --silent"]
 # model = "<轻量模型名>"
 # model_reasoning_effort = "medium"
 # sandbox_mode = "read-only"
+# nickname_candidates = ["探索者", "Scout", "Pathfinder"]
 
 # [agents.worker]
 # description = "代码实现和修改"
 # model = "<主力模型名>"
 # model_reasoning_effort = "high"
 # sandbox_mode = "full"
+# nickname_candidates = ["工匠", "Builder", "Forge"]
 
 # [agents.reviewer]
 # description = "代码审查和质量检查"
@@ -37,3 +44,39 @@ notify = ["helloagents --check-update --silent"]
 # model = "<主力模型名>"
 # model_reasoning_effort = "high"
 # sandbox_mode = "read-only"
+# nickname_candidates = ["审查员", "Inspector", "Sentinel"]
+
+# [agents.synthesizer]
+# description = "多方案评估与综合分析"
+# model = "<主力模型名>"
+# model_reasoning_effort = "high"
+# sandbox_mode = "read-only"
+# nickname_candidates = ["综合师", "Synthesizer", "Oracle"]
+
+# [agents.kb_keeper]
+# description = "知识库同步与维护"
+# model = "<主力模型名>"
+# model_reasoning_effort = "medium"
+# sandbox_mode = "full"
+# nickname_candidates = ["档案员", "Librarian", "Keeper"]
+
+# [agents.pkg_keeper]
+# description = "方案包生命周期管理"
+# model = "<主力模型名>"
+# model_reasoning_effort = "medium"
+# sandbox_mode = "full"
+# nickname_candidates = ["管家", "Steward", "Curator"]
+
+# [agents.writer]
+# description = "独立文档生成与编写"
+# model = "<主力模型名>"
+# model_reasoning_effort = "high"
+# sandbox_mode = "full"
+# nickname_candidates = ["笔者", "Scribe", "Quill"]
+
+# [agents.monitor]
+# description = "长时间运行的监控和轮询任务"
+# model = "<轻量模型名>"
+# model_reasoning_effort = "low"
+# sandbox_mode = "read-only"
+# nickname_candidates = ["哨兵", "Watcher", "Radar"]
