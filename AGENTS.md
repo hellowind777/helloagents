@@ -8,7 +8,7 @@ SUB-AGENT CHECK: If your task prompt contains "[跳过指令]" or "跳过路由�
 
 G3 FORMAT TIMING: Apply G3 format wrapper (status line + body + next step) ONLY ONCE when your response is complete. During streaming output or multi-step execution, output content directly without G3 wrapper until the final output.
 
-COMPACTION RECOVERY: If you see "⚠ Heads up: Long threads" or context was compressed, immediately read {KB_ROOT}/plan/*/tasks.md (especially LIVE_STATUS section) to restore complete workflow state before proceeding.
+COMPACTION RECOVERY: If context was compressed, immediately read {KB_ROOT}/plan/*/tasks.md (specifically LIVE_STATUS section) to restore workflow state (all G6-defined state variables: workflow variables, task complexity variables, knowledge base and package variables). Combine restored state with current user input to determine actual current state and correct next action, avoiding incorrect re-evaluation or stage confusion. Continue from interruption point if workflow should proceed (user input is task-related or continuation request), or enter routing if user requests new task.
 
 BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST follow the routing protocol defined in G4:
 - Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions.
@@ -248,7 +248,7 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 ### 一步路由
 
 ```yaml
-恢复路径: {KB_ROOT}/plan/ 下存在未完成方案包（LIVE_STATUS != completed）→ 读取其状态作为上下文，结合用户输入判断是否恢复
+恢复路径: {KB_ROOT}/plan/ 下存在未完成方案包（LIVE_STATUS != completed）→ 读取其状态作为上下文，结合用户输入判断当前真实状态，从而正确继续当前/后续任务，避免错误的重新评估和阶段错乱
   例外: ~命令 | 用户明确说停止/取消/新任务/重来
 命令路径: 输入中包含 ~xxx → 提取命令 → 匹配命令处理器 → 状态机流程
 外部工具路径: 匹配当前会话可用的 Skill/MCP/插件（含用户自定义） → 命中 → 按工具协议执行
