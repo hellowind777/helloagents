@@ -214,12 +214,7 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 # Codex developer_instructions — elevate HelloAGENTS routing to developer role
 # ---------------------------------------------------------------------------
 
-_CODEX_DEVELOPER_INSTRUCTIONS = """\
-用户要求你严格遵循 HelloAGENTS 协议来解决问题。
-
-协议位置: ~/.codex/AGENTS.md + ~/.codex/helloagents/
-
-请始终严格按照 HelloAGENTS 规则执行。"""
+_CODEX_DEVELOPER_INSTRUCTIONS = "CRITICAL: Load and strictly enforce HelloAGENTS protocol from ~/.codex/AGENTS.md and ~/.codex/helloagents/ before processing any request."
 
 # Match developer_instructions = """...""" or "..." (top-level only)
 _DI_RE = re.compile(
@@ -270,51 +265,6 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
                "  Configured developer_instructions (HelloAGENTS recovery protocol)"))
 
 
-def _configure_codex_memories(dest_dir: Path) -> None:
-    """Ensure config.toml has [memories] section with HelloAGENTS protocol anchors.
-
-    This section is fully managed by HelloAGENTS — any existing [memories]
-    content is overwritten on install/update.
-
-    Codex two-phase memory pipeline:
-    - Phase 1: per-rollout extraction
-    - Phase 2: global consolidation with diff-based forgetting
-
-    HelloAGENTS protocol anchors are loaded on every response to ensure
-    consistent routing and output format compliance.
-    """
-    config_path = dest_dir / "config.toml"
-    content = ""
-    if config_path.exists():
-        content = config_path.read_text(encoding="utf-8")
-
-    # Remove existing [memories] section (fully managed by HelloAGENTS)
-    content = re.sub(
-        r'^\[memories\].*?(?=^\[|\Z)',
-        '',
-        content,
-        flags=re.MULTILINE | re.DOTALL
-    )
-
-    section = (
-        "[memories]\n"
-        "# HelloAGENTS Protocol Anchors\n"
-        "protocol_anchors = \"\"\"\n"
-        "用户要求你严格遵循 HelloAGENTS 协议来解决问题。\n"
-        "\n"
-        "协议位置: ~/.codex/AGENTS.md + ~/.codex/helloagents/\n"
-        "\n"
-        "请始终严格按照 HelloAGENTS 规则执行。\n"
-        "\"\"\"\n"
-    )
-    content = content.rstrip() + "\n\n" + section
-
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(content, encoding="utf-8")
-    print(_msg("  已配置 [memories] 节（HelloAGENTS 协议锚点）",
-               "  Configured [memories] section (HelloAGENTS protocol anchors)"))
-
-
 def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
     """Remove developer_instructions from config.toml.
 
@@ -362,16 +312,8 @@ def _resolve_codex_notify_cmd(dest_dir: Path) -> str:
 def _configure_codex_notify(dest_dir: Path) -> None:
     """Add HelloAGENTS notify hook to Codex CLI config.toml.
 
-    Codex CLI expects notify as an array: notify = ["command"]
-
-    Format history:
-    - v2.3.0-: Used string format notify = "command"
-    - v2.3.1+: Migrated to array format notify = ["command"]
-
-    This function handles both formats for backward compatibility:
-    - If notify is not set → add it
-    - If notify is ours (old string or array format) → update to array format
-    - If notify is user-defined → skip (don't overwrite)
+    This key is fully managed by HelloAGENTS — any existing content is
+    overwritten on install/update. User-defined notify will be backed up.
     """
     config_path = dest_dir / "config.toml"
     content = ""
@@ -379,53 +321,32 @@ def _configure_codex_notify(dest_dir: Path) -> None:
         content = config_path.read_text(encoding="utf-8")
 
     resolved_cmd = _resolve_codex_notify_cmd(dest_dir)
-    # Escape inner double quotes for TOML basic string
     toml_cmd = resolved_cmd.replace('"', '\\"')
     notify_line = f'notify = ["{toml_cmd}"]'
 
-    # Match both old string format and new array format
+    # Check for existing notify (string or array format)
     m_str = re.search(r'^notify\s*=\s*"([^"]*)"', content, re.MULTILINE)
     m_arr = re.search(r'^notify\s*=\s*\[([^\]]*)\]', content, re.MULTILINE)
 
-    if m_str:
-        # Old string format — upgrade to array if ours, skip if user's
-        if "helloagents" in m_str.group(1):
-            content = re.sub(
-                r'^notify\s*=\s*"[^"]*"',
-                notify_line,
-                content, count=1, flags=re.MULTILINE)
-            config_path.write_text(content, encoding="utf-8")
-            print(_msg("  已更新 notify hook 为数组格式 (config.toml)",
-                       "  Updated notify hook to array format (config.toml)"))
-            return
-        print(_msg("  跳过 notify 配置（已有用户自定义值）",
-                   "  Skipped notify config (user-defined value exists)"))
-        return
+    existing = m_str or m_arr
+    if existing:
+        existing_val = existing.group(0)
+        # Backup if user-defined (not HelloAGENTS)
+        if "helloagents" not in existing_val.lower():
+            backup_path = config_path.parent / "notify.bak"
+            backup_path.write_text(existing_val, encoding="utf-8")
+            print(_msg(f"  ⚠ 已备份现有 notify 到: {backup_path}",
+                       f"  ⚠ Backed up existing notify to: {backup_path}"))
 
-    if m_arr:
-        # Array format — check if ours
-        arr_content = m_arr.group(1)
-        if "helloagents" in arr_content:
-            if "codex_notify" not in arr_content:
-                content = re.sub(
-                    r'^notify\s*=\s*\[[^\]]*\]',
-                    notify_line,
-                    content, count=1, flags=re.MULTILINE)
-                config_path.write_text(content, encoding="utf-8")
-                print(_msg("  已更新 notify hook (config.toml)",
-                           "  Updated notify hook (config.toml)"))
-            return
-        print(_msg("  跳过 notify 配置（已有用户自定义值）",
-                   "  Skipped notify config (user-defined value exists)"))
-        return
+        # Remove existing notify
+        content = re.sub(r'^notify\s*=\s*(?:"[^"]*"|\[[^\]]*\])', '', content, count=1, flags=re.MULTILINE)
 
-    # Not present — add before first TOML [section] header or at top
+    # Add new notify
     content = _insert_before_first_section(content, notify_line)
-
-    config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
     print(_msg("  已配置 notify hook (config.toml)",
                "  Configured notify hook (config.toml)"))
+
 
 
 def _remove_codex_notify(dest_dir: Path) -> bool:
@@ -477,36 +398,53 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
 def _configure_codex_tui_notification(dest_dir: Path) -> None:
     """Set tui.notification_method = "osc9" to suppress BEL bell.
 
-    Codex CLI default notification uses BEL (\\a) bell character.
-    Setting osc9 replaces it with OSC9 escape sequence (silent in most terminals),
-    allowing HelloAGENTS sound notifications to be the sole audio feedback.
+    This key is fully managed by HelloAGENTS — any existing content is
+    overwritten on install/update. User-defined values will be backed up.
     """
     config_path = dest_dir / "config.toml"
     content = ""
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
 
-    # Check if already set (both dotted form and section form)
-    if re.search(r'tui\.notification_method\s*=', content):
-        return
+    # Check for existing notification_method (dotted or in [tui] section)
+    dotted_match = re.search(r'tui\.notification_method\s*=\s*"([^"]*)"', content)
 
-    # Check if exists in [tui] section
-    tui_match = re.search(r'^\[tui\]', content, re.MULTILINE)
-    if tui_match:
-        after = content[tui_match.end():]
+    tui_section_match = re.search(r'^\[tui\]', content, re.MULTILINE)
+    section_match = None
+    if tui_section_match:
+        after = content[tui_section_match.end():]
         next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
         scope = after[:next_sec.start()] if next_sec else after
-        if re.search(r'^notification_method\s*=', scope, re.MULTILINE):
-            return  # Already exists in [tui] section
+        section_match = re.search(r'^notification_method\s*=\s*"([^"]*)"', scope, re.MULTILINE)
 
-    # Check for [tui] section
+    existing = dotted_match or section_match
+    if existing:
+        existing_val = existing.group(1)
+        # Backup if user-defined (not "osc9")
+        if existing_val != "osc9":
+            backup_path = config_path.parent / "tui_notification.bak"
+            backup_path.write_text(f'notification_method = "{existing_val}"', encoding="utf-8")
+            print(_msg(f"  ⚠ 已备份现有 tui.notification_method 到: {backup_path}",
+                       f"  ⚠ Backed up existing tui.notification_method to: {backup_path}"))
+
+        # Remove existing (dotted form)
+        if dotted_match:
+            content = re.sub(r'tui\.notification_method\s*=\s*"[^"]*"\s*\n?', '', content)
+        # Remove existing (section form)
+        if section_match and tui_section_match:
+            start = tui_section_match.end() + section_match.start()
+            end = start + len(section_match.group(0))
+            content = content[:start] + content[end:]
+            # Clean up line
+            content = re.sub(r'\n{3,}', '\n\n', content)
+
+    # Add new value in [tui] section
+    tui_match = re.search(r'^\[tui\]', content, re.MULTILINE)
     if tui_match:
-        # Insert after [tui] header
         content = (content[:tui_match.end()]
                    + '\nnotification_method = "osc9"'
                    + content[tui_match.end():])
     else:
-        # Add [tui] section before first section or at end
         section = '[tui]\nnotification_method = "osc9"\n'
         first_sec = re.search(r'^\[[\w]', content, re.MULTILINE)
         if first_sec:
@@ -514,7 +452,6 @@ def _configure_codex_tui_notification(dest_dir: Path) -> None:
         else:
             content = content.rstrip() + "\n\n" + section
 
-    config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
     print(_msg("  已配置 tui.notification_method = osc9（抑制 BEL 铃声）",
                "  Configured tui.notification_method = osc9 (suppress BEL bell)"))

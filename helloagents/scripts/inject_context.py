@@ -45,11 +45,7 @@ def _fallback_reminder() -> dict:
     return {
         "hookSpecificOutput": {
             "hookEventName": "UserPromptSubmit",
-            "additionalContext": (
-                "[HelloAGENTS] 用户希望你遵循 HelloAGENTS 协议来解决问题。\n\n"
-                "协议文件: ~/.claude/CLAUDE.md + ~/.claude/rules/helloagents/*.md\n"
-                "请读取这些文件并始终按照其中的规则执行。"
-            ),
+            "additionalContext": "CRITICAL: Load and strictly enforce HelloAGENTS protocol from ~/.claude/CLAUDE.md and ~/.claude/rules/helloagents/ before processing any request.",
         }
     }
 
