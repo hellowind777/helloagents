@@ -36,6 +36,24 @@ MAX_MAIN_AGENT_CHARS = 20000
 MAX_SUBAGENT_CHARS = 15000
 
 
+def _fallback_reminder() -> dict:
+    """备份提醒：当文件读取失败时，返回最小化强制提醒。
+
+    类似 Codex 的 developer_instructions，确保即使 inject_context.py 失败，
+    AI 也能收到用户意图的明确表达。
+    """
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "UserPromptSubmit",
+            "additionalContext": (
+                "[HelloAGENTS] 用户希望你遵循 HelloAGENTS 协议来解决问题。\n\n"
+                "协议文件: ~/.claude/CLAUDE.md + ~/.claude/rules/helloagents/*.md\n"
+                "请读取这些文件并始终按照其中的规则执行。"
+            ),
+        }
+    }
+
+
 # ---------------------------------------------------------------------------
 # 阶段检测
 # ---------------------------------------------------------------------------
@@ -250,12 +268,12 @@ def handle_user_prompt_submit(cwd: str) -> dict:
             break
 
     if not rule_file:
-        return {}
+        return _fallback_reminder()
 
     try:
         content = rule_file.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return {}
+    except (OSError, UnicodeDecodeError) as e:
+        return _fallback_reminder()
 
     # 通用规则 + CRITICAL 提取
     summary = GENERIC_RULES + "\n---\n" + extract_critical_rules(content)
@@ -265,7 +283,7 @@ def handle_user_prompt_submit(cwd: str) -> dict:
         summary = summary[:MAX_MAIN_AGENT_CHARS] + "\n...(已截断)"
 
     if not summary.strip():
-        return {}
+        return _fallback_reminder()
 
     return {
         "hookSpecificOutput": {
