@@ -217,7 +217,7 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
 CRITICAL: Strictly follow HelloAGENTS protocol. Never skip routing, evaluation, or G3 format rules.
 
-If you see "⚠ Heads up: Long threads" or context was compressed: Immediately read {KB_ROOT}/plan/*/tasks.md (especially LIVE_STATUS section) to restore complete workflow state before proceeding.\
+If context was compressed: Immediately read {KB_ROOT}/plan/*/tasks.md (specifically LIVE_STATUS section) to restore workflow state (all G6-defined state variables: workflow variables, task complexity variables, knowledge base and package variables). Combine restored state with current user input to determine actual current state and correct next action, avoiding incorrect re-evaluation or stage confusion. Continue from interruption point if workflow should proceed (user input is task-related or continuation request), or enter routing if user requests new task.\
 """
 
 # Match developer_instructions = """...""" or "..." (top-level only)
@@ -260,14 +260,19 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
         content = content[:m.start()] + content[end:]
         content = re.sub(r'\n{3,}', '\n\n', content)
 
-    # Insert before first section to ensure top-level scope
-    first_section = re.search(r'^\[[\w]', content, re.MULTILINE)
-    if first_section:
-        # Insert before first section
-        content = content[:first_section.start()] + toml_val + "\n\n" + content[first_section.start():]
+    # Insert before notify (if exists) or before first section
+    notify_match = re.search(r'^notify\s*=', content, re.MULTILINE)
+    if notify_match:
+        # Insert before notify
+        content = content[:notify_match.start()] + toml_val + "\n\n" + content[notify_match.start():]
     else:
-        # No sections, append at end
-        content = content.rstrip() + "\n\n" + toml_val + "\n"
+        # No notify, insert before first section
+        first_section = re.search(r'^\[[\w]', content, re.MULTILINE)
+        if first_section:
+            content = content[:first_section.start()] + toml_val + "\n\n" + content[first_section.start():]
+        else:
+            # No sections, append at end
+            content = content.rstrip() + "\n\n" + toml_val + "\n"
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
