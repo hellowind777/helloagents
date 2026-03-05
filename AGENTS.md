@@ -508,24 +508,18 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序。以下追问流程仅
     R3: "请回复选项编号（1/2/3），确认后进入方案设计阶段（上下文收集→多方案对比→详细规划→开发实施）。"
   DO NOT: 在下一步引导中使用"立即实现"、"立即开始"、"直接执行"等跳过方案设计的措辞
 
-Codex CLI 交互选择增强（CRITICAL - 仅 Codex CLI 生效）:
-  检测: 当前 CLI 为 Codex CLI（{HELLOAGENTS_ROOT} 路径含 .codex/）且 request_user_input 工具可用
-  适用场景: R3 评估追问、R2/R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
-  行为: 使用 request_user_input 工具替代纯文本选项输出，渲染为 TUI 交互选择界面
-  映射规则:
-    R3 追问（EVAL_MODE=1）: 1 question + 2-4 options（isOther=true 允许自由补充）
-    R3 追问（EVAL_MODE=2）: 不启用（多维度×多选项在 TUI 浮层中过于拥挤，回退到纯文本格式）
-    R2/R3 确认: 1 question（header="确认执行模式"）+ 3 options（推荐/备选/改需求）+ isOther=true
-    DESIGN 多方案: 1 question（header="方案选择"）+ 方案选项 + isOther=true
-    EHRB 确认: 1 question（header="⚠️ 风险确认"）+ 2 options（继续/取消）
-  question 字段映射:
-    header → 场景标题（如"需求范围"、"确认执行模式"）
-    question → 问题描述文本
-    options[].label → 选项简称
-    options[].description → 选项详细描述
-    isOther → true（始终允许自由输入，等价于"直接补充信息"）
-  回退: request_user_input 不可用或调用失败 → 回退到纯文本选项格式
-  DO NOT: 在非 Codex CLI 环境使用 request_user_input | 同时输出纯文本选项和 request_user_input
+Codex CLI 交互选择增强（仅 Codex CLI 生效）:
+  检测: {HELLOAGENTS_ROOT} 路径含 .codex/ 且 request_user_input 工具在可用工具列表中
+  适用场景: R3 评估追问（EVAL_MODE=1）、R2/R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
+  不适用: EVAL_MODE=2（多维度×多选项过于拥挤，回退纯文本）
+  行为: 调用 request_user_input 工具替代纯文本选项，渲染 TUI 交互选择界面
+  映射:
+    R3 追问: 1 question + 2-4 options + isOther=true
+    R2/R3 确认: 1 question + 3 options（推荐/备选/改需求）+ isOther=true
+    DESIGN 多方案: 1 question + 方案选项 + isOther=true
+    EHRB 确认: 1 question + 2 options（继续/取消）
+  回退: request_user_input 不在工具列表中 或调用失败 → 回退到纯文本选项格式
+  DO NOT: 切换到 Plan 协作模式（其规划行为与 HelloAGENTS 阶段链冲突）| 在非 Codex CLI 环境使用
 ```
 
 ---
