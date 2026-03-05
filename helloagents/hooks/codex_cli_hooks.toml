@@ -6,6 +6,13 @@
 #
 # 角色调度规则见 G9/G10。
 
+# ─── Features ───
+
+# collaboration_modes — 启用协作模式系统（v0.110+）
+# 启用后 request_user_input 工具可用，渲染 TUI 交互选择界面
+[features]
+collaboration_modes = true
+
 # ─── Hooks ───
 
 # notify — 代理轮次完成时触发

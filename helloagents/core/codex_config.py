@@ -160,6 +160,28 @@ def _ensure_feature_sqlite(content: str) -> tuple[str, bool]:
     return content, True
 
 
+def _ensure_feature_collaboration_modes(content: str) -> tuple[str, bool]:
+    """Ensure ``[features]`` section has ``collaboration_modes = true``.
+
+    Enables request_user_input in Default collaboration mode (v0.110+).
+    Returns (content, collab_added).
+    """
+    features_match = re.search(r'^\[features\]', content, re.MULTILINE)
+    if features_match:
+        after = content[features_match.end():]
+        next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
+        scope = after[:next_sec.start()] if next_sec else after
+        if re.search(r'^collaboration_modes\s*=', scope, re.MULTILINE):
+            return content, False
+        next_section = re.search(r'^\[[\w]', content[features_match.end():], re.MULTILINE)
+        pos = (features_match.end() + next_section.start()) if next_section else len(content)
+        content = content[:pos] + "collaboration_modes = true\n" + content[pos:]
+        return content, True
+
+    content = content.rstrip() + "\n\n[features]\ncollaboration_modes = true\n"
+    return content, True
+
+
 def _configure_codex_csv_batch(dest_dir: Path) -> None:
     """Ensure config.toml has multi-agent settings for spawn_agents_on_csv.
 
@@ -192,6 +214,10 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
     if sqlite_added:
         changed = True
 
+    content, collab_added = _ensure_feature_collaboration_modes(content)
+    if collab_added:
+        changed = True
+
     if changed:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         config_path.write_text(content, encoding="utf-8")
@@ -204,6 +230,8 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
             msgs.append(f"agents.max_depth = {final_md}")
         if sqlite_added:
             msgs.append("sqlite = true")
+        if collab_added:
+            msgs.append("collaboration_modes = true")
         if msgs:
             print(_msg(
                 f"  已配置多代理: {', '.join(msgs)}",
