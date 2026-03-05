@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+HelloAGENTS Config Integrity Check — 检测配置完整性
+
+在 SessionStart hook 中调用，检测 HelloAGENTS 配置是否完整。
+如果配置缺失（可能被 ccswitch 等工具替换），输出警告信息。
+
+输入(stdin): JSON (Claude Code hooks)
+输出(stdout): 警告信息（如果配置缺失）
+退出码: 0=正常, 1=配置缺失
+"""
+
+import sys
+import io
+import json
+from pathlib import Path
+
+# Windows UTF-8 编码设置
+if sys.platform == 'win32':
+    if hasattr(sys.stdout, 'buffer'):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'buffer'):
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    if hasattr(sys.stdin, 'buffer'):
+        sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
+
+
+def check_claude_code_config() -> bool:
+    """检测 Claude Code settings.json 配置完整性。"""
+    settings_path = Path.home() / ".claude" / "settings.json"
+    if not settings_path.exists():
+        return True  # 文件不存在，可能是首次使用
+
+    try:
+        content = settings_path.read_text(encoding="utf-8")
+        # 检测关键配置
+        has_hooks = '"hooks"' in content and 'HelloAGENTS' in content
+        return has_hooks
+    except Exception:
+        return True  # 读取失败，不报错
+
+
+def check_codex_config() -> bool:
+    """检测 Codex config.toml 配置完整性。"""
+    config_path = Path.home() / ".codex" / "config.toml"
+    if not config_path.exists():
+        return True
+
+    try:
+        content = config_path.read_text(encoding="utf-8")
+        # 检测关键配置
+        has_di = 'developer_instructions' in content and 'HelloAGENTS' in content
+        has_memories = '[memories]' in content and 'protocol_anchors' in content
+        return has_di and has_memories
+    except Exception:
+        return True
+
+
+def main():
+    # 消费 stdin
+    try:
+        stdin_data = sys.stdin.read()
+        hook_data = json.loads(stdin_data) if stdin_data.strip() else {}
+    except Exception:
+        hook_data = {}
+
+    # 检测当前 CLI
+    cli_name = "unknown"
+    if Path.home().joinpath(".claude").exists():
+        cli_name = "claude"
+        config_ok = check_claude_code_config()
+    elif Path.home().joinpath(".codex").exists():
+        cli_name = "codex"
+        config_ok = check_codex_config()
+    else:
+        sys.exit(0)  # 未知 CLI，跳过检测
+
+    if not config_ok:
+        print(f"\n⚠️  HelloAGENTS 配置缺失或不完整", file=sys.stderr)
+        print(f"可能原因：配置文件被外部工具（如 ccswitch）替换", file=sys.stderr)
+        print(f"修复方法：运行 'helloagents install {cli_name}' 恢复配置\n", file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

@@ -506,12 +506,20 @@ def _configure_codex_tui_notification(dest_dir: Path) -> None:
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
 
-    # Check if already set
+    # Check if already set (both dotted form and section form)
     if re.search(r'tui\.notification_method\s*=', content):
         return
 
-    # Check for [tui] section
+    # Check if exists in [tui] section
     tui_match = re.search(r'^\[tui\]', content, re.MULTILINE)
+    if tui_match:
+        after = content[tui_match.end():]
+        next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
+        scope = after[:next_sec.start()] if next_sec else after
+        if re.search(r'^notification_method\s*=', scope, re.MULTILINE):
+            return  # Already exists in [tui] section
+
+    # Check for [tui] section
     if tui_match:
         # Insert after [tui] header
         content = (content[:tui_match.end()]

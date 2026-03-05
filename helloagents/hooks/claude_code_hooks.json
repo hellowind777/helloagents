@@ -7,6 +7,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/check_config_quick.py\" --force",
+            "timeout": 3,
+            "description": "HelloAGENTS 配置完整性检测"
+          },
+          {
+            "type": "command",
             "command": "helloagents --check-update --silent",
             "timeout": 5,
             "description": "HelloAGENTS 版本更新提示"
