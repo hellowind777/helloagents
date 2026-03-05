@@ -215,7 +215,7 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
-[HelloAGENTS] 用户要求你严格遵循 HelloAGENTS 协议来解决问题。
+用户要求你严格遵循 HelloAGENTS 协议来解决问题。
 
 协议位置: ~/.codex/AGENTS.md + ~/.codex/helloagents/
 
@@ -300,7 +300,7 @@ def _configure_codex_memories(dest_dir: Path) -> None:
         "[memories]\n"
         "# HelloAGENTS Protocol Anchors\n"
         "protocol_anchors = \"\"\"\n"
-        "[HelloAGENTS] 用户要求你严格遵循 HelloAGENTS 协议来解决问题。\n"
+        "用户要求你严格遵循 HelloAGENTS 协议来解决问题。\n"
         "\n"
         "协议位置: ~/.codex/AGENTS.md + ~/.codex/helloagents/\n"
         "\n"
