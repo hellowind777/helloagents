@@ -231,7 +231,7 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
     """Ensure config.toml has developer_instructions with HelloAGENTS protocol.
 
     This key is fully managed by HelloAGENTS — any existing content is
-    overwritten. Always placed at end of file for easy discoverability.
+    overwritten. Always placed before first section to ensure top-level scope.
     """
     config_path = dest_dir / "config.toml"
     content = ""
@@ -260,8 +260,14 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
         content = content[:m.start()] + content[end:]
         content = re.sub(r'\n{3,}', '\n\n', content)
 
-    # Always append at end of file
-    content = content.rstrip() + "\n\n" + toml_val + "\n"
+    # Insert before first section to ensure top-level scope
+    first_section = re.search(r'^\[[\w]', content, re.MULTILINE)
+    if first_section:
+        # Insert before first section
+        content = content[:first_section.start()] + toml_val + "\n\n" + content[first_section.start():]
+    else:
+        # No sections, append at end
+        content = content.rstrip() + "\n\n" + toml_val + "\n"
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(content, encoding="utf-8")
