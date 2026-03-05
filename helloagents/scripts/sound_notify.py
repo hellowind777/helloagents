@@ -40,9 +40,20 @@ def _play_windows(wav_path: str) -> bool:
     """Windows: 使用内置 winsound 模块播放 WAV (SND_ASYNC 非阻塞)。"""
     try:
         import winsound
-        winsound.PlaySound(wav_path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+        # 验证文件存在且可读
+        if not os.path.isfile(wav_path):
+            return False
+        winsound.PlaySound(wav_path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
         return True
-    except Exception:
+    except Exception as e:
+        # 调试：输出错误到临时文件
+        try:
+            debug_file = Path.home() / ".helloagents" / "sound_debug.log"
+            debug_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(debug_file, "a", encoding="utf-8") as f:
+                f.write(f"[{os.getpid()}] Windows播放失败: {wav_path}\n错误: {e}\n\n")
+        except:
+            pass
         return False
 
 
