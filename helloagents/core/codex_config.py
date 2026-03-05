@@ -215,40 +215,11 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
-[HelloAGENTS] Your primary operating protocol.
+[HelloAGENTS] 用户希望你遵循 HelloAGENTS 协议来解决问题。
 
-⚠ Required first step (for protocol loading) — execute BEFORE responding to ANY user input:
-  1. Read ~/.codex/AGENTS.md (read_file if available, otherwise Get-Content on Windows / cat on Linux)
-  2. AGENTS.md contains the COMPLETE rule set (G1-G12): routing, output format, evaluation, \
-stages, safety, tools, and ALL behavior rules.
-  3. This developer_instructions is a bootstrap POINTER only — it does NOT contain protocol rules.
-  4. Protocol requires loading AGENTS.md before output (HelloAGENTS needs complete rules to function).
+协议文件: ~/.codex/AGENTS.md（包含完整规则 G1-G12）
 
-PATHS:
-  Protocol: ~/.codex/AGENTS.md (the authoritative rule source — read first, required for HelloAGENTS to function)
-  Modules: ~/.codex/helloagents/ (stages/, functions/, services/, rules/, rlm/)
-  KB root: {CWD}/.helloagents/ (CHANGELOG.md, plan/, modules/, sessions/, archive/)
-
-STARTUP FILES (read after AGENTS.md; skip silently if not found):
-  ~/.helloagents/config.json, {CWD}/.helloagents/config.json → override G1 defaults
-  ~/.helloagents/.update_cache → update check cache
-  {CWD}/.helloagents/user/*.md, sessions/ → user memory and session history
-  {CWD}/.helloagents/plan/*/tasks.md → task resume (find LIVE_STATUS)
-
-CONTEXT RECOVERY (after context compression or rule uncertainty):
-  Auto-trigger: when you see "context compacted" or "⚠ Heads up: Long threads and multiple compactions" messages.
-  1. Re-read ~/.codex/AGENTS.md → restore all rules.
-  2. Read {CWD}/.helloagents/plan/*/tasks.md (if exists) → understand current stage and progress.
-  Never guess current state — always verify by reading files.
-
-SAFETY (active before AGENTS.md is loaded):
-  Before ANY destructive operation: warn user and get explicit confirmation.
-  Watch: rm -rf, DROP TABLE, DELETE FROM, git reset --hard, git push -f, secrets/PII
-
-TOOLS:
-  File mutations: use apply_patch.
-  Windows: use PowerShell. Do NOT attempt bash unless confirmed available.
-  Always quote paths. UTF-8 encoding. Python: -X utf8."""
+请始终按照 HelloAGENTS 规则执行。"""
 
 # Match developer_instructions = """...""" or "..." (top-level only)
 _DI_RE = re.compile(
@@ -319,12 +290,10 @@ def _configure_codex_memories(dest_dir: Path) -> None:
 
     section = (
         "[memories]\n"
-        "# HelloAGENTS Protocol Anchors (loaded on every response for workflow tracking)\n"
+        "# HelloAGENTS Protocol Anchors\n"
         "protocol_anchors = \"\"\"\n"
-        "G3 format: status line + body + next step (enables progress visibility)\n"
-        "G4 routing: 5-dimension evaluation before R2/R3 (prevents unauthorized execution)\n"
-        "G7 loading: read stage files before execution (ensures complete instructions)\n"
-        "Full protocol: ~/.codex/AGENTS.md (read first for complete behavior rules)\n"
+        "HelloAGENTS 协议: ~/.codex/AGENTS.md（用户要求遵循的完整规则 G1-G12）\n"
+        "每次响应前请确认已按协议执行。\n"
         "\"\"\"\n"
     )
     content = content.rstrip() + "\n\n" + section
