@@ -217,7 +217,7 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
 [HelloAGENTS] 用户希望你遵循 HelloAGENTS 协议来解决问题。
 
-协议文件: ~/.codex/AGENTS.md（包含完整规则 G1-G12）
+协议位置: ~/.codex/AGENTS.md + ~/.codex/helloagents/
 
 请始终按照 HelloAGENTS 规则执行。"""
 
