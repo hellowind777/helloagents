@@ -214,7 +214,11 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 # Codex developer_instructions — elevate HelloAGENTS routing to developer role
 # ---------------------------------------------------------------------------
 
-_CODEX_DEVELOPER_INSTRUCTIONS = "CRITICAL: Strictly follow HelloAGENTS protocol (already loaded from ~/.codex/AGENTS.md). Never skip routing, evaluation, or G3 output format rules."
+_CODEX_DEVELOPER_INSTRUCTIONS = """\
+CRITICAL: Strictly follow HelloAGENTS protocol. Never skip routing, evaluation, or G3 format rules.
+
+If you see "⚠ Heads up: Long threads" or context was compressed: Immediately read {KB_ROOT}/plan/*/tasks.md (especially LIVE_STATUS section) to restore complete workflow state before proceeding.\
+"""
 
 # Match developer_instructions = """...""" or "..." (top-level only)
 _DI_RE = re.compile(
