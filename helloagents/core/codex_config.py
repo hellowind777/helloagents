@@ -215,11 +215,11 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
-[HelloAGENTS] 用户希望你遵循 HelloAGENTS 协议来解决问题。
+[HelloAGENTS] 用户要求你严格遵循 HelloAGENTS 协议来解决问题。
 
 协议位置: ~/.codex/AGENTS.md + ~/.codex/helloagents/
 
-请始终按照 HelloAGENTS 规则执行。"""
+请始终严格按照 HelloAGENTS 规则执行。"""
 
 # Match developer_instructions = """...""" or "..." (top-level only)
 _DI_RE = re.compile(
@@ -273,6 +273,9 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
 def _configure_codex_memories(dest_dir: Path) -> None:
     """Ensure config.toml has [memories] section with HelloAGENTS protocol anchors.
 
+    This section is fully managed by HelloAGENTS — any existing [memories]
+    content is overwritten on install/update.
+
     Codex two-phase memory pipeline:
     - Phase 1: per-rollout extraction
     - Phase 2: global consolidation with diff-based forgetting
@@ -285,15 +288,23 @@ def _configure_codex_memories(dest_dir: Path) -> None:
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
 
-    if re.search(r'^\[memories\]', content, re.MULTILINE):
-        return  # User already has [memories] configured — don't touch
+    # Remove existing [memories] section (fully managed by HelloAGENTS)
+    content = re.sub(
+        r'^\[memories\].*?(?=^\[|\Z)',
+        '',
+        content,
+        flags=re.MULTILINE | re.DOTALL
+    )
 
     section = (
         "[memories]\n"
         "# HelloAGENTS Protocol Anchors\n"
         "protocol_anchors = \"\"\"\n"
-        "HelloAGENTS 协议: ~/.codex/AGENTS.md（用户要求遵循的完整规则 G1-G12）\n"
-        "每次响应前请确认已按协议执行。\n"
+        "[HelloAGENTS] 用户要求你严格遵循 HelloAGENTS 协议来解决问题。\n"
+        "\n"
+        "协议位置: ~/.codex/AGENTS.md + ~/.codex/helloagents/\n"
+        "\n"
+        "请始终严格按照 HelloAGENTS 规则执行。\n"
         "\"\"\"\n"
     )
     content = content.rstrip() + "\n\n" + section

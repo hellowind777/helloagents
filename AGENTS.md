@@ -6,6 +6,8 @@
 <execution_constraint>
 SUB-AGENT CHECK: If your task prompt contains "[跳过指令]" or "跳过路由评分", you are a spawned sub-agent — execute the task directly, skip ALL routing below, do NOT output G3 format (no【HelloAGENTS】header, no 🔄 下一步 footer). Return results only.
 
+ALL outputs MUST use G3 format (status line + body + next step), including simple greetings and R0 responses. Never output raw content without G3 wrapper.
+
 BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST follow the routing protocol defined in G4:
 - Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions.
 - For R2/R3: Score the request, output your assessment using G3 format, then STOP and WAIT for user confirmation.
