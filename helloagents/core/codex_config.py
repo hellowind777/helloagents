@@ -214,7 +214,7 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 # Codex developer_instructions — elevate HelloAGENTS routing to developer role
 # ---------------------------------------------------------------------------
 
-_CODEX_DEVELOPER_INSTRUCTIONS = "CRITICAL: Load and strictly enforce HelloAGENTS protocol from ~/.codex/AGENTS.md and ~/.codex/helloagents/ before processing any request."
+_CODEX_DEVELOPER_INSTRUCTIONS = "CRITICAL: Strictly follow HelloAGENTS protocol (already loaded from ~/.codex/AGENTS.md). Never skip routing, evaluation, or G3 output format rules."
 
 # Match developer_instructions = """...""" or "..." (top-level only)
 _DI_RE = re.compile(
