@@ -57,17 +57,17 @@ SessionEnd — 会话结束最终清理:
   动作: command hook，会话彻底结束时执行 KB 同步 + 摘要写入 + 临时计数器文件清理
   超时: 10s | 脚本: session_end.py（复用 Stop 脚本，通过 hookEventName 区分）
 
-Notification — 桌面通知:
+Notification — 声音通知（等待输入）:
   事件: Notification | 匹配: idle_prompt
-  动作: command hook，Claude Code 等待用户输入时发送桌面通知
-        Windows: BurntToast / 降级 bell | macOS: osascript | Linux: notify-send / 降级 bell
-  超时: 5s | 异步: async=true | 脚本: notify.py
+  动作: command hook，Claude Code 等待用户输入时播放声音提醒
+        跨平台: Windows winsound 同步播放 | macOS afplay | Linux aplay/paplay | 全失败降级 bell
+  超时: 5s | 异步: async=true | 脚本: sound_notify.py idle
 
-PostToolUseFailure — 工具失败恢复建议:
+PostToolUseFailure — 工具失败恢复建议 + 声音通知:
   事件: PostToolUseFailure | 匹配: 所有工具
   动作: command hook，匹配已知错误模式（权限、文件未找到、编码、磁盘空间、冲突、模块缺失等），
-        注入 additionalContext 恢复建议
-  超时: 5s | 异步: async=true | 脚本: tool_failure_helper.py
+        注入 additionalContext 恢复建议，并播放错误提示音
+  超时: 5s | 异步: async=true | 脚本: tool_failure_helper.py + sound_notify.py error
 ```
 
 ---

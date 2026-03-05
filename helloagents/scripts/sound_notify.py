@@ -37,13 +37,18 @@ VALID_EVENTS = {"complete", "idle", "confirm", "error", "warning"}
 
 
 def _play_windows(wav_path: str) -> bool:
-    """Windows: 使用内置 winsound 模块播放 WAV (SND_ASYNC 非阻塞)。"""
+    """Windows: 使用内置 winsound 模块同步播放 WAV。
+
+    必须使用同步模式：SND_ASYNC 会在进程退出时立即终止音频线程，
+    导致 hook 子进程中完全听不到声音。同步模式阻塞约 1-2 秒，
+    对于 hook（5s 超时）完全可接受。
+    """
     try:
         import winsound
         # 验证文件存在且可读
         if not os.path.isfile(wav_path):
             return False
-        winsound.PlaySound(wav_path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
+        winsound.PlaySound(wav_path, winsound.SND_FILENAME | winsound.SND_NODEFAULT)
         return True
     except Exception as e:
         # 调试：输出错误到临时文件
