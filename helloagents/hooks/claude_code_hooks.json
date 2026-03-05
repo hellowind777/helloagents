@@ -155,13 +155,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/notify.py\"",
-            "async": false,
-            "timeout": 5,
-            "description": "HelloAGENTS 桌面通知"
-          },
-          {
-            "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" idle",
             "async": false,
             "timeout": 5,
