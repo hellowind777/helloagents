@@ -26,7 +26,23 @@ if sys.platform == 'win32':
     if hasattr(sys.stdin, 'buffer'):
         sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
 
-CACHE_FILE = Path.home() / ".helloagents" / ".config_check_cache"
+def _get_cli_helloagents_dir() -> Path:
+    """Get CLI-specific helloagents directory by detecting installed CLI."""
+    home = Path.home()
+    candidates = [
+        home / ".claude" / "helloagents",
+        home / ".codex" / "helloagents",
+        home / ".config" / "opencode" / "helloagents",
+        home / ".gemini" / "helloagents",
+        home / ".qwen" / "helloagents",
+        home / ".grok" / "helloagents",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    return home / ".helloagents"
+
+CACHE_FILE = _get_cli_helloagents_dir() / ".config_check_cache"
 
 
 def get_config_mtime(cli_name: str) -> float:

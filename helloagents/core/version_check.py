@@ -145,7 +145,24 @@ def fetch_latest_version(branch: str, timeout: int = 5) -> str:
 # Update cache
 # ---------------------------------------------------------------------------
 
-_UPDATE_CACHE_DIR = Path.home() / ".helloagents"
+def _get_cli_helloagents_dir() -> Path:
+    """Get CLI-specific helloagents directory by detecting installed CLI."""
+    home = Path.home()
+    candidates = [
+        home / ".claude" / "helloagents",
+        home / ".codex" / "helloagents",
+        home / ".config" / "opencode" / "helloagents",
+        home / ".gemini" / "helloagents",
+        home / ".qwen" / "helloagents",
+        home / ".grok" / "helloagents",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    # Fallback to ~/.helloagents if no CLI directory found
+    return home / ".helloagents"
+
+_UPDATE_CACHE_DIR = _get_cli_helloagents_dir()
 _UPDATE_CACHE_FILE = _UPDATE_CACHE_DIR / ".update_cache"
 
 
