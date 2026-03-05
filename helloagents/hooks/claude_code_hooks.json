@@ -66,7 +66,7 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/progress_snapshot.py\"",
-            "async": true,
+            "async": false,
             "timeout": 10,
             "description": "HelloAGENTS 进度快照触发（写操作计数，超过5次阈值时生成快照）"
           }

@@ -6,7 +6,7 @@ HelloAGENTS Sound Notification — 跨平台声音播放
 接收事件名参数，播放对应语音文件。
 支持事件: complete("完成了~"), idle("在等你呢~"), confirm("需要您确认~"), error("出错了呢~")
 
-Windows: winsound.PlaySound (Python 内置, SND_ASYNC 非阻塞)
+Windows: winsound.PlaySound (Python 内置, 同步阻塞约 1-2s)
 macOS: afplay (系统自带, 后台 Popen)
 Linux: aplay -q → paplay 降级链
 全失败: terminal bell (\a)

@@ -34,16 +34,9 @@
           {
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/progress_snapshot.py\"",
-            "async": true,
+            "async": false,
             "timeout": 10,
             "description": "HelloAGENTS 进度快照触发"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" complete",
-            "async": false,
-            "timeout": 5,
-            "description": "HelloAGENTS 声音通知（完成）"
           }
         ]
       }
