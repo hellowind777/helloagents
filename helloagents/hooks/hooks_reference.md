@@ -6,7 +6,35 @@
 
 ## Claude Code Hooks 配置（.claude/settings.json）
 
-HelloAGENTS 预定义以下 12 个 Hook 配置供用户可选启用:
+HelloAGENTS 预定义以下 11 个 Hook 配置供用户可选启用:
+
+**声音通知触发原则（CRITICAL）:**
+```yaml
+仅主代理事件触发声音通知，子代理事件静默:
+  主代理事件（触发声音）: Stop 智能路由（Claude Code）、notify 智能路由（Codex CLI）、AfterAgent（Gemini CLI）、需要用户确认（Codex approval-requested）
+  子代理事件（静默）: 子代理内部任务执行、子代理轮次完成、子代理工具失败
+声音路由机制（Claude Code 两层检测）:
+  Layer 1 — stop_reason 检测（结构化信号，来自 Anthropic API，100% 可靠）:
+    stop_reason == "tool_use" → 静默退出（中间状态，不播放声音）
+    stop_reason == "end_turn" 或其他 → 继续 Layer 2
+  Layer 2 — G3 格式检测（语义信号，5 种声音事件）:
+    检测【HelloAGENTS】标记 → 提取状态图标 + 标记后状态文本 → 映射声音:
+      警告类（⚠️）          → warning ("需要注意~"，EHRB 风险警告)
+      错误类（❌）           → error   ("出错了呢~"，错误终止)
+      完成类（✅💡⚡🔧）    → complete ("完成了~")
+      确认类（❓📐）         → confirm ("需要您确认~"，始终为确认场景)
+      上下文类（🔵+状态含"确认"） → confirm (R3 确认，评分≥8 等待模式选择)
+      上下文类（🔵+状态不含"确认"） → idle ("在等你呢~"，R3 追问/评估/执行等)
+      其余图标（ℹ️🚫等）    → idle    ("在等你呢~")
+      无 G3 格式            → complete（默认）
+  Claude Code: 从会话 JSONL 读取最后一条 assistant 消息的 text + stop_reason（stop_sound_router.py）
+  Codex CLI: 从 notify payload 的 last-assistant-message 字段读取（codex_notify.py，无 stop_reason 字段，仅 Layer 2）
+  Gemini CLI: AfterAgent 仅触发 complete（无消息检测）
+子代理隔离:
+  Claude Code: Stop 事件仅由主代理触发（架构保证）；PostToolUseFailure 不附带声音（无法区分代理上下文）
+  Codex CLI: notify 钩子仅在主代理轮次完成时触发（源码确认: user_notification.rs 只处理 AfterAgent 事件）
+  Gemini CLI: AfterAgent 仅由主代理触发（架构保证）
+```
 
 ```yaml
 SessionStart — 版本更新检查:
@@ -33,9 +61,11 @@ PostToolUse — 进度快照:
   事件: PostToolUse | 匹配: toolName 匹配 Write|Edit|NotebookEdit
   动作: command hook，检查距上次快照是否超过阈值(5次写操作)，超过则生成进度快照
 
-Stop — KB 同步 + L2 写入 + 声音通知:
+Stop — KB 同步 + L2 写入 + 智能声音路由:
   事件: Stop
-  动作: command hook，触发 KnowledgeService 同步和 L2 摘要写入，播放完成声音
+  动作: command hook，触发 KnowledgeService 同步和 L2 摘要写入；从会话 JSONL 检测 G3 状态图标播放对应声音
+
+Notification — 已移除（声音路由已由 Stop 的 stop_sound_router.py 统一处理，避免双重触发）
 
 TeammateIdle — Agent Teams 空闲检测:
   事件: TeammateIdle
@@ -57,17 +87,11 @@ SessionEnd — 会话结束最终清理:
   动作: command hook，会话彻底结束时执行 KB 同步 + 摘要写入 + 临时计数器文件清理
   超时: 10s | 脚本: session_end.py（复用 Stop 脚本，通过 hookEventName 区分）
 
-Notification — 声音通知（等待输入）:
-  事件: Notification | 匹配: idle_prompt
-  动作: command hook，Claude Code 等待用户输入时播放声音提醒
-        跨平台: Windows winsound 同步播放 | macOS afplay | Linux aplay/paplay | 全失败降级 bell
-  超时: 5s | 脚本: sound_notify.py idle
-
-PostToolUseFailure — 工具失败恢复建议 + 声音通知:
+PostToolUseFailure — 工具失败恢复建议:
   事件: PostToolUseFailure | 匹配: 所有工具
   动作: command hook，匹配已知错误模式（权限、文件未找到、编码、磁盘空间、冲突、模块缺失等），
-        注入 additionalContext 恢复建议，并播放错误提示音
-  超时: 5s | 脚本: tool_failure_helper.py + sound_notify.py error
+        注入 additionalContext 恢复建议
+  超时: 5s | 脚本: tool_failure_helper.py
 ```
 
 ---
@@ -99,6 +123,8 @@ notify = ["helloagents --check-update --silent"]
 
 `client` 字段（v0.107 新增）: TUI 报告 `codex-tui`，app-server 报告 `initialize.clientInfo.name`（如 `vscode`、`xcode`）。
 HelloAGENTS 的 `codex_notify.py` 根据 `client` 字段过滤：IDE 来源跳过声音通知（IDE 有自己的通知机制）。
+`agent-turn-complete` 事件通过 `last-assistant-message` 检测 G3 状态图标进行声音路由（与 Claude Code 的 stop_sound_router.py 共用映射逻辑）。
+notify 钩子本身仅对主代理轮次触发，无需额外子代理过滤。
 
 ### 多代理配置
 
