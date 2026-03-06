@@ -337,8 +337,8 @@ Prohibitions (CRITICAL):
       - EHRB 检测到风险
   R2 简化流程:
     适用: 需要先分析再执行的局部任务，有局部决策；简单新建项目（交付物单一且明确+无架构级决策）
-    流程: 快速评分（不追问）+EHRB → 简要确认（评分<8时标注信息不足） → ⛔ END_TURN → 用户确认后进入 DESIGN 阶段
-    输出: 📐 状态栏 + 确认信息（做什么+怎么做）→ 执行后结构化总结
+    流程: 快速评分+EHRB → 1个关键问题+确认（合一输出） → ⛔ END_TURN → 用户回复即确认，进入 DESIGN 阶段
+    输出: 📐 状态栏 + 评分+关键问题+选项 → 执行后结构化总结
     阶段链: DESIGN(含上下文收集，跳过多方案)→DEVELOP(开发实施)→KB同步(按开关)→完成 [→ G5]
   R3 标准流程:
     适用: 复杂任务、复杂新建项目（多交付物/架构未定）、架构级变更、多方案对比
@@ -382,8 +382,9 @@ When you receive a non-command input that does not match any external tool:
 1. Evaluate the 5 routing dimensions above and determine the routing level (R0/R1/R2/R3).
 2. If R0 or R1: Execute directly per the level behavior defined above.
 3. If R2 or R3: Output your assessment and confirmation message using G3 format, then STOP. Do NOT proceed until the user responds.
-4. After the user confirms:
-   - Set WORKFLOW_MODE per user selection (INTERACTIVE / DELEGATED)
+4. After the user responds:
+   - R2: WORKFLOW_MODE = INTERACTIVE (default; user can override by adding "全自动" in reply)
+   - R3: Set WORKFLOW_MODE per user selection (INTERACTIVE / DELEGATED)
    - Set CURRENT_STAGE = DESIGN
    - Load stage files per G7 ("R2/R3 进入方案设计" row)
    - Execute per G5 stage chain and loaded module flow
@@ -447,7 +448,7 @@ User: (上一轮输出了确认选项 1/2/3 并 END_TURN) "先改打包工具再
     - Information not explicitly mentioned by the user = 0 points. Never infer missing information into the score.
     - Information inferable from project context (e.g. language/framework of existing codebase) MAY be counted, but MUST be labeled "上下文推断".
 
-R3 评估流程（CRITICAL - 两阶段，严格按顺序。以下追问流程仅适用于 R3。R2 不执行追问流程，仅在确认信息中标注信息不足）:
+R3 评估流程（CRITICAL - 两阶段，严格按顺序。以下追问流程仅适用于 R3）:
   阶段一: 评分与追问（可能多回合）
     1. 需求理解（可读取项目上下文辅助理解：知识库摘要、目录结构、配置文件等）
     2. 逐维度打分
@@ -466,16 +467,36 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序。以下追问流程仅
     - Score ≥ 8: Output full confirmation message.
 跳过追问: 用户明确表示"别问了/跳过评估/直接做" → 跳到阶段二
 静默规则: During evaluation, do NOT output intermediate thinking. Only output questions or confirmation messages.
+
+R2 评估流程（单回合，问题与确认合一）:
+  1. 需求理解 + 逐维度打分（可读取项目上下文辅助理解）
+  2. EHRB 检测 [→ G2]
+  3. 选取1个关键问题（最低分维度 或 关键设计决策）+ 2-4个选项 + 确认信息 → ⛔ END_TURN
+  4. 用户回复 → 答案作为上下文，不重新评分 → INTERACTIVE 模式 → DESIGN
+  用户回复中附加"全自动" → DELEGATED 模式
 ```
 
 ### 确认信息格式
 
 ```yaml
 确认类型区分:
-  简要确认（R2）: 📋 需求 + 📊 评分 + ⚠️ EHRB（如有）+ 确认选项。不含详细分析摘要，侧重"做什么+怎么做"
-  完整确认（R3）: 📋 需求 + 📊 评分 + ⚠️ EHRB（如有）+ 确认选项。含详细分析摘要（实施条件、成果规格、风险评估）
+  R2 确认（问题+确认合一）: 📋 需求 + 📊 评分 + ⚠️ EHRB（如有）+ 💬 1个关键问题 + 问题选项。回复即确认，答案直接带入 DESIGN
+  R3 完整确认: 📋 需求 + 📊 评分 + ⚠️ EHRB（如有）+ 确认选项。含详细分析摘要（实施条件、成果规格、风险评估）
 
-追问（评分 < 8 时）:
+R2 确认（问题+确认合一，单回合）:
+  📋 需求: 合并到头部描述行
+  （空行）
+  📊 评分: N/10（需求范围 X/3 | 成果规格 X/3 | 实施条件 X/2 | 验收标准 X/2）
+  （空行）
+  ⚠️ EHRB: 仅检测到风险时显示
+  （空行）
+  💬 {1个关键问题}（来源: 最低分维度 或 关键设计决策）
+  （空行）
+  选项：
+  1~N. 问题选项（2-4个，选项规则见"选项生成通用规则"）
+  回复处理: 任意回复 = 确认 + 答案上下文 → INTERACTIVE → DESIGN。回复中附加"全自动"→ DELEGATED
+
+R3 追问（评分 < 8 时，仅 R3）:
   📋 需求: 需求摘要
   （空行）
   📊 评分: N/10（维度明细）
@@ -484,42 +505,53 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序。以下追问流程仅
   （空行）
   选项：
   1~N. 各问题选项（每个问题附 2-4 个选项；EVAL_MODE=1 选项用数字，EVAL_MODE=2 选项用字母 A/B/C/D）
-    选项生成规则: 选项必须覆盖所追问维度的各子项（参照该维度评分标准的子项定义），不得仅在单一子项上做深浅梯度。涉及视觉呈现的任务，选项应代表不同的风格方向而非同一方向的不同完整度
-    推荐标记规则: 推荐必须标记成果最完善、体验最好的选项，而非最简化最易实现的选项。推荐选项默认排序号1，（推荐）标记置于选项文本末尾。实施条件类选项推荐现代主流方案，禁止推荐过时或受限方案（除非用户明确要求）
 
-确认信息:
+R3 确认信息（评分 ≥ 8 时）:
   📋 需求: 合并到头部描述行
   （空行）
   📊 评分: N/10（需求范围 X/3 | 成果规格 X/3 | 实施条件 X/2 | 验收标准 X/2）
   （空行）
   ⚠️ EHRB: 仅检测到风险时显示
   （空行）
-确认选项（模式名使用 OUTPUT_LANGUAGE 显示，三个选项固定，仅推荐项和措辞因入口不同）:
+R3 确认选项（三个选项固定，仅推荐项和措辞因入口不同）:
   选项模板: 1. {推荐模式}（推荐） 2. {备选模式} 3. 改需求后再执行。推荐项始终在第1位。
   模式映射: 全自动执行 → DELEGATED | 交互式执行 → INTERACTIVE | 全自动规划 → DELEGATED_PLAN | 交互式规划 → INTERACTIVE
   ~auto: 推荐=全自动执行（自动完成所有阶段，仅遇到风险时暂停）| 备选=交互式执行（关键决策点等待确认）
   ~plan: 推荐=全自动规划（自动完成分析和方案设计）| 备选=交互式规划（关键决策点等待确认）
-  通用路径 R2/R3: 推荐=交互式执行（关键决策点等待确认）| 备选=全自动执行（自动完成所有阶段，仅遇到风险时暂停）
+  通用路径 R3: 推荐=交互式执行（关键决策点等待确认）| 备选=全自动执行（自动完成所有阶段，仅遇到风险时暂停）
+
+选项生成通用规则（R2 问题选项 + R3 追问选项共用）:
+  选项必须覆盖所追问维度的各子项（参照该维度评分标准的子项定义），不得仅在单一子项上做深浅梯度
+  涉及视觉呈现的任务，选项应代表不同的风格方向而非同一方向的不同完整度
+  推荐必须标记成果最完善、体验最好的选项，推荐选项默认排序号1，（推荐）标记置于选项文本末尾
+  实施条件类选项推荐现代主流方案，禁止推荐过时或受限方案（除非用户明确要求）
 
 下一步引导（🔄 下一步: 行的内容，CRITICAL）:
-  追问场景: "请回复选项编号或直接补充信息。"
-  确认场景:
-    R2: "请回复选项编号（1/2/3），确认后进入方案设计阶段（上下文收集→直接规划→开发实施）。"
-    R3: "请回复选项编号（1/2/3），确认后进入方案设计阶段（上下文收集→多方案对比→详细规划→开发实施）。"
+  R2 确认: "请回复选项编号或直接补充信息，确认后进入方案设计阶段。"
+  R3 追问: "请回复选项编号或直接补充信息。"
+  R3 确认: "请回复选项编号（1/2/3），确认后进入方案设计阶段（上下文收集→多方案对比→详细规划→开发实施）。"
   DO NOT: 在下一步引导中使用"立即实现"、"立即开始"、"直接执行"等跳过方案设计的措辞
 
-Codex CLI 交互选择增强（仅 Codex CLI 生效）:
-  检测: {HELLOAGENTS_ROOT} 路径含 .codex/ 且 request_user_input 工具在可用工具列表中
-  适用场景: R3 评估追问（EVAL_MODE=1）、R2/R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
-  不适用: EVAL_MODE=2（多维度×多选项过于拥挤，回退纯文本）
-  行为: 调用 request_user_input 工具替代纯文本选项，渲染 TUI 交互选择界面
-  映射:
-    R3 追问: 1 question + 2-4 options + isOther=true
-    R2/R3 确认: 1 question + 3 options（推荐/备选/改需求）+ isOther=true
-    DESIGN 多方案: 1 question + 方案选项 + isOther=true
-    EHRB 确认: 1 question + 2 options（继续/取消）
+交互选择增强（仅 Codex CLI request_user_input 工具可用时生效）:
+  检测: request_user_input 工具在可用工具列表中
+  适用场景: R2 确认（问题+选项）、R3 评估追问（EVAL_MODE=1）、R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
+  不适用: EVAL_MODE=2（多维度×多选项在 TUI 浮层中过于拥挤，回退到纯文本格式）
+  行为: 使用 request_user_input 工具替代纯文本选项输出，渲染为 TUI 交互选择界面
+  映射规则:
+    R2 确认: 1 question (header=最低分维度名或决策点) + 2-4 options + isOther=true
+    R3 追问 (EVAL_MODE=1): 1 question (header=追问维度名) + 2-4 options + isOther=true
+    R3 追问 (EVAL_MODE=2): 不启用（多维度×多选项在 TUI 浮层中过于拥挤，回退到纯文本格式）
+    R3 确认: 1 question (header="确认执行模式") + 3 options（推荐/备选/改需求）+ isOther=true
+    DESIGN 多方案: 1 question (header="方案选择") + 方案选项 + isOther=true
+    EHRB 确认: 1 question (header="⚠️ 风险确认") + 2 options（继续/取消）
+  question 字段映射:
+    header → 场景标题（如"需求范围"、"确认执行模式"）
+    question → 问题描述文本
+    options[].label → 选项简称
+    options[].description → 选项详细描述
+    isOther → true（始终允许自由输入，等价于"直接补充信息"）
   回退: request_user_input 不在工具列表中 或调用失败 → 回退到纯文本选项格式
-  DO NOT: 切换到 Plan 协作模式（其规划行为与 HelloAGENTS 阶段链冲突）| 在非 Codex CLI 环境使用
+  DO NOT: 同时输出纯文本选项和 request_user_input
 ```
 
 ---

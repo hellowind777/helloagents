@@ -4,7 +4,7 @@ import re
 import sys
 from pathlib import Path
 
-from .._common import _msg, CODEX_NOTIFY_CMD, PLUGIN_DIR_NAME, get_python_cmd
+from .._common import _msg, CODEX_NOTIFY_SCRIPT, PLUGIN_DIR_NAME, get_python_cmd
 
 
 # ---------------------------------------------------------------------------
@@ -338,18 +338,15 @@ def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
 # Codex notify hook
 # ---------------------------------------------------------------------------
 
-def _resolve_codex_notify_cmd(dest_dir: Path) -> str:
-    """Resolve CODEX_NOTIFY_CMD template to a concrete command string.
+def _resolve_codex_notify_argv(dest_dir: Path) -> list[str]:
+    """Resolve notify command to argv tokens for Codex CLI.
 
-    Replaces {SCRIPTS_DIR} with the actual scripts path and
-    python3 with python on Windows.
+    Codex CLI ``notify`` is an argv array — each element is a separate token,
+    and Codex appends the JSON payload as the last argument.
     """
     scripts_dir = (dest_dir / PLUGIN_DIR_NAME / "scripts").as_posix()
-    cmd = CODEX_NOTIFY_CMD.replace("{SCRIPTS_DIR}", scripts_dir)
-    python_cmd = get_python_cmd()
-    if python_cmd == "python":
-        cmd = cmd.replace("python3 ", "python ")
-    return cmd
+    script_path = f"{scripts_dir}/{CODEX_NOTIFY_SCRIPT}"
+    return [get_python_cmd(), script_path]
 
 
 def _configure_codex_notify(dest_dir: Path) -> None:
@@ -363,9 +360,10 @@ def _configure_codex_notify(dest_dir: Path) -> None:
     if config_path.exists():
         content = config_path.read_text(encoding="utf-8")
 
-    resolved_cmd = _resolve_codex_notify_cmd(dest_dir)
-    toml_cmd = resolved_cmd.replace('"', '\\"')
-    notify_line = f'notify = ["{toml_cmd}"]'
+    argv = _resolve_codex_notify_argv(dest_dir)
+    # Format as TOML array: notify = ["python", "path/to/script.py"]
+    toml_elements = ", ".join(f'"{token}"' for token in argv)
+    notify_line = f'notify = [{toml_elements}]'
 
     # Check for existing notify (string or array format)
     m_str = re.search(r'^notify\s*=\s*"([^"]*)"', content, re.MULTILINE)

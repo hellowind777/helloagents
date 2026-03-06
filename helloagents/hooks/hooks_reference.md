@@ -196,7 +196,7 @@ collaboration_modes = true
 启用后 `request_user_input` 工具可用，允许代理渲染 TUI 交互选择界面（替代纯文本选项）。
 
 - **适用**: 主代理和子代理均可使用
-- **HelloAGENTS 使用场景**: R3 评估追问、R2/R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
+- **HelloAGENTS 使用场景**: R2 确认（问题+选项）、R3 评估追问、R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
 - **安装**: 由 `codex_config.py` 的 `_ensure_feature_collaboration_modes()` 自动写入
 
 ---
