@@ -114,21 +114,18 @@ agents.max_depth = 1      # 嵌套深度（默认 1）
 description = "代码探索和依赖分析"
 model = "<轻量模型名>"
 model_reasoning_effort = "medium"
-sandbox_mode = "read-only"
 nickname_candidates = ["探索者", "Scout", "Pathfinder"]
 
 [agents.worker]
 description = "代码实现和修改"
 model = "<主力模型名>"
 model_reasoning_effort = "high"
-sandbox_mode = "full"
 nickname_candidates = ["工匠", "Builder", "Forge"]
 
 [agents.monitor]
 description = "长时间运行的监控和轮询任务"
 model = "<轻量模型名>"
 model_reasoning_effort = "low"
-sandbox_mode = "read-only"
 nickname_candidates = ["哨兵", "Watcher", "Radar"]
 
 # HelloAGENTS RLM 角色
@@ -136,55 +133,50 @@ nickname_candidates = ["哨兵", "Watcher", "Radar"]
 description = "代码审查和质量检查"
 model = "<主力模型名>"
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
 nickname_candidates = ["审查员", "Inspector", "Sentinel"]
 
 [agents.synthesizer]
 description = "多方案评估与综合分析"
 model = "<主力模型名>"
 model_reasoning_effort = "high"
-sandbox_mode = "read-only"
 nickname_candidates = ["综合师", "Synthesizer", "Oracle"]
 
 [agents.kb_keeper]
 description = "知识库同步与维护"
 model = "<主力模型名>"
 model_reasoning_effort = "medium"
-sandbox_mode = "full"
 nickname_candidates = ["档案员", "Librarian", "Keeper"]
 
 [agents.pkg_keeper]
 description = "方案包生命周期管理"
 model = "<主力模型名>"
 model_reasoning_effort = "medium"
-sandbox_mode = "full"
 nickname_candidates = ["管家", "Steward", "Curator"]
 
 [agents.writer]
 description = "独立文档生成与编写"
 model = "<主力模型名>"
 model_reasoning_effort = "high"
-sandbox_mode = "full"
 nickname_candidates = ["笔者", "Scribe", "Quill"]
 ```
 
 ### nickname_candidates（v0.110 新增）
 
-角色可定义语义化昵称池，子代理生成时从池中分配，替代默认随机昵称。
+角色可定义语义化昵称池，子代理生成时从池中分配，替代默认随机昵称（科学家名字）。
 用于线程切换和日志识别，提升多代理场景的可读性。
 
 HelloAGENTS 角色昵称映射:
 
 | 角色 | 类型 | 昵称候选 |
 |------|------|----------|
-| explorer | 原生 | 探索者, Scout, Pathfinder |
-| worker | 原生 | 工匠, Builder, Forge |
-| monitor | 原生 | 哨兵, Watcher, Radar |
-| reviewer | RLM | 审查员, Inspector, Sentinel |
-| synthesizer | RLM | 综合师, Synthesizer, Oracle |
-| kb_keeper | RLM | 档案员, Librarian, Keeper |
-| pkg_keeper | RLM | 管家, Steward, Curator |
-| writer | RLM | 笔者, Scribe, Quill |
+| explorer | 原生 | Scout, Pathfinder, Tracker |
+| worker | 原生 | Builder, Forge, Smith |
+| monitor | 原生 | Watcher, Radar, Lookout |
+| reviewer | RLM | Inspector, Sentinel, Auditor |
+| synthesizer | RLM | Oracle, Arbiter, Assessor |
+| kb_keeper | RLM | Librarian, Keeper, Archivist |
+| pkg_keeper | RLM | Steward, Curator, Marshal |
+| writer | RLM | Scribe, Quill, Chronicler |
 
 ### collaboration_modes 功能开关（v0.110+）
 
