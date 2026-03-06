@@ -202,17 +202,34 @@ def get_helloagents_module_path() -> Path:
 # Shared hooks helpers (used by claude_config.py and settings_hooks.py)
 # ---------------------------------------------------------------------------
 
-def is_helloagents_hook(hook: dict) -> bool:
-    """Check if a hook entry belongs to HelloAGENTS (by description fingerprint).
+def _is_helloagents_command(cmd: str) -> bool:
+    """Check if a command string references HelloAGENTS scripts or CLI."""
+    if not cmd:
+        return False
+    if "helloagents/scripts/" in cmd or "helloagents\\scripts\\" in cmd:
+        return True
+    if cmd.startswith("helloagents "):
+        return True
+    return False
 
+
+def is_helloagents_hook(hook: dict) -> bool:
+    """Check if a hook entry belongs to HelloAGENTS.
+
+    Identifies by description fingerprint OR command path patterns.
+    This ensures hooks are properly identified even if user edits the description.
     Works with both flat hook objects and matcher-group objects.
     """
     if HOOKS_FINGERPRINT in hook.get("description", ""):
+        return True
+    if _is_helloagents_command(hook.get("command", "")):
         return True
     inner = hook.get("hooks", [])
     if isinstance(inner, list):
         for h in inner:
             if HOOKS_FINGERPRINT in h.get("description", ""):
+                return True
+            if _is_helloagents_command(h.get("command", "")):
                 return True
     return False
 
