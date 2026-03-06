@@ -204,13 +204,22 @@ def install(target: str) -> bool:
         print(_msg(f"  已安装模块到: {plugin_dest}",
                    f"  Installed module to: {plugin_dest}"))
 
-        # Restore user/ and commands/ directories (overwrite templates with user data)
+        # Restore user/ and commands/ directories
+        # - User-created files (profile.md, sessions/*, custom commands) → restore
+        # - Template files (starting with _) → keep fresh version from package
         for _dname, _bak in _backups.items():
             if _bak and _bak.exists():
                 _target = plugin_dest / _dname
-                if _target.exists():
-                    shutil.rmtree(_target)
-                shutil.copytree(_bak, _target)
+                for _f in _bak.rglob("*"):
+                    if not _f.is_file():
+                        continue
+                    # Skip template files (starting with _) — keep fresh from package
+                    if _f.name.startswith("_"):
+                        continue
+                    _rel = _f.relative_to(_bak)
+                    _dest = _target / _rel
+                    _dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(_f, _dest)
                 shutil.rmtree(_bak.parent)
 
         # Deploy rules

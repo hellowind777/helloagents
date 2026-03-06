@@ -141,16 +141,24 @@ def _ensure_agents_section(
 def _ensure_feature_sqlite(content: str) -> tuple[str, bool]:
     """Ensure ``[features]`` section has ``sqlite = true``.
 
-    Returns (content, sqlite_added).
+    Always enforces ``true`` on install/update, even if user changed to ``false``.
+    Returns (content, changed).
     """
     features_match = re.search(r'^\[features\]', content, re.MULTILINE)
     if features_match:
         after = content[features_match.end():]
         next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
         scope = after[:next_sec.start()] if next_sec else after
-        if re.search(r'^sqlite\s*=', scope, re.MULTILINE):
-            return content, False
-        # Insert before next section or at EOF
+        m = re.search(r'^sqlite\s*=\s*(\S+)', scope, re.MULTILINE)
+        if m:
+            if m.group(1) == "true":
+                return content, False
+            # Replace existing value with true
+            abs_start = features_match.end() + m.start()
+            abs_end = abs_start + len(m.group(0))
+            content = content[:abs_start] + "sqlite = true" + content[abs_end:]
+            return content, True
+        # Key absent — insert before next section or at EOF
         next_section = re.search(r'^\[[\w]', content[features_match.end():], re.MULTILINE)
         pos = (features_match.end() + next_section.start()) if next_section else len(content)
         content = content[:pos] + "sqlite = true\n" + content[pos:]
@@ -163,16 +171,22 @@ def _ensure_feature_sqlite(content: str) -> tuple[str, bool]:
 def _ensure_feature_collaboration_modes(content: str) -> tuple[str, bool]:
     """Ensure ``[features]`` section has ``collaboration_modes = true``.
 
-    Enables request_user_input in Default collaboration mode (v0.110+).
-    Returns (content, collab_added).
+    Always enforces ``true`` on install/update, even if user changed to ``false``.
+    Returns (content, changed).
     """
     features_match = re.search(r'^\[features\]', content, re.MULTILINE)
     if features_match:
         after = content[features_match.end():]
         next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
         scope = after[:next_sec.start()] if next_sec else after
-        if re.search(r'^collaboration_modes\s*=', scope, re.MULTILINE):
-            return content, False
+        m = re.search(r'^collaboration_modes\s*=\s*(\S+)', scope, re.MULTILINE)
+        if m:
+            if m.group(1) == "true":
+                return content, False
+            abs_start = features_match.end() + m.start()
+            abs_end = abs_start + len(m.group(0))
+            content = content[:abs_start] + "collaboration_modes = true" + content[abs_end:]
+            return content, True
         next_section = re.search(r'^\[[\w]', content[features_match.end():], re.MULTILINE)
         pos = (features_match.end() + next_section.start()) if next_section else len(content)
         content = content[:pos] + "collaboration_modes = true\n" + content[pos:]

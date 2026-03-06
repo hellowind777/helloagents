@@ -140,7 +140,10 @@ def _remove_claude_hooks(dest_dir: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 def _configure_claude_auto_memory(dest_dir: Path) -> None:
-    """在 settings.json 设置 autoMemoryEnabled: false，防止与 AGENTS.md 规则冲突。"""
+    """在 settings.json 设置 autoMemoryEnabled: false，防止与 AGENTS.md 规则冲突。
+
+    每次安装/更新都强制设为 false，即使用户手动改为 true。
+    """
     settings_path = dest_dir / "settings.json"
 
     settings = {}
@@ -151,9 +154,6 @@ def _configure_claude_auto_memory(dest_dir: Path) -> None:
             print(_msg("  ⚠ settings.json 格式异常，跳过 autoMemory 配置",
                        "  ⚠ settings.json malformed, skipping autoMemory config"))
             return
-
-    if settings.get("autoMemoryEnabled") is False:
-        return  # 已配置，幂等跳过
 
     settings["autoMemoryEnabled"] = False
     try:
@@ -204,12 +204,13 @@ def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
     """Return the list of permissions.allow entries HelloAGENTS needs.
 
     Based on Claude Code permission rule syntax:
-    - Read operations are auto-approved (no rules needed)
+    - Read rules: needed for files outside the project directory
     - Edit rules cover both Edit and Write tools (gitignore patterns)
     - Bash rules support glob with ** for recursive matching
     - Path prefixes: ~/ = home, / = project root, ./ or bare = CWD
 
     Covers:
+    - Module file reads (outside project dir, loaded by G7 on-demand rules)
     - Script & RLM execution (Bash, supports subdirectories)
     - HelloAGENTS CLI commands (Bash)
     - Global config cache read via cat (Bash)
@@ -217,8 +218,15 @@ def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
     - Global config writes (Edit)
     """
     plugin_posix = (dest_dir / PLUGIN_DIR_NAME).as_posix()
+    dest_posix = dest_dir.as_posix()
     home_ha = "~/.helloagents"
     return [
+        # Read: helloagents module files (loaded by G7 on-demand rules)
+        f"Read({plugin_posix}/**)",
+        # Read: split rule files (rules/helloagents/*.md)
+        f"Read({dest_posix}/rules/helloagents/**)",
+        # Read: global config/cache
+        f"Read({home_ha}/**)",
         # Bash: Python script execution (with and without -X utf8, supports subdirectories)
         f'Bash(python "{plugin_posix}/scripts/**")',
         f'Bash(python -X utf8 "{plugin_posix}/scripts/**")',
@@ -227,18 +235,47 @@ def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
         # Bash: CLI commands & cache read
         "Bash(helloagents *)",
         f"Bash(cat {home_ha}/*)",
-        # Edit (covers Write too): project knowledge base
+        f"Bash(ls {plugin_posix}/**)",
+        f"Bash(find {plugin_posix} *)",
+        # Edit (covers Write too): plugin user data (memory, sessions, commands)
+        f"Edit({plugin_posix}/user/**)",
+        f"Edit({plugin_posix}/commands/**)",
+        # Edit: project knowledge base
         "Edit(.helloagents/**)",
         # Edit: global config directory
         f"Edit({home_ha}/**)",
     ]
 
 
+def _is_helloagents_permission(entry: str, dest_dir: Path) -> bool:
+    """Check if a permission entry belongs to HelloAGENTS.
+
+    Uses path pattern matching instead of exact string comparison,
+    so old-version entries and user-modified entries are still identified.
+    """
+    plugin_posix = (dest_dir / PLUGIN_DIR_NAME).as_posix()
+    dest_posix = dest_dir.as_posix()
+    home_ha = "~/.helloagents"
+
+    if plugin_posix in entry:
+        return True
+    if f"{dest_posix}/rules/helloagents" in entry:
+        return True
+    if home_ha in entry:
+        return True
+    if entry == "Edit(.helloagents/**)":
+        return True
+    if entry.startswith("Bash(helloagents "):
+        return True
+    return False
+
+
 def _configure_claude_permissions(dest_dir: Path) -> None:
     """Add HelloAGENTS tool permissions to Claude Code settings.json.
 
-    Merges into permissions.allow without duplicating or removing
-    user-defined entries. Idempotent: re-running updates existing entries.
+    Uses pattern matching to identify and replace HelloAGENTS entries,
+    so old-version or user-modified entries are properly cleaned up.
+    Preserves user-defined entries that don't match HelloAGENTS patterns.
     """
     settings_path = dest_dir / "settings.json"
 
@@ -254,8 +291,9 @@ def _configure_claude_permissions(dest_dir: Path) -> None:
 
     our_entries = _get_helloagents_permissions(dest_dir)
 
-    # Remove old HelloAGENTS entries (exact match), then add current ones
-    allow[:] = [e for e in allow if e not in our_entries]
+    # Remove ALL HelloAGENTS entries (pattern match), then add current ones
+    allow[:] = [e for e in allow
+                if not _is_helloagents_permission(e, dest_dir)]
     allow.extend(our_entries)
 
     try:
@@ -288,8 +326,8 @@ def _remove_claude_permissions(dest_dir: Path) -> bool:
     if not allow:
         return False
 
-    our_entries = set(_get_helloagents_permissions(dest_dir))
-    new_allow = [e for e in allow if e not in our_entries]
+    new_allow = [e for e in allow
+                 if not _is_helloagents_permission(e, dest_dir)]
 
     if len(new_allow) == len(allow):
         return False
