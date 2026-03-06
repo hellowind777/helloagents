@@ -15,6 +15,7 @@ from .codex_config import (
     _configure_codex_notify,
     _configure_codex_tui_notification,
     _configure_codex_developer_instructions,
+    _configure_codex_agent_roles,
     _cleanup_codex_agents_dotted,
 )
 from .claude_config import (
@@ -294,6 +295,7 @@ def install(target: str) -> bool:
             (_configure_codex_notify,                 "notify hook",              "notify hook"),
             (_configure_codex_tui_notification,       "TUI 通知方式",            "TUI notification"),
             (_configure_codex_csv_batch,              "CSV 批处理",              "CSV batch"),
+            (_configure_codex_agent_roles,            "子代理角色",              "agent roles"),
             (_configure_codex_developer_instructions, "developer_instructions",   "developer_instructions"),
         ],
         "gemini": [
