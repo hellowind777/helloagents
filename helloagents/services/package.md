@@ -60,9 +60,9 @@ LIVE_STATUS 格式: 按 G11 定义
 
 ```yaml
 触发: develop 阶段步骤14
-流程: 验证方案包状态 → 归档到 archive/YYYY-MM/ → migrate_package.py → 更新 _index.md → KnowledgeService.updateChangelog()
+流程: 验证方案包状态 → 归档到 archive/YYYY-MM/ → migrate_package.py → 更新 archive/_index.md → 清除 INDEX.md "活跃方案包"指向 → KnowledgeService.updateChangelog()
 返回: success, archive_path, changelog_updated
-保证: 原路径清理、索引更新、CHANGELOG 已记录
+保证: 原路径清理、归档索引更新、活跃方案包指向已清除、CHANGELOG 已记录
 ```
 
 ### scan()

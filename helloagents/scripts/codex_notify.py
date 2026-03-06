@@ -3,20 +3,33 @@
 """
 HelloAGENTS Codex Notify Proxy — Codex CLI 通知代理
 
-接收 Codex CLI 的 notify JSON，映射事件类型到声音事件，
-播放声音通知 + 执行版本检查。
+接收 Codex CLI 的 notify JSON，检测 G3 格式状态图标，
+映射到对应声音事件，播放声音通知 + 执行版本检查。
 
 Codex CLI 调用方式:
-  codex_notify.py '{"type":"agent-turn-complete","client":"codex-tui"}'
+  codex_notify.py '{"type":"agent-turn-complete","client":"codex-tui","last-assistant-message":"..."}'
 
-事件映射:
-  agent-turn-complete → complete ("完成了~")
+声音路由（5 种事件）:
   approval-requested  → confirm  ("需要您确认~")
+  agent-turn-complete → 从 last-assistant-message 检测 G3 图标:
+    warning  → ⚠️             EHRB 风险警告 ("需要注意~")
+    error    → ❌             错误终止 ("出错了呢~")
+    complete → ✅💡⚡🔧       完成/直接响应/快速流程/外部工具 ("完成了~")
+    confirm  → ❓📐           通用确认 / R2 确认 ("需要您确认~")
+    confirm  → 🔵（状态含"确认"）R3 确认（评分≥8，等待模式选择）
+    idle     → 🔵（状态不含"确认"）R3 追问/评估/执行等 ("在等你呢~")
+    idle     → ℹ️🚫及其他     信息提示/取消
+    complete → 无 G3 格式      默认
 
-client 字段过滤（v0.107+）:
+声音触发原则:
+  Codex CLI 的 notify 钩子仅在主代理轮次完成时触发（源码确认:
+  user_notification.rs 只处理 AfterAgent 事件，子代理轮次不触发 notify），
+  因此无需额外过滤子代理事件，直接播放即可。
+
+client 字段过滤:
   codex-tui → 播放声音（终端用户需要提醒）
   其他值（VS Code/Xcode/任何 IDE） → 跳过声音（IDE 有自己的通知机制）
-  无 client 字段 → 播放声音（向后兼容旧版 Codex）
+  无 client 字段 → 播放声音（向后兼容无 client 字段的旧 payload）
 
 输入(argv[1]): JSON 字符串
 输出(stdout): 无
@@ -27,20 +40,118 @@ import subprocess
 import sys
 from pathlib import Path
 
-# 事件映射: Codex notify type → sound event
-EVENT_MAP = {
-    "agent-turn-complete": "complete",
-    "approval-requested": "confirm",
-}
+# ---------------------------------------------------------------------------
+# G3 图标→声音检测（与 stop_sound_router.py 保持一致）
+# ---------------------------------------------------------------------------
 
-# 仅终端 TUI 播放声音，所有 IDE 集成（VS Code/Xcode 等）跳过
-# Codex client 字段: "codex-tui" = 终端, 其他值 = IDE（有自己的通知系统）
+# G3 格式标记
+_G3_MARKER = "\u3010HelloAGENTS\u3011"  # 【HelloAGENTS】
+
+# 警告类图标 → warning ("需要注意~")：EHRB 风险警告
+_WARNING_ICONS = frozenset({
+    "\u26a0\ufe0f",  # ⚠️ (with variation selector)
+    "\u26a0",         # ⚠  (without variation selector)
+})
+
+# 错误类图标 → error ("出错了呢~")：错误终止
+_ERROR_ICONS = frozenset({
+    "\u274c",  # ❌
+})
+
+# 完成类图标 → complete ("完成了~")
+_COMPLETE_ICONS = frozenset({
+    "\u2705",      # ✅
+    "\U0001f4a1",  # 💡
+    "\u26a1",      # ⚡
+    "\U0001f527",  # 🔧
+})
+
+# 确认类图标 → confirm ("需要您确认~")：始终表示确认场景
+_CONFIRM_ICONS = frozenset({
+    "\u2753",      # ❓
+    "\U0001f4d0",  # 📐
+})
+
+# 上下文相关图标：需检查状态文本判断是确认还是等待
+_CONTEXT_ICONS = frozenset({
+    "\U0001f535",  # 🔵
+})
+
+DEFAULT_SOUND = "complete"
+
+
+def _detect_g3_sound(text):
+    """从 HelloAGENTS G3 格式文本中检测声音事件。
+
+    检测逻辑:
+      1. 在首行查找【HelloAGENTS】标记
+      2. 提取标记前的图标 + 标记后的状态文本
+      3. 按优先级映射到 5 种声音事件:
+         ⚠️ → warning | ❌ → error | ✅💡⚡🔧 → complete
+         ❓📐 → confirm | 🔵+确认 → confirm | 🔵+其他 → idle
+         其余图标 → idle
+      4. 无标记 → 返回默认值 complete
+    """
+    if not text:
+        return DEFAULT_SOUND
+
+    first_line = text.strip().split("\n")[0]
+
+    idx = first_line.find(_G3_MARKER)
+    if idx < 0:
+        return DEFAULT_SOUND
+
+    icon = first_line[:idx].strip()
+    if not icon:
+        return DEFAULT_SOUND
+
+    # 提取标记后的状态文本（用于上下文相关图标判断）
+    status_text = first_line[idx + len(_G3_MARKER):]
+
+    # 警告类优先检查（⚠️ → warning）
+    for ch in _WARNING_ICONS:
+        if ch in icon:
+            return "warning"
+
+    # 错误类（❌ → error）
+    for ch in _ERROR_ICONS:
+        if ch in icon:
+            return "error"
+
+    # 完成类（✅💡⚡🔧 → complete）
+    for ch in _COMPLETE_ICONS:
+        if ch in icon:
+            return "complete"
+
+    # 确认类（❓📐 → confirm，始终为确认场景）
+    for ch in _CONFIRM_ICONS:
+        if ch in icon:
+            return "confirm"
+
+    # 上下文相关图标（🔵 → 检查状态文本判断）
+    for ch in _CONTEXT_ICONS:
+        if ch in icon:
+            return "confirm" if "\u786e\u8ba4" in status_text else "idle"
+
+    # 其余图标（ℹ️🚫等）→ 等待用户输入
+    return "idle"
+
+
+# ---------------------------------------------------------------------------
+# 常量
+# ---------------------------------------------------------------------------
+
+# 仅终端 TUI 播放声音
 TUI_CLIENT = "codex-tui"
 
 # 脚本路径
 SCRIPTS_DIR = Path(__file__).parent
 SOUND_NOTIFY = SCRIPTS_DIR / "sound_notify.py"
 
+
+# ---------------------------------------------------------------------------
+# 主入口
+# ---------------------------------------------------------------------------
 
 def main():
     # 解析 Codex CLI 传入的 JSON 参数
@@ -50,8 +161,16 @@ def main():
         try:
             data = json.loads(sys.argv[1])
             notify_type = data.get("type", "")
-            sound_event = EVENT_MAP.get(notify_type)
-            # client 字段过滤: 仅 codex-tui（终端）播放，其他均为 IDE 跳过
+
+            # 声音路由
+            if notify_type == "approval-requested":
+                sound_event = "confirm"
+            elif notify_type == "agent-turn-complete":
+                # 从 last-assistant-message 检测 G3 图标
+                last_msg = data.get("last-assistant-message", "")
+                sound_event = _detect_g3_sound(last_msg)
+
+            # client 字段过滤: 仅 codex-tui（终端）播放
             client = (data.get("client") or "").lower()
             if client and client != TUI_CLIENT:
                 skip_sound = True

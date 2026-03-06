@@ -86,10 +86,10 @@
           },
           {
             "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" complete",
+            "command": "python3 \"{SCRIPTS_DIR}/stop_sound_router.py\"",
             "async": false,
             "timeout": 5,
-            "description": "HelloAGENTS 声音通知（完成）"
+            "description": "HelloAGENTS 智能声音路由（从会话记录检测 G3 状态图标）"
           }
         ]
       }
@@ -149,20 +149,6 @@
         ]
       }
     ],
-    "Notification": [
-      {
-        "matcher": "idle_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" idle",
-            "async": false,
-            "timeout": 5,
-            "description": "HelloAGENTS 声音通知（等待输入）"
-          }
-        ]
-      }
-    ],
     "PostToolUseFailure": [
       {
         "matcher": "",
@@ -173,13 +159,6 @@
             "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 工具失败恢复建议"
-          },
-          {
-            "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" error",
-            "async": false,
-            "timeout": 5,
-            "description": "HelloAGENTS 声音通知（错误）"
           }
         ]
       }
