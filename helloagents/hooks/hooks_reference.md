@@ -161,29 +161,17 @@ model = "<主力模型名>"
 model_reasoning_effort = "high"
 nickname_candidates = ["审查员", "Inspector", "Sentinel"]
 
-[agents.synthesizer]
-description = "多方案评估与综合分析"
-model = "<主力模型名>"
-model_reasoning_effort = "high"
-nickname_candidates = ["综合师", "Synthesizer", "Oracle"]
-
-[agents.kb_keeper]
-description = "知识库同步与维护"
-model = "<主力模型名>"
-model_reasoning_effort = "medium"
-nickname_candidates = ["档案员", "Librarian", "Keeper"]
-
-[agents.pkg_keeper]
-description = "方案包生命周期管理"
-model = "<主力模型名>"
-model_reasoning_effort = "medium"
-nickname_candidates = ["管家", "Steward", "Curator"]
-
 [agents.writer]
 description = "独立文档生成与编写"
 model = "<主力模型名>"
 model_reasoning_effort = "high"
 nickname_candidates = ["笔者", "Scribe", "Quill"]
+
+[agents.brainstormer]
+description = "方案构思与差异化设计"
+model = "<主力模型名>"
+model_reasoning_effort = "high"
+nickname_candidates = ["缪斯", "Muse", "Ideator"]
 ```
 
 ### nickname_candidates（v0.110 新增）
@@ -199,10 +187,8 @@ HelloAGENTS 角色昵称映射:
 | worker | 原生 | Builder, Forge, Smith |
 | monitor | 原生 | Watcher, Radar, Lookout |
 | reviewer | RLM | Inspector, Sentinel, Auditor |
-| synthesizer | RLM | Oracle, Arbiter, Assessor |
-| kb_keeper | RLM | Librarian, Keeper, Archivist |
-| pkg_keeper | RLM | Steward, Curator, Marshal |
 | writer | RLM | Scribe, Quill, Chronicler |
+| brainstormer | RLM | Muse, Ideator, Catalyst |
 
 ### collaboration_modes 功能开关（v0.110+）
 

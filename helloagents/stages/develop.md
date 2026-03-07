@@ -131,7 +131,7 @@ KB_SKIPPED=true → 扫描项目现有资源
 执行策略: 严格按 tasks.md 逐项执行
 
 子代理调用（按 G9 复杂度判定）:
-  moderate/complex → 原生子代理逐项执行任务改动（强制）[→ G10 调用通道]
+  moderate/complex → 按编排五步法调度子代理逐项执行任务改动（强制）[→ G10 调用通道]
     每个任务项单独调用一次，prompt 包含: 任务描述 + 目标文件 + 约束条件 + "直接执行，跳过路由评分"
     返回格式要求: {status, changes, issues, verification} [→ G10 标准返回格式]
     接收结果后: 校验 changes.scope 与 prompt 指定范围一致 → 更新任务状态
@@ -226,7 +226,7 @@ KB_SKIPPED=true → 扫描项目现有资源
   单元测试:
     策略: 从具体到广泛（修改的代码→更广泛测试）
     子代理调用:
-      需要新增测试用例时 → 调度原生子代理设计并编写测试用例（强制）[→ G10 调用通道]
+      需要新增测试用例时 → 按编排五步法调度子代理设计并编写测试用例（强制）[→ G10 调用通道]
         独立测试文件≥2时按文件分配子代理并行编写（子代理数=文件数，≤6/批）
         每个子代理 prompt 明确: 负责的测试文件路径 + 被测函数/类列表 + 测试框架约束
       仅运行已有测试 → 主代理直接执行
@@ -348,8 +348,8 @@ DELEGATED 模式强制验收（CRITICAL）:
 前置: KB_SKIPPED=true → 跳过，标注"⚠️ 知识库同步已跳过"
 重要: KB_SKIPPED=false 时，必须在步骤14（迁移方案包）之前完成知识库同步
 
-子代理调用（KB_SKIPPED=false 时强制）:
-  [RLM:kb_keeper] 执行知识库同步（通过 KnowledgeService 调用）[→ G10 调用通道]
+执行（KB_SKIPPED=false 时强制）:
+  主代理按 KnowledgeService 接口规范直接执行知识库同步
 
 同步: modules/{模块名}.md + _index.md（必须）| context.md/INDEX.md（按需）
 原则: 代码为唯一来源，最小变更，术语一致
@@ -365,7 +365,7 @@ DELEGATED 模式强制验收（CRITICAL）:
 
 ```yaml
 前置: KB_SKIPPED=true → 跳过
-说明: 步骤10 KnowledgeService.sync() 内部由 synthesizer 执行细粒度一致性对照，本步骤为主代理的宏观验证
+说明: 步骤10 知识库同步由主代理直接执行，本步骤为同步后的宏观一致性验证
 审计: 完整性（本次变更涉及的模块文档已更新）+ 一致性（变更模块的 API/数据模型与代码一致）
 
 真实性原则: [→ 核心原则]（例外: 方案包设计意图或代码有明显Bug时修正代码）
@@ -387,7 +387,7 @@ DELEGATED 模式强制验收（CRITICAL）:
 脚本: migrate_package.py <package-name>
 
 执行:
-  1. [RLM:pkg_keeper] 更新 tasks.md 任务状态和备注（非[√]任务添加 > 备注: {原因}）（通过 PackageService 调用）[→ G10 调用通道]
+  1. 主代理按 PackageService 接口规范直接更新 tasks.md 任务状态和备注（非[√]任务添加 > 备注: {原因}）
   2. 迁移 plan/ → archive/YYYY-MM/（从方案包名提取年月）
   3. 更新 archive/_index.md
   4. 清除 INDEX.md "活跃方案包"指向（改为空或删除该行，避免指向已失效的 plan/ 路径）
