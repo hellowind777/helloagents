@@ -83,7 +83,7 @@
 
 **RLM Sub-Agent Orchestration**
 
-5 specialized roles (reviewer / synthesizer / kb_keeper / pkg_keeper / writer) plus host CLI native sub-agents (explore / implement / test / design) are dispatched automatically based on task complexity. Tasks are scheduled via DAG dependency analysis with topological sort and layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
+3 specialized roles (reviewer / writer / brainstormer) plus host CLI native sub-agents (explore / implement / test / design) are dispatched automatically based on task complexity. Tasks are scheduled via DAG dependency analysis with topological sort and layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
 
 **Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
 </td>
@@ -579,9 +579,9 @@ Beyond automatic dispatch, you can manually invoke specific roles:
 
     ~rlm spawn reviewer "review src/api/ for security issues"
     ~rlm spawn writer "generate API reference docs"
-    ~rlm spawn reviewer,synthesizer "analyze and summarize the auth module"  # parallel
+    ~rlm spawn reviewer,writer "analyze and document the auth module"  # parallel
 
-Available roles: `reviewer` (code review), `synthesizer` (multi-source synthesis), `kb_keeper` (KB maintenance), `pkg_keeper` (plan package management), `writer` (documentation).
+Available roles: `reviewer` (code review), `writer` (documentation), `brainstormer` (multi-proposal comparison).
 
 ### Multi-Terminal Collaboration
 
@@ -607,7 +607,7 @@ Tasks are stored in `{KB_ROOT}/tasks/` with file locking to prevent concurrent c
 
 The knowledge base syncs automatically at these points:
 
-- After every development stage, `kb_keeper` sub-agent syncs module docs to reflect actual code
+- After every development stage, main agent syncs module docs to reflect actual code
 - After every R1/R2/R3 task completion, CHANGELOG is auto-appended
 - On session end (Claude Code Stop Hook), KB sync + L2 session summary write triggered asynchronously
 
@@ -669,7 +669,7 @@ A: HelloAGENTS automatically backs up non-HelloAGENTS files before replacement. 
 
 **Q: What is RLM?**
 
-A: Role Language Model — HelloAGENTS's sub-agent orchestration system. It includes 5 specialized roles (reviewer, synthesizer, kb_keeper, pkg_keeper, writer) plus native CLI sub-agents. Tasks are scheduled via DAG dependency analysis with parallel execution when possible. Learn more in [Usage Guide](#usage-guide).
+A: Role Language Model — HelloAGENTS's sub-agent orchestration system. It includes 3 specialized roles (reviewer, writer, brainstormer) plus native CLI sub-agents. Tasks are scheduled via DAG dependency analysis with parallel execution when possible. Learn more in [Usage Guide](#usage-guide).
 
 **Q: Where does project knowledge go?**
 

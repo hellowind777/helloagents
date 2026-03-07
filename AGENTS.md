@@ -751,7 +751,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | 子代理调度（模块文件中遇到 `[→ G10]` 或 `[RLM:角色名]` 标记时） | rules/subagent-protocols.md |
 
 **注释:**
-- `{role}` 合法值: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
+- `{role}` 合法值: reviewer, writer, brainstormer
 - 文件不存在时: 输出错误并终止当前 RLM 调用，主代理继续执行
 
 ---
@@ -801,7 +801,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 ### 调用协议
 
 ```yaml
-RLM 角色: reviewer, synthesizer, kb_keeper, pkg_keeper, writer
+RLM 角色: reviewer, writer, brainstormer
 调用: 阶段文件中 [RLM:角色名] 处必须调用角色子代理，[→ G10] 处按通道协议调度原生子代理
 用户代理: 当前会话中可用的用户自定义子代理（非 ha-* 前缀），任务分配时作为候选执行者
 分配规则:
