@@ -346,8 +346,8 @@ def _configure_codex_notify(dest_dir: Path) -> None:
             print(_msg(f"  ⚠ 已备份现有 notify 到: {backup_path}",
                        f"  ⚠ Backed up existing notify to: {backup_path}"))
 
-        # Remove existing notify
-        content = re.sub(r'^notify\s*=\s*(?:"[^"]*"|\[[^\]]*\])', '', content, count=1, flags=re.MULTILINE)
+        # Remove existing notify (match trailing newline too)
+        content = re.sub(r'^notify\s*=\s*(?:"[^"]*"|\[[^\]]*\])\s*\n?', '', content, count=1, flags=re.MULTILINE)
 
     # Add new notify
     content = _insert_before_first_section(content, notify_line)
@@ -426,16 +426,16 @@ def _configure_codex_tui_notification(dest_dir: Path) -> None:
             print(_msg(f"  ⚠ 已备份现有 tui.notification_method 到: {backup_path}",
                        f"  ⚠ Backed up existing tui.notification_method to: {backup_path}"))
 
-        # Remove existing (dotted form)
-        if dotted_match:
-            content = re.sub(r'tui\.notification_method\s*=\s*"[^"]*"\s*\n?', '', content)
-        # Remove existing (section form)
+        # Remove existing — section form first to avoid stale positions
+        # (removing dotted form first would shift content, invalidating
+        # tui_section_match/section_match positions captured above)
         if section_match and tui_section_match:
             start = tui_section_match.end() + section_match.start()
             end = start + len(section_match.group(0))
             content = content[:start] + content[end:]
-            # Clean up line
             content = re.sub(r'\n{3,}', '\n\n', content)
+        if dotted_match:
+            content = re.sub(r'tui\.notification_method\s*=\s*"[^"]*"\s*\n?', '', content)
 
     # Add new value in [tui] section
     tui_match = re.search(r'^\[tui\]', content, re.MULTILINE)

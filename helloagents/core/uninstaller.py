@@ -230,8 +230,8 @@ def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
     # - [memories]: Codex native memory system (not HelloAGENTS-exclusive)
     # These keys correspond to installer functions:
     # - _configure_codex_toml() → project_doc_max_bytes (preserved)
-    # - _configure_codex_csv_batch() → agents.max_threads/max_depth (preserved)
-    # - _configure_codex_memories() → [memories] section (preserved)
+    # - _configure_codex_csv_batch() → agents.max_threads/max_depth, sqlite (preserved)
+    # - [memories] section is Codex-native, not created by HelloAGENTS (preserved)
     # Users can manually remove these if desired.
     print(_msg(
         "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories 配置已保留（可能被其他工具使用）。",

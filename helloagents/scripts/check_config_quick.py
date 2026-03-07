@@ -60,7 +60,11 @@ def _msg(zh: str, en: str) -> str:
     return zh if _LANG == "zh" else en
 
 def _get_cli_helloagents_dir() -> Path:
-    """Get CLI-specific helloagents directory by detecting installed CLI."""
+    """Get CLI-specific helloagents directory by detecting installed CLI.
+
+    NOTE: This list must stay in sync with CLI_TARGETS in helloagents/_common.py.
+    This script is deployed standalone, so it cannot import from the package.
+    """
     home = Path.home()
     candidates = [
         home / ".claude" / "helloagents",

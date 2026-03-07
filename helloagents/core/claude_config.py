@@ -1,136 +1,29 @@
 """HelloAGENTS Claude Config - Claude Code settings.json configuration helpers."""
 
 import json
-import sys
 from pathlib import Path
 
 from .._common import (
     _msg,
     PLUGIN_DIR_NAME,
-    get_helloagents_module_path,
-    is_helloagents_hook as _is_helloagents_hook,
-    resolve_hook_placeholders as _resolve_hook_placeholders,
 )
+from .settings_hooks import _configure_settings_hooks, _remove_settings_hooks
+
+_CLAUDE_HOOKS_JSON = "claude_code_hooks.json"
 
 
 # ---------------------------------------------------------------------------
-# Hooks configuration helpers
+# Hooks configuration helpers (delegates to shared settings_hooks logic)
 # ---------------------------------------------------------------------------
-
-def _load_hooks_source() -> dict:
-    """Load HelloAGENTS hooks definition from the package."""
-    hooks_file = get_helloagents_module_path() / "hooks" / "claude_code_hooks.json"
-    if not hooks_file.exists():
-        return {}
-    try:
-        data = json.loads(hooks_file.read_text(encoding="utf-8"))
-        return data.get("hooks", {})
-    except Exception as e:
-        print(f"[HelloAGENTS] Warning: failed to parse hooks JSON: {e}",
-              file=sys.stderr)
-        return {}
-
 
 def _configure_claude_hooks(dest_dir: Path) -> None:
-    """Merge HelloAGENTS hooks into Claude Code settings.json.
-
-    - Preserves all user-defined hooks
-    - Replaces old HelloAGENTS hooks with current version (idempotent)
-    - Resolves {SCRIPTS_DIR} placeholder to actual installed scripts path
-    - Identifies our hooks by HOOKS_FINGERPRINT in description field
-    """
-    settings_path = dest_dir / "settings.json"
-
-    settings = {}
-    if settings_path.exists():
-        try:
-            settings = json.loads(settings_path.read_text(encoding="utf-8"))
-        except Exception:
-            print(_msg("  ⚠ settings.json 格式异常，跳过 Hooks 配置",
-                       "  ⚠ settings.json malformed, skipping hooks config"))
-            return
-
-    our_hooks = _load_hooks_source()
-    if not our_hooks:
-        return
-
-    # Resolve {SCRIPTS_DIR} to actual installed path
-    scripts_path = (dest_dir / PLUGIN_DIR_NAME / "scripts").as_posix()
-    our_hooks = _resolve_hook_placeholders(our_hooks, scripts_path)
-
-    existing_hooks = settings.get("hooks", {})
-
-    for event, new_entries in our_hooks.items():
-        event_hooks = existing_hooks.get(event, [])
-        # Remove old HelloAGENTS hooks, keep user hooks
-        event_hooks = [h for h in event_hooks if not _is_helloagents_hook(h)]
-        event_hooks.extend(new_entries)
-        existing_hooks[event] = event_hooks
-
-    settings["hooks"] = existing_hooks
-    try:
-        settings_path.write_text(
-            json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-            encoding="utf-8")
-    except PermissionError:
-        print(_msg("  ⚠ 无法写入 settings.json（文件被占用，请关闭 Claude Code 后重试）",
-                   "  ⚠ Cannot write settings.json (file locked, close Claude Code and retry)"))
-        return
-
-    count = sum(len(v) for v in our_hooks.values())
-    print(_msg(f"  已配置 {count} 个 Hooks ({settings_path.name})",
-               f"  Configured {count} hook(s) ({settings_path.name})"))
+    """Merge HelloAGENTS hooks into Claude Code settings.json."""
+    _configure_settings_hooks(dest_dir, _CLAUDE_HOOKS_JSON)
 
 
 def _remove_claude_hooks(dest_dir: Path) -> bool:
-    """Remove HelloAGENTS hooks from Claude Code settings.json.
-
-    Returns True if any hooks were removed.
-    """
-    settings_path = dest_dir / "settings.json"
-    if not settings_path.exists():
-        return False
-
-    try:
-        settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    except Exception as e:
-        print(_msg(f"  ⚠ 无法读取 {settings_path}: {e}",
-                   f"  ⚠ Cannot read {settings_path}: {e}"))
-        return False
-
-    hooks = settings.get("hooks")
-    if not hooks or not isinstance(hooks, dict):
-        return False
-
-    removed_count = 0
-    empty_events = []
-    for event, hook_list in hooks.items():
-        if not isinstance(hook_list, list):
-            continue
-        original_len = len(hook_list)
-        hook_list[:] = [h for h in hook_list if not _is_helloagents_hook(h)]
-        removed_count += original_len - len(hook_list)
-        if not hook_list:
-            empty_events.append(event)
-
-    for event in empty_events:
-        del hooks[event]
-    if not hooks:
-        del settings["hooks"]
-
-    if removed_count > 0:
-        try:
-            settings_path.write_text(
-                json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8")
-        except PermissionError:
-            print(_msg(f"  ⚠ 无法写入 {settings_path}（文件被占用，请关闭 Claude Code 后重试）",
-                       f"  ⚠ Cannot write {settings_path} (file locked, close Claude Code and retry)"))
-            return False
-        print(_msg(f"  已移除 {removed_count} 个 HelloAGENTS Hooks ({settings_path.name})",
-                   f"  Removed {removed_count} HelloAGENTS hook(s) ({settings_path.name})"))
-        return True
-    return False
+    """Remove HelloAGENTS hooks from Claude Code settings.json."""
+    return _remove_settings_hooks(dest_dir)
 
 
 # ---------------------------------------------------------------------------

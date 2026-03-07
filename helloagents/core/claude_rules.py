@@ -28,8 +28,8 @@ def _split_agents_md(content: str) -> dict[str, str]:
     filename to content:
 
     - ``CLAUDE.md``:    preamble + G4
-    - ``config.md``:    G1 + G2 + G3
-    - ``stages.md``:    G5 + G6 + G7 + G8
+    - ``config.md``:    G1 + G2 + G3 + G7
+    - ``stages.md``:    G5 + G6 + G8
     - ``subagent.md``:  G9 + G10
     - ``attention.md``: G11 + G12
     """
