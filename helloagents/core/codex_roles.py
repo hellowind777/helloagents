@@ -87,7 +87,8 @@ def _find_agents_group_end(content: str) -> int:
 #
 # Each role is registered as a distinct agent_type in config.toml, so
 # spawn_agent(agent_type="{role}") picks up the correct nickname_candidates.
-# Codex AgentRoleToml only supports: description, config_file, nickname_candidates.
+# Sub-agent routing exemption is handled by the parent developer_instructions
+# (see codex_config.py) — no per-role config_file override needed.
 _HA_AGENT_ROLES: list[tuple[str, dict]] = [
     ("explorer", {
         "description": "Codebase exploration and dependency analysis",
@@ -128,8 +129,8 @@ def _configure_codex_agent_roles(dest_dir: Path) -> None:
     """Write HelloAGENTS agent role definitions to config.toml.
 
     Creates missing [agents.{role}] sections with description and
-    nickname_candidates.  Updates nickname_candidates and description on
-    existing sections while preserving user-added keys (model, etc.).
+    nickname_candidates.  Updates managed keys on existing sections while
+    preserving user-added keys (model, etc.).
     """
     config_path = dest_dir / "config.toml"
     content = ""
@@ -193,35 +194,52 @@ def _configure_codex_agent_roles(dest_dir: Path) -> None:
         print(_msg(
             f"  已配置子代理角色: {', '.join(cn_parts)} ({', '.join(all_roles)})",
             f"  Configured agent roles: {', '.join(en_parts)} ({', '.join(all_roles)})"))
-
+    else:
+        print(_msg("  子代理角色配置已是最新",
+                    "  Agent roles config is up to date"))
 
 def _remove_codex_agent_roles(dest_dir: Path) -> bool:
     """Remove HelloAGENTS-managed agent role sections from config.toml.
 
     Only removes sections for known HA roles; user-defined roles are preserved.
+    Also cleans up legacy role TOML config files if present.
     Returns True if any sections were removed.
     """
     config_path = dest_dir / "config.toml"
-    if not config_path.exists():
-        return False
+    removed_sections = False
 
-    content = config_path.read_text(encoding="utf-8")
-    removed: list[str] = []
+    if config_path.exists():
+        content = config_path.read_text(encoding="utf-8")
+        removed: list[str] = []
 
-    for role, _ in _HA_AGENT_ROLES:
-        section_name = f"agents.{role}"
-        bounds = _get_section_scope(content, section_name)
-        if bounds:
-            sec_start, sec_end = bounds
-            content = content[:sec_start] + content[sec_end:]
-            content = re.sub(r'\n{3,}', '\n\n', content)
-            removed.append(role)
+        for role, _ in _HA_AGENT_ROLES:
+            section_name = f"agents.{role}"
+            bounds = _get_section_scope(content, section_name)
+            if bounds:
+                sec_start, sec_end = bounds
+                content = content[:sec_start] + content[sec_end:]
+                content = re.sub(r'\n{3,}', '\n\n', content)
+                removed.append(role)
 
-    if removed:
-        content = content.rstrip("\n") + "\n"
-        config_path.write_text(content, encoding="utf-8")
-        print(_msg(
-            f"  已移除 {len(removed)} 个子代理角色定义 ({', '.join(removed)})",
-            f"  Removed {len(removed)} agent role definition(s) ({', '.join(removed)})"))
-        return True
-    return False
+        if removed:
+            content = content.rstrip("\n") + "\n"
+            config_path.write_text(content, encoding="utf-8")
+            print(_msg(
+                f"  已移除 {len(removed)} 个子代理角色定义 ({', '.join(removed)})",
+                f"  Removed {len(removed)} agent role definition(s) ({', '.join(removed)})"))
+            removed_sections = True
+
+    # Clean up legacy role TOML config files (from older versions)
+    roles_dir = dest_dir / "roles"
+    if roles_dir.exists():
+        for role, _ in _HA_AGENT_ROLES:
+            toml_path = roles_dir / f"{role}.toml"
+            if toml_path.exists():
+                toml_path.unlink()
+        try:
+            if not any(roles_dir.iterdir()):
+                roles_dir.rmdir()
+        except OSError:
+            pass
+
+    return removed_sections

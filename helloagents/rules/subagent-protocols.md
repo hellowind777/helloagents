@@ -220,8 +220,11 @@ helloagents 角色:
   角色定义（每个角色独立配置）:
     [agents.my_role]
     description = "何时使用此角色的指引"
-    config_file = "path/to/role-specific-config"
+    config_file = "path/to/role-specific-config.toml"  # 标准 config.toml 格式，可覆盖 developer_instructions/model/sandbox 等
     nickname_candidates = ["Nickname1", "Nickname2"]
+  config_file 机制: 角色 TOML 作为高优先级配置层覆盖父代理配置（可覆盖 developer_instructions/model/sandbox 等）
+  路由豁免: 由父代理 developer_instructions 统一声明子代理豁免条款，所有子代理（原生/HA/用户自定义/未来新增）
+    自动继承该豁免，无需 per-role config_file 覆盖
   线程管理: /agent 命令在活跃子代理线程间切换
   审批传播: 父代理审批策略自动传播到子代理
 
@@ -233,12 +236,14 @@ helloagents 角色:
   监控轮询 → spawn_agent(agent_type="monitor", prompt="...")  # 长时间运行的轮询任务
 
 上下文分叉策略（fork_context）:
-  fork_context=true（子代理继承父代理完整对话历史作为背景）:
+  fork_context=true（子代理继承父代理完整对话历史作为背景，子代理收到系统消息:
+    "You are the newly spawned agent. The prior conversation history was forked from your parent agent.
+    Treat the next user message as your new task, and use the forked history only as background context."）:
     - reviewer: 审查需要理解完整任务上下文和已执行变更
     - synthesizer: 方案对比需要理解评估阶段收集的全部信息
     - writer: 文档编写需要理解项目背景和决策历史
     - DAG 任务中的实现子代理: 需要理解整体方案和已完成任务的上下文
-  fork_context=false（默认，子代理从任务描述获取全部信息）:
+  fork_context=false（默认，子代理从任务描述获取全部信息，无父代理历史）:
     - kb_keeper: 纯服务操作，任务描述中包含完整的文件变更列表
     - pkg_keeper: 纯服务操作，任务描述中包含方案包路径和操作指令
     - CSV 批处理 worker: 同构任务，每行 CSV 自包含全部信息
@@ -273,6 +278,8 @@ helloagents 角色:
     kb_keeper → spawn_agent(agent_type="kb_keeper", prompt="...")
     pkg_keeper → spawn_agent(agent_type="pkg_keeper", prompt="...")
     writer → spawn_agent(agent_type="writer", prompt="...")
+  路由豁免: 由父代理 developer_instructions 统一处理（见 codex_config.py），
+    所有子代理自动继承豁免条款，无需 per-role config_file 覆盖
   执行步骤（同 Claude Code，仅调用方式不同）:
     1. 加载角色预设: 读取 rlm/roles/{角色}.md
     2. 构造 prompt: "[跳过指令] {从角色预设提取的约束} + {具体任务描述}"

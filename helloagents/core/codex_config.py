@@ -218,9 +218,19 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 _CODEX_DEVELOPER_INSTRUCTIONS = """\
-CRITICAL: Strictly follow HelloAGENTS protocol. Never skip routing, evaluation, or G3 format rules.
+CRITICAL: As the main agent, strictly follow HelloAGENTS protocol — never skip \
+routing, evaluation, or G3 format rules. Spawned sub-agents are exempt: execute \
+assigned tasks directly, without routing, evaluation, scoring, or G3 format.
 
-If context was compressed during the session (previous messages were summarized, not at session start): Immediately read {KB_ROOT}/plan/*/tasks.md (specifically LIVE_STATUS section) to restore workflow state (all G6-defined state variables: workflow variables, task complexity variables, knowledge base and package variables). Combine restored state with current user input to determine actual current state and correct next action, avoiding incorrect re-evaluation or stage confusion. Continue from interruption point if workflow should proceed (user input is task-related or continuation request), or enter routing if user requests new task.\
+If context was compressed during the session (previous messages were summarized, \
+not at session start): Immediately read {KB_ROOT}/plan/*/tasks.md (specifically \
+LIVE_STATUS section) to restore workflow state (all G6-defined state variables: \
+workflow variables, task complexity variables, knowledge base and package \
+variables). Combine restored state with current user input to determine actual \
+current state and correct next action, avoiding incorrect re-evaluation or stage \
+confusion. Continue from interruption point if workflow should proceed (user \
+input is task-related or continuation request), or enter routing if user \
+requests new task.\
 """
 
 # Match developer_instructions = """...""" or "..." (top-level only)

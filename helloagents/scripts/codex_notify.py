@@ -19,12 +19,12 @@ Codex CLI 调用方式:
     confirm  → 🔵（状态含"确认"）R3 确认（评分≥8，等待模式选择）
     idle     → 🔵（状态不含"确认"）R3 追问/评估/执行等 ("在等你呢~")
     idle     → ℹ️🚫及其他     信息提示/取消
-    complete → 无 G3 格式      默认
+    (跳过) → 无 G3 格式      子代理输出，跳过声音
 
 声音触发原则:
-  Codex CLI 的 notify 钩子仅在主代理轮次完成时触发（源码确认:
-  user_notification.rs 只处理 AfterAgent 事件，子代理轮次不触发 notify），
-  因此无需额外过滤子代理事件，直接播放即可。
+  Codex CLI 的 notify 钩子在所有代理轮次完成时触发（包括子代理），
+  通过 G3 格式标记【HelloAGENTS】区分主代理和子代理输出:
+  主代理输出包含 G3 标记 → 按图标映射声音 | 子代理/无标记 → 跳过声音。
 
 client 字段过滤:
   codex-tui → 播放声音（终端用户需要提醒）
@@ -41,7 +41,8 @@ import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# G3 图标→声音检测（与 stop_sound_router.py 保持一致）
+# G3 图标→声音检测（图标映射与 stop_sound_router.py 一致，无标记时返回 None
+# 跳过声音，因为 Codex notify 在所有代理轮次触发，需通过 G3 标记过滤子代理）
 # ---------------------------------------------------------------------------
 
 # G3 格式标记
@@ -90,16 +91,16 @@ def _detect_g3_sound(text):
          ⚠️ → warning | ❌ → error | ✅💡⚡🔧 → complete
          ❓📐 → confirm | 🔵+确认 → confirm | 🔵+其他 → idle
          其余图标 → idle
-      4. 无标记 → 返回默认值 complete
+      4. 无标记 → 返回 None（子代理输出，跳过声音）
     """
     if not text:
-        return DEFAULT_SOUND
+        return None
 
     first_line = text.strip().split("\n")[0]
 
     idx = first_line.find(_G3_MARKER)
     if idx < 0:
-        return DEFAULT_SOUND
+        return None  # no G3 marker → sub-agent output → skip sound
 
     icon = first_line[:idx].strip()
     if not icon:

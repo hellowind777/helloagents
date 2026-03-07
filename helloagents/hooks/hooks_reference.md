@@ -32,7 +32,7 @@ HelloAGENTS 预定义以下 11 个 Hook 配置供用户可选启用:
   Gemini CLI: AfterAgent 仅触发 complete（无消息检测）
 子代理隔离:
   Claude Code: Stop 事件仅由主代理触发（架构保证）；PostToolUseFailure 不附带声音（无法区分代理上下文）
-  Codex CLI: notify 钩子仅在主代理轮次完成时触发（源码确认: user_notification.rs 只处理 AfterAgent 事件）
+  Codex CLI: notify 钩子在所有代理轮次（含子代理）触发，codex_notify.py 通过 G3 标记过滤子代理声音
   Gemini CLI: AfterAgent 仅由主代理触发（架构保证）
 ```
 
@@ -124,7 +124,7 @@ notify = ["helloagents --check-update --silent"]
 `client` 字段（v0.107 新增）: TUI 报告 `codex-tui`，app-server 报告 `initialize.clientInfo.name`（如 `vscode`、`xcode`）。
 HelloAGENTS 的 `codex_notify.py` 根据 `client` 字段过滤：IDE 来源跳过声音通知（IDE 有自己的通知机制）。
 `agent-turn-complete` 事件通过 `last-assistant-message` 检测 G3 状态图标进行声音路由（与 Claude Code 的 stop_sound_router.py 共用映射逻辑）。
-notify 钩子本身仅对主代理轮次触发，无需额外子代理过滤。
+notify 钩子在所有代理轮次触发（含子代理），codex_notify.py 通过检测 G3 格式标记【HelloAGENTS】过滤子代理声音（无标记→跳过声音）。
 
 ### 多代理配置
 
