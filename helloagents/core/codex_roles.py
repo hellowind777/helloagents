@@ -122,6 +122,10 @@ _HA_AGENT_ROLES: list[tuple[str, dict]] = [
         "description": "Standalone document generation",
         "nickname_candidates": ["Scribe", "Quill", "Chronicler"],
     }),
+    ("brainstormer", {
+        "description": "Proposal brainstorming specialist for multi-proposal comparison",
+        "nickname_candidates": ["Muse", "Ideator", "Catalyst"],
+    }),
 ]
 
 
