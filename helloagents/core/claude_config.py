@@ -128,9 +128,8 @@ def _get_helloagents_permissions(dest_dir: Path) -> list[str]:
         f"Bash(cat {home_ha}/*)",
         f"Bash(ls {plugin_posix}/**)",
         f"Bash(find {plugin_posix} *)",
-        # Edit (covers Write too): plugin user data (memory, sessions, commands)
+        # Edit (covers Write too): plugin user data (memory, sessions, commands, sounds)
         f"Edit({plugin_posix}/user/**)",
-        f"Edit({plugin_posix}/commands/**)",
         # Edit: project knowledge base
         "Edit(.helloagents/**)",
         # Edit: global config directory

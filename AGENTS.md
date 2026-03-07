@@ -81,12 +81,15 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 
 **全局用户目录（安装时部署，更新/卸载时保留用户数据）:**
 ```
-{HELLOAGENTS_ROOT}/user/
-├── profile.md (L0 用户记忆)
-└── sessions/ (无项目上下文时的会话摘要)
-{HELLOAGENTS_ROOT}/commands/
-├── _example.md (示例模板)
-└── {命令名}.md (用户自定义命令 → ~命令名)
+{HELLOAGENTS_ROOT}/user/          ← 单一用户内容目录，安装/更新时整体保留
+├── memory/
+│   └── profile.md (L0 用户记忆)
+├── sessions/ (无项目上下文时的会话摘要)
+├── commands/
+│   ├── _example.md (示例模板，_ 前缀，更新时刷新)
+│   └── {命令名}.md (用户自定义命令 → ~命令名)
+└── sounds/
+    └── {event}.wav (用户自定义声音，优先于 assets/sounds/ 默认声音)
 ```
 
 **写入策略:** 目录/文件不存在时自动创建；禁止在 {KB_ROOT}/ 外创建知识库文件；动态目录（archive/_index.md、archive/YYYY-MM/、modules/_index.md）在首次写入时创建
@@ -418,7 +421,7 @@ User: (上一轮输出了确认选项 1/2/3 并 END_TURN) "先改打包工具再
 
 **自定义命令扩展:**
 ```yaml
-自定义命令: 匹配内置命令失败后 → 扫描 {HELLOAGENTS_ROOT}/commands/*.md（跳过 _ 开头的文件）
+自定义命令: 匹配内置命令失败后 → 扫描 {HELLOAGENTS_ROOT}/user/commands/*.md（跳过 _ 开头的文件）
   文件名即命令名（如 deploy.md → ~deploy）
   闸门等级: 轻量（需求理解 + EHRB，不评分不追问）
   加载: 读取对应 .md 文件作为执行规则
@@ -700,11 +703,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   {TEMPLATES_DIR}: {HELLOAGENTS_ROOT}/templates
   {SCRIPTS_DIR}: {HELLOAGENTS_ROOT}/scripts
 
-子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/, commands/, agents/, hooks/
+子目录: functions/, stages/, services/, rules/, rlm/, rlm/roles/, scripts/, templates/, user/, agents/, hooks/
 
 加载规则:
   工具选择: 优先 CLI 内置工具 [→ G1 工具选择规则]；无内置工具时降级为 Shell 静默读取
-  可选文件（config.json、user/*.md、sessions/*）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时→静默跳过；
+  可选文件（config.json、user/memory/*.md、sessions/*）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时→静默跳过；
   必需文件（HelloAgents规则/模块/脚本/模板）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时 → 输出错误并停止当前阶段（⛔ END_TURN）
   阻塞式读取: 必须等待文件完全加载后才能继续执行，不允许部分加载或跳过
   Do NOT execute any step until loading is complete.
@@ -720,7 +723,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 触发条件 | 读取文件 |
 |----------|----------|
-| 会话启动 | {HELLOAGENTS_ROOT}/config.json, {CWD}/.helloagents/config.json, user/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
+| 会话启动 | {HELLOAGENTS_ROOT}/config.json, {CWD}/.helloagents/config.json, user/memory/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md, services/knowledge.md（CHANGELOG更新时） |
 | R2/R3 进入方案设计（入口） | stages/design.md |
 | DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex）, rules/tools.md（project_stats.py 调用时） |
@@ -744,7 +747,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | ~clean | functions/clean.md, services/memory.md, services/knowledge.md（前置迁移检查） |
 | ~rlm spawn | rlm/roles/{role}.md |
 | 调用脚本时 | rules/tools.md（脚本执行规范与降级处理） |
-| 自定义命令 | {HELLOAGENTS_ROOT}/commands/{命令名}.md |
+| 自定义命令 | {HELLOAGENTS_ROOT}/user/commands/{命令名}.md |
 | 子代理调度（模块文件中遇到 `[→ G10]` 或 `[RLM:角色名]` 标记时） | rules/subagent-protocols.md |
 
 **注释:**

@@ -171,18 +171,25 @@ def install(target: str) -> bool:
             print(f"    - {r}")
 
     try:
-        # Preserve user/ and commands/ directories (user data, not overwritable)
+        # Preserve user/ directory (all user content consolidated here)
         import tempfile
-        _preserve_dirs = ("user", "commands")
-        _backups: dict[str, Path | None] = {}
-        for _dname in _preserve_dirs:
-            _src = plugin_dest / _dname
-            if _src.exists():
-                _bak = Path(tempfile.mkdtemp()) / _dname
-                shutil.copytree(_src, _bak)
-                _backups[_dname] = _bak
-            else:
-                _backups[_dname] = None
+        _user_bak: Path | None = None
+        _user_src = plugin_dest / "user"
+
+        # Migration: move old top-level commands/ into user/commands/ before backup
+        _old_commands = plugin_dest / "commands"
+        if _old_commands.exists() and _old_commands.is_dir():
+            _new_commands = _user_src / "commands"
+            _new_commands.mkdir(parents=True, exist_ok=True)
+            for _f in _old_commands.iterdir():
+                if _f.is_file() and not _f.name.startswith("_"):
+                    _dest_f = _new_commands / _f.name
+                    if not _dest_f.exists():
+                        shutil.copy2(_f, _dest_f)
+
+        if _user_src.exists():
+            _user_bak = Path(tempfile.mkdtemp()) / "user"
+            shutil.copytree(_user_src, _user_bak)
 
         # Remove old module directory completely before copying
         if plugin_dest.exists():
@@ -205,23 +212,25 @@ def install(target: str) -> bool:
         print(_msg(f"  已安装模块到: {plugin_dest}",
                    f"  Installed module to: {plugin_dest}"))
 
-        # Restore user/ and commands/ directories
-        # - User-created files (profile.md, sessions/*, custom commands) → restore
+        # Restore user/ directory
+        # - User-created files (memory/profile.md, sessions/*, custom commands, sounds) → restore
         # - Template files (starting with _) → keep fresh version from package
-        for _dname, _bak in _backups.items():
-            if _bak and _bak.exists():
-                _target = plugin_dest / _dname
-                for _f in _bak.rglob("*"):
-                    if not _f.is_file():
-                        continue
-                    # Skip template files (starting with _) — keep fresh from package
-                    if _f.name.startswith("_"):
-                        continue
-                    _rel = _f.relative_to(_bak)
-                    _dest = _target / _rel
-                    _dest.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(_f, _dest)
-                shutil.rmtree(_bak.parent)
+        if _user_bak and _user_bak.exists():
+            _target = plugin_dest / "user"
+            for _f in _user_bak.rglob("*"):
+                if not _f.is_file():
+                    continue
+                # Skip template files (starting with _) — keep fresh from package
+                if _f.name.startswith("_"):
+                    continue
+                # Skip .gitkeep — keep fresh from package
+                if _f.name == ".gitkeep":
+                    continue
+                _rel = _f.relative_to(_user_bak)
+                _dest = _target / _rel
+                _dest.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(_f, _dest)
+            shutil.rmtree(_user_bak.parent)
 
         # Deploy rules
         if agents_md_src.exists():
@@ -269,10 +278,9 @@ def install(target: str) -> bool:
         if target == "claude":
             _deploy_agent_files(dest_dir)
     except Exception as e:
-        # Clean up temp directories on failure
-        for _bak in _backups.values():
-            if _bak and _bak.parent.exists():
-                shutil.rmtree(_bak.parent, ignore_errors=True)
+        # Clean up temp directory on failure
+        if _user_bak and _user_bak.parent.exists():
+            shutil.rmtree(_user_bak.parent, ignore_errors=True)
         print(_msg(f"  ✗ 安装失败: {e}", f"  ✗ Installation failed: {e}"))
         return False
 
