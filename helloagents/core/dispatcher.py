@@ -149,17 +149,10 @@ def print_usage() -> None:
 def dispatch(args: list[str]) -> None:
     """Route CLI arguments to the appropriate command handler.
 
-    Called by cli.py:main().  All imports of helloagents sub-modules happen
-    here (lazily) so that a broken sub-module only affects the command that
-    uses it, not the entire CLI entry point.
+    Called by cli.py:main().  Sub-module imports are deferred to each command
+    branch so that a broken sub-module only affects the command that uses it,
+    not the entire CLI entry point.
     """
-    from .version_check import check_update
-    from .updater import update
-    from .status import status, clean
-    from .interactive import _interactive_install, _interactive_uninstall
-    from .installer import install, install_all
-    from .uninstaller import uninstall, uninstall_all, _self_uninstall
-
     # Ensure stdout/stderr can handle all characters
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
@@ -176,11 +169,13 @@ def dispatch(args: list[str]) -> None:
 
     # Hook-triggered update check (e.g. Codex CLI notify)
     if cmd == "--check-update":
+        from .version_check import check_update
         silent = "--silent" in args[1:]
         check_update(cache_ttl_hours=24, show_version=not silent)
         sys.exit(0)
 
     if cmd and cmd != "update" and not os.environ.get("HELLOAGENTS_NO_UPDATE_CHECK"):
+        from .version_check import check_update
         force = cmd == "version" and "--force" in args[1:]
         cache_ttl = None
         if cmd == "version" and "--cache-ttl" in args[1:]:
@@ -197,6 +192,8 @@ def dispatch(args: list[str]) -> None:
         sys.exit(0)
 
     if cmd == "install":
+        from .installer import install, install_all
+        from .interactive import _interactive_install
         if len(args) < 2:
             if not _interactive_install():
                 sys.exit(1)
@@ -209,6 +206,8 @@ def dispatch(args: list[str]) -> None:
                 if not install(target):
                     sys.exit(1)
     elif cmd == "uninstall":
+        from .uninstaller import uninstall, uninstall_all, _self_uninstall
+        from .interactive import _interactive_uninstall
         if len(args) < 2:
             if not _interactive_uninstall():
                 sys.exit(1)
@@ -226,18 +225,19 @@ def dispatch(args: list[str]) -> None:
                     if not remaining:
                         _self_uninstall()
     elif cmd == "update":
+        from .updater import update
         switch = args[1] if len(args) >= 2 else None
         update(switch)
     elif cmd == "_post_update":
-        # Internal command: runs Phase 2+3 in a new process after package update.
-        # Called by update() re-exec and Windows deferred path.
         from .updater import _post_update_sync
         branch = args[1] if len(args) >= 2 else None
         total = int(args[2]) if len(args) >= 3 else None
         _post_update_sync(branch, total)
     elif cmd == "clean":
+        from .status import clean
         clean()
     elif cmd == "status":
+        from .status import status
         status()
     elif cmd == "version":
         pass  # already handled by check_update(show_version=True)

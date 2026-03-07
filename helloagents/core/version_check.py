@@ -12,7 +12,7 @@ from pathlib import Path
 from importlib.metadata import version as get_version
 from urllib.request import urlopen, Request
 
-from .._common import REPO_API_LATEST
+from .._common import REPO_API_LATEST, CLI_TARGETS, PLUGIN_DIR_NAME
 
 
 # ---------------------------------------------------------------------------
@@ -146,16 +146,13 @@ def fetch_latest_version(branch: str, timeout: int = 5) -> str:
 # ---------------------------------------------------------------------------
 
 def _get_cli_helloagents_dir() -> Path:
-    """Get CLI-specific helloagents directory by detecting installed CLI."""
+    """Get CLI-specific helloagents directory by detecting installed CLI.
+
+    Derives candidates from CLI_TARGETS to stay in sync automatically.
+    """
     home = Path.home()
-    candidates = [
-        home / ".claude" / "helloagents",
-        home / ".codex" / "helloagents",
-        home / ".config" / "opencode" / "helloagents",
-        home / ".gemini" / "helloagents",
-        home / ".qwen" / "helloagents",
-        home / ".grok" / "helloagents",
-    ]
+    candidates = [home / cfg["dir"] / PLUGIN_DIR_NAME
+                  for cfg in CLI_TARGETS.values()]
     for path in candidates:
         if path.exists():
             return path

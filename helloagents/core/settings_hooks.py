@@ -92,7 +92,9 @@ def _remove_settings_hooks(dest_dir: Path) -> bool:
 
     try:
         settings = json.loads(settings_path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        print(_msg(f"  ⚠ 无法读取 {settings_path}: {e}",
+                   f"  ⚠ Cannot read {settings_path}: {e}"))
         return False
 
     hooks = settings.get("hooks")
@@ -121,6 +123,8 @@ def _remove_settings_hooks(dest_dir: Path) -> bool:
                 json.dumps(settings, indent=2, ensure_ascii=False) + "\n",
                 encoding="utf-8")
         except PermissionError:
+            print(_msg("  ⚠ 无法写入 settings.json（文件被占用，请关闭对应 CLI 后重试）",
+                       "  ⚠ Cannot write settings.json (file locked, close the CLI and retry)"))
             return False
         print(_msg(f"  已移除 {removed_count} 个 HelloAGENTS Hooks ({settings_path.name})",
                    f"  Removed {removed_count} HelloAGENTS hook(s) ({settings_path.name})"))

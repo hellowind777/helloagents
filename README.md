@@ -24,6 +24,9 @@
 
 ---
 
+> [!IMPORTANT]
+> **Looking for the old version of HelloAGENTS?** The legacy codebase has been moved to a separate archive repository: [helloagents-archive](https://github.com/hellowind777/helloagents-archive)
+
 ## Table of Contents
 
 - [Before and After](#before-and-after)
@@ -147,14 +150,14 @@ One rule set works across Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI
 | Qwen CLI | Built-in tool calls | Fallback to sequential execution |
 | Grok CLI | Built-in tool calls | Fallback to sequential execution |
 
-Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action need, target clarity, decision scope, impact range, EHRB risk) to automatically determine processing depth for each input; **6 CLI targets** (Claude Code / Codex CLI / OpenCode / Gemini CLI / Qwen CLI / Grok CLI) with one rule set across all; **Hooks integration** (Claude Code 9 lifecycle hooks + Codex CLI notify hook) with automatic graceful degradation when unavailable.
+Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action need, target clarity, decision scope, impact range, EHRB risk) to automatically determine processing depth for each input; **6 CLI targets** (Claude Code / Codex CLI / OpenCode / Gemini CLI / Qwen CLI / Grok CLI) with one rule set across all; **Hooks integration** (Claude Code 11 lifecycle hooks + Codex CLI notify hook + Gemini/Grok CLI hooks) with automatic graceful degradation when unavailable.
 
 ### CLI Compatibility Quick Reference
 
 | CLI | Recommended Version | Key Features | Configuration Notes |
 |-----|-------------------|--------------|---------------------|
-| **Claude Code** | Latest | Agent Teams, 9 lifecycle hooks, auto-memory | Requires `CLAUDE_ENABLE_AGENT_TEAMS=1` for teams mode |
-| **Codex CLI** | 0.107+ | spawn_agent, CSV batch, multi-thread | Enable sub-agents, CSV orchestration, set `project_doc_max_bytes >= 131072` |
+| **Claude Code** | Latest | Agent Teams, 11 lifecycle hooks, auto-memory | Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for teams mode |
+| **Codex CLI** | 0.110+ | spawn_agent, CSV batch, collaboration_modes | Enable sub-agents, CSV orchestration, set `project_doc_max_bytes >= 131072` |
 | **OpenCode** | Latest | Built-in agent mode | Sequential execution fallback |
 | **Gemini CLI** | Latest | Built-in tool calls | Sequential execution fallback |
 | **Qwen CLI** | Latest | Built-in tool calls | Sequential execution fallback |
@@ -167,12 +170,13 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 - Enable sub-agents and CSV orchestration features
 - Set `project_doc_max_bytes = 131072` in config.toml
 - Configure `developer_instructions` for routing protocol priority
-- Enable TUI notification for update checks
+- Enable `collaboration_modes` for TUI interactive selection (v0.110+)
+- Configure `nickname_candidates` for agent role identification
 - Configure CSV batch processing if using parallel workflows
 
 **Claude Code Setup:**
-- Set `CLAUDE_ENABLE_AGENT_TEAMS=1` environment variable for Agent Teams
-- Hooks are auto-configured during installation
+- Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` environment variable for Agent Teams
+- 11 lifecycle hooks auto-configured during installation (SessionStart, UserPromptSubmit, SubagentStart/Stop, PostToolUse, Stop, TeammateIdle, PreCompact, PreToolUse, SessionEnd, PostToolUseFailure)
 - Auto-memory feature enabled by default
 
 **Other CLIs:**
@@ -321,6 +325,7 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 > - Collab sub-agent scheduling requires Codex CLI feature gate to be enabled
 >
 > 💡 **Best practices:**
+> - Codex 0.110+ recommended for full feature set (collaboration_modes, nickname_candidates)
 > - HelloAGENTS is optimized for Codex CLI — supports `high` and below reasoning effort levels. `xhigh` reasoning is **not supported** and may cause instruction-following issues
 > - Use the terminal/CLI version of Codex for the best experience. The VSCode extension updates lag behind the CLI — newer features (e.g., CSV batch orchestration, Collab multi-agent) may require waiting for the extension to catch up
 
@@ -635,14 +640,17 @@ On the first response of each session, the system silently checks for new versio
 - pyproject.toml: package metadata (v2.3.5)
 - helloagents/cli.py: CLI entry point
 - helloagents/_common.py: shared constants and utilities
-- helloagents/core/: CLI management modules (install, uninstall, update, status)
+- helloagents/core/: CLI management modules (install, uninstall, update, status, dispatcher, hooks settings)
 - helloagents/functions: command definitions (15)
 - helloagents/stages: design, develop
 - helloagents/services: knowledge, package, memory and support services
-- helloagents/rules: state, cache, tools, scaling, evaluation, sub-agent protocols
+- helloagents/rules: state, cache, tools, scaling, sub-agent protocols
 - helloagents/rlm: role library and orchestration helpers
-- helloagents/hooks: Claude Code and Codex CLI hooks configs
-- helloagents/scripts: automation scripts
+- helloagents/hooks: Claude Code, Codex CLI, Gemini CLI, and Grok CLI hooks configs
+- helloagents/scripts: automation scripts (sound notify, progress snapshot, safety guard, etc.)
+- helloagents/agents: sub-agent definitions (5 RLM roles)
+- helloagents/commands: custom command templates
+- helloagents/assets: sound resources (5 event sounds)
 - helloagents/templates: KB and plan templates
 
 ## FAQ
@@ -673,7 +681,7 @@ A: Yes, through three layers: L0 user memory (global preferences in `~/.helloage
 
 **Q: What are Hooks?**
 
-A: Lifecycle hooks auto-deployed during installation. Claude Code gets 9 event hooks (safety checks, progress snapshots, KB sync, etc.); Codex CLI gets a notify hook for update checks. All optional — features degrade gracefully when hooks aren't available. No manual configuration needed.
+A: Lifecycle hooks auto-deployed during installation. Claude Code gets 11 event hooks (safety checks, dangerous command guard, progress snapshots, KB sync, sound notifications, tool failure recovery, etc.); Codex CLI gets a notify hook for update and sound notifications; Gemini CLI and Grok CLI get hooks for context injection, progress snapshots, and sound notifications. All optional — features degrade gracefully when hooks aren't available. No manual configuration needed.
 
 **Q: What is Agent Teams?**
 
@@ -750,6 +758,23 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 
 ---
 
+### CCswitch replaces HelloAGENTS config
+
+**Problem:** After switching CCswitch profiles, HelloAGENTS stops working (workflow commands unrecognized, hooks not firing, rules missing)
+
+**Diagnosis:** CCswitch replaces the entire CLI config directory (e.g., `~/.claude/`) when switching profiles, overwriting HelloAGENTS's hooks, permissions, and rule files
+
+**Solution:** After switching CCswitch profiles, run one of these commands to restore HelloAGENTS:
+
+    helloagents install claude    # reinstall to specific CLI target
+    helloagents update            # update + auto-sync all installed targets
+
+**Prevention:** v2.3.5 adds automatic configuration integrity check on session start — if HelloAGENTS config is missing or corrupted, a warning is displayed with recovery instructions
+
+**Verification:** Run `helloagents status` to confirm all targets show as installed
+
+---
+
 ### CCswitch configuration conflict
 
 **Problem:** HelloAGENTS config reappears after uninstall when switching CCswitch profiles
@@ -765,10 +790,14 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 ### v2.3.5 (current)
 
 **New Features:**
-- Voice notification system with 5 event sounds (complete, idle, confirm, error, warning) across Windows/macOS/Linux
-- User-defined tool registration and orchestration - intelligent invocation of custom sub-agents, skills, MCP servers, and plugins
+- Voice notification system with 5 event sounds (complete, idle, confirm, error, warning) across Windows/macOS/Linux, with smart two-layer routing (stop_reason + G3 format icon detection)
+- Claude Code hooks expanded from 9 to 11 lifecycle event types: added dangerous command guard (PreToolUse), session end cleanup (SessionEnd), and tool failure recovery suggestions (PostToolUseFailure)
+- Hooks support expanded to Gemini CLI and Grok CLI (SessionStart, BeforeAgent/AfterAgent, PreCompress, PreToolUse, PostToolUse)
+- Codex CLI 0.110 features: `collaboration_modes` for TUI interactive selection, `nickname_candidates` for agent role identification
+- Configuration integrity check on session start (auto-detect config corruption or replacement by CCswitch etc.)
+- Context compression pre-save with automatic progress snapshot (pre_compact.py, progress_snapshot.py — actual implementations replacing placeholder hooks)
+- User-defined tool registration and orchestration — intelligent invocation of custom sub-agents, skills, MCP servers, and plugins
 - Custom command extension support via `.helloagents/commands/*.md`
-- CCswitch compatibility notes for configuration cleanup after uninstall
 
 **Improvements:**
 - Comprehensive audit fixes (21 issues: 6 HIGH + 9 MEDIUM + 6 LOW)
@@ -776,13 +805,15 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
   - Cross-platform: unified platform detection, consistent encoding handling
   - Security: configuration backup before overwrite, placeholder validation
   - Documentation: configuration rationale, compatibility verification notes
+- Core architecture: new dispatcher module, Codex roles definition, Claude rules management, hooks settings manager
+- Install/update script refactoring with persistent configuration
+- Voice notification accuracy and false positive reduction (Codex client filtering, Windows sync playback)
+- Sub-agent nickname optimization across CLIs
+- Codex CLI interactive menu, persistent memory, and context compression optimization
+- R2 simplified flow and evaluation module re-integration
 - Context compression state persistence optimization
-- Custom command template refinement
-- Codex CLI compatibility when tools are disabled
 - Tool/Shell usage optimization
-- Install/uninstall script improvements
-- Hooks functionality enhancements
-- Codex 0.107 feature support
+- CCswitch compatibility notes for configuration cleanup after uninstall
 - SKILL discovery entry optimization
 
 ### v2.3.4

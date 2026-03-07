@@ -120,14 +120,19 @@ def _show_codex_cli_details(cli_dir: Path) -> None:
                        "    ⚠ notify not configured, reinstall recommended"))
         # --- multi-agent config check ---
         ma_items = []
+        # Check max_threads: dotted form OR scoped within [agents] section
+        agents_sec = re.search(r'^\[agents\]', ct_text, re.MULTILINE)
+        agents_scope = ""
+        if agents_sec:
+            after_agents = ct_text[agents_sec.end():]
+            next_sec_a = re.search(r'^\[[\w]', after_agents, re.MULTILINE)
+            agents_scope = after_agents[:next_sec_a.start()] if next_sec_a else after_agents
         has_mt = (re.search(r'agents\.max_threads\s*=', ct_text)
-                  or (re.search(r'^\[agents\]', ct_text, re.MULTILINE)
-                      and re.search(r'^max_threads\s*=', ct_text, re.MULTILINE)))
+                  or (agents_scope and re.search(r'^max_threads\s*=', agents_scope, re.MULTILINE)))
         if has_mt:
             ma_items.append("agents.max_threads")
         has_md = (re.search(r'agents\.max_depth\s*=', ct_text)
-                  or (re.search(r'^\[agents\]', ct_text, re.MULTILINE)
-                      and re.search(r'^max_depth\s*=', ct_text, re.MULTILINE)))
+                  or (agents_scope and re.search(r'^max_depth\s*=', agents_scope, re.MULTILINE)))
         if has_md:
             ma_items.append("agents.max_depth")
         feat_m = re.search(r'^\[features\]', ct_text, re.MULTILINE)
