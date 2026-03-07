@@ -315,7 +315,7 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
                     shutil.rmtree(_bak.parent, ignore_errors=True)
 
     if rules_dest.exists():
-        if is_helloagents_file(rules_dest):
+        if is_helloagents_file(rules_dest) or rules_dest.stat().st_size == 0:
             try:
                 rules_dest.unlink()
                 removed.append(str(rules_dest))
@@ -361,16 +361,34 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
     if show_package_hint:
         remaining = _detect_installed_targets()
         if not remaining:
-            method = _detect_install_method()
             print()
-            print(_msg("  已无已安装的 CLI 目标。",
-                       "  No installed CLI targets remaining."))
-            print(_msg("  如需同时移除 helloagents 包本身，请执行:",
-                       "  To also remove the helloagents package itself, run:"))
-            if method == "uv":
-                print("    uv tool uninstall helloagents")
+            print(_msg("  已无已安装的 CLI 目标。是否同时移除 helloagents 包本身？",
+                       "  No installed CLI targets remaining. "
+                       "Also remove the helloagents package itself?"))
+            print()
+            print(_msg("  [1] 是，彻底移除", "  [1] Yes, remove completely"))
+            print(_msg("  [2] 否，保留并退出",
+                       "  [2] No, keep and exit"))
+            print()
+
+            prompt = _msg("  请输入编号（直接回车跳过）: ",
+                          "  Enter number (press Enter to skip): ")
+            try:
+                choice = input(prompt).strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                choice = ""
+
+            if choice == "1":
+                _self_uninstall()
             else:
-                print("    pip uninstall helloagents")
+                method = _detect_install_method()
+                print(_msg("  如需稍后移除，请执行:",
+                           "  To remove later, run:"))
+                if method == "uv":
+                    print("    uv tool uninstall helloagents")
+                else:
+                    print("    pip uninstall helloagents")
 
     return ok
 
@@ -416,12 +434,40 @@ def uninstall_all(purge: bool = False) -> None:
         print()
 
     if purge:
-        _self_uninstall()
-    else:
-        method = _detect_install_method()
-        print(_msg("  如需同时移除 helloagents 包本身，请执行:",
-                   "  To also remove the helloagents package itself, run:"))
-        if method == "uv":
-            print("    uv tool uninstall helloagents")
+        remaining = _detect_installed_targets()
+        if not remaining:
+            _self_uninstall()
         else:
-            print("    pip uninstall helloagents")
+            print(_msg(f"  ⚠ 仍有 {len(remaining)} 个目标未卸载完成: {', '.join(remaining)}",
+                       f"  ⚠ {len(remaining)} target(s) still installed: {', '.join(remaining)}"))
+            print(_msg("  跳过包移除。请先解决卸载失败的目标后再尝试。",
+                       "  Skipping package removal. Please resolve failed targets first."))
+    else:
+        remaining = _detect_installed_targets()
+        if not remaining:
+            print(_msg("  是否同时移除 helloagents 包本身？",
+                       "  Also remove the helloagents package itself?"))
+            print()
+            print(_msg("  [1] 是，彻底移除", "  [1] Yes, remove completely"))
+            print(_msg("  [2] 否，保留并退出",
+                       "  [2] No, keep and exit"))
+            print()
+
+            prompt = _msg("  请输入编号（直接回车跳过）: ",
+                          "  Enter number (press Enter to skip): ")
+            try:
+                choice = input(prompt).strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                choice = ""
+
+            if choice == "1":
+                _self_uninstall()
+            else:
+                method = _detect_install_method()
+                print(_msg("  如需稍后移除，请执行:",
+                           "  To remove later, run:"))
+                if method == "uv":
+                    print("    uv tool uninstall helloagents")
+                else:
+                    print("    pip uninstall helloagents")

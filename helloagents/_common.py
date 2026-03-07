@@ -286,13 +286,20 @@ def detect_installed_clis() -> list[str]:
 
 
 def _detect_installed_targets() -> list[str]:
-    """Detect which CLI targets have HelloAGENTS installed (module + rules)."""
+    """Detect which CLI targets have HelloAGENTS installed (module + rules).
+
+    Checks for actual module content (not just directory existence) to avoid
+    false positives from user-data remnants after uninstall.
+    """
     installed = []
+    _module_dirs = ("functions", "stages", "scripts")
     for name, config in CLI_TARGETS.items():
         cli_dir = Path.home() / config["dir"]
         plugin_dir = cli_dir / PLUGIN_DIR_NAME
         rules_file = cli_dir / config["rules_file"]
-        if plugin_dir.exists() and rules_file.exists():
+        has_modules = any((plugin_dir / d).is_dir() for d in _module_dirs)
+        has_rules = rules_file.exists() and rules_file.stat().st_size > 0
+        if has_modules and has_rules:
             installed.append(name)
     return installed
 

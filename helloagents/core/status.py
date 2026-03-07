@@ -220,6 +220,7 @@ def status() -> None:
     _show_config_status()
     print()
 
+    _module_dirs = ("functions", "stages", "scripts")
     for name, config in CLI_TARGETS.items():
         cli_dir = Path.home() / config["dir"]
         plugin_dir = cli_dir / PLUGIN_DIR_NAME
@@ -227,21 +228,22 @@ def status() -> None:
         skill_file = cli_dir / "skills" / "helloagents" / "SKILL.md"
 
         cli_exists = cli_dir.exists()
-        plugin_exists = plugin_dir.exists()
-        rules_exists = rules_file.exists()
+        # Check for actual module content, not just user-data remnants
+        has_modules = any((plugin_dir / d).is_dir() for d in _module_dirs)
+        rules_exists = rules_file.exists() and rules_file.stat().st_size > 0
         skill_exists = skill_file.exists()
 
         if not cli_exists:
             mark = "·"
             status_str = _msg("未检测到该工具", "tool not found")
-        elif plugin_exists and rules_exists and skill_exists:
+        elif has_modules and rules_exists and skill_exists:
             mark = "✓"
             status_str = _msg("已安装 HelloAGENTS", "HelloAGENTS installed")
-        elif plugin_exists and rules_exists:
+        elif has_modules and rules_exists:
             mark = "!"
             status_str = _msg("已安装但缺少 SKILL.md，建议重新安装",
                               "installed but SKILL.md missing, reinstall recommended")
-        elif plugin_exists or rules_exists:
+        elif has_modules or rules_exists:
             mark = "!"
             status_str = _msg("安装不完整", "partial install")
         else:
@@ -251,7 +253,7 @@ def status() -> None:
         print(f"  {mark} {name:10} {status_str}")
 
         # CLI-specific details (only for installed targets)
-        if plugin_exists and rules_exists:
+        if has_modules and rules_exists:
             if name == "claude":
                 _show_claude_cli_details(cli_dir)
             elif name == "codex":
