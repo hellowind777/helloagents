@@ -52,7 +52,7 @@
     项目级: {KB_ROOT}/sessions/*.md
     全局级: {HELLOAGENTS_ROOT}/user/sessions/*.md
   用户记忆（L0）:
-    文件: {HELLOAGENTS_ROOT}/user/profile.md
+    文件: {HELLOAGENTS_ROOT}/user/memory/profile.md
 
 无文件: 输出: 完成（提示无记录需要清理），流程结束
 

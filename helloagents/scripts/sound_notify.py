@@ -30,6 +30,7 @@ if sys.platform == 'win32':
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 声音文件目录
+CUSTOM_SOUNDS_DIR = Path(__file__).parent.parent / "user" / "sounds"
 SOUNDS_DIR = Path(__file__).parent.parent / "assets" / "sounds"
 
 # 有效事件名
@@ -108,8 +109,11 @@ def _bell():
 
 
 def play_sound(event: str) -> None:
-    """播放指定事件的声音文件。"""
-    wav_path = str(SOUNDS_DIR / f"{event}.wav")
+    """播放指定事件的声音文件。优先使用用户自定义声音。"""
+    # 优先查找用户自定义声音
+    custom_path = CUSTOM_SOUNDS_DIR / f"{event}.wav"
+    default_path = SOUNDS_DIR / f"{event}.wav"
+    wav_path = str(custom_path if custom_path.is_file() else default_path)
 
     if not os.path.isfile(wav_path):
         _bell()

@@ -23,7 +23,7 @@
 
 ```yaml
 触发: 会话启动时
-流程: 获取 CLI session ID → 扫描 user/*.md（L0）→ 查找 sessions/{sessionId}.md（L2）→ 注入上下文
+流程: 获取 CLI session ID → 扫描 user/memory/*.md（L0）→ 查找 sessions/{sessionId}.md（L2）→ 注入上下文
 返回: { l0_files, l2_summary, session_type(new|resumed) }
 ```
 
@@ -50,10 +50,10 @@
 L0 用户记忆:
   内容: 用户偏好、习惯、技术背景及任意用户自定义信息
   作用域: 全局（跨项目跨会话）
-  存储: {HELLOAGENTS_ROOT}/user/ 整个目录
+  存储: {HELLOAGENTS_ROOT}/user/memory/ 目录
   维护: 用户手动维护，可放任意 .md 文件
   骨架: profile.md 为系统预置骨架，用户可增删任意文件
-  加载: 每次会话启动时扫描 user/*.md 读取所有文件
+  加载: 每次会话启动时扫描 user/memory/*.md 读取所有文件
   缺省: 目录空或不存在时静默跳过
 
 L1 项目知识:
@@ -123,7 +123,7 @@ L2 文件命名: sessions/{session_id}.md
   3. 查找 sessions/{session_id}.md:
      存在 → 恢复会话
      不存在 → 全新会话
-  4. 扫描 {HELLOAGENTS_ROOT}/user/*.md 读取所有文件（有文件就读、目录空或不存在就跳过）
+  4. 扫描 {HELLOAGENTS_ROOT}/user/memory/*.md 读取所有文件（有文件就读、目录空或不存在就跳过）
   5. 按会话类型处理 L2:
 
 全新会话:
@@ -141,7 +141,7 @@ L2 文件命名: sessions/{session_id}.md
 ```yaml
 L0 写入: 用户手动维护
   - 系统不自动写入 user/ 目录下的任何文件
-  - 用户通过直接编辑 user/*.md 文件来管理自己的记忆
+  - 用户通过直接编辑 user/memory/*.md 文件来管理自己的记忆
   - profile.md 为系统预置骨架，用户按需填写
 
 L2 写入: 系统自动，始终开启
@@ -196,7 +196,7 @@ Codex CLI Memory 桥接:
 
 ## 存储格式
 
-### L0 user/*.md
+### L0 user/memory/*.md
 
 用户自由组织，系统预置骨架 `profile.md` 结构如下：
 
@@ -258,5 +258,5 @@ L2: 每会话独立文件 → 零冲突
   3. 仅加载相关模块详细文档
 
 适用: L1 项目知识的按需检索
-不适用: L0（全量扫描 user/*.md）和 L2（按时间加载最近 N 个）
+不适用: L0（全量扫描 user/memory/*.md）和 L2（按时间加载最近 N 个）
 ```
