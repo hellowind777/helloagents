@@ -50,29 +50,17 @@ notify = ["helloagents --check-update --silent"]
 # model_reasoning_effort = "high"
 # nickname_candidates = ["Inspector", "Sentinel", "Auditor"]
 
-# [agents.synthesizer]
-# description = "Multi-proposal evaluation and synthesis"
-# model = "<主力模型名>"
-# model_reasoning_effort = "high"
-# nickname_candidates = ["Oracle", "Arbiter", "Assessor"]
-
-# [agents.kb_keeper]
-# description = "Knowledge base synchronization and maintenance"
-# model = "<主力模型名>"
-# model_reasoning_effort = "medium"
-# nickname_candidates = ["Librarian", "Keeper", "Archivist"]
-
-# [agents.pkg_keeper]
-# description = "Package lifecycle management"
-# model = "<主力模型名>"
-# model_reasoning_effort = "medium"
-# nickname_candidates = ["Steward", "Curator", "Marshal"]
-
 # [agents.writer]
 # description = "Standalone document generation"
 # model = "<主力模型名>"
 # model_reasoning_effort = "high"
 # nickname_candidates = ["Scribe", "Quill", "Chronicler"]
+
+# [agents.brainstormer]
+# description = "Proposal brainstorming specialist for multi-proposal comparison"
+# model = "<主力模型名>"
+# model_reasoning_effort = "high"
+# nickname_candidates = ["Muse", "Ideator", "Catalyst"]
 
 # [agents.monitor]
 # description = "Long-running monitoring and polling tasks"

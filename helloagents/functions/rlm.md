@@ -69,7 +69,7 @@ RLM（Role-based Language Model）— 子代理编排与多终端协作。
 
 ```yaml
 参数:
-  role: 角色名称（reviewer/synthesizer/kb_keeper/pkg_keeper/writer）
+  role: 角色名称（reviewer/writer/brainstormer）
   task: 任务描述（用引号包裹）
 
 流程:
@@ -81,7 +81,7 @@ RLM（Role-based Language Model）— 子代理编排与多终端协作。
        继续: 加载角色预设 → 按 G10 调用通道启动子代理 → 等待完成 → 返回结果
        取消: → 状态重置
 
-并行 spawn 语法: ~rlm spawn reviewer,synthesizer "任务描述" — 逗号分隔多角色，并行调度
+并行 spawn 语法: ~rlm spawn reviewer,writer "任务描述" — 逗号分隔多角色，并行调度
 
 输出: 完成（角色+任务+结果状态+关键发现+变更+建议）
 ```
@@ -90,7 +90,7 @@ RLM（Role-based Language Model）— 子代理编排与多终端协作。
 ```bash
 ~rlm spawn reviewer "审查 src/api/ 模块的代码质量和安全性"
 ~rlm spawn writer "生成 API 接口文档"
-~rlm spawn pkg_keeper "更新方案包状态和任务备注"
+~rlm spawn brainstormer "为用户认证模块构思差异化实现方案"
 ```
 
 ---

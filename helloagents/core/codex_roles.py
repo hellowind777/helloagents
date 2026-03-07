@@ -106,18 +106,6 @@ _HA_AGENT_ROLES: list[tuple[str, dict]] = [
         "description": "Code review and quality inspection",
         "nickname_candidates": ["Inspector", "Sentinel", "Auditor"],
     }),
-    ("synthesizer", {
-        "description": "Multi-proposal evaluation and synthesis",
-        "nickname_candidates": ["Oracle", "Arbiter", "Assessor"],
-    }),
-    ("kb_keeper", {
-        "description": "Knowledge base synchronization and maintenance",
-        "nickname_candidates": ["Librarian", "Keeper", "Archivist"],
-    }),
-    ("pkg_keeper", {
-        "description": "Package lifecycle management",
-        "nickname_candidates": ["Steward", "Curator", "Marshal"],
-    }),
     ("writer", {
         "description": "Standalone document generation",
         "nickname_candidates": ["Scribe", "Quill", "Chronicler"],

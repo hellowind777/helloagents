@@ -13,7 +13,7 @@
 
 核心职责: 方案包创建/初始化、任务状态管理、进度快照、归档迁移、遗留方案包扫描清理
 
-专用执行者: pkg_keeper（服务绑定型角色）
+执行者: 主代理（按服务接口规范直接执行）
 数据所有权:
   - {KB_ROOT}/plan/（活跃方案包）
   - {KB_ROOT}/archive/（已归档方案包）
@@ -32,7 +32,7 @@
 ```yaml
 触发: design 阶段步骤11
 参数: feature(功能名), type(implementation|overview)
-流程: 生成路径 plan/YYYYMMDDHHMM_{feature}/ → 冲突检查(使用_v2,_v3) → create_package.py → pkg_keeper 填充 → 验证
+流程: 生成路径 plan/YYYYMMDDHHMM_{feature}/ → 冲突检查(使用_v2,_v3) → create_package.py → 填充 → 验证
 返回: success, package_path, errors
 保证: proposal.md + tasks.md 完整，格式符合规范
 ```
@@ -84,12 +84,11 @@ LIVE_STATUS 格式: 按 G11 定义
 
 ---
 
-## 执行者: pkg_keeper
+## 执行者说明
 
 ```yaml
-角色定位: 服务绑定型，预设: rlm/roles/pkg_keeper.md
+执行者: 主代理按服务接口规范直接执行所有方案包操作
 职责: 方案包内容填充、任务状态更新、进度快照生成、质量检查
-调用: 只能通过 PackageService 接口
 协作: 接收方案设计结果→填充 proposal.md | 接收代码实现结果→更新 tasks.md
 ```
 
