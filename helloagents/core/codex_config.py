@@ -1,7 +1,6 @@
 """HelloAGENTS Codex Config - Codex CLI config.toml configuration helpers."""
 
 import re
-import sys
 from pathlib import Path
 
 from .._common import _msg, CODEX_NOTIFY_SCRIPT, PLUGIN_DIR_NAME, get_python_cmd
@@ -138,62 +137,24 @@ def _ensure_agents_section(
     return content, mt_changed, md_changed
 
 
-def _ensure_feature_sqlite(content: str) -> tuple[str, bool]:
-    """Ensure ``[features]`` section has ``sqlite = true``.
-
-    Always enforces ``true`` on install/update, even if user changed to ``false``.
-    Returns (content, changed).
-    """
-    features_match = re.search(r'^\[features\]', content, re.MULTILINE)
-    if features_match:
-        after = content[features_match.end():]
-        next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
-        scope = after[:next_sec.start()] if next_sec else after
-        m = re.search(r'^sqlite\s*=\s*(\S+)', scope, re.MULTILINE)
+def _ensure_feature_bool(content: str, key: str) -> tuple[str, bool]:
+    """Ensure ``[features]`` section has ``{key} = true``. Returns (content, changed)."""
+    kv = f"{key} = true"
+    feat = re.search(r'^\[features\]', content, re.MULTILINE)
+    if feat:
+        after = content[feat.end():]
+        ns = re.search(r'^\[[\w]', after, re.MULTILINE)
+        scope = after[:ns.start()] if ns else after
+        m = re.search(rf'^{re.escape(key)}\s*=\s*(\S+)', scope, re.MULTILINE)
         if m:
             if m.group(1) == "true":
                 return content, False
-            # Replace existing value with true
-            abs_start = features_match.end() + m.start()
-            abs_end = abs_start + len(m.group(0))
-            content = content[:abs_start] + "sqlite = true" + content[abs_end:]
-            return content, True
-        # Key absent — insert before next section or at EOF
-        next_section = re.search(r'^\[[\w]', content[features_match.end():], re.MULTILINE)
-        pos = (features_match.end() + next_section.start()) if next_section else len(content)
-        content = content[:pos] + "sqlite = true\n" + content[pos:]
-        return content, True
-
-    content = content.rstrip() + "\n\n[features]\nsqlite = true\n"
-    return content, True
-
-
-def _ensure_feature_collaboration_modes(content: str) -> tuple[str, bool]:
-    """Ensure ``[features]`` section has ``collaboration_modes = true``.
-
-    Always enforces ``true`` on install/update, even if user changed to ``false``.
-    Returns (content, changed).
-    """
-    features_match = re.search(r'^\[features\]', content, re.MULTILINE)
-    if features_match:
-        after = content[features_match.end():]
-        next_sec = re.search(r'^\[[\w]', after, re.MULTILINE)
-        scope = after[:next_sec.start()] if next_sec else after
-        m = re.search(r'^collaboration_modes\s*=\s*(\S+)', scope, re.MULTILINE)
-        if m:
-            if m.group(1) == "true":
-                return content, False
-            abs_start = features_match.end() + m.start()
-            abs_end = abs_start + len(m.group(0))
-            content = content[:abs_start] + "collaboration_modes = true" + content[abs_end:]
-            return content, True
-        next_section = re.search(r'^\[[\w]', content[features_match.end():], re.MULTILINE)
-        pos = (features_match.end() + next_section.start()) if next_section else len(content)
-        content = content[:pos] + "collaboration_modes = true\n" + content[pos:]
-        return content, True
-
-    content = content.rstrip() + "\n\n[features]\ncollaboration_modes = true\n"
-    return content, True
+            s = feat.end() + m.start()
+            return content[:s] + kv + content[s + len(m.group(0)):], True
+        ns2 = re.search(r'^\[[\w]', content[feat.end():], re.MULTILINE)
+        pos = (feat.end() + ns2.start()) if ns2 else len(content)
+        return content[:pos] + kv + "\n" + content[pos:], True
+    return content.rstrip() + f"\n\n[features]\n{kv}\n", True
 
 
 def _configure_codex_csv_batch(dest_dir: Path) -> None:
@@ -224,11 +185,11 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
     if mt_changed or md_changed:
         changed = True
 
-    content, sqlite_added = _ensure_feature_sqlite(content)
+    content, sqlite_added = _ensure_feature_bool(content, "sqlite")
     if sqlite_added:
         changed = True
 
-    content, collab_added = _ensure_feature_collaboration_modes(content)
+    content, collab_added = _ensure_feature_bool(content, "collaboration_modes")
     if collab_added:
         changed = True
 
@@ -270,11 +231,7 @@ _DI_RE = re.compile(
 
 
 def _configure_codex_developer_instructions(dest_dir: Path) -> None:
-    """Ensure config.toml has developer_instructions with HelloAGENTS protocol.
-
-    This key is fully managed by HelloAGENTS — any existing content is
-    overwritten. Always placed before first section to ensure top-level scope.
-    """
+    """Ensure config.toml has developer_instructions with HelloAGENTS protocol."""
     config_path = dest_dir / "config.toml"
     content = ""
     if config_path.exists():
@@ -323,11 +280,7 @@ def _configure_codex_developer_instructions(dest_dir: Path) -> None:
 
 
 def _remove_codex_developer_instructions(dest_dir: Path) -> bool:
-    """Remove developer_instructions from config.toml.
-
-    This key is fully managed by HelloAGENTS — always removed on uninstall.
-    Returns True if something was removed.
-    """
+    """Remove developer_instructions from config.toml. Returns True if removed."""
     config_path = dest_dir / "config.toml"
     if not config_path.exists():
         return False
@@ -403,13 +356,8 @@ def _configure_codex_notify(dest_dir: Path) -> None:
                "  Configured notify hook (config.toml)"))
 
 
-
 def _remove_codex_notify(dest_dir: Path) -> bool:
-    """Remove HelloAGENTS notify hook from Codex CLI config.toml.
-
-    Handles both old string format and new array format.
-    Returns True if the notify line was removed.
-    """
+    """Remove HelloAGENTS notify hook from config.toml. Returns True if removed."""
     config_path = dest_dir / "config.toml"
     if not config_path.exists():
         return False
@@ -451,11 +399,7 @@ def _remove_codex_notify(dest_dir: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 def _configure_codex_tui_notification(dest_dir: Path) -> None:
-    """Set tui.notification_method = "osc9" to suppress BEL bell.
-
-    This key is fully managed by HelloAGENTS — any existing content is
-    overwritten on install/update. User-defined values will be backed up.
-    """
+    """Set tui.notification_method = "osc9" to suppress BEL bell."""
     config_path = dest_dir / "config.toml"
     content = ""
     if config_path.exists():
@@ -513,11 +457,7 @@ def _configure_codex_tui_notification(dest_dir: Path) -> None:
 
 
 def _remove_codex_tui_notification(dest_dir: Path) -> bool:
-    """Remove tui.notification_method setting from config.toml.
-
-    Only removes if the value is "osc9" (set by HelloAGENTS).
-    Returns True if removed.
-    """
+    """Remove tui.notification_method from config.toml if "osc9". Returns True if removed."""
     config_path = dest_dir / "config.toml"
     if not config_path.exists():
         return False
@@ -551,222 +491,3 @@ def _remove_codex_tui_notification(dest_dir: Path) -> bool:
                "  Removed tui.notification_method (config.toml)"))
     return True
 
-
-# ---------------------------------------------------------------------------
-# Codex agent role definitions (nickname_candidates)
-# ---------------------------------------------------------------------------
-
-# HelloAGENTS-managed roles — only these sections are created/updated/removed.
-# User-defined [agents.xxx] sections are never touched.
-#
-# Each role is registered as a distinct agent_type in config.toml, so
-# spawn_agent(agent_type="{role}") picks up the correct nickname_candidates.
-# Codex AgentRoleToml only supports: description, config_file, nickname_candidates.
-_HA_AGENT_ROLES: list[tuple[str, dict]] = [
-    ("explorer", {
-        "description": "Codebase exploration and dependency analysis",
-        "nickname_candidates": ["Scout", "Pathfinder", "Tracker"],
-    }),
-    ("worker", {
-        "description": "Code implementation and modification",
-        "nickname_candidates": ["Builder", "Forge", "Smith"],
-    }),
-    ("monitor", {
-        "description": "Long-running monitoring and polling tasks",
-        "nickname_candidates": ["Watcher", "Radar", "Lookout"],
-    }),
-    ("reviewer", {
-        "description": "Code review and quality inspection",
-        "nickname_candidates": ["Inspector", "Sentinel", "Auditor"],
-    }),
-    ("synthesizer", {
-        "description": "Multi-proposal evaluation and synthesis",
-        "nickname_candidates": ["Oracle", "Arbiter", "Assessor"],
-    }),
-    ("kb_keeper", {
-        "description": "Knowledge base synchronization and maintenance",
-        "nickname_candidates": ["Librarian", "Keeper", "Archivist"],
-    }),
-    ("pkg_keeper", {
-        "description": "Package lifecycle management",
-        "nickname_candidates": ["Steward", "Curator", "Marshal"],
-    }),
-    ("writer", {
-        "description": "Standalone document generation",
-        "nickname_candidates": ["Scribe", "Quill", "Chronicler"],
-    }),
-]
-
-
-def _toml_str_array(arr: list[str]) -> str:
-    """Format a list of strings as a TOML inline array."""
-    return "[" + ", ".join(f'"{s}"' for s in arr) + "]"
-
-
-def _get_section_scope(content: str, section_name: str) -> tuple[int, int] | None:
-    """Find the start and end of a TOML section's scope.
-
-    Returns (section_header_start, scope_end) or None if not found.
-    scope_end is the position of the next section header or EOF.
-    """
-    m = re.search(rf'^\[{re.escape(section_name)}\]', content, re.MULTILINE)
-    if not m:
-        return None
-    after = content[m.end():]
-    next_sec = re.search(r'^\[', after, re.MULTILINE)
-    end = m.end() + (next_sec.start() if next_sec else len(after))
-    return m.start(), end
-
-
-def _upsert_key_in_section(
-    content: str, section_name: str, key: str, value: str,
-) -> tuple[str, bool]:
-    """Update or insert a key within a TOML section.
-
-    Handles both simple values and inline/multi-line arrays.
-    Returns (updated_content, changed).
-    """
-    bounds = _get_section_scope(content, section_name)
-    if not bounds:
-        return content, False
-
-    sec_start, sec_end = bounds
-    scope = content[sec_start:sec_end]
-
-    # Match key = value (simple value or array including multi-line)
-    key_pat = rf'^{re.escape(key)}\s*=\s*(?:\[[^\]]*\]|.*)'
-    key_match = re.search(key_pat, scope, re.MULTILINE)
-
-    new_line = f"{key} = {value}"
-
-    if key_match:
-        old_line = key_match.group(0)
-        if old_line == new_line:
-            return content, False
-        abs_start = sec_start + key_match.start()
-        abs_end = abs_start + len(old_line)
-        return content[:abs_start] + new_line + content[abs_end:], True
-
-    # Key doesn't exist — add after section header line
-    header_line_end = content.index('\n', sec_start) + 1
-    return content[:header_line_end] + new_line + "\n" + content[header_line_end:], True
-
-
-def _find_agents_group_end(content: str) -> int:
-    """Find the insertion point after all [agents] and [agents.*] sections."""
-    all_sections = list(re.finditer(r'^\[([^\]]+)\]', content, re.MULTILINE))
-    last_agents_end = -1
-
-    for i, m in enumerate(all_sections):
-        name = m.group(1)
-        if name == "agents" or name.startswith("agents."):
-            if i + 1 < len(all_sections):
-                next_start = all_sections[i + 1].start()
-            else:
-                next_start = len(content)
-            last_agents_end = max(last_agents_end, next_start)
-
-    return last_agents_end if last_agents_end >= 0 else len(content)
-
-
-def _configure_codex_agent_roles(dest_dir: Path) -> None:
-    """Write HelloAGENTS agent role definitions to config.toml.
-
-    Creates missing [agents.{role}] sections with description and
-    nickname_candidates.  Updates nickname_candidates and description on
-    existing sections while preserving user-added keys (model, etc.).
-    """
-    config_path = dest_dir / "config.toml"
-    content = ""
-    if config_path.exists():
-        content = config_path.read_text(encoding="utf-8")
-
-    created: list[str] = []
-    updated: list[str] = []
-
-    for role, cfg in _HA_AGENT_ROLES:
-        section_name = f"agents.{role}"
-
-        if _get_section_scope(content, section_name) is not None:
-            # Section exists — update managed keys only
-            role_changed = False
-
-            nick_val = _toml_str_array(cfg["nickname_candidates"])
-            content, changed = _upsert_key_in_section(
-                content, section_name, "nickname_candidates", nick_val)
-            role_changed = role_changed or changed
-
-            content, changed = _upsert_key_in_section(
-                content, section_name, "description",
-                f'"{cfg["description"]}"')
-            role_changed = role_changed or changed
-
-            if role_changed:
-                updated.append(role)
-        else:
-            # Section doesn't exist — create with all managed keys
-            lines = [
-                f"[agents.{role}]",
-                f'description = "{cfg["description"]}"',
-                f'nickname_candidates = {_toml_str_array(cfg["nickname_candidates"])}',
-            ]
-            section_text = "\n".join(lines)
-
-            insert_pos = _find_agents_group_end(content)
-            before = content[:insert_pos].rstrip("\n")
-            after_text = content[insert_pos:].lstrip("\n")
-
-            if after_text:
-                content = before + "\n\n" + section_text + "\n\n" + after_text
-            else:
-                content = before + "\n\n" + section_text + "\n"
-
-            created.append(role)
-
-    if created or updated:
-        config_path.parent.mkdir(parents=True, exist_ok=True)
-        config_path.write_text(content, encoding="utf-8")
-        cn_parts: list[str] = []
-        en_parts: list[str] = []
-        if created:
-            cn_parts.append(f"新增 {len(created)} 个")
-            en_parts.append(f"created {len(created)}")
-        if updated:
-            cn_parts.append(f"更新 {len(updated)} 个")
-            en_parts.append(f"updated {len(updated)}")
-        all_roles = created + updated
-        print(_msg(
-            f"  已配置子代理角色: {', '.join(cn_parts)} ({', '.join(all_roles)})",
-            f"  Configured agent roles: {', '.join(en_parts)} ({', '.join(all_roles)})"))
-
-
-def _remove_codex_agent_roles(dest_dir: Path) -> bool:
-    """Remove HelloAGENTS-managed agent role sections from config.toml.
-
-    Only removes sections for known HA roles; user-defined roles are preserved.
-    Returns True if any sections were removed.
-    """
-    config_path = dest_dir / "config.toml"
-    if not config_path.exists():
-        return False
-
-    content = config_path.read_text(encoding="utf-8")
-    removed: list[str] = []
-
-    for role, _ in _HA_AGENT_ROLES:
-        section_name = f"agents.{role}"
-        bounds = _get_section_scope(content, section_name)
-        if bounds:
-            sec_start, sec_end = bounds
-            content = content[:sec_start] + content[sec_end:]
-            content = re.sub(r'\n{3,}', '\n\n', content)
-            removed.append(role)
-
-    if removed:
-        content = content.rstrip("\n") + "\n"
-        config_path.write_text(content, encoding="utf-8")
-        print(_msg(
-            f"  已移除 {len(removed)} 个子代理角色定义 ({', '.join(removed)})",
-            f"  Removed {len(removed)} agent role definition(s) ({', '.join(removed)})"))
-        return True
-    return False

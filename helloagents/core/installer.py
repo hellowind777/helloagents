@@ -15,15 +15,15 @@ from .codex_config import (
     _configure_codex_notify,
     _configure_codex_tui_notification,
     _configure_codex_developer_instructions,
-    _configure_codex_agent_roles,
     _cleanup_codex_agents_dotted,
 )
+from .codex_roles import _configure_codex_agent_roles
 from .claude_config import (
     _configure_claude_hooks,
     _configure_claude_permissions,
     _configure_claude_auto_memory,
-    _deploy_claude_rules,
 )
+from .claude_rules import _deploy_claude_rules
 from .settings_hooks import (
     _configure_gemini_hooks, _configure_qwen_hooks, _configure_grok_hooks,
 )
