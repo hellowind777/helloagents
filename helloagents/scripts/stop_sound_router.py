@@ -40,7 +40,9 @@ if sys.platform == 'win32':
         sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
 
 # ---------------------------------------------------------------------------
-# G3 图标→声音检测（共享逻辑，与 codex_notify.py 保持一致）
+# G3 图标→声音检测（图标映射与 codex_notify.py 一致，无标记时行为不同:
+# Claude Code Stop hook 仅主代理触发 → 默认 complete;
+# Codex notify 所有代理触发 → 无标记时跳过声音以过滤子代理）
 # ---------------------------------------------------------------------------
 
 # G3 格式标记
