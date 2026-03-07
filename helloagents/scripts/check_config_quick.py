@@ -14,7 +14,9 @@ HelloAGENTS Config Check — 配置完整性检测
 
 import sys
 import io
+import os
 import json
+import locale
 from pathlib import Path
 
 # Windows UTF-8 编码设置
@@ -25,6 +27,37 @@ if sys.platform == 'win32':
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
     if hasattr(sys.stdin, 'buffer'):
         sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
+
+
+def _detect_locale() -> str:
+    """Detect system locale. Returns 'zh' for Chinese, 'en' otherwise."""
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"):
+        val = os.environ.get(var, "")
+        if val.lower().startswith("zh"):
+            return "zh"
+    try:
+        loc = locale.getlocale()[0] or ""
+        if loc.lower().startswith("zh"):
+            return "zh"
+    except Exception:
+        pass
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            lcid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+            if (lcid & 0xFF) == 0x04:
+                return "zh"
+        except Exception:
+            pass
+    return "en"
+
+
+_LANG = _detect_locale()
+
+
+def _msg(zh: str, en: str) -> str:
+    """Return message based on detected locale."""
+    return zh if _LANG == "zh" else en
 
 def _get_cli_helloagents_dir() -> Path:
     """Get CLI-specific helloagents directory by detecting installed CLI."""
@@ -141,10 +174,15 @@ def main():
         update_cache(current_mtime)
 
     if not config_ok:
-        context = "会话启动" if force_check else "检测到配置文件被修改（可能是 ccswitch 切换）"
-        print(f"\n⚠️  HelloAGENTS 配置缺失或不完整", file=sys.stderr)
-        print(f"可能原因：{context}", file=sys.stderr)
-        print(f"修复方法：运行 'helloagents install {cli_name}' 恢复配置\n", file=sys.stderr)
+        context = _msg("会话启动", "session start") if force_check else _msg(
+            "检测到配置文件被修改（可能是 ccswitch 切换）",
+            "config file modification detected (possibly ccswitch)")
+        print(_msg("\n⚠️  HelloAGENTS 配置缺失或不完整",
+                   "\n⚠️  HelloAGENTS config missing or incomplete"), file=sys.stderr)
+        print(_msg(f"可能原因：{context}",
+                   f"Possible cause: {context}"), file=sys.stderr)
+        print(_msg(f"修复方法：运行 'helloagents install {cli_name}' 恢复配置\n",
+                   f"Fix: run 'helloagents install {cli_name}' to restore config\n"), file=sys.stderr)
         sys.exit(1)
 
     sys.exit(0)

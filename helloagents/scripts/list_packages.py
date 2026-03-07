@@ -26,7 +26,8 @@ try:
         list_packages,
         get_package_summary,
         script_error_handler,
-        validate_base_path
+        validate_base_path,
+        _msg,
     )
 except ImportError:
     sys.path.insert(0, str(Path(__file__).parent))
@@ -37,27 +38,30 @@ except ImportError:
         list_packages,
         get_package_summary,
         script_error_handler,
-        validate_base_path
+        validate_base_path,
+        _msg,
     )
 
 
 def print_table(packages: list, title: str):
     """以表格形式打印方案包列表"""
     if not packages:
-        print(f"{title}: 空（无方案包）")
+        print(_msg(f"{title}: 空（无方案包）", f"{title}: empty (no packages)"))
         return
 
-    print(f"\n{title} ({len(packages)} 个):")
+    print(_msg(f"\n{title} ({len(packages)} 个):",
+               f"\n{title} ({len(packages)} item(s)):"))
     print("-" * 80)
-    print(f"{'序号':<4} {'名称':<30} {'任务':<6} {'状态':<8} {'摘要':<30}")
+    print(_msg(f"{'序号':<4} {'名称':<30} {'任务':<6} {'状态':<8} {'摘要':<30}",
+               f"{'No.':<4} {'Name':<30} {'Tasks':<6} {'Status':<8} {'Summary':<30}"))
     print("-" * 80)
 
     for i, pkg in enumerate(packages, 1):
-        status = "✅完整" if pkg['complete'] else "⚠️不完整"
+        status = _msg("✅完整", "✅Complete") if pkg['complete'] else _msg("⚠️不完整", "⚠️Incomplete")
         try:
             summary = get_package_summary(pkg['path'])
         except Exception:
-            summary = "(读取失败)"
+            summary = _msg("(读取失败)", "(read failed)")
         print(f"{i:<4} {pkg['name']:<30} {pkg['task_count']:<6} {status:<8} {summary:<30}")
 
     print("-" * 80)
@@ -130,7 +134,7 @@ def main():
 
         print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
     else:
-        print_table(plan_packages, "📦 plan/ 方案包")
+        print_table(plan_packages, _msg("📦 plan/ 方案包", "📦 plan/ packages"))
 
         if args.archive:
             archive_path = get_archive_path(args.path)

@@ -14,11 +14,12 @@ from .._common import (
 from .codex_config import _cleanup_codex_agents_dotted, _remove_codex_notify
 from .codex_config import _remove_codex_developer_instructions
 from .codex_config import _remove_codex_tui_notification
-from .codex_config import _remove_codex_agent_roles
+from .codex_roles import _remove_codex_agent_roles
 from .claude_config import (
-    _remove_claude_hooks, _remove_claude_permissions, _remove_claude_rules,
+    _remove_claude_hooks, _remove_claude_permissions,
     _remove_claude_auto_memory,
 )
+from .claude_rules import _remove_claude_rules
 from .settings_hooks import (
     _remove_gemini_hooks, _remove_qwen_hooks, _remove_grok_hooks,
 )
