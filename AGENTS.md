@@ -836,7 +836,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 阶段/类型 | 验收项 | 严重性 |
 |-----------|--------|------|
-| evaluate | 核心维度全部达到充分线（需求范围≥2 且 实施条件≥1 且 成果规格≥1）（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
+| evaluate | 核心维度全部达到充分线（需求范围≥3 且 实施条件≥1 且 成果规格≥1）（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
 | design（含 Phase1） | Phase1: 项目上下文已获取+TASK_COMPLEXITY 已评估 / Phase2: 方案包结构完整+格式正确 | ℹ️ 信息性（Phase1）/ ⛔ 阻断性（Phase2） |
 | develop | 静态分析+单元测试+安全检查+分级交付验收(功能+需求+体验,按TASK_COMPLEXITY)+子代理调用合规 [→ G9] | ⛔ 阻断性 |
 | R1 快速流程 | 变更已应用+目标验证(探测项目工具后按可用能力执行) | ⚠️ 警告性 |
