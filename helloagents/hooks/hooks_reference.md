@@ -124,7 +124,9 @@ notify = ["helloagents --check-update --silent"]
 `client` 字段（v0.107 新增）: TUI 报告 `codex-tui`，app-server 报告 `initialize.clientInfo.name`（如 `vscode`、`xcode`）。
 HelloAGENTS 的 `codex_notify.py` 根据 `client` 字段过滤：IDE 来源跳过声音通知（IDE 有自己的通知机制）。
 `agent-turn-complete` 事件通过 `last-assistant-message` 检测 G3 状态图标进行声音路由（与 Claude Code 的 stop_sound_router.py 共用映射逻辑）。
-notify 钩子在所有代理轮次触发（含子代理），codex_notify.py 通过检测 G3 格式标记【HelloAGENTS】过滤子代理声音（无标记→跳过声音）。
+notify 钩子在所有代理轮次触发（含子代理），codex_notify.py 声音过滤规则:
+  无【HelloAGENTS】标记 → 跳过声音（覆盖子代理输出和主代理无格式中间输出）
+  有【HelloAGENTS】标记 → 仅从输出末尾提取最后一个 G3 状态行的图标进行声音路由，忽略输出中间的历史标记
 
 ### 多代理配置
 

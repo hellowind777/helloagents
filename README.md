@@ -8,7 +8,7 @@
 
 **Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.3.5-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.6-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/commands-15-6366f1.svg)](./helloagents/functions)
@@ -637,7 +637,7 @@ On the first response of each session, the system silently checks for new versio
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.5)
+- pyproject.toml: package metadata (v2.3.6)
 - helloagents/cli.py: CLI entry point
 - helloagents/_common.py: shared constants and utilities
 - helloagents/core/: CLI management modules (install, uninstall, update, status, dispatcher, hooks settings)
@@ -769,7 +769,7 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
     helloagents install claude    # reinstall to specific CLI target
     helloagents update            # update + auto-sync all installed targets
 
-**Prevention:** v2.3.5 adds automatic configuration integrity check on session start — if HelloAGENTS config is missing or corrupted, a warning is displayed with recovery instructions
+**Prevention:** Since v2.3.5, automatic configuration integrity check on session start — if HelloAGENTS config is missing or corrupted, a warning is displayed with recovery instructions
 
 **Verification:** Run `helloagents status` to confirm all targets show as installed
 
@@ -787,7 +787,24 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 
 ## Version History
 
-### v2.3.5 (current)
+### v2.3.6 (current)
+
+**New Features:**
+- Sub-agent orchestration overhaul: added brainstormer sub-agent for independent parallel proposal ideation during DESIGN multi-proposal comparison
+- Sub-agent blocking mechanism: auto-block and fallback to main agent on sub-agent failure or timeout
+
+**Improvements:**
+- Tool/Shell constraint optimization: allow fallback to Shell when built-in tools fail (fixes Codex CLI Windows apply_patch repeated failures)
+- Shell encoding constraint refinement: explicit UTF-8 no-BOM requirement, separate read/write encoding handling for PowerShell
+- Added batch file write rule (merge ≥3 files into a single temp script to avoid sandbox per-command blocking)
+- Removed session memory features that couldn't be fully implemented in CLI (session_summary template, SessionEnd memory sync), streamlined service layer
+- Sub-agent consolidation: removed 3 redundant sub-agents (kb-keeper, pkg-keeper, synthesizer), functionality returned to main agent and RLM roles
+- Sub-agent voice notification skip, task stability fixes
+- Unified user config directory structure (user/memory/, user/commands/, user/sounds/)
+- Uninstall script enhancements
+- Visual verification gap and UI quality fixes
+
+### v2.3.5
 
 **New Features:**
 - Voice notification system with 5 event sounds (complete, idle, confirm, error, warning) across Windows/macOS/Linux, with smart two-layer routing (stop_reason + G3 format icon detection)
