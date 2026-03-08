@@ -711,6 +711,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
   阻塞式读取: 必须等待文件完全加载后才能继续执行，不允许部分加载或跳过
   Do NOT execute any step until loading is complete.
   渐进式披露: 确定即将进入的阶段/流程/场景后，在进入执行前预加载该触发条件对应的文件；后续阶段的文件留到确定进入时再加载，禁止跨阶段合并读取（避免上下文膨胀）
+  加载范围: 每次加载必须对照下方"按需读取规则"表，仅读取当前触发条件行列出的文件，表中未列出的文件不得在该触发点加载
   完整读取: 规则文件必须整文件读取，禁止用搜索工具（Select-String/grep 等）做章节提取（会遗漏规则导致执行偏差）
   Shell 降级读取: CLI 无内置读取工具时，用 Get-Content -Raw -Encoding UTF8 '{path}' 逐文件完整读取
 标准缩写:
