@@ -9,7 +9,7 @@
 ## 模块入口
 
 ```yaml
-前置: EVALUATE 阶段完成（评估确认：评分达到阈值 或 R2 已确认）
+前置: EVALUATE 阶段完成（评估确认：核心维度全部充分 或 R2 已确认）
 设置: CURRENT_STAGE = DESIGN
 ```
 
