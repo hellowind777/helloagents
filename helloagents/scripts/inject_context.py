@@ -131,7 +131,7 @@ GENERIC_RULES = """[HelloAGENTS 核心流程提醒]
 - G4 评估: R2/R3 严格按 G4 需求评估章节执行
 - G5 阶段链: 评估→确认→DESIGN→DEVELOP→KB同步→完成（每阶段必须加载对应模块文件 G7）
 - G7 模块加载: 进入 DESIGN 读 stages/design.md | 进入 DEVELOP 读 stages/develop.md
-- G9 子代理: moderate/complex 任务强制编排子代理
+- G9 子代理: ≥2个独立工作单元时自动编排子代理并行执行
 - G11 注意力: tasks.md 状态必须随进度更新"""
 
 
