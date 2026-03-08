@@ -82,7 +82,7 @@
             "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
             "async": false,
             "timeout": 10,
-            "description": "HelloAGENTS KB 同步 + L2 会话摘要写入"
+            "description": "HelloAGENTS KB 同步标志"
           },
           {
             "type": "command",

@@ -213,7 +213,7 @@ def install(target: str) -> bool:
                    f"  Installed module to: {plugin_dest}"))
 
         # Restore user/ directory
-        # - User-created files (memory/profile.md, sessions/*, custom commands, sounds) → restore
+        # - User-created files (memory/profile.md, custom commands, sounds) → restore
         # - Template files (starting with _) → keep fresh version from package
         if _user_bak and _user_bak.exists():
             _target = plugin_dest / "user"

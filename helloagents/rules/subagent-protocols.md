@@ -555,16 +555,9 @@ tasks.md 依赖声明格式:
 
 ---
 
-## CLI 会话目录
+## 脚本执行规范
 
 ```yaml
-Claude Code: ~/.claude/projects/{path_hash}/*.jsonl
-  检测: ~/.claude/ 目录存在
-  path_hash: 工作目录路径，将 : \ / 替换为 -
-Codex CLI: ~/.codex/sessions/{YYYY}/{MM}/{DD}/*.jsonl
-  检测: ~/.codex/ 目录存在
-其他 CLI: 定位会话存储目录 → 找最新 .jsonl → 提取文件名为 session ID
-回退: HelloAGENTS 自生成 UUID
 脚本执行: python -X utf8 '{脚本路径}'
 ```
 
