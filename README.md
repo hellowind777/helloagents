@@ -83,7 +83,7 @@
 
 **RLM Sub-Agent Orchestration**
 
-3 specialized roles (reviewer / writer / brainstormer) plus host CLI native sub-agents (explore / implement / test / design) are dispatched automatically based on task complexity. Tasks are scheduled via DAG dependency analysis with topological sort and layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
+3 specialized roles (reviewer / writer / brainstormer) plus host CLI native sub-agents (explore / code / brainstorm) are dispatched automatically based on task complexity. Tasks are scheduled via DAG dependency analysis with topological sort and layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
 
 **Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
 </td>
@@ -648,8 +648,8 @@ On the first response of each session, the system silently checks for new versio
 - helloagents/rlm: role library and orchestration helpers
 - helloagents/hooks: Claude Code, Codex CLI, Gemini CLI, and Grok CLI hooks configs
 - helloagents/scripts: automation scripts (sound notify, progress snapshot, safety guard, etc.)
-- helloagents/agents: sub-agent definitions (5 RLM roles)
-- helloagents/commands: custom command templates
+- helloagents/agents: sub-agent definitions (3 RLM roles)
+- helloagents/user/commands: custom command templates
 - helloagents/assets: sound resources (5 event sounds)
 - helloagents/templates: KB and plan templates
 
