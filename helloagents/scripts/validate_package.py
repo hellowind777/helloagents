@@ -162,6 +162,19 @@ def validate_package(package_path: Path) -> dict:
         else:
             result["warnings"].append(f"缺少可选文件: {file}")
 
+    # 验证 .status.json 格式（如存在）
+    status_json_path = package_path / ".status.json"
+    if status_json_path.exists():
+        try:
+            status_data = json.loads(status_json_path.read_text(encoding="utf-8"))
+            required_keys = {"status", "completed", "failed", "pending", "total", "updated_at"}
+            missing_keys = required_keys - set(status_data.keys())
+            if missing_keys:
+                result["warnings"].append(f".status.json 缺少字段: {missing_keys}")
+            result["files"]["present"].append(".status.json")
+        except (json.JSONDecodeError, OSError) as e:
+            result["warnings"].append(f".status.json 格式无效: {e}")
+
     # 先解析proposal.md获取方案类型
     proposal_path = package_path / "proposal.md"
     pkg_type = "implementation"  # 默认类型

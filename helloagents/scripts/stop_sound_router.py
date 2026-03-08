@@ -16,7 +16,7 @@ Layer 2 — G3 格式检测（语义信号）:
     error    → ❌             错误终止 ("出错了呢~")
     complete → ✅ 💡 ⚡ 🔧    完成/直接响应/快速流程/外部工具 ("完成了~")
     confirm  → ❓ 📐          通用确认 / R2 确认 ("需要您确认~")
-    confirm  → 🔵（状态含"确认"）R3 确认（评分≥8，等待模式选择）
+    confirm  → 🔵（状态含"确认"）R3 确认（评分达到阈值，等待模式选择）
     idle     → 🔵（状态不含"确认"）R3 追问/评估/执行等 ("在等你呢~")
     idle     → ℹ️ 🚫 及其他   信息提示/取消
     complete → 无 G3 格式      默认
@@ -200,6 +200,43 @@ def _find_latest_jsonl(project_dir):
     return latest_file
 
 
+def _extract_assistant_text(d):
+    """从单条 JSONL 记录中提取 assistant 文本和 stop_reason。
+
+    支持两种已知格式:
+      格式A (当前): {"type": "assistant", "message": {"stop_reason": "...", "content": [...]}}
+      格式B (降级): 无 "type" 字段但有 "role": "assistant"
+
+    Returns:
+        (text, stop_reason) 或 None（非 assistant 记录时）。
+    """
+    # 格式 A: type == "assistant"
+    if d.get("type") == "assistant":
+        msg = d.get("message", {})
+        stop_reason = msg.get("stop_reason", "") or ""
+        content = msg.get("content", "")
+    # 格式 B 降级: role == "assistant"（无 type 字段）
+    elif d.get("role") == "assistant":
+        stop_reason = d.get("stop_reason", "") or ""
+        content = d.get("content", "")
+    else:
+        return None
+
+    if isinstance(content, list):
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                text = block.get("text", "")
+                if text.strip():
+                    return text, stop_reason
+    elif isinstance(content, str) and content.strip():
+        return content, stop_reason
+
+    # assistant 消息无文本内容但有 stop_reason
+    if stop_reason:
+        return "", stop_reason
+    return None
+
+
 def _read_last_assistant_entry(jsonl_path):
     """从 JSONL 尾部读取最后一条 assistant 消息的文本内容和 stop_reason。
 
@@ -219,22 +256,9 @@ def _read_last_assistant_entry(jsonl_path):
         for line in reversed(lines):
             try:
                 d = json.loads(line)
-                if d.get("type") != "assistant":
-                    continue
-                msg = d.get("message", {})
-                stop_reason = msg.get("stop_reason", "") or ""
-                content = msg.get("content", "")
-                if isinstance(content, list):
-                    for block in content:
-                        if isinstance(block, dict) and block.get("type") == "text":
-                            text = block.get("text", "")
-                            if text.strip():
-                                return text, stop_reason
-                elif isinstance(content, str) and content.strip():
-                    return content, stop_reason
-                # assistant 消息无文本内容但有 stop_reason
-                if stop_reason:
-                    return "", stop_reason
+                result = _extract_assistant_text(d)
+                if result is not None:
+                    return result
             except (json.JSONDecodeError, KeyError, TypeError):
                 continue
         return "", ""

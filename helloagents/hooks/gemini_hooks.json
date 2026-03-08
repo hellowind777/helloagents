@@ -48,6 +48,33 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/pre_tool_guard.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 危险命令安全防护（PreToolUse → Claude Code PreToolUse 等效）"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/progress_snapshot.py\"",
+            "async": true,
+            "timeout": 10,
+            "description": "HelloAGENTS 进度快照（PostToolUse → Claude Code PostToolUse 等效）"
+          }
+        ]
+      }
+    ],
     "PreCompress": [
       {
         "matcher": "",
