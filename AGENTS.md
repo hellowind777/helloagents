@@ -13,7 +13,7 @@ COMPACTION RECOVERY: If context was compressed during the session (previous mess
 BEFORE writing ANY code, creating ANY file, or making ANY modification, you MUST follow the routing protocol defined in G4:
 - Determine the routing level (R0/R1/R2/R3) by evaluating the 5 routing dimensions.
 - For R2/R3: Score the request, output your assessment using G3 format, then STOP and WAIT for user confirmation.
-- For R3 with score below threshold (≥6 and scope≥2): Ask clarifying questions, then STOP and WAIT for user response.
+- For R3 with core dimensions below sufficiency thresholds: Ask clarifying questions, then STOP and WAIT for user response.
 - After user confirms: Follow the stage chain defined in G5. Load each stage's module files per G7. Never skip any stage.
 Never bypass routing. Never jump ahead in the stage chain.
 </execution_constraint>
@@ -47,8 +47,8 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 | KB_CREATE_MODE | 1 | 知识库不存在时提示"建议执行 ~init" |
 | KB_CREATE_MODE | 2 | 编程任务时自动创建/更新，其余同模式1。编程任务=请求涉及代码创建/修改/删除/重构/测试编写；非编程=纯文档/设计/分析/翻译等不产生代码变更的任务 |
 | KB_CREATE_MODE | 3 | 始终自动创建 |
-| EVAL_MODE | 1 | 渐进式追问（默认）：每轮追问1个最低分维度问题，最多3轮 |
-| EVAL_MODE | 2 | 一次性追问：一次性展示所有低分维度问题，用户回答后重新评分，最多3轮 |
+| EVAL_MODE | 1 | 渐进式追问（默认）：每轮沿信息依赖链追问1个未达充分线的维度，最多4轮 |
+| EVAL_MODE | 2 | 一次性追问：一次性展示所有未达充分线的维度问题，用户回答后重新评分，最多2轮 |
 | UPDATE_CHECK | 0 | 关闭更新检查，不显示更新提示 |
 | UPDATE_CHECK | N (正整数) | 首次响应时按 G3 ⬆️ 生成规则检查更新，N 为缓存有效小时数（默认 72） |
 | CSV_BATCH_MAX | 0 | 关闭 CSV 批处理编排，同构任务退回 spawn_agent 逐个执行 |
@@ -257,7 +257,7 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 **输出规范:** 首行=状态栏；主体=按场景模块的"主体内容要素"填充；末尾=下一步引导。Never output raw content without the G3 format wrapper.
 **子代理例外:** 被 spawn 的子代理（prompt 含 `[跳过指令]`）不输出 G3 格式包装（无状态栏、无下一步引导），直接输出任务结果。
 
-**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（评分达到阈值） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/开发实施=阶段链中的具体阶段
+**场景词汇:** 评估=首轮评分输出（含评分结果，无论是否附带追问）| 追问=用户回复后的后续追问轮次（重新评分+继续追问）| 确认=评估完成等待用户确认（核心维度全部充分） | 执行=正在执行任务 | 完成=任务执行完毕 | 方案设计/开发实施=阶段链中的具体阶段
 
 **主体内容规范:**
 ```yaml
@@ -410,7 +410,7 @@ Prohibitions (CRITICAL):
 |----------|------|----------|----------|
 | 无 | ~help, ~rlm, ~status | 无评估 | 直接执行，无需确认（破坏性子命令内部自带确认） |
 | 轻量 | ~init, ~upgradekb, ~clean, ~cleanplan, ~test, ~commit, ~review, ~validatekb, ~exec, ~rollback | 需求理解 + EHRB 检测（不评分不追问）| 输出确认信息（需求摘要+后续流程）→ ⛔ |
-| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 评分<阈值→追问→⛔；评分≥阈值→确认信息（评分+级别+后续流程）→ ⛔ |
+| 完整 | ~auto, ~plan | 需求评估（评分+按需追问+EHRB） | 核心维度未充分→追问→⛔；全部充分→确认信息（评分+级别+后续流程）→ ⛔ |
 
 **命令执行流程（CRITICAL）:**
 ```yaml
@@ -418,7 +418,7 @@ Prohibitions (CRITICAL):
 2. 按闸门等级执行:
    无闸门（~help/~rlm/~status）: 加载模块后直接按模块规则执行
    轻量闸门: 输出确认信息（需求摘要+后续流程）→ ⛔ END_TURN
-   完整闸门（~auto/~plan）: 需求评估 → 评分<阈值时追问 → ⛔ END_TURN | 评分≥阈值后输出确认信息 → ⛔ END_TURN
+   完整闸门（~auto/~plan）: 需求评估 → 核心维度未充分时追问 → ⛔ END_TURN | 全部充分后输出确认信息 → ⛔ END_TURN
 3. 用户确认后 → 按命令模块定义的流程执行
 ```
 
@@ -446,7 +446,7 @@ When you receive a non-command input that does not match any external tool:
 User: "帮我做个游戏"
 → 级别判定: R3（开放式目标 + 技术栈未定 + 架构级决策）
 → 评分: ≈3/10（目标2(上下文推断) + 成果规格0 + 实施条件1(上下文推断) + 验收标准0）
-→ 正确行为: 输出 📊 评分 + 💬 追问最低分维度 → 停止，等待用户回复
+→ 正确行为: 输出 📊 评分 + 💬 沿依赖链追问首个未达充分线的维度 → 停止，等待用户回复
 </example_correct>
 <example_wrong>
 User: "帮我做个游戏"
@@ -506,30 +506,38 @@ R3 评估流程（CRITICAL - 两阶段，严格按顺序。以下追问流程仅
   阶段一: 评分与追问（可能多回合）
     1. 需求理解（可读取项目上下文辅助理解：知识库摘要、目录结构、配置文件等）
     2. 逐维度打分
-    3. 通过阈值: 总分 ≥ 6 且需求范围 ≥ 2
-    4. 评分 < 阈值 → 按 {EVAL_MODE} 追问 → ⛔ END_TURN
-       EVAL_MODE=1: 每轮1个问题，最多3轮
-         维度选择: 最低分维度优先；同分按 需求范围 → 成果规格 → 实施条件 → 验收标准 顺序
+    3. 通过条件（维度充分性驱动，非固定总分阈值）:
+       信息依赖链: 需求范围 → 实施条件 → 成果规格 → 验收标准
+         （需求范围定义"做什么"→实施条件约束"用什么做"→成果规格基于前两者定义"做成什么样"→验收标准基于全部前序定义"怎么验证"）
+       核心维度充分线（映射评分标准语义）:
+         需求范围 ≥ 2（"目标明确"，范围边界可在 DESIGN 细化）
+         实施条件 ≥ 1（"有部分执行信息"，DESIGN 可推断其余）
+         成果规格 ≥ 1（"提及了基本期望"，brainstormer 可发散）
+         验收标准: 非核心维度，不影响退出判定（DESIGN 阶段按方案定义）
+       通过: 所有核心维度均达到充分线 → 进入阶段二
+    4. 未通过 → 按 {EVAL_MODE} 追问 → ⛔ END_TURN
+       EVAL_MODE=1: 每轮1个问题，最多4轮
+         维度选择: 沿信息依赖链顺序，选择首个未达充分线的维度追问
          追问粒度: 首次追问某维度时覆盖该维度的完整评分范围（选项代表不同的完整方案）；若上轮已追问过该维度但仍有明确未达标的子项，可针对该子项跟进
-       EVAL_MODE=2: 一次性展示所有未满分维度问题（≤5个），最多2轮
+       EVAL_MODE=2: 一次性展示所有未达充分线的维度问题（按依赖链排序），最多2轮
        维度隔离（CRITICAL）: 每个问题仅针对单一维度追问，禁止将多个维度合并到同一问题或选项中。选项之间的差异必须限定在该维度范围内
        每个问题提供 2-4 个选项，用户回复后重新评分
        选项差异化（CRITICAL）: 成果规格维度且任务有视觉产出时，选项之间必须以不同的视觉风格/主题为核心差异（功能规格保持一致），禁止以功能多少作为选项梯度
        最大轮次耗尽: 达到轮次上限后无论当前分数均进入阶段二（DESIGN 阶段补充剩余细节）
-    5. 评分 ≥ 阈值 或 追问轮次耗尽 → 进入阶段二
+    5. 核心维度全部充分 或 追问轮次耗尽 → 进入阶段二
   阶段二: EHRB检测与确认（进入阶段二后同一回合内完成）
     6. EHRB 检测 [→ G2]
     7. 输出确认信息 → ⛔ END_TURN
   关键约束（CRITICAL）:
-    - Score < 阈值 且未耗尽轮次: Only output clarifying questions. Do NOT output confirmation.
-    - Score ≥ 阈值 或 追问轮次耗尽: Output full confirmation message.
+    - 核心维度未全部充分 且未耗尽轮次: Only output clarifying questions. Do NOT output confirmation.
+    - 核心维度全部充分 或 追问轮次耗尽: Output full confirmation message.
 跳过/委托意图: 评估追问期间同样适用 [→ G5 流程中意图识别]
 静默规则: During evaluation, do NOT output intermediate thinking. Only output questions or confirmation messages.
 
 R2 评估流程（单回合，问题与确认合一）:
   1. 需求理解 + 逐维度打分（可读取项目上下文辅助理解）
   2. EHRB 检测 [→ G2]
-  3. 选取1个关键问题（最低分维度 或 关键设计决策）+ 2-4个选项 + 确认信息 → ⛔ END_TURN
+  3. 选取1个关键问题（沿依赖链首个未达充分线的维度 或 关键设计决策）+ 2-4个选项 + 确认信息 → ⛔ END_TURN
   4. 用户回复 → 答案作为上下文，不重新评分 → INTERACTIVE 模式 → DESIGN
   用户回复中表达委托执行意图 → DELEGATED 模式 [→ G5 流程中意图识别]
 ```
@@ -548,24 +556,24 @@ R2 确认（问题+确认合一，单回合）:
   （空行）
   ⚠️ EHRB: 仅检测到风险时显示
   （空行）
-  💬 {1个关键问题}（来源: 最低分维度 或 关键设计决策）
+  💬 {1个关键问题}（来源: 沿依赖链首个未达充分线的维度 或 关键设计决策）
   （空行）
   选项：
   1~N. 问题选项（2-4个，选项规则见"选项生成通用规则"）
   回复处理: 任意回复 = 确认 + 答案上下文 → INTERACTIVE → DESIGN。表达委托执行意图 → DELEGATED [→ G5]
 
-R3 追问（评分 < 阈值时，仅 R3）:
+R3 追问（核心维度未全部充分时，仅 R3）:
   📋 需求: 需求摘要
   （空行）
   📊 评分: N/10（维度明细）
   （空行）
-  💬 问题: EVAL_MODE=1 → 1个（最低分维度） | EVAL_MODE=2 → 每个未满分维度各1个，问题用数字序号（Q1/Q2/Q3...）
+  💬 问题: EVAL_MODE=1 → 1个（沿依赖链首个未达充分线的维度） | EVAL_MODE=2 → 每个未达充分线的维度各1个（按依赖链排序），问题用数字序号（Q1/Q2/Q3...）
   （空行）
   选项：
   EVAL_MODE=1: 1~N. 选项用数字编号
   EVAL_MODE=2: 各问题选项字母独立编号（Q1: A/B/C, Q2: A/B/C），每个问题 2-4 个选项。用户回复格式示例: "Q1A Q2B" 或 "1A 2B"
 
-R3 确认信息（评分 ≥ 阈值 或 追问轮次耗尽时）:
+R3 确认信息（核心维度全部充分 或 追问轮次耗尽时）:
   📋 需求: 合并到头部描述行
   （空行）
   📊 评分: N/10（需求范围 X/3 | 成果规格 X/3 | 实施条件 X/2 | 验收标准 X/2）
@@ -597,8 +605,8 @@ R3 确认选项（三个选项固定，仅推荐项和措辞因入口不同）:
   不适用: EVAL_MODE=2（多维度×多选项在 TUI 浮层中过于拥挤，回退到纯文本格式）
   行为: 使用 request_user_input 工具替代纯文本选项输出，渲染为 TUI 交互选择界面
   映射规则:
-    R2 确认: 1 question (header=最低分维度名或决策点) + 2-4 options + isOther=true
-    R3 追问 (EVAL_MODE=1): 1 question (header=追问维度名) + 2-4 options + isOther=true
+    R2 确认: 1 question (header=依赖链首个未充分维度名或决策点) + 2-4 options + isOther=true
+    R3 追问 (EVAL_MODE=1): 1 question (header=当前追问维度名) + 2-4 options + isOther=true
     R3 追问 (EVAL_MODE=2): 不启用（多维度×多选项在 TUI 浮层中过于拥挤，回退到纯文本格式）
     R3 确认: 1 question (header="确认执行模式") + 3 options（推荐/备选/改需求）+ isOther=true
     DESIGN 多方案: 1 question (header="方案选择") + 方案选项 + isOther=true
@@ -694,7 +702,7 @@ WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN  # 默认 INTERACTIVE
 ROUTING_LEVEL: R0 | R1 | R2 | R3  # 通用路径级别判定 或 命令路径强制指定
 CURRENT_STAGE: 空 | EVALUATE | DESIGN | DEVELOP  # EVALUATE: G4 路由评估期间隐式生效；DESIGN/DEVELOP: G4 通用路径确认后 或阶段切换时显式设置
 STAGE_ENTRY_MODE: NATURAL | DIRECT  # 默认 NATURAL，~exec 设为 DIRECT
-DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/需求评分未达阈值时 → true
+DELEGATION_INTERRUPTED: false  # EHRB/阻断性验收失败/核心维度未充分时 → true
 
 # ─── 任务复杂度变量 ───
 TASK_COMPLEXITY: 未设置 | simple | moderate | complex  # DESIGN Phase1步骤3初评+步骤6确认，DEVELOP DIRECT入口步骤2评估
@@ -824,11 +832,11 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 阶段/类型 | 验收项 | 严重性 |
 |-----------|--------|------|
-| evaluate | 需求评分达到阈值（≥6 且需求范围≥2）（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
+| evaluate | 核心维度全部达到充分线（需求范围≥2 且 实施条件≥1 且 成果规格≥1）（R3 阻断，R2 标注信息不足可继续） | ⛔ 阻断性（R3）/ ⚠️ 警告性（R2） |
 | design（含 Phase1） | Phase1: 项目上下文已获取+TASK_COMPLEXITY 已评估 / Phase2: 方案包结构完整+格式正确 | ℹ️ 信息性（Phase1）/ ⛔ 阻断性（Phase2） |
 | develop | 静态分析+单元测试+安全检查+分级交付验收(功能+需求+体验,按TASK_COMPLEXITY)+子代理调用合规 [→ G9] | ⛔ 阻断性 |
 | R1 快速流程 | 变更已应用+目标验证(探测项目工具后按可用能力执行) | ⚠️ 警告性 |
-| evaluate→design | 需求评分达到阈值（R3）或已确认（R2） | ⛔ 闸门 |
+| evaluate→design | 核心维度全部充分（R3）或已确认（R2） | ⛔ 闸门 |
 | design→develop | 方案包存在 + validate_package.py 通过 | ⛔ 闸门 |
 | 流程级（~auto/~plan/~exec） | 交付物状态 + 需求符合性 + 问题汇总 | 流程结束前 |
 
