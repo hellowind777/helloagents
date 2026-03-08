@@ -28,7 +28,7 @@ CLI_TARGETS = {
     "claude": {"dir": ".claude", "rules_file": "CLAUDE.md"},
     "gemini": {"dir": ".gemini", "rules_file": "GEMINI.md"},
     "qwen": {"dir": ".qwen", "rules_file": "QWEN.md"},
-    "grok": {"dir": ".grok", "rules_file": "GROK.md"},
+    "grok": {"dir": ".grok", "rules_file": "GROK.md", "status": "experimental"},
     "opencode": {"dir": ".config/opencode", "rules_file": "AGENTS.md"},
 }
 

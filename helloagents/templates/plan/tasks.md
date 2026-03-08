@@ -7,10 +7,7 @@
 @mode: {R2|R3}
 ```
 
-<!-- LIVE_STATUS_BEGIN -->
-状态: pending | 进度: 0/X (0%) | 更新: {YYYY-MM-DD HH:MM:SS}
-当前: -
-<!-- LIVE_STATUS_END -->
+<!-- LIVE_STATUS: 状态数据已迁移至同目录下 .status.json，此标记保留用于向后兼容检测 -->
 
 ## 进度概览
 

@@ -132,7 +132,7 @@ Voice notifications (5 event sounds), custom command extension (`.helloagents/co
 
 **Multi-CLI Support**
 
-One rule set works across Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI, and Grok CLI. Automatic feature detection and graceful degradation ensure consistent experience regardless of CLI capabilities.
+One rule set works across Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI, and Grok CLI (Experimental/Community). Automatic feature detection and graceful degradation ensure consistent experience regardless of CLI capabilities.
 
 **Your gain:** switch between CLIs without relearning workflows or reconfiguring rules.
 </td>
@@ -143,12 +143,12 @@ One rule set works across Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI
 
 | CLI | Native Sub-Agent Mechanism | RLM Mapping |
 |-----|---------------------------|-------------|
-| Claude Code | Task tool (explore / code / shell) | Direct mapping, supports Agent Teams |
+| Claude Code | Agent tool (explore / code / shell) | Direct mapping, supports Agent Teams |
 | Codex CLI | spawn_agent / Collab (multi-thread) | spawn_agent parallel scheduling, CSV batch orchestration |
-| OpenCode | Built-in agent mode | Fallback to sequential execution |
+| OpenCode | Task tool (build / plan / general / explore) | Direct sub-agent mapping |
 | Gemini CLI | Built-in tool calls | Fallback to sequential execution |
 | Qwen CLI | Built-in tool calls | Fallback to sequential execution |
-| Grok CLI | Built-in tool calls | Fallback to sequential execution |
+| Grok CLI (Experimental) | Built-in tool calls | Fallback to sequential execution |
 
 Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action need, target clarity, decision scope, impact range, EHRB risk) to automatically determine processing depth for each input; **6 CLI targets** (Claude Code / Codex CLI / OpenCode / Gemini CLI / Qwen CLI / Grok CLI) with one rule set across all; **Hooks integration** (Claude Code 11 lifecycle hooks + Codex CLI notify hook + Gemini/Grok CLI hooks) with automatic graceful degradation when unavailable.
 
@@ -158,10 +158,10 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 |-----|-------------------|--------------|---------------------|
 | **Claude Code** | Latest | Agent Teams, 11 lifecycle hooks, auto-memory | Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for teams mode |
 | **Codex CLI** | 0.110+ | spawn_agent, CSV batch, collaboration_modes | Enable sub-agents, CSV orchestration, set `project_doc_max_bytes >= 131072` |
-| **OpenCode** | Latest | Built-in agent mode | Sequential execution fallback |
+| **OpenCode** | Latest | Task tool, custom agents, MCP | Supports primary agents (build/plan) + subagents (general/explore) |
 | **Gemini CLI** | Latest | Built-in tool calls | Sequential execution fallback |
 | **Qwen CLI** | Latest | Built-in tool calls | Sequential execution fallback |
-| **Grok CLI** | Latest | Built-in tool calls | Sequential execution fallback |
+| **Grok CLI** (Experimental) | Latest | Built-in tool calls | Community wrapper, hooks not fully verified |
 
 <details>
 <summary>📋 Detailed CLI-specific notes (click to expand)</summary>
@@ -180,7 +180,8 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 - Auto-memory feature enabled by default
 
 **Other CLIs:**
-- OpenCode/Gemini/Qwen/Grok use sequential execution fallback
+- OpenCode supports Task tool with primary agents (build/plan) and subagents (general/explore)
+- Gemini/Qwen/Grok use sequential execution fallback
 - All features work with graceful degradation
 - Hooks may not be available on all platforms
 
@@ -354,7 +355,7 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
     helloagents update
 
 > 💡 **Claude Code sub-agent orchestration tips:**
-> - Sub-agents (Task tool) work out of the box, no extra configuration needed
+> - Sub-agents (Agent tool) work out of the box, no extra configuration needed
 > - Agent Teams collaboration mode requires environment variable: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
 > - Parallel sub-agent count is managed automatically by the model, no user-side limit config needed
 

@@ -23,7 +23,7 @@ HelloAGENTS 预定义以下 11 个 Hook 配置供用户可选启用:
       错误类（❌）           → error   ("出错了呢~"，错误终止)
       完成类（✅💡⚡🔧）    → complete ("完成了~")
       确认类（❓📐）         → confirm ("需要您确认~"，始终为确认场景)
-      上下文类（🔵+状态含"确认"） → confirm (R3 确认，评分≥8 等待模式选择)
+      上下文类（🔵+状态含"确认"） → confirm (R3 确认，评分达到阈值 等待模式选择)
       上下文类（🔵+状态不含"确认"） → idle ("在等你呢~"，R3 追问/评估/执行等)
       其余图标（ℹ️🚫等）    → idle    ("在等你呢~")
       无 G3 格式            → complete（默认）
@@ -222,6 +222,18 @@ BeforeAgent — 上下文注入:
   动作: inject_context.py，通过事件名映射注入规则强化上下文
   超时: 3s
 
+PreToolUse — 危险命令安全防护（待验证）:
+  事件: PreToolUse | 匹配: Bash（等效 Claude Code PreToolUse）
+  动作: pre_tool_guard.py，检测高危命令模式，匹配时返回 deny
+  超时: 3s
+  注: Gemini CLI 对 PreToolUse 事件的支持待验证，部署后如不生效则依赖规则层 EHRB 降级
+
+PostToolUse — 进度快照（待验证）:
+  事件: PostToolUse | 匹配: Write|Edit（等效 Claude Code PostToolUse）
+  动作: progress_snapshot.py，写操作计数+阈值自动快照
+  超时: 10s | 异步: async=true
+  注: Gemini CLI 对 PostToolUse 事件的支持待验证，部署后如不生效则依赖 cache.md 手动触发
+
 AfterAgent — KB 同步标志 + 声音通知:
   事件: AfterAgent（等效 Claude Code Stop）
   动作: session_end.py，设置 KB 同步标志；sound_notify.py 播放完成声音
@@ -235,7 +247,7 @@ PreCompress — 压缩前进度快照:
 
 ---
 
-## Grok CLI Hooks 配置（~/.grok/settings.json）
+## Grok CLI Hooks 配置（~/.grok/settings.json）— Experimental/Community，能力待验证
 
 ```yaml
 UserPromptSubmit — 规则强化:

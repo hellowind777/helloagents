@@ -147,6 +147,11 @@ def install(target: str) -> bool:
     config = CLI_TARGETS[target]
     dest_dir = Path.home() / config["dir"]
     rules_file = config["rules_file"]
+    target_status = config.get("status", "active")
+
+    if target_status == "experimental":
+        print(_msg(f"  ℹ️ 提示: {target} 为实验性/社区项目，hooks 能力未经完整验证。",
+                   f"  ℹ️ Note: {target} is experimental/community. Hook capabilities are not fully verified."))
 
     if not dest_dir.exists():
         print(_msg(f"  警告: {dest_dir} 不存在，{target} CLI 可能未安装。",
@@ -244,22 +249,21 @@ def install(target: str) -> bool:
                 print(_msg(f"  已部署拆分规则: {count} 个文件 (CLAUDE.md + rules/helloagents/)",
                            f"  Deployed split rules: {count} file(s) (CLAUDE.md + rules/helloagents/)"))
             else:
-                if rules_dest.exists():
-                    if is_helloagents_file(rules_dest):
-                        shutil.copy2(agents_md_src, rules_dest)
-                        print(_msg(f"  已更新规则: {rules_dest}",
-                                   f"  Updated rules: {rules_dest}"))
-                    else:
-                        backup = backup_user_file(rules_dest)
-                        print(_msg(f"  已备份现有规则到: {backup}",
-                                   f"  Backed up existing rules to: {backup}"))
-                        shutil.copy2(agents_md_src, rules_dest)
-                        print(_msg(f"  已安装规则到: {rules_dest}",
-                                   f"  Installed rules to: {rules_dest}"))
+                # Full deployment for non-Claude CLIs (direct copy of AGENTS.md)
+                # Non-Claude CLIs lack native rules/ auto-loading; split deployment
+                # would rely on AI following bootstrap instructions, which is unreliable.
+                if rules_dest.exists() and not is_helloagents_file(rules_dest):
+                    backup = backup_user_file(rules_dest)
+                    print(_msg(f"  已备份现有规则到: {backup}",
+                               f"  Backed up existing rules to: {backup}"))
+                is_update = rules_dest.exists()
+                shutil.copy2(agents_md_src, rules_dest)
+                if is_update:
+                    print(_msg(f"  已更新规则: {rules_dest}",
+                               f"  Updated rules: {rules_dest}"))
                 else:
-                    shutil.copy2(agents_md_src, rules_dest)
-                    print(_msg(f"  已安装规则到: {rules_dest}",
-                               f"  Installed rules to: {rules_dest}"))
+                    print(_msg(f"  已安装规则: {rules_dest}",
+                               f"  Installed rules: {rules_dest}"))
         else:
             print(_msg(f"  警告: 未找到 AGENTS.md ({agents_md_src})",
                        f"  Warning: AGENTS.md not found at {agents_md_src}"))

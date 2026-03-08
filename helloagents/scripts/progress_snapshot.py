@@ -123,58 +123,52 @@ def _determine_status(stats: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# LIVE_STATUS 更新
+# .status.json 更新（取代旧的 LIVE_STATUS HTML 注释）
 # ---------------------------------------------------------------------------
 
-_LS_BEGIN = "<!-- LIVE_STATUS_BEGIN -->"
-_LS_END = "<!-- LIVE_STATUS_END -->"
+
+def _get_current_task(content: str) -> str:
+    """从 tasks.md 找到当前正在执行的任务（第一个 [ ] 标记的行）。"""
+    for line in content.splitlines():
+        if "[ ]" in line:
+            desc = re.sub(r'^\s*[-*]\s*\[ \]\s*\d*\.?\d*\s*', '', line).strip()
+            if desc:
+                return desc[:60]
+    return "-"
 
 
-def _update_live_status(content: str, stats: dict) -> str:
-    """替换 LIVE_STATUS 区域内容。"""
+def _write_status_json(tasks_path: Path, stats: dict, content: str):
+    """写入 .status.json 到方案包目录。"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     done = stats["completed"] + stats["skipped"]
     total = stats["total"]
     pct = round(done / total * 100) if total > 0 else 0
     status = _determine_status(stats)
+    current = _get_current_task(content)
 
-    # 找到当前正在执行的任务（第一个 [ ] 标记的行）
-    current = "-"
-    for line in content.splitlines():
-        if "[ ]" in line:
-            # 提取任务描述（去掉序号和标记）
-            desc = re.sub(r'^\s*\d+\.\s*\[ \]\s*', '', line).strip()
-            if desc:
-                current = desc[:60]
-            break
+    status_data = {
+        "status": status,
+        "completed": stats["completed"],
+        "failed": stats["failed"],
+        "skipped": stats["skipped"],
+        "pending": stats["pending"],
+        "uncertain": stats["uncertain"],
+        "total": total,
+        "done": done,
+        "percent": pct,
+        "current": current,
+        "updated_at": now,
+    }
 
-    new_status = (
-        f"{_LS_BEGIN}\n"
-        f"状态: {status} | 进度: {done}/{total} ({pct}%) | 更新: {now}\n"
-        f"当前: {current}\n"
-        f"{_LS_END}"
-    )
-
-    begin_idx = content.find(_LS_BEGIN)
-    end_idx = content.find(_LS_END)
-    if begin_idx >= 0 and end_idx >= 0:
-        return content[:begin_idx] + new_status + content[end_idx + len(_LS_END):]
-
-    # 标记缺失：在文件顶部元数据块后插入
-    lines = content.split("\n")
-    insert_pos = 0
-    in_yaml = False
-    for i, line in enumerate(lines):
-        if line.strip() == "```" and not in_yaml:
-            in_yaml = True
-        elif line.strip() == "```" and in_yaml:
-            insert_pos = i + 1
-            break
-    if insert_pos > 0:
-        lines.insert(insert_pos, "\n" + new_status + "\n")
-        return "\n".join(lines)
-
-    return new_status + "\n\n" + content
+    status_path = tasks_path.parent / ".status.json"
+    try:
+        status_path.write_text(
+            json.dumps(status_data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except OSError as e:
+        print(f"[HelloAGENTS] .status.json write failed: {e}",
+              file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -267,13 +261,13 @@ def main():
     if stats["total"] == 0:
         sys.exit(0)
 
-    # 更新 LIVE_STATUS
-    content = _update_live_status(content, stats)
+    # 写入 .status.json（替代旧的 LIVE_STATUS HTML 注释）
+    _write_status_json(tasks_path, stats, content)
 
-    # 追加执行日志
+    # 追加执行日志到 tasks.md
     content = _append_exec_log(content, stats)
 
-    # 写回
+    # 写回 tasks.md（仅执行日志部分）
     try:
         tasks_path.write_text(content, encoding="utf-8")
     except OSError as e:
