@@ -110,9 +110,9 @@ Keyword scan, semantic analysis, and tool-output inspection catch destructive op
 <td width="50%" valign="top">
 <img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
 
-**Three-Layer Memory Model**
+**Two-Layer Memory Model**
 
-L0 user memory (global preferences), L1 project knowledge base (structured docs synced from code), and L2 session summaries (auto-persisted at stage transitions).
+L0 user memory (global preferences) and L1 project knowledge base (structured docs synced from code).
 
 **Your gain:** context survives across sessions and projects.
 </td>
@@ -609,7 +609,7 @@ The knowledge base syncs automatically at these points:
 
 - After every development stage, main agent syncs module docs to reflect actual code
 - After every R1/R2/R3 task completion, CHANGELOG is auto-appended
-- On session end (Claude Code Stop Hook), KB sync + L2 session summary write triggered asynchronously
+- On session end (Claude Code Stop Hook), KB sync flag set asynchronously
 
 CHANGELOG uses semantic versioning (X.Y.Z). Version source priority: user-specified → project file (package.json, pyproject.toml, etc., supporting 15+ languages/frameworks) → git tag → last CHANGELOG entry → 0.1.0. R1 fast-path changes are recorded under a "Quick Modifications" category with file:line range.
 
@@ -677,7 +677,7 @@ A: In the project-local `.helloagents/` directory. The knowledge base auto-syncs
 
 **Q: Does memory persist across sessions?**
 
-A: Yes, through three layers: L0 user memory (global preferences in `~/.helloagents/`), L1 project KB (per-project in `.helloagents/`), and L2 session summaries (auto-saved at stage transitions). Context survives even if you close and reopen your CLI.
+A: Yes, through two layers: L0 user memory (global preferences in `~/.helloagents/`) and L1 project KB (per-project in `.helloagents/`). Context survives even if you close and reopen your CLI.
 
 **Q: What are Hooks?**
 

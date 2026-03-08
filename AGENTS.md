@@ -74,7 +74,6 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 ├── INDEX.md, context.md, CHANGELOG.md
 ├── modules/ (_index.md, {module}.md)
 ├── plan/ (YYYYMMDDHHMM_<feature>/ → proposal.md, tasks.md)
-├── sessions/ ({session_id}.md)
 ├── user/ (项目级用户偏好，覆盖全局 user/)
 └── archive/ (_index.md, YYYY-MM/)
 ```
@@ -84,7 +83,6 @@ CSV_BATCH_MAX: 16  # 0=OFF（关闭 CSV 批处理编排），正整数=最大并
 {HELLOAGENTS_ROOT}/user/          ← 单一用户内容目录，安装/更新时整体保留
 ├── memory/
 │   └── profile.md (L0 用户记忆)
-├── sessions/ (无项目上下文时的会话摘要)
 ├── commands/
 │   ├── _example.md (示例模板，_ 前缀，更新时刷新)
 │   └── {命令名}.md (用户自定义命令 → ~命令名)
@@ -256,7 +254,7 @@ PowerShell 语法规范（仅在 Bash 不可用时使用）:
 命令路径: 输入中包含 ~xxx → 提取命令 → 匹配命令处理器 → 状态机流程
 外部工具路径: 匹配当前会话可用的 Skill/MCP/插件（含用户自定义） → 命中 → 按工具协议执行
 通用路径: 其余所有输入 → 级别判定 → 按级别行为执行（R0/R1 直接执行，R2/R3 先确认再执行）
-记忆层: 会话启动时自动加载 L0+L2 记忆 [→ services/memory.md]  # 此处 L0/L2 为记忆层级，非路由级别
+记忆层: 会话启动时自动加载 L0 用户记忆 [→ services/memory.md]
 通用规则:
   停止: 用户说停止/取消/中断 → 状态重置
   继续: 用户说继续/恢复 + 有挂起上下文 → 恢复执行
@@ -680,7 +678,6 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 完整重置:
   触发: 命令完成、用户取消、流程结束、错误终止
   重置: 以上全部 + WORKFLOW_MODE→INTERACTIVE, DELEGATION_INTERRUPTED→false, ROUTING_LEVEL→空
-  写入: L2 会话摘要（sessions/{session_id}.md）[→ services/memory.md]
 ```
 
 ---
@@ -707,7 +704,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 加载规则:
   工具选择: 优先 CLI 内置工具 [→ G1 工具选择规则]；无内置工具时降级为 Shell 静默读取
-  可选文件（config.json、user/memory/*.md、sessions/*）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时→静默跳过；
+  可选文件（config.json、user/memory/*.md）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时→静默跳过；
   必需文件（HelloAgents规则/模块/脚本/模板）: 静默读取注入上下文，不输出加载状态，加载失败或文件不存在时 → 输出错误并停止当前阶段（⛔ END_TURN）
   阻塞式读取: 必须等待文件完全加载后才能继续执行，不允许部分加载或跳过
   Do NOT execute any step until loading is complete.
@@ -723,7 +720,7 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 
 | 触发条件 | 读取文件 |
 |----------|----------|
-| 会话启动 | {HELLOAGENTS_ROOT}/config.json, {CWD}/.helloagents/config.json, user/memory/*.md（所有用户记忆文件）, sessions/（最近1-2个）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
+| 会话启动 | {HELLOAGENTS_ROOT}/config.json, {CWD}/.helloagents/config.json, user/memory/*.md（所有用户记忆文件）— 静默读取注入上下文，不输出加载状态，文件不存在时静默跳过，config.json 中的键覆盖 G1 默认值 |
 | R1 进入快速流程（编码类） | services/package.md, rules/state.md, services/knowledge.md（CHANGELOG更新时） |
 | R2/R3 进入方案设计（入口） | stages/design.md |
 | DESIGN Phase1 按需 | services/knowledge.md（KB_SKIPPED=false）, rules/scaling.md（TASK_COMPLEXITY=complex）, rules/tools.md（project_stats.py 调用时） |
@@ -736,14 +733,14 @@ Scope: This rule applies to ALL ⛔ END_TURN marks in ALL modules, no exceptions
 | ~init | functions/init.md, services/templates.md, rules/tools.md |
 | ~upgradekb | functions/upgradekb.md, services/templates.md, rules/tools.md |
 | ~cleanplan | functions/cleanplan.md, rules/tools.md |
-| ~commit | functions/commit.md, services/memory.md |
+| ~commit | functions/commit.md |
 | ~test | functions/test.md, services/package.md（生成修复方案包时） |
 | ~review | functions/review.md, services/package.md（生成优化方案包时） |
 | ~validatekb | functions/validatekb.md |
 | ~rollback | functions/rollback.md, services/knowledge.md |
 | ~rlm | functions/rlm.md |
 | ~help | functions/help.md |
-| ~status | functions/status.md, services/memory.md |
+| ~status | functions/status.md |
 | ~clean | functions/clean.md, services/memory.md, services/knowledge.md（前置迁移检查） |
 | ~rlm spawn | rlm/roles/{role}.md |
 | 调用脚本时 | rules/tools.md（脚本执行规范与降级处理） |

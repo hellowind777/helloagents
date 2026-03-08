@@ -61,9 +61,9 @@ PostToolUse — 进度快照:
   事件: PostToolUse | 匹配: toolName 匹配 Write|Edit|NotebookEdit
   动作: command hook，检查距上次快照是否超过阈值(5次写操作)，超过则生成进度快照
 
-Stop — KB 同步 + L2 写入 + 智能声音路由:
+Stop — KB 同步标志 + 智能声音路由:
   事件: Stop
-  动作: command hook，触发 KnowledgeService 同步和 L2 摘要写入；从会话 JSONL 检测 G3 状态图标播放对应声音
+  动作: command hook，设置 KB 同步标志；从会话 JSONL 检测 G3 状态图标播放对应声音
 
 Notification — 已移除（声音路由已由 Stop 的 stop_sound_router.py 统一处理，避免双重触发）
 
@@ -84,7 +84,7 @@ PreToolUse — 危险命令安全防护:
 
 SessionEnd — 会话结束最终清理:
   事件: SessionEnd
-  动作: command hook，会话彻底结束时执行 KB 同步 + 摘要写入 + 临时计数器文件清理
+  动作: command hook，会话彻底结束时设置 KB 同步标志 + 临时计数器文件清理
   超时: 10s | 脚本: session_end.py（复用 Stop 脚本，通过 hookEventName 区分）
 
 PostToolUseFailure — 工具失败恢复建议:
@@ -220,9 +220,9 @@ BeforeAgent — 上下文注入:
   动作: inject_context.py，通过事件名映射注入规则强化上下文
   超时: 3s
 
-AfterAgent — KB 同步 + 会话摘要 + 声音通知:
+AfterAgent — KB 同步标志 + 声音通知:
   事件: AfterAgent（等效 Claude Code Stop）
-  动作: session_end.py，触发 KB 同步和 L2 摘要写入；sound_notify.py 播放完成声音
+  动作: session_end.py，设置 KB 同步标志；sound_notify.py 播放完成声音
   超时: 10s
 
 PreCompress — 压缩前进度快照:

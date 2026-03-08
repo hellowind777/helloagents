@@ -36,7 +36,7 @@
             "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
             "async": false,
             "timeout": 10,
-            "description": "HelloAGENTS KB 同步 + 会话摘要（AfterAgent → Stop 等效）"
+            "description": "HelloAGENTS KB 同步标志（AfterAgent → Stop 等效）"
           },
           {
             "type": "command",
