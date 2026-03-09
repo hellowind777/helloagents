@@ -31,6 +31,7 @@
 
 ```yaml
 触发: design 阶段步骤11
+前置条件: 编程任务（涉及代码创建/修改/删除/重构/测试编写）。非编程任务（纯文档/设计/分析/翻译等不产生代码变更）跳过方案包创建，直接输出方案摘要
 参数: feature(功能名), type(implementation|overview)
 流程: 生成路径 plan/YYYYMMDDHHMM_{feature}/ → 冲突检查(使用_v2,_v3) → create_package.py → 填充 → 验证
 返回: success, package_path, errors
