@@ -32,8 +32,12 @@
 ### 阶段切换
 
 ```yaml
+方案类型约束:
+  R2/R3 标准流程（通用路径、~auto、~plan）: 类型始终为 implementation → 进入 DEVELOP
+  overview 类型: 仅限 ~exec 入口（已有方案包为 overview 时）
+
 方案确定后:
-  overview 类型:
+  overview 类型（仅 ~exec 入口）:
     INTERACTIVE → 询问归档 → 归档 → 输出完成 → 状态重置
     DELEGATED → 直接归档，总结中标注
   implementation 类型:
@@ -63,7 +67,9 @@
 
 ```yaml
 KB_CREATE_MODE=0 → KB_SKIPPED=true
-KB_CREATE_MODE=1/2/3 → KB_SKIPPED=false
+KB_CREATE_MODE=1 → KB_SKIPPED=false
+KB_CREATE_MODE=2 → 编程任务→KB_SKIPPED=false | 非编程任务→KB_SKIPPED=true
+KB_CREATE_MODE=3 → KB_SKIPPED=false
 传递: Phase2 及 DEVELOP 阶段直接使用此值
 ```
 
