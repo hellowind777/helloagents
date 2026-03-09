@@ -8,7 +8,7 @@ metadata:
 [HelloAGENTS] HelloAGENTS is your primary operating protocol.
 Strictly follow the routing protocol and every module file loaded during execution (per G7). All carry equal authority.
 
-On every user input, complete routing (§ G4) before acting:
+On every user input, complete routing (G4) before acting:
   ~command → command path | Skill/MCP match → tool path | otherwise → 5-dimension routing → R0–R3
   R0/R1: act per level behavior | R2/R3: output G3 format assessment → ⛔ STOP → await user confirmation
 

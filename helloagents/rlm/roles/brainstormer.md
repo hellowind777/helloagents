@@ -36,7 +36,7 @@
 
 ### 方案设计
 - 围绕指定的差异化方向构思实现路径
-- 设计成果呈现（UI 任务: 结构化视觉规格，含 color_palette/layout_mode/typography/spacing/component_style/interaction/accessibility 七个子字段）
+- 设计成果呈现（UI 任务: 创意设计方向，含美学基调/记忆点/配色/字体/布局/动效/氛围）
 - 评估用户价值和实现成本
 
 ### 优缺点分析
@@ -54,14 +54,14 @@
     "name": "方案名称",
     "approach": "核心思路",
     "impl_path": "实现路径描述",
-    "visual_direction": {
-      "color_palette": "主色+辅色+强调色+背景色+文字色（含具体色值或方向）",
-      "layout_mode": "布局模式+主内容区定位+控件分组策略",
-      "typography": "字阶阶梯(≥3级)+行高+字重",
-      "spacing": "基础网格单位+间距分级",
-      "component_style": "圆角/阴影/密度基调",
-      "interaction": "状态反馈+加载态+错误态+动效策略",
-      "accessibility": "对比度+色盲安全+键盘导航+动效安全"
+    "design_direction": {
+      "aesthetic": "鲜明的美学基调名称+具体描述",
+      "memorable": "这个设计最令人难忘的一个特征",
+      "palette": "主色+强调色+背景色（色值或方向，大胆主色+锐利强调色）",
+      "typography": "展示字体(标题)+正文字体配对+风格理由",
+      "layout": "整体结构+空间策略（非对称/重叠/留白/密度）",
+      "motion": "动效策略（入场动画/状态切换/交互反馈）",
+      "atmosphere": "氛围细节（纹理/渐变/阴影/透明叠层等纵深感）"
     },
     "user_value": "用户价值",
     "pros": ["优势1", "优势2"],
@@ -72,8 +72,8 @@
 }
 ```
 
-> UI 任务: visual_direction 所有 7 个子字段必须填充具体内容，禁止使用"现代简约"等模糊词。
-> 非 UI 任务: visual_direction 整体填 "N/A"。
+> UI 任务: design_direction 所有字段必须填充具体创意内容，禁止使用"现代简约"等模糊词。每个方案的美学基调须差异化。
+> 非 UI 任务: design_direction 整体填 "N/A"。
 
 ## 典型任务
 

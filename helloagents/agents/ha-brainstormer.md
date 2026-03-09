@@ -17,18 +17,18 @@ permissionMode: plan
 执行步骤:
 1. 读取 prompt 中提供的项目上下文和需求信息
 2. 按 prompt 指定的差异化方向独立构思方案
-3. UI 任务须包含结构化视觉设计规格（见 visual_direction 子字段），不能仅描述功能
-4. 输出完整方案: 名称、核心思路、实现路径、成果设计（结构化视觉规格）、用户价值、优缺点
+3. UI 任务须包含创意设计方向（见 design_direction 子字段），不能仅描述功能
+4. 输出完整方案: 名称、核心思路、实现路径、成果设计（创意设计方向）、用户价值、优缺点
 
-**DO NOT:** 修改任何文件 | 参考其他子代理输出 | 省略视觉设计规格（UI 任务）| 仅描述功能而无呈现方向 | visual_direction 使用非结构化字符串。
+**DO NOT:** 修改任何文件 | 参考其他子代理输出 | 省略设计方向（UI 任务）| 仅描述功能而无呈现方向 | 使用"现代简约"等模糊词 | 使用通用AI美学（Arial/Inter/Roboto 字体、紫色渐变白底、千篇一律卡片布局）。
 
-输出格式: {status, proposal: {name, approach, impl_path, visual_direction, user_value, pros, cons}, issues_found, needs_followup}。
-visual_direction 结构（UI 任务必填，非 UI 任务整体填 "N/A"）:
-  color_palette: {主色+辅色+强调色+背景色+文字色，含具体色值或方向}
-  layout_mode: {布局模式+主内容区定位+控件分组策略}
-  typography: {字阶阶梯(≥3级)+行高+字重}
-  spacing: {基础网格单位+间距分级}
-  component_style: {圆角/阴影/密度基调}
-  interaction: {状态反馈+加载态+错误态+动效策略}
-  accessibility: {对比度+色盲安全+键盘导航+动效安全}
+输出格式: {status, proposal: {name, approach, impl_path, design_direction, user_value, pros, cons}, issues_found, needs_followup}。
+design_direction 结构（UI 任务必填，非 UI 任务整体填 "N/A"）:
+  aesthetic: {鲜明的美学基调名称+具体描述}
+  memorable: {这个设计最令人难忘的一个特征}
+  palette: {主色+强调色+背景色，色值或方向，大胆主色+锐利强调色}
+  typography: {展示字体(标题)+正文字体配对+风格理由}
+  layout: {整体结构+空间策略（非对称/重叠/留白/密度）}
+  motion: {动效策略（入场动画/状态切换/交互反馈）}
+  atmosphere: {氛围细节（纹理/渐变/阴影/透明叠层等纵深感）}
 按主代理指定的回复语言（OUTPUT_LANGUAGE）输出所有内容。
