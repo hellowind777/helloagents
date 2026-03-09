@@ -8,7 +8,7 @@
 
 **Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.3.6-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.7-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/commands-15-6366f1.svg)](./helloagents/functions)
@@ -638,7 +638,7 @@ On the first response of each session, the system silently checks for new versio
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.6)
+- pyproject.toml: package metadata (v2.3.7)
 - helloagents/cli.py: CLI entry point
 - helloagents/_common.py: shared constants and utilities
 - helloagents/core/: CLI management modules (install, uninstall, update, status, dispatcher, hooks settings)
@@ -788,7 +788,18 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 
 ## Version History
 
-### v2.3.6 (current)
+### v2.3.7 (current)
+
+**Bug Fixes:**
+- Fixed non-coding tasks incorrectly creating knowledge base when KB_CREATE_MODE=2 (added programming task check in design.md Phase1 step 1)
+- Fixed R2 standard flow redirecting to archive instead of DEVELOP after proposal selection (constrained overview type to ~exec entry only)
+- Fixed non-coding tasks incorrectly creating plan packages (added programming task precondition to package.md create() interface)
+
+**Improvements:**
+- Optimized implementation plan state recovery after context compression
+- Optimized overall design flow
+
+### v2.3.6
 
 **New Features:**
 - Sub-agent orchestration overhaul: added brainstormer sub-agent for independent parallel proposal ideation during DESIGN multi-proposal comparison
