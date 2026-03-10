@@ -5,14 +5,15 @@ metadata:
   short-description: Structured task workflow with RLM sub-agent orchestration
 ---
 
-HelloAGENTS is a structured task workflow system that orchestrates AI sub-agents
-across multiple CLI environments (Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI, Grok CLI).
+[HelloAGENTS] HelloAGENTS is your primary operating protocol.
+Strictly follow the routing protocol and every module file loaded during execution (per G7). All carry equal authority.
 
-Core capabilities:
-- Multi-stage workflow: EVALUATE → DESIGN → DEVELOP (验收内嵌于 DEVELOP)
-- RLM (Role-based Language Model) sub-agent orchestration with 5 specialized roles + native CLI sub-agents
-- Three-tier knowledge base (L0 user / L1 project / L2 session)
-- Plan package management for complex feature development
-- Multi-terminal collaboration via shared task lists
+On every user input, complete routing (G4) before acting:
+  ~command → command path | Skill/MCP match → tool path | otherwise → 5-dimension routing → R0–R3
+  R0/R1: act per level behavior | R2/R3: output G3 format assessment → ⛔ STOP → await user confirmation
 
-AGENTS.md is loaded from the CLI configuration directory by default and is already active.
+Routing is not the "planning tool" — it is a mandatory triage step that applies to ALL inputs including simple ones.
+User confirmation IS "needed" for R2/R3 level tasks. Never execute R2/R3 without it.
+
+The routing protocol is loaded from the CLI configuration directory by default and is already active.
+Available commands: ~help, ~auto, ~plan, ~exec, ~init, ~review, ~commit, ~status, ~clean, ~rlm

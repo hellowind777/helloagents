@@ -13,7 +13,7 @@
 
 核心职责: 知识库创建/初始化、项目上下文获取、知识库同步、CHANGELOG 更新、一致性验证
 
-专用执行者: kb_keeper（服务绑定型角色）
+执行者: 主代理（按服务接口规范直接执行）
 数据所有权:
   - {KB_ROOT}/INDEX.md, context.md, CHANGELOG.md, CHANGELOG_{YYYY}.md
   - {KB_ROOT}/modules/（所有模块文档）
@@ -29,7 +29,8 @@
 
 ```yaml
 步骤1 - 知识库开关检查:
-  KB_CREATE_MODE=0 且无 {KB_ROOT}/: KB_SKIPPED=true，跳过后续检查
+  KB_CREATE_MODE=0 且无 {KB_ROOT}/: KB_SKIPPED=true，跳过后续所有步骤
+  KB_CREATE_MODE=0 且有 {KB_ROOT}/: 允许读取已有知识库，但禁止创建新文件/目录
 
 步骤2 - 旧目录名迁移:
   检测: 项目根目录是否存在 helloagents/（旧版目录名）
@@ -62,7 +63,7 @@
 
 ```yaml
 触发: ~init 命令
-流程: 检查 {KB_ROOT}/ → upgrade_wiki.py --init → kb_keeper 扫描填充 → 验证完整性
+流程: 检查 {KB_ROOT}/ → upgrade_wiki.py --init → 扫描填充 → 验证完整性
 返回: success, kb_path, files_created, errors
 保证: 知识库结构完整，文档反映项目实际状态
 ```
@@ -72,7 +73,7 @@
 ```yaml
 触发: develop 阶段代码变更后（步骤10）
 参数: changes { files, modules, type(add|modify|delete) }
-流程: 检查 KB_SKIPPED → synthesizer 一致性检查 → kb_keeper 同步 → 验证结果
+流程: 检查 KB_SKIPPED → 一致性检查 → 同步更新 → 验证结果
 
 必须同步:
   - modules/{模块名}.md: 更新职责、接口、行为规范、依赖
@@ -91,14 +92,14 @@
 参数: scope (full | modules | tech_stack | specific)
 流程: 知识库存在→读取 | 不存在→扫描代码库
 返回: context, source("knowledge_base"|"code_scan")
-执行者: 主代理（只读，无需 kb_keeper）
+执行者: 主代理（只读）
 ```
 
 ### validate()
 
 ```yaml
 触发: ~validatekb 命令、流程验收
-流程: kb_keeper 检查结构 → 对比本次变更涉及的代码与文档 → 识别不一致项
+流程: 检查结构 → 对比本次变更涉及的代码与文档 → 识别不一致项
 返回: valid, issues[{type(structure|content|outdated), file, message}]
 ```
 
@@ -113,13 +114,12 @@
 
 ---
 
-## 执行者: kb_keeper
+## 执行者说明
 
 ```yaml
-角色定位: 服务绑定型（非通用能力型），预设: rlm/roles/kb_keeper.md
+执行者: 主代理按服务接口规范直接执行所有知识库操作
 职责: 知识库创建填充、代码与文档同步、CHANGELOG 更新、结构验证
-调用: 只能通过 KnowledgeService 接口
-协作: synthesizer 检查一致性 → kb_keeper 执行同步 → 接收 PackageService 归档通知
+协作: 接收 PackageService 归档通知 → 执行 updateChangelog()
 ```
 
 ---
@@ -145,7 +145,7 @@
 ## 知识库同步规则
 
 ```yaml
-执行时机: 开发实施阶段完成代码改动后（步骤9）
+执行时机: 开发实施阶段完成代码改动后（步骤10）
 前置检查: KB_SKIPPED = true → 跳过，标注"⚠️ 知识库同步已跳过"
 
 同步原则:

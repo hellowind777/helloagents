@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to publish (e.g. v2.2.10)"
+        description: "Tag to publish (e.g. v2.3.4 or v2.3.4-beta.1 / v2.3.4b1)"
         required: true
 
 concurrency:
@@ -22,6 +22,7 @@ jobs:
       base_version: ${{ steps.tag.outputs.base_version }}
       channel: ${{ steps.tag.outputs.channel }}
       is_beta: ${{ steps.tag.outputs.is_beta }}
+      npm_version: ${{ steps.tag.outputs.npm_version }}
       pypi_version: ${{ steps.tag.outputs.pypi_version }}
     steps:
       - name: Resolve tag ref
@@ -39,21 +40,25 @@ jobs:
 
       - name: Parse tag info
         id: tag
+        # Supported beta tag formats: v2.3.1-beta.1, v2.3.1beta1, v2.3.1b1, v2.3.1_beta1, v2.3.1_b1, etc.
+        # All normalized to: npm=2.3.1-beta.N, pypi=2.3.1bN (N defaults to 1 if omitted)
         run: |
           TAG_VERSION="${{ steps.ref.outputs.tag }}"
           TAG_VERSION="${TAG_VERSION#v}"
           echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
-          if [[ "$TAG_VERSION" == *"beta"* ]]; then
+          if [[ "$TAG_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)[-._\ ]?b(eta)?[-._\ ]?([0-9]*)$ ]]; then
+            BASE="${BASH_REMATCH[1]}"
+            BETA_NUM="${BASH_REMATCH[3]:-1}"
             echo "is_beta=true" >> $GITHUB_OUTPUT
             echo "channel=beta" >> $GITHUB_OUTPUT
-            BASE="${TAG_VERSION%%-beta*}"
-            BETA_NUM="${TAG_VERSION##*beta.}"
             echo "base_version=$BASE" >> $GITHUB_OUTPUT
+            echo "npm_version=${BASE}-beta.${BETA_NUM}" >> $GITHUB_OUTPUT
             echo "pypi_version=${BASE}b${BETA_NUM}" >> $GITHUB_OUTPUT
           else
             echo "is_beta=false" >> $GITHUB_OUTPUT
             echo "channel=latest" >> $GITHUB_OUTPUT
             echo "base_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+            echo "npm_version=$TAG_VERSION" >> $GITHUB_OUTPUT
             echo "pypi_version=$TAG_VERSION" >> $GITHUB_OUTPUT
           fi
 
@@ -79,8 +84,9 @@ jobs:
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Tag | ${{ steps.ref.outputs.tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Beta | ${{ steps.tag.outputs.is_beta }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Channel | ${{ steps.tag.outputs.channel }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| npm version | ${{ steps.tag.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| npm version | ${{ steps.tag.outputs.npm_version }} |" >> $GITHUB_STEP_SUMMARY
           echo "| PyPI version | ${{ steps.tag.outputs.pypi_version }} |" >> $GITHUB_STEP_SUMMARY
 
   npm:
@@ -104,7 +110,7 @@ jobs:
 
       - name: Set beta version in package.json
         if: needs.prepare.outputs.is_beta == 'true'
-        run: npm version "${{ needs.prepare.outputs.version }}" --no-git-tag-version
+        run: npm version "${{ needs.prepare.outputs.npm_version }}" --no-git-tag-version
 
       - name: Preview package contents
         run: npm pack --dry-run 2>&1 | tee /tmp/npm-pack.log

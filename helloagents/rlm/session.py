@@ -10,14 +10,16 @@ Session 隔离管理器 - 解决多 CLI 并发问题
 - 支持 Session 恢复和清理
 """
 
+from __future__ import annotations
+
 import json
 import os
+import stat
 import sys
 import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 
 class SessionManager:
@@ -35,7 +37,7 @@ class SessionManager:
     # Session 根目录
     SESSION_ROOT = Path(tempfile.gettempdir()) / "helloagents_rlm"
 
-    def __init__(self, session_id: Optional[str] = None):
+    def __init__(self, session_id: str | None = None):
         """
         初始化 Session
 
@@ -54,7 +56,6 @@ class SessionManager:
         self.session_dir.mkdir(parents=True, exist_ok=True)
 
         # Unix 系统限制目录权限为仅所有者可访问
-        import stat
         if hasattr(os, 'chmod'):
             try:
                 os.chmod(self.SESSION_ROOT, stat.S_IRWXU)
@@ -93,7 +94,7 @@ class SessionManager:
 
     # ==================== Event 管理 ====================
 
-    def log_event(self, event_type: str, data: Dict[str, Any]) -> bool:
+    def log_event(self, event_type: str, data: dict[str, Any]) -> bool:
         """
         记录事件到 Session
 
@@ -120,9 +121,9 @@ class SessionManager:
 
     def get_events(
         self,
-        event_type: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        event_type: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """获取事件列表"""
         if not self.events_file.exists():
             return []
@@ -174,7 +175,7 @@ class SessionManager:
 
     # ==================== State 管理 ====================
 
-    def save_state(self, state: Dict[str, Any]) -> bool:
+    def save_state(self, state: dict[str, Any]) -> bool:
         """保存 RLM 状态"""
         try:
             state["last_updated"] = datetime.now().isoformat()
@@ -188,7 +189,7 @@ class SessionManager:
             print(f"[HelloAGENTS] save_state failed: {e}", file=sys.stderr)
             return False
 
-    def load_state(self) -> Optional[Dict[str, Any]]:
+    def load_state(self) -> dict[str, Any] | None:
         """加载 RLM 状态"""
         if not self.state_file.exists():
             return None
@@ -234,15 +235,31 @@ class SessionManager:
             print(f"[HelloAGENTS] record_agent failed: {e}", file=sys.stderr)
             return False
 
-    def get_agent_history(self, limit: int = 20) -> List[Dict[str, Any]]:
+    def get_agent_history(self, limit: int = 20) -> list[dict[str, Any]]:
         """获取代理执行历史"""
         metadata = self._load_metadata()
         history = metadata.get("agent_history", [])
         return history[-limit:] if limit else history
 
+    def get_active_agents(self) -> list[dict[str, Any]]:
+        """获取当前会话中尚未完成的子代理列表（用于 compaction 后状态恢复）"""
+        history = self.get_agent_history(limit=50)
+        # 按 agent_id 分组，取最新状态
+        latest: dict[str, dict[str, Any]] = {}
+        for record in history:
+            aid = record.get("agent_id", "")
+            if aid:
+                latest[aid] = record
+        # 过滤出非终态的代理
+        active = [
+            r for r in latest.values()
+            if r.get("status") not in ("completed", "failed", "cancelled")
+        ]
+        return active
+
     # ==================== Metadata 操作 ====================
 
-    def _load_metadata(self) -> Dict[str, Any]:
+    def _load_metadata(self) -> dict[str, Any]:
         """加载 metadata"""
         if not self.metadata_file.exists():
             return {}
@@ -252,7 +269,7 @@ class SessionManager:
             print(f"[HelloAGENTS] _load_metadata failed: {e}", file=sys.stderr)
             return {}
 
-    def _save_metadata(self, metadata: Dict[str, Any]):
+    def _save_metadata(self, metadata: dict[str, Any]):
         """保存 metadata"""
         self.metadata_file.write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2),
@@ -273,7 +290,7 @@ class SessionManager:
 
     # ==================== Session 管理 ====================
 
-    def get_session_info(self) -> Dict[str, Any]:
+    def get_session_info(self) -> dict[str, Any]:
         """获取 Session 信息"""
         metadata = self._load_metadata()
         events_count = len(self.get_events())
@@ -299,7 +316,7 @@ class SessionManager:
             return False
 
     @classmethod
-    def list_sessions(cls) -> List[Dict[str, Any]]:
+    def list_sessions(cls) -> list[dict[str, Any]]:
         """列出所有 Sessions"""
         sessions = []
         if not cls.SESSION_ROOT.exists():
@@ -328,7 +345,7 @@ class SessionManager:
     def cleanup_old_sessions(
         cls,
         max_age_hours: int = 24,
-        current_session_id: Optional[str] = None,
+        current_session_id: str | None = None,
     ) -> int:
         """清理过期 Sessions"""
         import shutil
@@ -358,7 +375,7 @@ class SessionManager:
 
 # ==================== 便捷函数 ====================
 
-def get_or_create_session(session_id: Optional[str] = None) -> SessionManager:
+def get_or_create_session(session_id: str | None = None) -> SessionManager:
     """获取或创建 Session"""
     return SessionManager(session_id)
 

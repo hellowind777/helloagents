@@ -12,7 +12,6 @@
 | 项目变更历史 | [CHANGELOG.md](CHANGELOG.md) |
 | 历史方案索引 | [archive/_index.md](archive/_index.md) |
 | 当前待执行的方案 | [plan/](plan/) |
-| 历史会话记录 | [sessions/](sessions/) |
 
 ## 模块关键词索引
 

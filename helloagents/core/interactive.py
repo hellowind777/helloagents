@@ -1,11 +1,12 @@
 """HelloAGENTS Interactive - Interactive install and uninstall menus."""
 
-from .cli import (
+from .._common import (
     _msg, _header,
     CLI_TARGETS,
     detect_installed_clis, _detect_installed_targets, _detect_install_method,
 )
-from .installer import install, uninstall, _self_uninstall
+from .installer import install
+from .uninstaller import uninstall, _self_uninstall
 
 
 # ---------------------------------------------------------------------------

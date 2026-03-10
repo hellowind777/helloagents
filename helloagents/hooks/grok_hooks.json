@@ -1,0 +1,45 @@
+{
+  "_comment": "HelloAGENTS Grok CLI Hooks 配置。部署由 settings_hooks.py 写入 ~/.grok/settings.json。",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/inject_context.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 规则强化"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/pre_tool_guard.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 危险命令安全防护"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/progress_snapshot.py\"",
+            "async": false,
+            "timeout": 10,
+            "description": "HelloAGENTS 进度快照触发"
+          }
+        ]
+      }
+    ]
+  }
+}
