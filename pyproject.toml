@@ -20,14 +20,11 @@ build-backend = "hatchling.build"
 packages = ["helloagents"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"AGENTS.md" = "AGENTS.md"
-"SKILL.md" = "SKILL.md"
+"helloagents/bootstrap.md" = "helloagents/bootstrap.md"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "helloagents/**",
-    "AGENTS.md",
-    "SKILL.md",
     "README.md",
     "pyproject.toml",
 ]

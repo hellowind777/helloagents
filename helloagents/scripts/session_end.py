@@ -73,6 +73,44 @@ def _cleanup_temp_counters(cwd: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Routing history (Adaptive Routing Memory)
+# ---------------------------------------------------------------------------
+
+def _write_routing_history(data: dict, cwd: str) -> None:
+    """Append routing record to ~/.helloagents/user/memory/routing_history.jsonl."""
+    try:
+        history_dir = Path.home() / ".helloagents" / "user" / "memory"
+        history_dir.mkdir(parents=True, exist_ok=True)
+        history_file = history_dir / "routing_history.jsonl"
+
+        # Extract routing info from session data if available
+        project = Path(cwd).name if cwd else "unknown"
+        record = {
+            "ts": datetime.now().isoformat(timespec="seconds"),
+            "project": project,
+            "route": data.get("route", ""),
+            "actual_complexity": data.get("actual_complexity", ""),
+            "outcome": "success" if data.get("hookEventName") != "error" else "error",
+        }
+
+        # Only write if we have meaningful routing data
+        if record["route"]:
+            with open(history_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+            # Trim to last 200 entries to prevent unbounded growth
+            try:
+                lines = history_file.read_text(encoding="utf-8").strip().split("\n")
+                if len(lines) > 200:
+                    history_file.write_text(
+                        "\n".join(lines[-200:]) + "\n", encoding="utf-8")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
 
@@ -95,6 +133,10 @@ def main():
 
     # 设置 KB 同步标志
     _set_sync_flag(cwd)
+
+    # 写入路由历史（自学习路由记忆 — Adaptive Routing Memory）
+    if event in ("Stop", "SessionEnd"):
+        _write_routing_history(data, cwd)
 
     # SessionEnd 额外清理: 临时计数器文件
     if event == "SessionEnd":

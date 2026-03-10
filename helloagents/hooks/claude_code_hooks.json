@@ -1,5 +1,5 @@
 {
-  "_comment": "HelloAGENTS Claude Code Hooks 参考配置（非直接使用）。实际部署由 installer.py 的 _configure_claude_hooks() 程序化写入 .claude/settings.json，{SCRIPTS_DIR} 等占位符会被替换为实际路径。手动配置时需将 {SCRIPTS_DIR} 替换为 helloagents 模块的 scripts/ 绝对路径。",
+  "_comment": "HelloAGENTS Claude Code Hooks. Deployed by installer.py → settings.json. {SCRIPTS_DIR} resolved at install time.",
   "hooks": {
     "SessionStart": [
       {
@@ -28,7 +28,7 @@
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/inject_context.py\"",
             "timeout": 3,
-            "description": "HelloAGENTS 主代理规则强化（CLAUDE.md 关键规则注入）"
+            "description": "HelloAGENTS 主代理规则强化"
           }
         ]
       }
@@ -41,7 +41,7 @@
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/inject_context.py\"",
             "timeout": 5,
-            "description": "HelloAGENTS 子代理上下文自动注入（方案包上下文）"
+            "description": "HelloAGENTS 子代理上下文注入"
           }
         ]
       }
@@ -68,7 +68,7 @@
             "command": "python3 \"{SCRIPTS_DIR}/progress_snapshot.py\"",
             "async": false,
             "timeout": 10,
-            "description": "HelloAGENTS 进度快照触发（写操作计数，超过5次阈值时生成快照）"
+            "description": "HelloAGENTS 进度快照"
           }
         ]
       }
@@ -86,24 +86,10 @@
           },
           {
             "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/stop_sound_router.py\"",
+            "command": "python3 \"{SCRIPTS_DIR}/notify.py\" route",
             "async": false,
             "timeout": 5,
-            "description": "HelloAGENTS 智能声音路由（从会话记录检测 G3 状态图标）"
-          }
-        ]
-      }
-    ],
-    "TeammateIdle": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/teammate_idle.py\"",
-            "async": false,
-            "timeout": 5,
-            "description": "HelloAGENTS Agent Teams 空闲检测（teammate 即将空闲时检查共享任务列表）"
+            "description": "HelloAGENTS 智能声音路由"
           }
         ]
       }
@@ -117,7 +103,7 @@
             "command": "python3 \"{SCRIPTS_DIR}/pre_compact.py\"",
             "async": false,
             "timeout": 10,
-            "description": "HelloAGENTS 上下文压缩前自动保存进度快照"
+            "description": "HelloAGENTS 压缩前进度快照"
           }
         ]
       }
@@ -144,21 +130,7 @@
             "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
             "async": false,
             "timeout": 10,
-            "description": "HelloAGENTS 会话结束最终清理"
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/tool_failure_helper.py\"",
-            "async": false,
-            "timeout": 5,
-            "description": "HelloAGENTS 工具失败恢复建议"
+            "description": "HelloAGENTS 会话结束清理"
           }
         ]
       }
