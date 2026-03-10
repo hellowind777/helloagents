@@ -6,13 +6,25 @@
 #
 # 角色调度规则见 G9/G10。
 
+# ─── Features ───
+
+# collaboration_modes — 启用协作模式系统（v0.110+）
+# 启用后 request_user_input 工具可用，渲染 TUI 交互选择界面
+[features]
+collaboration_modes = true
+
 # ─── Hooks ───
 
 # notify — 代理轮次完成时触发
 # 格式: notify = ["命令路径"]（数组格式）
+# JSON payload 包含: type, thread-id, turn-id, cwd, client (v0.107+)
 notify = ["helloagents --check-update --silent"]
 
-# ─── 多代理配置（需 /experimental 开启 collab 特性）───
+# tui.notifications — 事件类型过滤（可选）
+# 格式: 布尔或事件类型数组
+# tui.notifications = ["agent-turn-complete", "approval-requested"]
+
+# ─── 多代理配置（需 /experimental 或 /agent 开启）───
 
 # 全局代理限制
 # agents.max_threads = 16        # 最大并发子代理线程数（spawn_agent ≤6，CSV ≤64）
@@ -20,20 +32,38 @@ notify = ["helloagents --check-update --silent"]
 
 # 角色定义示例（按需取消注释并修改，模型名按实际可用模型填写）
 # [agents.explorer]
-# description = "代码探索和依赖分析"
+# description = "Codebase exploration and dependency analysis"
 # model = "<轻量模型名>"
 # model_reasoning_effort = "medium"
-# sandbox_mode = "read-only"
+# nickname_candidates = ["Scout", "Pathfinder", "Tracker"]
 
 # [agents.worker]
-# description = "代码实现和修改"
+# description = "Code implementation and modification"
 # model = "<主力模型名>"
 # model_reasoning_effort = "high"
-# sandbox_mode = "full"
+# nickname_candidates = ["Builder", "Forge", "Smith"]
 
 # [agents.reviewer]
-# description = "代码审查和质量检查"
+# description = "Code review and quality inspection"
 # config_file = ".codex/agents/reviewer.md"
 # model = "<主力模型名>"
 # model_reasoning_effort = "high"
-# sandbox_mode = "read-only"
+# nickname_candidates = ["Inspector", "Sentinel", "Auditor"]
+
+# [agents.writer]
+# description = "Standalone document generation"
+# model = "<主力模型名>"
+# model_reasoning_effort = "high"
+# nickname_candidates = ["Scribe", "Quill", "Chronicler"]
+
+# [agents.brainstormer]
+# description = "Proposal brainstorming specialist for multi-proposal comparison"
+# model = "<主力模型名>"
+# model_reasoning_effort = "high"
+# nickname_candidates = ["Muse", "Ideator", "Catalyst"]
+
+# [agents.monitor]
+# description = "Long-running monitoring and polling tasks"
+# model = "<轻量模型名>"
+# model_reasoning_effort = "low"
+# nickname_candidates = ["Watcher", "Radar", "Lookout"]

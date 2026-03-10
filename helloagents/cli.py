@@ -1,54 +1,23 @@
-"""HelloAGENTS CLI - Multi-CLI installer and version checker.
+"""HelloAGENTS CLI — stable entry point.
 
-Supports installation to:
-- Claude Code (~/.claude/)
-- Codex CLI (~/.codex/)
-- OpenCode (~/.config/opencode/)
-- Gemini CLI (~/.gemini/)
-- Qwen CLI (~/.qwen/)
-- Grok CLI (~/.grok/)
+DO NOT add imports beyond stdlib.  This file is the persistence contract:
+as long as it can be imported, ``helloagents install`` / ``helloagents update``
+always work — even when every other module in the package is broken.
 """
 
 import locale
 import os
-import shutil
 import sys
-from datetime import datetime
-from pathlib import Path
-from importlib.metadata import version as get_version
-from importlib.resources import files
 
-REPO_URL = "https://github.com/hellowind777/helloagents"
-REPO_API_LATEST = "https://api.github.com/repos/hellowind777/helloagents/releases/latest"
-
-CLI_TARGETS = {
-    "codex": {"dir": ".codex", "rules_file": "AGENTS.md"},
-    "claude": {"dir": ".claude", "rules_file": "CLAUDE.md"},
-    "gemini": {"dir": ".gemini", "rules_file": "GEMINI.md"},
-    "qwen": {"dir": ".qwen", "rules_file": "QWEN.md"},
-    "grok": {"dir": ".grok", "rules_file": "GROK.md"},
-    "opencode": {"dir": ".config/opencode", "rules_file": "AGENTS.md"},
-}
-
-PLUGIN_DIR_NAME = "helloagents"
-
-# Hooks identification
-HOOKS_FINGERPRINT = "HelloAGENTS"  # description field marker to identify our hooks
-CODEX_NOTIFY_CMD = "helloagents --check-update --silent"
-
-# Fingerprint marker to identify HelloAGENTS-created files
-HELLOAGENTS_MARKER = "HELLOAGENTS_ROUTER:"
-
-# Marker for split rule files deployed to .claude/rules/helloagents/
-HELLOAGENTS_RULE_MARKER = "HELLOAGENTS_RULE"
+_REPO = "https://github.com/hellowind777/helloagents"
 
 
 # ---------------------------------------------------------------------------
-# Locale & messaging
+# Locale (stdlib-only, mirrors _common._detect_locale)
 # ---------------------------------------------------------------------------
 
 def _detect_locale() -> str:
-    """Detect system locale. Returns 'zh' for Chinese locales, 'en' otherwise."""
+    """Detect system locale. Returns 'zh' for Chinese, 'en' otherwise."""
     for var in ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"):
         val = os.environ.get(var, "")
         if val.lower().startswith("zh"):
@@ -78,340 +47,70 @@ def _msg(zh: str, en: str) -> str:
     return zh if _LANG == "zh" else en
 
 
-def _divider(width: int = 40) -> None:
-    """Print a divider line."""
-    print("─" * width)
-
-
-def _header(title: str) -> None:
-    """Print a section header with divider."""
-    print(f"\n── {title} ──")
-    print()
-
-
-# ---------------------------------------------------------------------------
-# File helpers
-# ---------------------------------------------------------------------------
-
-def is_helloagents_file(file_path: Path) -> bool:
-    """Check if a file was created by HelloAGENTS."""
-    try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")[:1024]
-        return HELLOAGENTS_MARKER in content
-    except Exception:
-        return False
-
-
-def is_helloagents_rule(file_path: Path) -> bool:
-    """Check if a file is a HelloAGENTS split rule file."""
-    try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")[:256]
-        return HELLOAGENTS_RULE_MARKER in content
-    except Exception:
-        return False
-
-
-def backup_user_file(file_path: Path) -> Path:
-    """Backup a non-HelloAGENTS file with timestamp suffix."""
-    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    backup_name = f"{file_path.stem}_{timestamp}_bak{file_path.suffix}"
-    backup_path = file_path.parent / backup_name
-    shutil.copy2(file_path, backup_path)
-    return backup_path
-
-
-# ---------------------------------------------------------------------------
-# Path helpers
-# ---------------------------------------------------------------------------
-
-def get_package_root() -> Path:
-    """Get the root directory of the installed package."""
-    return Path(str(files("helloagents"))).parent
-
-
-def get_agents_md_path() -> Path:
-    """Get the path to AGENTS.md source file."""
-    return get_package_root() / "AGENTS.md"
-
-
-def get_skill_md_path() -> Path:
-    """Get the path to SKILL.md source file."""
-    return get_package_root() / "SKILL.md"
-
-
-def get_helloagents_module_path() -> Path:
-    """Get the path to the helloagents module directory."""
-    return Path(str(files("helloagents")))
-
-
-# ---------------------------------------------------------------------------
-# Detection helpers
-# ---------------------------------------------------------------------------
-
-def detect_installed_clis() -> list[str]:
-    """Detect which CLI config directories exist."""
-    installed = []
-    for name, config in CLI_TARGETS.items():
-        cli_dir = Path.home() / config["dir"]
-        if cli_dir.exists():
-            installed.append(name)
-    return installed
-
-
-def _detect_installed_targets() -> list[str]:
-    """Detect which CLI targets have HelloAGENTS installed (module + rules)."""
-    installed = []
-    for name, config in CLI_TARGETS.items():
-        cli_dir = Path.home() / config["dir"]
-        plugin_dir = cli_dir / PLUGIN_DIR_NAME
-        rules_file = cli_dir / config["rules_file"]
-        if plugin_dir.exists() and rules_file.exists():
-            installed.append(name)
-    return installed
-
-
-def _detect_install_method() -> str:
-    """Detect whether helloagents was installed via uv or pip."""
-    import subprocess
-    try:
-        result = subprocess.run(
-            ["uv", "tool", "list"],
-            capture_output=True, text=True, encoding="utf-8",
-            errors="replace", timeout=5,
-        )
-        if result.returncode == 0 and "helloagents" in result.stdout:
-            return "uv"
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
-    return "pip"
-
-
-# ---------------------------------------------------------------------------
-# Interactive main menu
-# ---------------------------------------------------------------------------
-
-def _interactive_main() -> None:
-    """Show main interactive menu for all operations (loops until exit)."""
-    from .updater import update, status, clean
-    from .interactive import _interactive_install, _interactive_uninstall
-
-    _divider()
-    try:
-        ver = get_version("helloagents")
-        print(f"  HelloAGENTS v{ver}")
-    except Exception:
-        print("  HelloAGENTS")
-    _divider()
-
-    actions = [
-        (_msg("安装到 CLI 工具", "Install to CLI targets"), "install"),
-        (_msg("卸载已安装的 CLI 工具", "Uninstall from CLI targets"), "uninstall"),
-        (_msg("更新 HelloAGENTS 包", "Update HelloAGENTS package"), "update"),
-        None,  # separator
-        (_msg("查看安装状态", "Show installation status"), "status"),
-        (_msg("清理缓存", "Clean caches"), "clean"),
-    ]
-    flat_actions = [a for a in actions if a is not None]
-
-    while True:
-        print()
-        print(_msg("  请选择操作:", "  Select an action:"))
-        print()
-        num = 1
-        for item in actions:
-            if item is None:
-                print("  " + "─" * 30)
-                continue
-            label, _ = item
-            print(f"  [{num}] {label}")
-            num += 1
-        print()
-        print(_msg("  [0] 退出", "  [0] Exit"))
-
-        print()
-        prompt = _msg("  请输入编号: ", "  Enter number: ")
-
-        try:
-            choice = input(prompt).strip()
-        except (EOFError, KeyboardInterrupt):
-            print()
-            return
-
-        if not choice or choice == "0":
-            return
-
-        try:
-            idx = int(choice)
-            if idx < 1 or idx > len(flat_actions):
-                print(_msg("  无效编号。", "  Invalid number."))
-                continue
-        except ValueError:
-            print(_msg("  无效输入。", "  Invalid input."))
-            continue
-
-        action = flat_actions[idx - 1][1]
-
-        if action == "install":
-            _interactive_install()
-        elif action == "update":
-            update()
-            return  # package changed, exit to avoid stale code
-        elif action == "uninstall":
-            _interactive_uninstall()
-        elif action == "status":
-            status()
-        elif action == "clean":
-            clean()
-
-        # 操作完成后暂停（update 已经 return，不会到这里）
-        print()
-        try:
-            pause = input(_msg("按 Enter 返回主菜单，输入 0 退出: ",
-                               "Press Enter to return, 0 to exit: ")).strip()
-            if pause == "0":
-                return
-        except (EOFError, KeyboardInterrupt):
-            print()
-            return
-        _divider()
-
-
-# ---------------------------------------------------------------------------
-# Usage
-# ---------------------------------------------------------------------------
-
-def print_usage() -> None:
-    """Print usage information."""
-    print("HelloAGENTS - Multi-CLI Agent Framework")
-    print()
-    print(_msg("用法:", "Usage:"))
-    print(_msg("  helloagents install <target>    安装到指定 CLI",
-               "  helloagents install <target>    Install to a specific CLI"))
-    print(_msg("  helloagents install --all       安装到所有已检测的 CLI",
-               "  helloagents install --all       Install to all detected CLIs"))
-    print(_msg("  helloagents uninstall <target>  从指定 CLI 卸载",
-               "  helloagents uninstall <target>  Uninstall from a specific CLI"))
-    print(_msg("  helloagents uninstall --all     从所有已安装的 CLI 卸载",
-               "  helloagents uninstall --all     Uninstall from all installed CLIs"))
-    print(_msg("  helloagents uninstall --all --purge  卸载所有 CLI 并移除包本身",
-               "  helloagents uninstall --all --purge  Uninstall all CLIs and remove package"))
-    print(_msg("  helloagents update              更新到最新版本",
-               "  helloagents update              Update to latest version"))
-    print(_msg("  helloagents update <branch>     切换到指定分支",
-               "  helloagents update <branch>     Switch to a specific branch"))
-    print(_msg("  helloagents clean               清理已安装目标的缓存",
-               "  helloagents clean               Clean caches from installed targets"))
-    print(_msg("  helloagents status              查看安装状态",
-               "  helloagents status              Show installation status"))
-    print(_msg("  helloagents version             查看版本（--force 跳过缓存，--cache-ttl N 设置缓存小时数）",
-               "  helloagents version             Show version (--force skip cache, --cache-ttl N set cache hours)"))
-    print()
-    print(_msg("目标:", "Targets:"))
-    for name in CLI_TARGETS:
-        print(f"  {name}")
-    print()
-
-
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    """Main entry point."""
-    from .version_check import check_update
-    from .updater import update, status, clean
-    from .interactive import _interactive_install, _interactive_uninstall
-    from .installer import (
-        install, install_all,
-        uninstall, uninstall_all,
-        _self_uninstall,
-    )
+    """Main entry point (referenced by pyproject.toml ``[project.scripts]``)."""
+    args = sys.argv[1:]
+    cmd = args[0] if args else None
 
-    # Ensure stdout/stderr can handle all characters
-    for stream in (sys.stdout, sys.stderr):
-        if hasattr(stream, "reconfigure"):
-            try:
-                stream.reconfigure(errors="replace")
-            except Exception:
-                pass
-
-    cmd = sys.argv[1] if len(sys.argv) >= 2 else None
-
-    if cmd in ("--help", "-h", "help"):
-        print_usage()
-        sys.exit(0)
-
-    # Hook-triggered update check (e.g. Codex CLI notify)
-    if cmd == "--check-update":
-        silent = "--silent" in sys.argv[2:]
-        check_update(cache_ttl_hours=24, show_version=not silent)
-        sys.exit(0)
-
-    if cmd and cmd != "update" and not os.environ.get("HELLOAGENTS_NO_UPDATE_CHECK"):
-        force = cmd == "version" and "--force" in sys.argv[2:]
-        cache_ttl = None
-        if cmd == "version" and "--cache-ttl" in sys.argv[2:]:
-            try:
-                idx = sys.argv.index("--cache-ttl")
-                cache_ttl = int(sys.argv[idx + 1])
-            except (ValueError, IndexError):
-                pass
-        check_update(force=force, cache_ttl_hours=cache_ttl,
-                     show_version=(cmd == "version"))
-
-    if not cmd:
-        _interactive_main()
-        sys.exit(0)
-
-    if cmd == "install":
-        if len(sys.argv) < 3:
-            if not _interactive_install():
-                sys.exit(1)
+    try:
+        from helloagents.core.dispatcher import dispatch
+        dispatch(args)
+    except KeyboardInterrupt:
+        print()
+    except Exception as e:
+        # Dispatcher broken — recovery commands still work
+        if cmd in ("install", "update"):
+            _reinstall(args[1:])
         else:
-            target = sys.argv[2]
-            if target == "--all":
-                if not install_all():
-                    sys.exit(1)
-            else:
-                if not install(target):
-                    sys.exit(1)
-    elif cmd == "uninstall":
-        if len(sys.argv) < 3:
-            if not _interactive_uninstall():
-                sys.exit(1)
-        else:
-            purge = "--purge" in sys.argv[2:]
-            args = [a for a in sys.argv[2:] if a != "--purge"]
-            target = args[0] if args else None
-            if target == "--all" or not target:
-                uninstall_all(purge=purge)
-            else:
-                if not uninstall(target):
-                    sys.exit(1)
-                if purge:
-                    remaining = _detect_installed_targets()
-                    if not remaining:
-                        _self_uninstall()
-    elif cmd == "update":
-        switch = sys.argv[2] if len(sys.argv) >= 3 else None
-        update(switch)
-    elif cmd == "_post_update":
-        # Internal command: runs Phase 2+3 in a new process after package update.
-        # Called by update() re-exec and Windows deferred path.
-        from .updater import _post_update_sync
-        branch = sys.argv[2] if len(sys.argv) >= 3 else None
-        total = int(sys.argv[3]) if len(sys.argv) >= 4 else None
-        _post_update_sync(branch, total)
-    elif cmd == "clean":
-        clean()
-    elif cmd == "status":
-        status()
-    elif cmd == "version":
-        pass  # already handled by check_update(show_version=True)
+            print(_msg(f"\nHelloAGENTS 错误: {e}",
+                       f"\nHelloAGENTS error: {e}"))
+            print(_msg("请执行 'helloagents update' 重新安装并修复。\n",
+                       "Run 'helloagents update' to reinstall and fix.\n"))
+            sys.exit(1)
+
+
+def _reinstall(extra_args: list[str] | None = None) -> None:
+    """Reinstall from GitHub using only stdlib — works even when package is broken."""
+    import subprocess
+    import shutil
+
+    # Extract branch from extra args (e.g. helloagents update --branch beta)
+    branch = "main"
+    if extra_args:
+        for i, a in enumerate(extra_args):
+            if a in ("--branch", "-b") and i + 1 < len(extra_args):
+                branch = extra_args[i + 1]
+                break
+            # helloagents update <branch> (positional)
+            if not a.startswith("-") and i == 0:
+                branch = a
+
+    print(_msg(f"正在从 {_REPO}@{branch} 重新安装 HelloAGENTS ...",
+               f"Reinstalling HelloAGENTS from {_REPO}@{branch} ..."))
+
+    if shutil.which("uv"):
+        r = subprocess.run(
+            ["uv", "tool", "install", "--from",
+             f"git+{_REPO}@{branch}", "helloagents", "--force"])
+        if r.returncode == 0:
+            print(_msg("重新安装成功。请重试您的命令。",
+                       "Reinstall successful. Please retry your command."))
+            return
+
+    pip_url = f"git+{_REPO}.git@{branch}"
+    r = subprocess.run(
+        [sys.executable, "-m", "pip", "install",
+         "--upgrade", "--force-reinstall", "--no-cache-dir", pip_url])
+    if r.returncode == 0:
+        print(_msg("重新安装成功。请重试您的命令。",
+                   "Reinstall successful. Please retry your command."))
     else:
-        print(_msg(f"未知命令: {cmd}", f"Unknown command: {cmd}"))
-        print_usage()
-        sys.exit(1)
+        print(_msg(f"重新安装失败。请手动执行:\n  pip install --upgrade --force-reinstall {pip_url}",
+                   f"Reinstall failed. Try manually:\n  pip install --upgrade --force-reinstall {pip_url}"))
 
 
 if __name__ == "__main__":

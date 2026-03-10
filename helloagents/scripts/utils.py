@@ -10,10 +10,46 @@ import os
 import sys
 import io
 import json
+import locale
 import functools
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict, Callable, Any
+
+
+# ---------------------------------------------------------------------------
+# Locale detection (standalone — scripts are deployed independently)
+# ---------------------------------------------------------------------------
+
+def _detect_locale() -> str:
+    """Detect system locale. Returns 'zh' for Chinese, 'en' otherwise."""
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"):
+        val = os.environ.get(var, "")
+        if val.lower().startswith("zh"):
+            return "zh"
+    try:
+        loc = locale.getlocale()[0] or ""
+        if loc.lower().startswith("zh"):
+            return "zh"
+    except Exception:
+        pass
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            lcid = ctypes.windll.kernel32.GetUserDefaultUILanguage()
+            if (lcid & 0xFF) == 0x04:
+                return "zh"
+        except Exception:
+            pass
+    return "en"
+
+
+_LANG = _detect_locale()
+
+
+def _msg(zh: str, en: str) -> str:
+    """Return message based on detected locale."""
+    return zh if _LANG == "zh" else en
 
 
 def setup_encoding():
@@ -149,16 +185,18 @@ def script_error_handler(func: Callable) -> Callable:
         try:
             return func(*args, **kwargs)
         except KeyboardInterrupt:
-            print("\n操作已取消", file=sys.stderr)
+            print(_msg("\n操作已取消", "\nOperation cancelled"), file=sys.stderr)
             sys.exit(130)
         except FileNotFoundError as e:
-            print(f"错误: 文件未找到 - {e.filename}", file=sys.stderr)
+            print(_msg(f"错误: 文件未找到 - {e.filename}",
+                       f"Error: file not found - {e.filename}"), file=sys.stderr)
             sys.exit(1)
         except PermissionError as e:
-            print(f"错误: 权限不足 - {e.filename}", file=sys.stderr)
+            print(_msg(f"错误: 权限不足 - {e.filename}",
+                       f"Error: permission denied - {e.filename}"), file=sys.stderr)
             sys.exit(1)
         except Exception as e:
-            print(f"错误: {e}", file=sys.stderr)
+            print(_msg(f"错误: {e}", f"Error: {e}"), file=sys.stderr)
             sys.exit(1)
     return wrapper
 
@@ -220,6 +258,11 @@ def get_workspace_path(base_path: Optional[str] = None) -> Path:
         工作空间路径 (.helloagents/)
     """
     base = Path(base_path) if base_path else Path.cwd()
+
+    # 防御：如果传入的路径本身就是 .helloagents 目录，直接返回，避免嵌套
+    if base.name == DEFAULT_WORKSPACE and base.is_dir():
+        return base
+
     new_path = base / DEFAULT_WORKSPACE
     legacy_path = base / "helloagents"
 

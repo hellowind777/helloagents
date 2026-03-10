@@ -1,17 +1,18 @@
 """HelloAGENTS Version Check - Version detection, comparison, and update cache.
 
-Leaf module: only depends on stdlib + cli.REPO_API_LATEST.
+Leaf module: only depends on stdlib + _common.REPO_API_LATEST.
 All output from check_update() is pure English to ensure AI CLI keyword matching
 works regardless of system locale.
 """
 
 import functools
 import json
+import re
 from pathlib import Path
 from importlib.metadata import version as get_version
 from urllib.request import urlopen, Request
 
-from .cli import REPO_API_LATEST
+from .._common import REPO_API_LATEST, CLI_TARGETS, PLUGIN_DIR_NAME
 
 
 # ---------------------------------------------------------------------------
@@ -24,7 +25,6 @@ def _parse_version(ver: str) -> tuple[tuple[int, ...], bool]:
     Handles formats like '2.3.0', '2.3.0-beta.1', '2.3.0b1'.
     Returns numeric parts and whether it's a stable release.
     """
-    import re
     match = re.match(r"^(\d+(?:\.\d+)*)", ver)
     if not match:
         raise ValueError(f"Invalid version: {ver}")
@@ -95,7 +95,6 @@ def _remote_commit_id(branch: str) -> str:
 
 def _fetch_remote_version(branch: str) -> str:
     """Fetch version from pyproject.toml on a remote branch."""
-    import re
     url = f"https://raw.githubusercontent.com/hellowind777/helloagents/{branch}/pyproject.toml"
     req = Request(url, headers={"User-Agent": "helloagents-update-checker"})
     with urlopen(req, timeout=3) as resp:
@@ -146,7 +145,21 @@ def fetch_latest_version(branch: str, timeout: int = 5) -> str:
 # Update cache
 # ---------------------------------------------------------------------------
 
-_UPDATE_CACHE_DIR = Path.home() / ".helloagents"
+def _get_cli_helloagents_dir() -> Path:
+    """Get CLI-specific helloagents directory by detecting installed CLI.
+
+    Derives candidates from CLI_TARGETS to stay in sync automatically.
+    """
+    home = Path.home()
+    candidates = [home / cfg["dir"] / PLUGIN_DIR_NAME
+                  for cfg in CLI_TARGETS.values()]
+    for path in candidates:
+        if path.exists():
+            return path
+    # Fallback to ~/.helloagents if no CLI directory found
+    return home / ".helloagents"
+
+_UPDATE_CACHE_DIR = _get_cli_helloagents_dir()
 _UPDATE_CACHE_FILE = _UPDATE_CACHE_DIR / ".update_cache"
 
 

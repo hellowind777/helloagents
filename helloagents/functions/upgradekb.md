@@ -165,11 +165,10 @@ Codex CLI 配置（自动检测，非 Codex 环境跳过）:
 常见旧结构映射:
   wiki/ → modules/ | history/ → archive/ | project.md → context.md
   v1.0/v1.x 特有: wiki/overview.md+arch.md → context.md, wiki/api.md+data.md → modules/
-  v2.0 → v2.2.3: 目录名 helloagents/ → .helloagents/，补建 sessions/
+  v2.0 → v2.2.3: 目录名 helloagents/ → .helloagents/
 
 升级后必须:
   - 确保 INDEX.md 包含 kb_version 字段（设为当前框架版本）
-  - 确保 sessions/ 目录存在
 ```
 
 ---

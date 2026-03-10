@@ -7,6 +7,12 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/check_config_quick.py\" --force",
+            "timeout": 3,
+            "description": "HelloAGENTS 配置完整性检测"
+          },
+          {
+            "type": "command",
             "command": "helloagents --check-update --silent",
             "timeout": 5,
             "description": "HelloAGENTS 版本更新提示"
@@ -59,8 +65,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[HelloAGENTS] PostToolUse: write operation completed\"",
-            "async": true,
+            "command": "python3 \"{SCRIPTS_DIR}/progress_snapshot.py\"",
+            "async": false,
+            "timeout": 10,
             "description": "HelloAGENTS 进度快照触发（写操作计数，超过5次阈值时生成快照）"
           }
         ]
@@ -72,9 +79,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[HelloAGENTS] Session ending: triggering KB sync and L2 summary write\"",
-            "async": true,
-            "description": "HelloAGENTS KB 同步 + L2 会话摘要写入"
+            "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
+            "async": false,
+            "timeout": 10,
+            "description": "HelloAGENTS KB 同步标志"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/stop_sound_router.py\"",
+            "async": false,
+            "timeout": 5,
+            "description": "HelloAGENTS 智能声音路由（从会话记录检测 G3 状态图标）"
           }
         ]
       }
@@ -85,8 +100,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[HelloAGENTS] TeammateIdle: teammate about to go idle, checking shared task list\"",
-            "async": true,
+            "command": "python3 \"{SCRIPTS_DIR}/teammate_idle.py\"",
+            "async": false,
+            "timeout": 5,
             "description": "HelloAGENTS Agent Teams 空闲检测（teammate 即将空闲时检查共享任务列表）"
           }
         ]
@@ -98,9 +114,51 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[HelloAGENTS] PreCompact: saving progress snapshot before context compaction\"",
+            "command": "python3 \"{SCRIPTS_DIR}/pre_compact.py\"",
             "async": false,
+            "timeout": 10,
             "description": "HelloAGENTS 上下文压缩前自动保存进度快照"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/pre_tool_guard.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 危险命令安全防护"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
+            "async": false,
+            "timeout": 10,
+            "description": "HelloAGENTS 会话结束最终清理"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/tool_failure_helper.py\"",
+            "async": false,
+            "timeout": 5,
+            "description": "HelloAGENTS 工具失败恢复建议"
           }
         ]
       }

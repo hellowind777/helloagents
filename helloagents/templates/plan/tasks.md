@@ -7,11 +7,6 @@
 @mode: {R2|R3}
 ```
 
-<!-- LIVE_STATUS_BEGIN -->
-状态: pending | 进度: 0/X (0%) | 更新: {YYYY-MM-DD HH:MM:SS}
-当前: -
-<!-- LIVE_STATUS_END -->
-
 ## 进度概览
 
 | 完成 | 失败 | 跳过 | 总数 |

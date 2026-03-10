@@ -1,13 +1,35 @@
 """HelloAGENTS Windows Helpers - Platform-specific utilities and pip cleanup tools.
 
-Leaf module: only depends on stdlib + cli._msg.
+Leaf module: only depends on stdlib + _common._msg.
 """
 
+import os
 import shutil
 import sys
 from pathlib import Path
 
-from .cli import _msg
+from .._common import _msg
+
+
+# ---------------------------------------------------------------------------
+# Windows file lock error handling
+# ---------------------------------------------------------------------------
+
+def handle_file_lock_error(path: Path, operation: str = "操作") -> None:
+    """Unified error handler for Windows file lock issues.
+
+    Provides consistent user guidance when files are locked by running processes.
+
+    Args:
+        path: The file or directory that is locked
+        operation: Description of the operation that failed (Chinese)
+    """
+    print(_msg(
+        f"  ⚠ {operation}失败: {path.name} 被占用",
+        f"  ⚠ {operation} failed: {path.name} is locked"))
+    print(_msg(
+        "  → 请关闭相关 CLI 进程后重试",
+        "  → Please close related CLI processes and retry"))
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +84,6 @@ def _cleanup_pip_remnants() -> None:
                     # Windows: try removing read-only attributes and retry
                     if sys.platform == "win32":
                         try:
-                            import os
                             import stat
                             for root, dirs, files in os.walk(remnant):
                                 for f in files:
@@ -257,7 +278,6 @@ def win_safe_rmtree(path: Path) -> bool:
             return False
 
     # Rename-aside: free the original path
-    import os
     import time
     suffix = f"{os.getpid()}.{int(time.time())}"
     aside = path.with_name(f"~{path.name}.old.{suffix}")
@@ -296,7 +316,6 @@ def _win_deferred_pip(pip_args: list[str],
 
     Returns True if the deferred command was scheduled successfully.
     """
-    import os
     import subprocess
     import tempfile
 
@@ -384,48 +403,3 @@ def build_pip_cleanup_cmd() -> list[str]:
         "for p in pathlib.Path(d).iterdir() "
         "if p.is_dir() and p.name.startswith('~')]",
     ]
-
-
-def win_exe_retry(cmd: list[str], label: str = "pip") -> tuple[bool, str]:
-    """Rename helloagents.exe → .exe.bak, retry command, restore on failure.
-
-    This handles the Windows .exe file locking issue where pip cannot
-    overwrite a running executable.
-
-    Args:
-        cmd: The subprocess command to retry after renaming.
-        label: Label for success messages (e.g. "pip").
-
-    Returns:
-        (success, stderr) — success is True if retry succeeded.
-    """
-    import subprocess
-
-    exe = _win_find_exe()
-    if not exe:
-        return False, ""
-
-    bak = exe.with_suffix(".exe.bak")
-    try:
-        exe.rename(bak)
-    except OSError:
-        return False, ""
-
-    print(_msg("  .exe 文件已锁定，重命名后重试...",
-               "  .exe file locked, renamed and retrying..."))
-    retry = subprocess.run(cmd, capture_output=True, text=True,
-                           encoding="utf-8", errors="replace")
-    if retry.returncode == 0:
-        print(_msg(f"  ✓ 包更新完成 ({label})", f"  ✓ Package updated ({label})"))
-        try:
-            bak.unlink()
-        except OSError:
-            pass  # will be cleaned up on next run
-        return True, ""
-
-    # Restore original exe on failure
-    try:
-        bak.rename(exe)
-    except OSError:
-        pass
-    return False, retry.stderr.strip() if retry.stderr else ""

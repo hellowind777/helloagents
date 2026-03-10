@@ -1,0 +1,93 @@
+{
+  "_comment": "HelloAGENTS Gemini CLI Hooks 配置。Qwen Code 复用此文件。部署由 settings_hooks.py 写入 ~/.gemini/settings.json 或 ~/.qwen/settings.json。",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "helloagents --check-update --silent",
+            "timeout": 5,
+            "description": "HelloAGENTS 版本更新提示"
+          }
+        ]
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/inject_context.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 上下文注入（BeforeAgent → UserPromptSubmit 等效）"
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
+            "async": false,
+            "timeout": 10,
+            "description": "HelloAGENTS KB 同步标志（AfterAgent → Stop 等效）"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/sound_notify.py\" complete",
+            "async": false,
+            "timeout": 5,
+            "description": "HelloAGENTS 声音通知（完成）"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/pre_tool_guard.py\"",
+            "timeout": 3,
+            "description": "HelloAGENTS 危险命令安全防护（PreToolUse → Claude Code PreToolUse 等效）"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/progress_snapshot.py\"",
+            "async": true,
+            "timeout": 10,
+            "description": "HelloAGENTS 进度快照（PostToolUse → Claude Code PostToolUse 等效）"
+          }
+        ]
+      }
+    ],
+    "PreCompress": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/pre_compact.py\"",
+            "async": false,
+            "timeout": 10,
+            "description": "HelloAGENTS 压缩前进度快照（PreCompress → PreCompact 等效）"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -76,6 +76,14 @@ R3 标准流程阶段链:
 阶段内选择: 推荐选项自动选择
 输出: 每个阶段仍输出摘要（禁止跳过输出）
 overview 类型方案包: 直接归档，总结中标注
+
+质量保障（CRITICAL）:
+  子代理稳定性: 按 rules/subagent-protocols.md "Codex CLI 子代理稳定性策略" 执行
+    连续 2 个子代理超时 → 进入主代理直接执行模式（不再尝试 spawn_agent）
+    累计 ≥3 次 spawn→close 循环 → 进入主代理直接执行模式
+  功能验收: develop 步骤9 在 DELEGATED 模式下不可简化，与 INTERACTIVE 模式执行完全相同的验证流程
+  归档保障: develop 步骤14 为 CRITICAL 步骤，子代理失败时主代理必须接手完成
+  省略范围: "省略中间态"仅指不在阶段间停顿等待确认，不意味着跳过任何验证/归档步骤
 ```
 
 ### INTERACTIVE 模式行为

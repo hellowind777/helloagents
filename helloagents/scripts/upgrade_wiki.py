@@ -41,7 +41,7 @@ LEGACY_WORKSPACE = "helloagents"
 
 
 # V3 标准目录结构
-V3_DIRECTORIES = ['modules', 'archive', 'plan', 'sessions']
+V3_DIRECTORIES = ['modules', 'archive', 'plan']
 V3_ROOT_FILES = ['INDEX.md', 'context.md', 'CHANGELOG.md']
 
 

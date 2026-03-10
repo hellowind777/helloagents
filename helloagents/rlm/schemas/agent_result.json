@@ -105,7 +105,7 @@
     },
     "progress_snapshot": {
       "type": "string",
-      "description": "进度快照（pkg_keeper 角色使用，格式: 📊 进度快照 | 完成: X | 失败: Y | 跳过: Z | 总计: N）"
+      "description": "进度快照（格式: 📊 进度快照 | 完成: X | 失败: Y | 跳过: Z | 总计: N）"
     },
     "metadata": {
       "type": "object",

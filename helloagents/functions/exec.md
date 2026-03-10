@@ -10,7 +10,7 @@
 命令: ~exec [<方案包名称>]
 类型: 目标选择类
 功能: 执行 plan/ 目录中的方案包
-模式: STAGE_ENTRY_MODE = DIRECT
+入口模式: STAGE_ENTRY_MODE = DIRECT
 评估: 需求理解 + EHRB 检测（不评分不追问）
 ```
 
