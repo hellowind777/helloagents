@@ -45,7 +45,7 @@ metadata:
 
 ## Rules
 ```yaml
-scope: ALL completed responses use G3 format (R0/R1/R2/R3, commands, tools)
+scope: R1/R2/R3 completed responses and commands use G3 format; R0 direct answers output content only (no G3 wrapper)
 streaming: during multi-step execution, output content directly; wrap G3 only on completion
 sub-agents: prompt contains "[跳过指令]" → skip G3 wrapper, return results only
 icons: MUST be emoji symbols per table above, never replace with words
