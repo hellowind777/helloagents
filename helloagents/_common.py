@@ -120,6 +120,18 @@ def get_helloagents_module_path() -> Path:
 
 def create_symlink(target: Path, link: Path) -> bool:
     try:
+        # Clean up stale ~name.old.* from previous rename-aside operations
+        if link.parent.exists():
+            prefix = f"~{link.name}.old."
+            for item in link.parent.iterdir():
+                if item.name.startswith(prefix):
+                    try:
+                        if item.is_dir():
+                            shutil.rmtree(item)
+                        else:
+                            item.unlink()
+                    except OSError:
+                        pass
         if link.exists() or link.is_symlink():
             if link.is_symlink() and link.resolve() == target.resolve():
                 return True
