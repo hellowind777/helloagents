@@ -64,14 +64,14 @@
 
 ### Adaptive Routing Memory
 
-Your AI learns from its own routing history. Every session outcome is recorded — which routes were chosen, what the actual complexity turned out to be, whether the result succeeded.
+Your AI learns from its own routing history. Every session outcome is recorded — routes chosen, actual complexity, success or failure.
 
 Next time you ask something similar, the router calibrates automatically:
 - "This user's 'small fix' requests are R2 80% of the time"
-- "Changes to auth/ always cascade to 3+ modules"
+- "auth/ changes always cascade to 3+ modules"
 - "This user prefers DELEGATED mode 90% of the time"
 
-Like GPS learning your commute patterns instead of recalculating from scratch every day.
+Like GPS learning your commute patterns instead of recalculating every day.
 
 </td>
 <td width="33%" valign="top">
