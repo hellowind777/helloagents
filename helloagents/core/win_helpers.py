@@ -258,10 +258,7 @@ def _win_schedule_exe_cleanup(bak: Path | None = None) -> None:
 def win_safe_rmtree(path: Path) -> bool:
     """Remove a directory tree, with rename-aside fallback on Windows.
 
-    If shutil.rmtree fails (e.g. a CLI process holds files open),
-    rename the directory to a ~name.old.PID.TIMESTAMP suffix so the original
-    path is freed. Stale .old directories are cleaned up automatically.
-
+    Handles junctions/symlinks correctly (removes link, not target).
     Returns True if the path no longer exists (removed or renamed aside).
     """
     if not path.exists():
@@ -271,7 +268,10 @@ def win_safe_rmtree(path: Path) -> bool:
     _cleanup_old_dirs(path.parent, path.name)
 
     try:
-        shutil.rmtree(path)
+        if path.is_symlink() or (sys.platform == "win32" and _is_reparse_point(path)):
+            os.rmdir(str(path))
+        else:
+            shutil.rmtree(path)
         return True
     except OSError:
         if sys.platform != "win32":
@@ -289,16 +289,27 @@ def win_safe_rmtree(path: Path) -> bool:
 
 
 def _cleanup_old_dirs(parent: Path, base_name: str) -> None:
-    """Clean up stale ~name.old.* directories from previous rename-aside ops."""
+    """Clean up stale ~name.old.* directories/junctions from previous rename-aside ops."""
     if not parent.exists():
         return
     prefix = f"~{base_name}.old."
     for item in parent.iterdir():
         if item.is_dir() and item.name.startswith(prefix):
             try:
-                shutil.rmtree(item)
+                if item.is_symlink() or (sys.platform == "win32" and _is_reparse_point(item)):
+                    os.rmdir(str(item))
+                else:
+                    shutil.rmtree(item)
             except OSError:
                 pass  # still locked, will be cleaned next time
+
+
+def _is_reparse_point(path: Path) -> bool:
+    """Check if a path is a Windows reparse point (junction/symlink)."""
+    try:
+        return bool(os.readlink(str(path)))
+    except (OSError, ValueError):
+        return False
 
 
 def _win_deferred_pip(pip_args: list[str],

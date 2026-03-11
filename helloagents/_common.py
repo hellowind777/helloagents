@@ -126,20 +126,11 @@ def create_symlink(target: Path, link: Path) -> bool:
             prefix = f"~{link.name}.old."
             for item in link.parent.iterdir():
                 if item.name.startswith(prefix):
-                    try:
-                        if item.is_dir():
-                            shutil.rmtree(item)
-                        else:
-                            item.unlink()
-                    except OSError:
-                        pass
+                    _remove_dir_or_junction(item)
         if link.exists() or link.is_symlink():
             if link.is_symlink() and link.resolve() == target.resolve():
                 return True
-            if link.is_symlink() or link.is_file():
-                link.unlink()
-            elif link.is_dir():
-                shutil.rmtree(link)
+            _remove_dir_or_junction(link)
         link.parent.mkdir(parents=True, exist_ok=True)
         if sys.platform == "win32":
             import subprocess
@@ -149,6 +140,31 @@ def create_symlink(target: Path, link: Path) -> bool:
             link.symlink_to(target)
         return True
     except Exception:
+        return False
+
+
+def _remove_dir_or_junction(path: Path) -> bool:
+    """Remove a directory, symlink, or Windows junction."""
+    try:
+        if path.is_symlink() or (sys.platform == "win32" and _is_junction(path)):
+            # Junction/symlink: remove the link itself, not the target
+            import os
+            os.rmdir(str(path))
+        elif path.is_dir():
+            shutil.rmtree(path)
+        elif path.is_file():
+            path.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def _is_junction(path: Path) -> bool:
+    """Check if a path is a Windows junction point."""
+    try:
+        import os
+        return bool(os.readlink(str(path)))
+    except (OSError, ValueError):
         return False
 
 
