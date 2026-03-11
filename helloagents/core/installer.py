@@ -12,18 +12,16 @@ from pathlib import Path
 
 from .._common import (
     _msg,
-    CLI_TARGETS, AGENT_PREFIX, HELLOAGENTS_HOME,
-    is_helloagents_file, is_helloagents_rule, backup_user_file,
+    CLI_TARGETS, HELLOAGENTS_HOME,
+    is_helloagents_file, backup_user_file,
     get_helloagents_module_path,
-    detect_installed_clis, clean_skills_dir, create_symlink,
+    detect_installed_clis, create_symlink,
 )
 from .cli_adapters import (
-    deploy_bootstrap, cleanup_codex_agents_dotted,
+    deploy_bootstrap,
     configure_claude_hooks, configure_claude_permissions,
     configure_claude_auto_memory,
-    configure_codex_toml, configure_codex_csv_batch,
-    configure_codex_notify, configure_codex_tui_notification,
-    configure_codex_developer_instructions, configure_codex_agent_roles,
+    configure_codex_all,
     configure_gemini_hooks, configure_qwen_hooks, configure_grok_hooks,
 )
 from .win_helpers import win_safe_rmtree
@@ -68,63 +66,6 @@ def _deploy_home(module_src: Path) -> None:
     print(_msg(f"  已部署核心文件到: {home}", f"  Deployed core files to: {home}"))
 
 
-def _deploy_agent_files(dest_dir: Path) -> None:
-    """Deploy HelloAGENTS agent definition files to ~/.claude/agents/."""
-    agents_src = get_helloagents_module_path() / "agents"
-    if not agents_src.exists():
-        return
-    agents_dest = dest_dir / "agents"
-    agents_dest.mkdir(parents=True, exist_ok=True)
-    count = 0
-    for src_file in agents_src.glob(f"{AGENT_PREFIX}*.md"):
-        shutil.copy2(src_file, agents_dest / src_file.name)
-        count += 1
-    if count:
-        print(_msg(f"  已部署 {count} 个子代理定义 ({agents_dest})",
-                   f"  Deployed {count} agent definition(s) ({agents_dest})"))
-
-
-def _clean_v2_remnants(dest_dir: Path) -> list[str]:
-    """Remove remnants from v2 installations."""
-    removed = []
-    try:
-        removed.extend(clean_skills_dir(dest_dir))
-    except Exception:
-        pass
-
-    all_rules_files = {cfg["rules_file"] for cfg in CLI_TARGETS.values()}
-    for name in all_rules_files:
-        stale_path = dest_dir / name
-        if stale_path.exists() and stale_path.is_file() and is_helloagents_file(stale_path):
-            stale_path.unlink()
-            removed.append(str(stale_path))
-
-    from .._common import PLUGIN_DIR_NAME
-    plugin_dir = dest_dir / PLUGIN_DIR_NAME
-    if plugin_dir.exists():
-        if win_safe_rmtree(plugin_dir):
-            removed.append(str(plugin_dir))
-
-    rules_ha_dir = dest_dir / "rules" / "helloagents"
-    if rules_ha_dir.exists():
-        for f in rules_ha_dir.glob("*.md"):
-            if is_helloagents_rule(f):
-                f.unlink()
-                removed.append(f"{f}")
-        if rules_ha_dir.exists() and not any(rules_ha_dir.iterdir()):
-            rules_ha_dir.rmdir()
-
-    config_toml = dest_dir / "config.toml"
-    if config_toml.exists():
-        content = config_toml.read_text(encoding="utf-8")
-        cleaned, did_clean = cleanup_codex_agents_dotted(content)
-        if did_clean:
-            config_toml.write_text(cleaned, encoding="utf-8")
-            removed.append("config.toml dotted agents.xxx keys")
-
-    return removed
-
-
 def install(target: str) -> bool:
     """Install HelloAGENTS to a specific CLI."""
     if target not in CLI_TARGETS:
@@ -145,11 +86,6 @@ def install(target: str) -> bool:
 
     print(_msg(f"  正在安装 HelloAGENTS 到 {target}...",
                f"  Installing HelloAGENTS to {target}..."))
-
-    removed = _clean_v2_remnants(dest_dir)
-    if removed:
-        print(_msg(f"  清理了 {len(removed)} 个旧版文件",
-                   f"  Cleaned {len(removed)} legacy file(s)"))
 
     _deploy_home(module_src)
 
@@ -173,9 +109,6 @@ def install(target: str) -> bool:
         print(_msg(f"  已复制技能目录: {skills_link}",
                    f"  Copied skills dir: {skills_link}"))
 
-    if target == "claude":
-        _deploy_agent_files(dest_dir)
-
     print(_msg(f"  {target} 安装完成！", f"  Installation complete for {target}!"))
 
     _POST_INSTALL = {
@@ -185,12 +118,7 @@ def install(target: str) -> bool:
             (configure_claude_auto_memory, "autoMemory", "autoMemory"),
         ],
         "codex": [
-            (configure_codex_toml, "config.toml", "config.toml"),
-            (configure_codex_notify, "notify hook", "notify hook"),
-            (configure_codex_tui_notification, "TUI 通知方式", "TUI notification"),
-            (configure_codex_csv_batch, "CSV 批处理", "CSV batch"),
-            (configure_codex_agent_roles, "子代理角色", "agent roles"),
-            (configure_codex_developer_instructions, "developer_instructions", "developer_instructions"),
+            (configure_codex_all, "config.toml", "config.toml"),
         ],
         "gemini": [(configure_gemini_hooks, "Hooks", "Hooks")],
         "qwen": [(configure_qwen_hooks, "Hooks", "Hooks")],

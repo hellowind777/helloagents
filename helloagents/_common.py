@@ -30,15 +30,12 @@ CLI_TARGETS = {
     "opencode": {"dir": ".config/opencode", "rules_file": "AGENTS.md"},
 }
 
-PLUGIN_DIR_NAME = "helloagents"  # Legacy: kept for v2→v3 uninstaller compat
 HELLOAGENTS_HOME = Path.home() / ".helloagents"
-AGENT_PREFIX = "ha-"
 HOOKS_FINGERPRINT = "HelloAGENTS"
 CODEX_NOTIFY_SCRIPT = "codex_notify.py"
 GEMINI_HOOKS_JSON = "gemini_hooks.json"
 GROK_HOOKS_JSON = "grok_hooks.json"
 HELLOAGENTS_MARKER = "HELLOAGENTS_ROUTER:"
-HELLOAGENTS_RULE_MARKER = "HELLOAGENTS_RULE"
 
 
 # ---------------------------------------------------------------------------
@@ -85,12 +82,6 @@ def is_helloagents_file(file_path: Path) -> bool:
     except Exception:
         return False
 
-def is_helloagents_rule(file_path: Path) -> bool:
-    try:
-        return HELLOAGENTS_RULE_MARKER in file_path.read_text(encoding="utf-8", errors="ignore")[:256]
-    except Exception:
-        return False
-
 def backup_user_file(file_path: Path) -> Path:
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     backup = file_path.parent / f"{file_path.stem}_{ts}_bak{file_path.suffix}"
@@ -115,11 +106,6 @@ def get_python_cmd() -> str:
 def is_windows() -> bool:
     return sys.platform == "win32"
 
-def cleanup_empty_parent(path: Path) -> bool:
-    if path.exists() and not any(path.iterdir()):
-        path.rmdir()
-        return True
-    return False
 
 
 # ---------------------------------------------------------------------------

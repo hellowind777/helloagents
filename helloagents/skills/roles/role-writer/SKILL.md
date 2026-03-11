@@ -11,6 +11,7 @@ requires: []
 allowed-tools: Read, Write, Edit, Grep, Glob
 disallowed-tools: []
 context: fork
+agent: Plan
 user-invocable: false
 metadata:
   author: helloagents
