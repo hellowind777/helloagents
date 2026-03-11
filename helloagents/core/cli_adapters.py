@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .._common import (
     _msg, HELLOAGENTS_HOME,
-    HOOKS_FINGERPRINT, CODEX_NOTIFY_SCRIPT,
+    HOOKS_FINGERPRINT, CODEX_NOTIFY_SCRIPT, CODEX_HOOKS_JSON,
     GEMINI_HOOKS_JSON, GROK_HOOKS_JSON,
     get_helloagents_module_path, get_python_cmd,
     is_helloagents_hook, resolve_hook_placeholders,
@@ -266,17 +266,24 @@ def _apply_csv_batch(c: str) -> tuple[str, bool]:
     return c, changed
 
 
-def _apply_developer_instructions(c: str, dest_dir: Path) -> tuple[str, bool]:
-    toml_val = f'developer_instructions = """\n{_DI_TEXT}\n"""'
+_DI_RE = re.compile(r'^developer_instructions\s*=\s*(?:"{3}[\s\S]*?"{3}|"[^"]*")', re.MULTILINE)
+
+
+def _remove_legacy_developer_instructions(p: Path, c: str) -> None:
+    """Remove developer_instructions from config.toml if it contains HelloAGENTS content.
+
+    This is a one-time migration: hooks.json replaces developer_instructions.
+    """
     m = _DI_RE.search(c)
-    if m:
-        if "HelloAGENTS" not in m.group(0):
-            (dest_dir / "developer_instructions.bak").write_text(m.group(0), encoding="utf-8")
-        end = m.end()
-        while end < len(c) and c[end] in '\n\r':
-            end += 1
-        c = re.sub(r'\n{3,}', '\n\n', c[:m.start()] + c[end:])
-    return _toml_insert_before_section(c, toml_val), True
+    if not m or "HelloAGENTS" not in m.group(0):
+        return
+    end = m.end()
+    while end < len(c) and c[end] in '\n\r':
+        end += 1
+    cleaned = re.sub(r'\n{3,}', '\n\n', c[:m.start()] + c[end:])
+    _toml_write(p, cleaned)
+    print(_msg("  已移除旧版 developer_instructions（已由 hooks.json 替代）",
+               "  Removed legacy developer_instructions (replaced by hooks.json)"))
 
 
 
@@ -326,21 +333,70 @@ def _ensure_feature(content, key):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Codex CLI: developer_instructions
+# Codex CLI: hooks.json deployment
 # ═══════════════════════════════════════════════════════════════════════════
 
-_DI_TEXT = """\
-CRITICAL: As the main agent, strictly follow HelloAGENTS protocol — never skip \
-routing, evaluation, or G3 format rules. Spawned sub-agents are exempt: execute \
-assigned tasks directly, without routing, evaluation, scoring, or G3 format.
+def configure_codex_hooks(dest_dir: Path) -> None:
+    """Deploy hooks.json for Codex CLI (SessionStart + Stop)."""
+    hooks_src = _load_hooks_json(CODEX_HOOKS_JSON)
+    if not hooks_src:
+        return
+    hooks_src = resolve_hook_placeholders(
+        hooks_src, (HELLOAGENTS_HOME / "scripts").as_posix())
+    hp = dest_dir / "hooks.json"
+    existing = {}
+    if hp.exists():
+        try:
+            existing = json.loads(hp.read_text(encoding="utf-8")).get("hooks", {})
+        except Exception:
+            existing = {}
+    for event, groups in hooks_src.items():
+        existing[event] = [g for g in existing.get(event, [])
+                           if not _is_ha_hooks_group(g)] + groups
+    hp.write_text(json.dumps({"hooks": existing}, indent=2, ensure_ascii=False) + "\n",
+                  encoding="utf-8")
+    print(_msg("  已配置 Codex hooks.json", "  Configured Codex hooks.json"))
 
-If context was compressed during the session (previous messages were summarized, \
-not at session start): Immediately read {KB_ROOT}/plan/*/tasks.md (specifically \
-LIVE_STATUS section) to restore workflow state. Continue from interruption point \
-if workflow should proceed, or enter routing if user requests new task.\
-"""
 
-_DI_RE = re.compile(r'^developer_instructions\s*=\s*(?:"{3}[\s\S]*?"{3}|"[^"]*")', re.MULTILINE)
+def remove_codex_hooks(dest_dir: Path) -> bool:
+    """Remove HelloAGENTS hooks from Codex hooks.json."""
+    hp = dest_dir / "hooks.json"
+    if not hp.exists():
+        return False
+    try:
+        data = json.loads(hp.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    hooks = data.get("hooks", {})
+    removed = 0
+    empty = []
+    for event, groups in hooks.items():
+        if not isinstance(groups, list):
+            continue
+        orig = len(groups)
+        groups[:] = [g for g in groups if not _is_ha_hooks_group(g)]
+        removed += orig - len(groups)
+        if not groups:
+            empty.append(event)
+    for e in empty:
+        del hooks[e]
+    if removed > 0:
+        if hooks:
+            hp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                          encoding="utf-8")
+        else:
+            hp.unlink()
+        return True
+    return False
+
+
+def _is_ha_hooks_group(group: dict) -> bool:
+    """Check if a hooks group belongs to HelloAGENTS."""
+    for h in group.get("hooks", []):
+        cmd = h.get("command", "")
+        if "helloagents" in cmd.lower() or ".helloagents" in cmd:
+            return True
+    return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -387,11 +443,6 @@ def configure_codex_all(dest_dir: Path) -> None:
     if changed:
         steps.append("csv_batch")
 
-    # 5. developer_instructions
-    c, changed = _apply_developer_instructions(c, dest_dir)
-    if changed:
-        steps.append("developer_instructions")
-
     # Single write
     if c != original:
         # Final cleanup: collapse excessive blank lines
@@ -399,6 +450,12 @@ def configure_codex_all(dest_dir: Path) -> None:
         _toml_write(p, c)
         print(_msg(f"  已配置 config.toml ({', '.join(steps)})",
                    f"  Configured config.toml ({', '.join(steps)})"))
+
+    # Deploy hooks.json (separate file, not config.toml)
+    configure_codex_hooks(dest_dir)
+
+    # Clean up legacy developer_instructions from config.toml (replaced by hooks)
+    _remove_legacy_developer_instructions(p, c)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
