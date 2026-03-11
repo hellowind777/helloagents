@@ -3,9 +3,9 @@
 """HelloAGENTS Notification — Desktop + sound notifications.
 
 Sub-commands:
-    python notify.py desktop          — Desktop notification (idle prompt)
+    python notify.py desktop [msg]    — Desktop notification
     python notify.py sound <event>    — Play sound for event
-    python notify.py route            — Route Stop hook payload to sound
+    python notify.py route            — Route Stop hook payload to sound + desktop
 """
 
 import json
@@ -27,39 +27,50 @@ _HA_HOME = Path.home() / ".helloagents"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Desktop notification
+# Desktop notification (cross-platform)
 # ═══════════════════════════════════════════════════════════════════════════
 
-def _desktop_notify():
-    """Send desktop notification that the CLI is waiting."""
-    msg = "AI 正在等待您的输入"
-    try:
-        sys.stdin.read()
-    except Exception:
-        pass
-
+def desktop_notify(msg: str = "任务已完成"):
+    """Send a desktop notification. Works on Windows/macOS/Linux."""
     if sys.platform == "win32":
-        ps = (f'Import-Module BurntToast -ErrorAction Stop; '
-              f'New-BurntToastNotification -Text "{TITLE}", "{msg}"')
+        # Try Windows toast via PowerShell (built-in, no extra module needed)
+        ps = (f"[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, "
+              f"ContentType = WindowsRuntime] > $null; "
+              f"$xml = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent(0); "
+              f"$xml.GetElementsByTagName('text')[0].AppendChild($xml.CreateTextNode('{TITLE}: {msg}')) > $null; "
+              f"[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('HelloAGENTS')"
+              f".Show([Windows.UI.Notifications.ToastNotification]::new($xml))")
         try:
             r = subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                               capture_output=True, timeout=4)
+                               capture_output=True, timeout=5)
             if r.returncode == 0:
                 return
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
+        # Fallback: BurntToast module
+        ps2 = f'Import-Module BurntToast -ErrorAction Stop; New-BurntToastNotification -Text "{TITLE}", "{msg}"'
+        try:
+            r = subprocess.run(["powershell", "-NoProfile", "-Command", ps2],
+                               capture_output=True, timeout=5)
+            if r.returncode == 0:
+                return
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass
+        # Fallback: terminal bell
         print("\a", end="", file=sys.stderr, flush=True)
+
     elif sys.platform == "darwin":
         try:
             subprocess.run(["osascript", "-e",
                             f'display notification "{msg}" with title "{TITLE}"'],
-                           capture_output=True, timeout=4)
+                           capture_output=True, timeout=5)
         except (FileNotFoundError, subprocess.TimeoutExpired):
             print("\a", end="", file=sys.stderr, flush=True)
-    else:
+
+    else:  # Linux
         try:
             r = subprocess.run(["notify-send", TITLE, msg],
-                               capture_output=True, timeout=4)
+                               capture_output=True, timeout=5)
             if r.returncode == 0:
                 return
         except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -104,14 +115,11 @@ def play_sound(event: str):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# Sound routing (Stop hook)
+# Sound + desktop routing (Stop hook)
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _route_sound():
-    """Route Stop hook payload to appropriate sound event.
-
-    Detection is based on structured hook data, not output text parsing.
-    """
+    """Route Stop hook payload to sound + desktop notification."""
     try:
         raw = sys.stdin.read()
     except Exception:
@@ -119,12 +127,14 @@ def _route_sound():
 
     if not raw.strip():
         play_sound("complete")
+        desktop_notify()
         return
 
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, ValueError):
         play_sound("complete")
+        desktop_notify()
         return
 
     stop_reason = data.get("stop_reason", "")
@@ -132,6 +142,7 @@ def _route_sound():
         return  # Silent — tool use continuation
 
     play_sound("complete")
+    desktop_notify()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -141,13 +152,18 @@ def _route_sound():
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "desktop"
     if cmd == "desktop":
-        _desktop_notify()
+        msg = sys.argv[2] if len(sys.argv) > 2 else "任务已完成"
+        try:
+            sys.stdin.read()
+        except Exception:
+            pass
+        desktop_notify(msg)
     elif cmd == "sound" and len(sys.argv) > 2:
         play_sound(sys.argv[2])
     elif cmd == "route":
         _route_sound()
     else:
-        print(f"Usage: {sys.argv[0]} desktop|sound <event>|route")
+        print(f"Usage: {sys.argv[0]} desktop [msg]|sound <event>|route")
         sys.exit(1)
 
 
