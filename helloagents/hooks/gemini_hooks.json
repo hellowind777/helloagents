@@ -40,10 +40,10 @@
           },
           {
             "type": "command",
-            "command": "python3 \"{SCRIPTS_DIR}/notify.py\" sound complete",
+            "command": "python3 \"{SCRIPTS_DIR}/notify.py\" route",
             "async": false,
             "timeout": 5,
-            "description": "HelloAGENTS 声音通知（完成）"
+            "description": "HelloAGENTS 声音+桌面通知"
           }
         ]
       }

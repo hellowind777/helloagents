@@ -35,6 +35,14 @@ def main():
                            stderr=subprocess.DEVNULL, timeout=5)
         except Exception:
             pass
+        # Desktop notification for turn completion
+        if sound == "complete":
+            try:
+                subprocess.Popen([sys.executable, str(notify), "desktop", "任务已完成"],
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
     try:
         subprocess.run(["helloagents", "--check-update", "--silent"],
                        stdin=subprocess.DEVNULL, capture_output=True, timeout=10)
