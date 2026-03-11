@@ -38,12 +38,9 @@ HelloAGENTS discovers MCP tools via:
 ```yaml
 priority: MCP tools match before HelloAGENTS internal routing
 execution: follow MCP tool's own protocol and parameters
-output: wrap MCP results in G3 format (→ skill:output-format)
-  status: 🔧【HelloAGENTS】- {tool_name}: {state}
-  body: MCP tool output (HelloAGENTS does not modify)
-  next: tool-provided guidance or generic guidance
+output: present MCP results naturally, no special formatting required
 ```
 
 ## Constraints
-DO: Let MCP tools handle their own execution. Wrap output in G3 format.
+DO: Let MCP tools handle their own execution.
 DO NOT: Re-implement MCP tool functionality. Modify MCP tool output content.

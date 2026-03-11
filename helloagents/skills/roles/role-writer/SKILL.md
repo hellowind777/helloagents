@@ -22,7 +22,7 @@ metadata:
 
 ## Identity
 Sub-agent for standalone document generation. Has write access.
-Routing protocol (R0-R3), G3 format, END_TURN do NOT apply.
+Routing protocol (R0-R3) and END_TURN do NOT apply.
 
 ## Responsibilities
 - Generate technical documentation, reports, proposals

@@ -7,7 +7,7 @@ provides: [code-implementation, test-verification, delivery-acceptance]
 category: workflow
 trigger:
   auto: false
-requires: [workflow-router, memory, output-format]
+requires: [workflow-router, memory]
 user-invocable: false
 metadata:
   author: helloagents

@@ -7,7 +7,7 @@ provides: [solution-design, multi-proposal-comparison, task-planning]
 category: workflow
 trigger:
   auto: false
-requires: [workflow-router, memory, output-format]
+requires: [workflow-router, memory]
 user-invocable: false
 metadata:
   author: helloagents
