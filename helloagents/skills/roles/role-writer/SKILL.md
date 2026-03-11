@@ -29,26 +29,11 @@ Routing protocol (R0-R3) and END_TURN do NOT apply.
 - NOT for knowledge base sync (that's KnowledgeService)
 - NOT for plan package files (that's PackageService)
 
-## Execution Steps
-```yaml
-1. Read document requirements from prompt
-2. Research relevant project context
-3. Generate document in specified format and structure
-4. Output result with file changes list
-```
+## Goal
+Generate high-quality standalone documents based on project context and requirements.
 
-## Output Format
-```yaml
-{
-  status: "complete",
-  key_findings: ["research insights"],
-  changes_made: [
-    {file: "path", type: "created|modified", description: "..."}
-  ],
-  recommendations: "follow-up suggestions",
-  needs_followup: true|false
-}
-```
+## Output
+Return structured results that the orchestrator can parse. Include: what was created/modified, key insights, and whether follow-up is needed.
 
 ## Constraints
 DO: Research context before writing. Follow specified format.
