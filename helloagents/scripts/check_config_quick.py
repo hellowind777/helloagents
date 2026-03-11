@@ -131,14 +131,12 @@ def check_config_integrity(cli_name: str) -> bool:
         except Exception:
             return True
     elif cli_name == "codex":
-        config_path = Path.home() / ".codex" / "config.toml"
-        if not config_path.exists():
-            return True
+        hooks_path = Path.home() / ".codex" / "hooks.json"
+        if not hooks_path.exists():
+            return False
         try:
-            content = config_path.read_text(encoding="utf-8")
-            has_di = 'developer_instructions' in content and 'HelloAGENTS' in content
-            has_memories = '[memories]' in content and 'protocol_anchors' in content
-            return has_di and has_memories
+            content = hooks_path.read_text(encoding="utf-8")
+            return 'helloagents' in content.lower()
         except Exception:
             return True
     return True

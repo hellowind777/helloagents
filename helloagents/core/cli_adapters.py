@@ -266,26 +266,6 @@ def _apply_csv_batch(c: str) -> tuple[str, bool]:
     return c, changed
 
 
-_DI_RE = re.compile(r'^developer_instructions\s*=\s*(?:"{3}[\s\S]*?"{3}|"[^"]*")', re.MULTILINE)
-
-
-def _remove_legacy_developer_instructions(p: Path, c: str) -> None:
-    """Remove developer_instructions from config.toml if it contains HelloAGENTS content.
-
-    This is a one-time migration: hooks.json replaces developer_instructions.
-    """
-    m = _DI_RE.search(c)
-    if not m or "HelloAGENTS" not in m.group(0):
-        return
-    end = m.end()
-    while end < len(c) and c[end] in '\n\r':
-        end += 1
-    cleaned = re.sub(r'\n{3,}', '\n\n', c[:m.start()] + c[end:])
-    _toml_write(p, cleaned)
-    print(_msg("  已移除旧版 developer_instructions（已由 hooks.json 替代）",
-               "  Removed legacy developer_instructions (replaced by hooks.json)"))
-
-
 
 def _ensure_agents_section(content, dot_mt, dot_md):
     mt_ch = md_ch = False
@@ -454,25 +434,10 @@ def configure_codex_all(dest_dir: Path) -> None:
     # Deploy hooks.json (separate file, not config.toml)
     configure_codex_hooks(dest_dir)
 
-    # Clean up legacy developer_instructions from config.toml (replaced by hooks)
-    _remove_legacy_developer_instructions(p, c)
-
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Codex CLI: remove functions (used by uninstaller)
 # ═══════════════════════════════════════════════════════════════════════════
-
-def remove_codex_developer_instructions(dest_dir: Path) -> bool:
-    p, c = _toml_read(dest_dir)
-    m = _DI_RE.search(c)
-    if not m:
-        return False
-    end = m.end()
-    while end < len(c) and c[end] in '\n\r':
-        end += 1
-    _toml_write(p, re.sub(r'\n{3,}', '\n\n', c[:m.start()] + c[end:]))
-    return True
-
 
 def remove_codex_notify(dest_dir: Path) -> bool:
     p, c = _toml_read(dest_dir)
