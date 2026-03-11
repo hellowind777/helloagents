@@ -50,14 +50,12 @@ rules:
 ```yaml
 applies_to: Q&A, explanations, queries, translations — no execution needed
 flow: answer using conversation + project context
-output: 💡 status + answer + next step
 ```
 
 ### R1: Quick Flow
 ```yaml
 applies_to: single-point operations directly locatable (modify, run, convert)
 flow: EHRB check → execute → verify
-output: ⚡ status + result + change summary + next step
 upgrade: if analysis needed / design decisions / cross-module → upgrade to R2
 stage_chain: code tasks → R1 execution flow | non-code → direct execution
 
@@ -72,7 +70,6 @@ R1 execution flow (code tasks):
 ```yaml
 applies_to: tasks needing analysis before execution, local decisions
 flow: quick score + EHRB → 1 key question + confirm (combined) → ⛔ STOP → user reply = confirm
-output: 📐 status + score + question + options
 stage_chain: DESIGN (with context collection, skip multi-proposal) → DEVELOP → KB sync → done
 ```
 
@@ -80,7 +77,6 @@ stage_chain: DESIGN (with context collection, skip multi-proposal) → DEVELOP �
 ```yaml
 applies_to: complex tasks, architecture changes, multi-proposal comparison
 flow: full score + clarify (per EVAL_MODE) + EHRB → full confirm + options → ⛔ STOP
-output: 🔵 status + full confirmation
 stage_chain: DESIGN (context + multi-proposal) → DEVELOP → KB sync → done
 ```
 
