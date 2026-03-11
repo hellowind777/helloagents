@@ -72,11 +72,8 @@ def _desktop_notify():
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _find_sound(event: str) -> Path | None:
-    for base in (_HA_HOME / "user" / "sounds", _HA_HOME / "assets" / "sounds"):
-        wav = base / f"{event}.wav"
-        if wav.exists():
-            return wav
-    return None
+    wav = _HA_HOME / "user" / "sounds" / f"{event}.wav"
+    return wav if wav.exists() else None
 
 
 def play_sound(event: str):

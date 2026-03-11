@@ -68,13 +68,12 @@ KB_CREATE_MODE:
 ### Pre-checks (before any KB operation)
 ```yaml
 1. KB mode check: mode=0 + no KB → skip all
-2. Old directory migration: detect helloagents/ (old name) → upgrade_wiki.py --migrate-root
-3. KB version check: read kb_version from INDEX.md → auto-upgrade structure if outdated
+2. KB version check: read kb_version from INDEX.md → auto-upgrade structure if outdated
 ```
 
 ### Interfaces
 ```yaml
-create(): ~init → check KB → upgrade_wiki.py --init → scan and fill → verify
+create(): ~init → check KB → scan project → create structure → verify
 sync(changes): after code changes → check KB_SKIPPED → consistency check → update modules
 query(scope): read KB if exists, else scan codebase → return context + source
 validate(): ~validatekb → check structure → compare code vs docs → report issues

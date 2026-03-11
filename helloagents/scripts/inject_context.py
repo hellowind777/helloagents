@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""HelloAGENTS 双向上下文注入脚本（阶段感知版）
+"""HelloAGENTS context injection — stage-aware prompt reinforcement.
 
-UserPromptSubmit: 主代理规则强化（阶段感知）
-SubagentStart: 子代理上下文注入（方案包上下文）
+UserPromptSubmit: main agent stage reminder
+SubagentStart: sub-agent project context injection
 """
 
 import sys
@@ -20,24 +20,22 @@ if sys.platform == 'win32':
 MAX_MAIN_CHARS = 20000
 MAX_SUB_CHARS = 15000
 
-DEVELOP_RULES = """[HelloAGENTS DEVELOP 阶段执行提醒]
-1. 加载 stages/develop.md + services/package.md（G7）
-2. 读取 CURRENT_PACKAGE 的 tasks.md 和 proposal.md
-3. 按任务清单逐项执行，moderate/complex 编排子代理（G9）
-4. 每个任务完成后更新 tasks.md 状态符号
-5. 安全质量检查 → 测试验证 → 功能验收 → KB同步 → 方案包归档
-DO NOT: 跳过模块加载 | 跳过子代理编排 | 跳过功能验收"""
+DEVELOP_REMINDER = """[HelloAGENTS DEVELOP stage]
+Read CURRENT_PACKAGE tasks.md + proposal.md → execute tasks in dependency order.
+Independent tasks → parallel sub-agents (→ skill:bridge-subagent).
+Verify → acceptance → KB sync → archive package.
+DO NOT: skip acceptance | leave packages in plan/"""
 
-DESIGN_RULES = """[HelloAGENTS DESIGN 阶段执行提醒]
-Phase1: 上下文收集 → 项目扫描 → 复杂度评估 → KB_SKIPPED 判定
-Phase2: 方案构思 → 方案包生成 → validate_package.py 验收
-完成后: CURRENT_STAGE=DEVELOP → 按 G7 加载 develop.md
-DO NOT: 跳过 Phase1 | 跳过方案包验收"""
+DESIGN_REMINDER = """[HelloAGENTS DESIGN stage]
+Collect project context → assess complexity → design solution(s).
+R3: multi-proposal comparison (→ skill:role-brainstormer).
+Create validated plan package (proposal.md + tasks.md).
+DO NOT: skip context collection | skip package validation"""
 
-GENERIC_RULES = """[HelloAGENTS 核心流程提醒]
-- G4: R0 直接响应 | R1 快速流程 | R2 简化流程 | R3 标准流程
-- G5: 评估→确认→DESIGN→DEVELOP→KB同步→完成（每阶段加载模块 G7）
-- G9: ≥2个独立工作单元时编排子代理并行执行"""
+GENERIC_REMINDER = """[HelloAGENTS workflow]
+Route: R0 direct | R1 quick | R2 simplified | R3 standard (→ skill:workflow-router)
+R2/R3 chain: DESIGN → DEVELOP → KB sync → done
+Independent tasks → parallel sub-agents (→ skill:bridge-subagent)"""
 
 
 def _detect_stage(cwd: str) -> str:
@@ -57,7 +55,7 @@ def _detect_stage(cwd: str) -> str:
 
 def _handle_user_prompt(cwd: str) -> dict:
     stage = _detect_stage(cwd)
-    ctx = {"DEVELOP": DEVELOP_RULES, "DESIGN": DESIGN_RULES}.get(stage, GENERIC_RULES)
+    ctx = {"DEVELOP": DEVELOP_REMINDER, "DESIGN": DESIGN_REMINDER}.get(stage, GENERIC_REMINDER)
     if len(ctx) > MAX_MAIN_CHARS:
         ctx = ctx[:MAX_MAIN_CHARS] + "\n...(truncated)"
     return {"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": ctx}}
@@ -99,7 +97,7 @@ def _handle_subagent(cwd: str) -> dict:
     if len(combined) > MAX_SUB_CHARS:
         combined = combined[:MAX_SUB_CHARS] + "\n...(truncated)"
     return {"hookSpecificOutput": {"hookEventName": "SubagentStart",
-            "additionalContext": f"[HelloAGENTS] 方案包上下文（自动注入）:\n{combined}"}}
+            "additionalContext": f"[HelloAGENTS] 方案包上下文:\n{combined}"}}
 
 
 def main():

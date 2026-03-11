@@ -3,7 +3,6 @@ name: cmd-init
 description: >
   Initialize or upgrade project knowledge base (~init).
   Creates KB structure, scans project, fills documentation.
-  Also handles ~upgradekb and ~validatekb as sub-functions.
 provides: [kb-initialization]
 category: command
 trigger:
@@ -20,20 +19,16 @@ metadata:
 
 ## Execution Flow
 ```yaml
-1. Check {KB_ROOT}/ existence
+1. Check {CWD}/.helloagents/ existence
    - Exists: offer upgrade/validate options
    - Not exists: proceed with creation
 2. Confirm with user → ⛔ STOP
 3. User confirms → execute:
-   - Run upgrade_wiki.py --init
-   - Scan project structure (config files, directory tree)
-   - Fill INDEX.md, context.md, modules/
+   - Scan project structure (config files, directory tree, git history)
+   - Create KB structure (INDEX.md, context.md, modules/)
+   - Fill documentation from project analysis
    - Verify completeness
 4. Output: creation summary + file list
-
-Sub-functions:
-  ~upgradekb: detect kb_version → auto-upgrade structure → fill missing files
-  ~validatekb: check structure → compare code vs docs → report issues
 ```
 
 ## Constraints
