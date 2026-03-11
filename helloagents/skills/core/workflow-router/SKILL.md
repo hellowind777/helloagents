@@ -63,6 +63,12 @@ DELEGATED_PLAN: same as DELEGATED but stop after DESIGN
 ## Adaptive Calibration
 Before routing, read `~/.helloagents/user/memory/routing_history.jsonl` (last 50 entries) if available. Calibrate based on: user upgrade patterns, project module cascade history, mode preferences.
 
+After routing completes (task finished or abandoned), append a record:
+```jsonl
+{"ts":"...","project":"...","route":"R2","actual_complexity":"moderate","outcome":"success"}
+```
+Write directly to the JSONL file. Keep max 200 entries (trim oldest if exceeded).
+
 ## State Variables
 ```yaml
 WORKFLOW_MODE: INTERACTIVE | DELEGATED | DELEGATED_PLAN
