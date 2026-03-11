@@ -1,5 +1,5 @@
 {
-  "_comment": "HelloAGENTS Gemini CLI Hooks. Qwen Code reuses this file. Deployed via settings_hooks → settings.json.",
+  "_comment": "HelloAGENTS Gemini CLI Hooks. Qwen Code reuses this file. Deployed via cli_adapters → settings.json.",
   "hooks": {
     "SessionStart": [
       {

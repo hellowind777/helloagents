@@ -77,7 +77,7 @@ brainstormer: proposal generation (→ skill:role-brainstormer)
 reviewer: code review (→ skill:role-reviewer)
 writer: document generation (→ skill:role-writer)
 user-defined: match task description to user agent descriptions
-  conflict: user agent > RLM role (user intent > system preset)
+  conflict: user agent > sub-agent role (user intent > system preset)
 ```
 
 ## Constraints

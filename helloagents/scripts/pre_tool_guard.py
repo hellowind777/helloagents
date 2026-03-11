@@ -79,11 +79,11 @@ def main():
     is_dangerous, reason = check_command(command)
     if is_dangerous:
         # 播放警告声音（非阻塞）
-        sound_script = Path(__file__).parent / "sound_notify.py"
+        sound_script = Path(__file__).parent / "notify.py"
         if sound_script.exists():
             try:
                 subprocess.Popen(
-                    [sys.executable, str(sound_script), "warning"],
+                    [sys.executable, str(sound_script), "sound", "warning"],
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,

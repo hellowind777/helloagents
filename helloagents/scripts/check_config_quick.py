@@ -60,24 +60,8 @@ def _msg(zh: str, en: str) -> str:
     return zh if _LANG == "zh" else en
 
 def _get_cli_helloagents_dir() -> Path:
-    """Get CLI-specific helloagents directory by detecting installed CLI.
-
-    NOTE: This list must stay in sync with CLI_TARGETS in helloagents/_common.py.
-    This script is deployed standalone, so it cannot import from the package.
-    """
-    home = Path.home()
-    candidates = [
-        home / ".claude" / "helloagents",
-        home / ".codex" / "helloagents",
-        home / ".config" / "opencode" / "helloagents",
-        home / ".gemini" / "helloagents",
-        home / ".qwen" / "helloagents",
-        home / ".grok" / "helloagents",
-    ]
-    for path in candidates:
-        if path.exists():
-            return path
-    return home / ".helloagents"
+    """Get HelloAGENTS home directory."""
+    return Path.home() / ".helloagents"
 
 CACHE_FILE = _get_cli_helloagents_dir() / ".config_check_cache"
 
@@ -177,8 +161,8 @@ def main():
 
     if not config_ok:
         context = _msg("会话启动", "session start") if force_check else _msg(
-            "检测到配置文件被修改（可能是 ccswitch 切换）",
-            "config file modification detected (possibly ccswitch)")
+            "检测到配置文件被修改",
+            "config file modification detected")
         print(_msg("\n⚠️  HelloAGENTS 配置缺失或不完整",
                    "\n⚠️  HelloAGENTS config missing or incomplete"), file=sys.stderr)
         print(_msg(f"可能原因：{context}",

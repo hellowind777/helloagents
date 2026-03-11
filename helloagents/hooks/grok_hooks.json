@@ -1,5 +1,5 @@
 {
-  "_comment": "HelloAGENTS Grok CLI Hooks 配置。部署由 settings_hooks.py 写入 ~/.grok/settings.json。",
+  "_comment": "HelloAGENTS Grok CLI Hooks. Deployed via cli_adapters → settings.json.",
   "hooks": {
     "UserPromptSubmit": [
       {

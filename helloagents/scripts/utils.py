@@ -185,7 +185,7 @@ def get_package_summary(package_path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Template loader (inlined from deleted template_utils.py)
+# Template loader
 # ---------------------------------------------------------------------------
 
 def _get_templates_dir() -> Path:
