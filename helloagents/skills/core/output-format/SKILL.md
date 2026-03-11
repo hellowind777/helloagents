@@ -19,11 +19,9 @@ metadata:
 
 ## G3 Format Template
 ```
-{icon}【HelloAGENTS】- {status}
 {body}
 📁 文件变更: {changes}          ← optional
 📦 遗留方案包: {packages}       ← optional
-🔄 下一步: {guidance}
 ```
 
 ## Icons
@@ -36,20 +34,12 @@ metadata:
 | Info | ℹ️ | Cancel | 🚫 |
 | External tool | 🔧 | | |
 
-## Status Description Format
-`{level}: {scene}` — colon separates level from current scene.
-- Command: `~{cmd}: {scene}` (e.g., `~auto: 评估`)
-- Generic: `{level name}: {scene}` (e.g., `标准流程: 确认`)
-- Tool path: `{tool name}: {state}` (e.g., `hello-network: 执行`)
-- R0: scene type only, ≤6 chars (e.g., `问候响应`)
-
 ## Rules
 ```yaml
-scope: R1/R2/R3 completed responses and commands use G3 format; R0 direct answers output content only (no G3 wrapper)
+scope: R1/R2/R3 completed responses and commands use G3 format; R0 outputs content directly
 streaming: during multi-step execution, output content directly; wrap G3 only on completion
 sub-agents: prompt contains "[跳过指令]" → skip G3 wrapper, return results only
-icons: MUST be emoji symbols per table above, never replace with words
-status_line: ≤60 characters total (including icon and brand)
+no_header_footer: NEVER output "{icon}【HelloAGENTS】- {status}" header line or "🔄 下一步: {guidance}" footer line
 file_changes: "path (op_type)", comma-separated; >5 files → "{N} files (see tasks.md)"
 numbered_lists: numbers = selectable options ONLY; non-selectable lists use - bullets
 ```
