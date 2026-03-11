@@ -81,17 +81,8 @@ validate(): ~validatekb → check structure → compare code vs docs → report 
 updateChangelog(entry): after package archive → append formatted entry to CHANGELOG.md
 ```
 
-## CHANGELOG Format
-```yaml
-entry: |
-  ## [X.Y.Z] - YYYY-MM-DD
-  ### {Category}
-  - **[{module}]**: {description} — by {git_user_name}
-    - 方案: [{package_id}](archive/{YYYY-MM}/{package_id}/)
-categories: 新增 | 修复 | 快速修改 | 回滚
-version: X.Y.Z semantic versioning (Major.Minor.Patch)
-author: git config user.name (fallback: "unknown")
-```
+## CHANGELOG
+Append entries with: version (semver), date, category, module, description, author (git user.name), and link to plan package. Use existing CHANGELOG style if present.
 
 ## Progress Snapshots
 ```yaml

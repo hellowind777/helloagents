@@ -30,26 +30,11 @@ Routing protocol (R0-R3) and END_TURN do NOT apply.
 - Performance analysis (complexity, resource usage)
 - Visual/UX review (when UI code involved)
 
-## Execution Steps
-```yaml
-1. Determine change scope (git diff or specified files)
-2. Review across all dimensions
-3. Classify findings by severity: high / medium / low
-4. Output structured report
-```
+## Goal
+Review changes across security, quality, performance, and UX dimensions. Classify findings by severity and provide actionable suggestions.
 
-## Output Format
-```yaml
-{
-  status: "complete",
-  key_findings: ["summary of critical items"],
-  issues_found: [
-    {severity: "high|medium|low", description: "...", location: "file:line", suggestion: "..."}
-  ],
-  recommendations: "overall recommendations",
-  needs_followup: true|false
-}
-```
+## Output
+Return structured findings that the orchestrator can parse. Include: key findings summary, issues with severity/location/suggestion, and whether follow-up is needed.
 
 ## Constraints
 DO: Always check security dimension. Classify by severity. Provide actionable suggestions.
