@@ -134,16 +134,7 @@ def get_workspace_path(base_path: Optional[str] = None) -> Path:
     base = Path(base_path) if base_path else Path.cwd()
     if base.name == DEFAULT_WORKSPACE and base.is_dir():
         return base
-    new_path = base / DEFAULT_WORKSPACE
-    legacy = base / "helloagents"
-    if not new_path.exists() and legacy.is_dir():
-        markers = ("INDEX.md", "context.md", "modules", "plan", "CHANGELOG.md")
-        if any((legacy / m).exists() for m in markers):
-            try:
-                legacy.rename(new_path)
-            except OSError:
-                pass
-    return new_path
+    return base / DEFAULT_WORKSPACE
 
 def get_plan_path(base_path=None) -> Path:
     return get_workspace_path(base_path) / "plan"

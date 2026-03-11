@@ -7,13 +7,12 @@ from pathlib import Path
 
 from .._common import (
     _msg,
-    CLI_TARGETS, PLUGIN_DIR_NAME, AGENT_PREFIX,
+    CLI_TARGETS,
     HELLOAGENTS_HOME,
-    is_helloagents_file, clean_skills_dir, cleanup_empty_parent,
+    is_helloagents_file, clean_skills_dir,
     _detect_installed_targets, _detect_install_method,
 )
 from .cli_adapters import (
-    remove_legacy_rules, cleanup_codex_agents_dotted,
     remove_claude_hooks, remove_claude_permissions, remove_claude_auto_memory,
     remove_codex_notify, remove_codex_developer_instructions,
     remove_codex_tui_notification, remove_codex_agent_roles,
@@ -102,27 +101,10 @@ def _self_uninstall() -> bool:
         return False
 
 
-def _remove_agent_files(dest_dir: Path) -> list[str]:
-    agents_dir = dest_dir / "agents"
-    removed = []
-    if not agents_dir.exists():
-        return removed
-    for f in agents_dir.glob(f"{AGENT_PREFIX}*.md"):
-        f.unlink()
-        removed.append(str(f))
-    if cleanup_empty_parent(agents_dir):
-        removed.append(f"{agents_dir} (empty)")
-    return removed
-
-
 def _uninstall_claude_extras(dest_dir: Path) -> list[str]:
     removed = []
-    try:
-        removed.extend(_remove_agent_files(dest_dir))
-    except Exception:
-        pass
     for fn, label in [
-        (remove_legacy_rules, "rules"), (remove_claude_hooks, "hooks"),
+        (remove_claude_hooks, "hooks"),
         (remove_claude_permissions, "permissions"),
         (remove_claude_auto_memory, "autoMemory"),
     ]:
@@ -137,7 +119,8 @@ def _uninstall_claude_extras(dest_dir: Path) -> list[str]:
 def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
     removed = []
     for fn, label in [
-        (remove_codex_notify, "notify"), (remove_codex_developer_instructions, "dev_instructions"),
+        (remove_codex_notify, "notify"),
+        (remove_codex_developer_instructions, "dev_instructions"),
         (remove_codex_tui_notification, "tui_notification"),
         (remove_codex_agent_roles, "agent_roles"),
     ]:
@@ -146,15 +129,6 @@ def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
                 removed.append(label)
         except Exception:
             pass
-    try:
-        ct = dest_dir / "config.toml"
-        if ct.exists():
-            content = ct.read_text(encoding="utf-8")
-            cleaned, did = cleanup_codex_agents_dotted(content)
-            if did:
-                ct.write_text(cleaned, encoding="utf-8")
-    except Exception:
-        pass
     return removed
 
 
@@ -177,7 +151,6 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
     config = CLI_TARGETS[target]
     dest_dir = Path.home() / config["dir"]
     rules_file = config["rules_file"]
-    plugin_dest = dest_dir / PLUGIN_DIR_NAME
     rules_dest = dest_dir / rules_file
     removed = []
 
@@ -189,29 +162,6 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
     print(_msg(f"  正在卸载 {target}...", f"  Uninstalling {target}..."))
 
     ok = True
-    if plugin_dest.exists():
-        import tempfile
-        _user_bak = None
-        try:
-            _user_src = plugin_dest / "user"
-            if _user_src.exists() and any(_user_src.iterdir()):
-                _user_bak = Path(tempfile.mkdtemp()) / "user"
-                shutil.copytree(_user_src, _user_bak)
-            if win_safe_rmtree(plugin_dest):
-                removed.append(str(plugin_dest))
-            else:
-                ok = False
-            if _user_bak and _user_bak.exists():
-                _restore = plugin_dest / "user"
-                if not _restore.exists():
-                    _restore.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(_user_bak, _restore)
-        except Exception:
-            ok = False
-        finally:
-            if _user_bak and _user_bak.parent.exists():
-                shutil.rmtree(_user_bak.parent, ignore_errors=True)
-
     if rules_dest.exists():
         if is_helloagents_file(rules_dest) or rules_dest.stat().st_size == 0:
             try:
