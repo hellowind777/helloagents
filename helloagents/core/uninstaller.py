@@ -14,7 +14,7 @@ from .._common import (
 )
 from .cli_adapters import (
     remove_claude_hooks, remove_claude_permissions, remove_claude_auto_memory,
-    remove_codex_notify, remove_codex_developer_instructions,
+    remove_codex_notify, remove_codex_hooks, remove_codex_developer_instructions,
     remove_codex_tui_notification, remove_codex_agent_roles,
     remove_gemini_hooks, remove_qwen_hooks, remove_grok_hooks,
 )
@@ -119,6 +119,7 @@ def _uninstall_claude_extras(dest_dir: Path) -> list[str]:
 def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
     removed = []
     for fn, label in [
+        (remove_codex_hooks, "hooks"),
         (remove_codex_notify, "notify"),
         (remove_codex_developer_instructions, "dev_instructions"),
         (remove_codex_tui_notification, "tui_notification"),

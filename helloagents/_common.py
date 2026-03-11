@@ -33,6 +33,7 @@ CLI_TARGETS = {
 HELLOAGENTS_HOME = Path.home() / ".helloagents"
 HOOKS_FINGERPRINT = "HelloAGENTS"
 CODEX_NOTIFY_SCRIPT = "codex_notify.py"
+CODEX_HOOKS_JSON = "codex_hooks.json"
 GEMINI_HOOKS_JSON = "gemini_hooks.json"
 GROK_HOOKS_JSON = "grok_hooks.json"
 HELLOAGENTS_MARKER = "HELLOAGENTS_ROUTER:"
