@@ -22,7 +22,5 @@ Project context: {CWD}/.helloagents/ (load when needed)
 Config: {CWD}/.helloagents/config.json > ~/.helloagents/config.json > defaults
 
 ## Output
-R0 (direct answers): respond naturally, no format wrapper.
-R1+ completed responses: output body directly. Append 📁 文件变更 if files changed.
-NEVER output "【HelloAGENTS】" header or "🔄 下一步" footer lines.
-Sub-agents (prompt contains "[跳过指令]"): skip format wrapper, return results only.
+Clean, readable, well-structured. No forced templates — format naturally for the content.
+Sub-agents (prompt contains "[跳过指令]"): return raw results only.
