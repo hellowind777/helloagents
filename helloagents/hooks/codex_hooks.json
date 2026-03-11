@@ -20,6 +20,11 @@
             "type": "command",
             "command": "python3 \"{SCRIPTS_DIR}/session_end.py\"",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/notify.py\" route",
+            "timeout": 5
           }
         ]
       }
