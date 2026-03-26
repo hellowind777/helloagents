@@ -161,7 +161,7 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
     """Ensure config.toml has multi-agent settings for spawn_agents_on_csv.
 
     - ``[agents]`` max_threads >= 64, max_depth = 1
-    - ``[features]`` sqlite = true
+    - ``[features]`` enable_fanout = true (CSV batch orchestration)
     - Migrates dotted keys (``agents.max_threads``) into ``[agents]`` section
     """
     config_path = dest_dir / "config.toml"
@@ -185,12 +185,8 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
     if mt_changed or md_changed:
         changed = True
 
-    content, sqlite_added = _ensure_feature_bool(content, "sqlite")
-    if sqlite_added:
-        changed = True
-
-    content, collab_added = _ensure_feature_bool(content, "collaboration_modes")
-    if collab_added:
+    content, fanout_added = _ensure_feature_bool(content, "enable_fanout")
+    if fanout_added:
         changed = True
 
     if changed:
@@ -203,10 +199,8 @@ def _configure_codex_csv_batch(dest_dir: Path) -> None:
         if md_changed:
             final_md = _get_agents_section_val(content, 'max_depth') or 1
             msgs.append(f"agents.max_depth = {final_md}")
-        if sqlite_added:
-            msgs.append("sqlite = true")
-        if collab_added:
-            msgs.append("collaboration_modes = true")
+        if fanout_added:
+            msgs.append("enable_fanout = true")
         if msgs:
             print(_msg(
                 f"  已配置多代理: {', '.join(msgs)}",

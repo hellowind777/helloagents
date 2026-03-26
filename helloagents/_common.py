@@ -34,6 +34,10 @@ CLI_TARGETS = {
 
 PLUGIN_DIR_NAME = "helloagents"
 
+# Global config paths
+GLOBAL_CONFIG_DIR = Path.home() / ".helloagents"
+GLOBAL_CONFIG_FILE = GLOBAL_CONFIG_DIR / "helloagents.json"
+
 # Agent definition files prefix (Claude Code only)
 AGENT_PREFIX = "ha-"
 
@@ -54,6 +58,10 @@ HELLOAGENTS_RULE_MARKER = "HELLOAGENTS_RULE"
 
 # ---------------------------------------------------------------------------
 # Locale & messaging
+# NOTE: _detect_locale() and _msg() are intentionally duplicated in:
+#   - cli.py (stdlib-only shim, must work when package is broken)
+#   - scripts/utils.py (deployed independently to CLI config dirs)
+# Keep all three copies in sync when modifying.
 # ---------------------------------------------------------------------------
 
 def _detect_locale() -> str:

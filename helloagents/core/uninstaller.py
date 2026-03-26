@@ -14,6 +14,7 @@ from .._common import (
 from .codex_config import _cleanup_codex_agents_dotted, _remove_codex_notify
 from .codex_config import _remove_codex_developer_instructions
 from .codex_config import _remove_codex_tui_notification
+from .codex_config import _remove_feature_key
 from .codex_roles import _remove_codex_agent_roles
 from .claude_config import (
     _remove_claude_hooks, _remove_claude_permissions,
@@ -34,6 +35,14 @@ from .win_helpers import (
 # ---------------------------------------------------------------------------
 # Self-uninstall (remove the helloagents package itself)
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Note: ~/.helloagents/ (global config dir) is intentionally preserved during
+# uninstall. It contains user preferences (helloagents.json) and update cache
+# (.update_cache) that should survive reinstalls. Users can manually remove
+# it with: rm -rf ~/.helloagents/
+# ---------------------------------------------------------------------------
+
 
 def _self_uninstall() -> bool:
     """Remove the helloagents Python package itself (pip/uv)."""
@@ -223,19 +232,30 @@ def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
     except Exception as e:
         print(_msg(f"  ⚠ 清理 dotted agents 键时出错: {e}",
                    f"  ⚠ Error cleaning dotted agents keys: {e}"))
+    # Remove enable_fanout feature flag
+    try:
+        config_toml = dest_dir / "config.toml"
+        if config_toml.exists():
+            content = config_toml.read_text(encoding="utf-8")
+            content, r = _remove_feature_key(content, "enable_fanout")
+            if r:
+                config_toml.write_text(content, encoding="utf-8")
+                removed.append("[features] enable_fanout (config.toml)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 清理 enable_fanout 时出错: {e}",
+                   f"  ⚠ Error cleaning enable_fanout: {e}"))
     # Note: The following config keys are intentionally preserved during uninstall:
     # - project_doc_max_bytes: May be used by other project documentation tools
     # - agents.max_threads / agents.max_depth: Generic multi-agent settings
-    # - [features] sqlite: May be used by other Codex features
     # - [memories]: Codex native memory system (not HelloAGENTS-exclusive)
     # These keys correspond to installer functions:
     # - _configure_codex_toml() → project_doc_max_bytes (preserved)
-    # - _configure_codex_csv_batch() → agents.max_threads/max_depth, sqlite (preserved)
+    # - _configure_codex_csv_batch() → agents.max_threads/max_depth (preserved)
     # - [memories] section is Codex-native, not created by HelloAGENTS (preserved)
     # Users can manually remove these if desired.
     print(_msg(
-        "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories 配置已保留（可能被其他工具使用）。",
-        "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories kept in config.toml (may be used by other tools)."))
+        "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / memories 配置已保留（可能被其他工具使用）。",
+        "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / memories kept in config.toml (may be used by other tools)."))
     return removed
 
 

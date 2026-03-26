@@ -3,7 +3,7 @@
 """
 HelloAGENTS PostToolUse Hook — 进度快照自动触发
 
-每次 Write/Edit/NotebookEdit 操作后触发（async=true）。
+每次 Write/Edit/NotebookEdit 操作后触发（Claude Code: async=false, Gemini/Grok: async=true）。
 维护写操作计数器，每 THRESHOLD 次写操作时自动更新 tasks.md 的
 LIVE_STATUS 区域和执行日志。
 

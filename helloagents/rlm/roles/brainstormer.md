@@ -50,6 +50,7 @@
 ```json
 {
   "status": "completed",
+  "key_findings": ["方案核心亮点摘要（至少1条）"],
   "proposal": {
     "name": "方案名称",
     "approach": "核心思路",
