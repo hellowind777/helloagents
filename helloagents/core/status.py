@@ -140,8 +140,8 @@ def _show_codex_cli_details(cli_dir: Path) -> None:
             after_feat = ct_text[feat_m.end():]
             next_sec_f = re.search(r'^\[[\w]', after_feat, re.MULTILINE)
             feat_scope = after_feat[:next_sec_f.start()] if next_sec_f else after_feat
-            if re.search(r'^sqlite\s*=\s*true', feat_scope, re.MULTILINE):
-                ma_items.append("sqlite")
+            if re.search(r'^enable_fanout\s*=\s*true', feat_scope, re.MULTILINE):
+                ma_items.append("enable_fanout")
         if ma_items:
             print(f"    multi-agent: {', '.join(ma_items)} ✓")
         else:

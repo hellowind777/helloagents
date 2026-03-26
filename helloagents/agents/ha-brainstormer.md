@@ -22,7 +22,7 @@ permissionMode: plan
 
 **DO NOT:** 修改任何文件 | 参考其他子代理输出 | 省略设计方向（UI 任务）| 仅描述功能而无呈现方向 | 使用"现代简约"等模糊词 | 使用通用AI美学（Arial/Inter/Roboto 字体、紫色渐变白底、千篇一律卡片布局）。
 
-输出格式: {status, proposal: {name, approach, impl_path, design_direction, user_value, pros, cons}, issues_found, needs_followup}。
+输出格式: {status, key_findings: ["方案核心亮点（至少1条）"], proposal: {name, approach, impl_path, design_direction, user_value, pros, cons}, issues_found, needs_followup}。
 design_direction 结构（UI 任务必填，非 UI 任务整体填 "N/A"）:
   aesthetic: {鲜明的美学基调名称+具体描述}
   memorable: {这个设计最令人难忘的一个特征}

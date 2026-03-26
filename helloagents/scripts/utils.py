@@ -267,6 +267,9 @@ def get_workspace_path(base_path: Optional[str] = None) -> Path:
     legacy_path = base / "helloagents"
 
     if not new_path.exists() and legacy_path.exists() and legacy_path.is_dir():
+        # 排除 Python 包源码目录（含 __init__.py 的不是知识库）
+        if (legacy_path / "__init__.py").exists():
+            return new_path
         # 检查是否为旧版知识库目录（含 INDEX.md 或 modules/ 等知识库特征文件）
         is_kb = any(
             (legacy_path / marker).exists()
@@ -276,7 +279,7 @@ def get_workspace_path(base_path: Optional[str] = None) -> Path:
             try:
                 legacy_path.rename(new_path)
             except OSError:
-                pass  # 迁移失败时静默回退，由上层流程处理
+                pass  # 迁移失败时静默回退，返回 new_path（可能不存在，由调用方处理）
 
     return new_path
 

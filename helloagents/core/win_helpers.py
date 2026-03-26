@@ -276,6 +276,7 @@ def win_safe_rmtree(path: Path) -> bool:
     except OSError:
         if sys.platform != "win32":
             return False
+        # Windows only: fall through to rename-aside strategy below
 
     # Rename-aside: free the original path
     import time

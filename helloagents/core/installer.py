@@ -1,11 +1,13 @@
 """HelloAGENTS Installer - Install operations."""
 
+import json
 import shutil
 from pathlib import Path
 
 from .._common import (
     _msg,
     CLI_TARGETS, PLUGIN_DIR_NAME, AGENT_PREFIX,
+    GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE,
     is_helloagents_file, is_helloagents_rule, backup_user_file,
     get_agents_md_path, get_skill_md_path, get_helloagents_module_path,
     detect_installed_clis, clean_skills_dir,
@@ -130,6 +132,35 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
             pass
 
     return removed
+
+
+# ---------------------------------------------------------------------------
+# Global config creation
+# ---------------------------------------------------------------------------
+
+_DEFAULT_CONFIG = {"NOTIFY_MODE": 0}
+
+
+def _ensure_global_config() -> None:
+    """Create ~/.helloagents/helloagents.json if missing."""
+    try:
+        GLOBAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print(_msg(f"  ⚠ 创建全局配置目录失败: {e}",
+                   f"  ⚠ Failed to create global config directory: {e}"))
+        return
+
+    if not GLOBAL_CONFIG_FILE.is_file():
+        try:
+            GLOBAL_CONFIG_FILE.write_text(
+                json.dumps(_DEFAULT_CONFIG, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            print(_msg(f"  已创建全局配置: {GLOBAL_CONFIG_FILE}",
+                       f"  Created global config: {GLOBAL_CONFIG_FILE}"))
+        except Exception as e:
+            print(_msg(f"  ⚠ 创建全局配置失败: {e}",
+                       f"  ⚠ Failed to create global config: {e}"))
 
 
 # ---------------------------------------------------------------------------
@@ -290,10 +321,16 @@ def install(target: str) -> bool:
 
     print(_msg(f"  {target} 安装完成！请重启终端以应用更改。",
                f"  Installation complete for {target}! Please restart your terminal to apply changes."))
-    config_path = Path.home() / ".helloagents" / "config.json"
-    if not config_path.exists():
-        print(_msg("  ℹ 个性化配置可写入 ~/.helloagents/config.json，更新时不会被覆盖。",
-                   "  ℹ Custom settings can be saved to ~/.helloagents/config.json (preserved across updates)."))
+
+    # 确保全局配置文件存在
+    _ensure_global_config()
+
+    if GLOBAL_CONFIG_FILE.exists():
+        print(_msg(f"  ℹ 个性化配置: {GLOBAL_CONFIG_FILE}",
+                   f"  ℹ Custom settings: {GLOBAL_CONFIG_FILE}"))
+    else:
+        print(_msg("  ℹ 个性化配置可写入 ~/.helloagents/helloagents.json，更新时不会被覆盖。",
+                   "  ℹ Custom settings can be saved to ~/.helloagents/helloagents.json (preserved across updates)."))
 
     # Target-specific post-install: hooks & config
     _POST_INSTALL = {

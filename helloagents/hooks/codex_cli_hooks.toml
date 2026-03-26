@@ -8,10 +8,10 @@
 
 # ─── Features ───
 
-# collaboration_modes — 启用协作模式系统（v0.110+）
-# 启用后 request_user_input 工具可用，渲染 TUI 交互选择界面
+# enable_fanout — 启用 CSV 批处理编排（spawn_agents_on_csv）
+# multi_agent（子代理）已 Stable 默认开启，无需显式配置
 [features]
-collaboration_modes = true
+enable_fanout = true
 
 # ─── Hooks ───
 

@@ -192,18 +192,18 @@ HelloAGENTS 角色昵称映射:
 | writer | RLM | Scribe, Quill, Chronicler |
 | brainstormer | RLM | Muse, Ideator, Catalyst |
 
-### collaboration_modes 功能开关（v0.110+）
+### enable_fanout — CSV 批处理编排开关
 
 ```toml
 [features]
-collaboration_modes = true
+enable_fanout = true
 ```
 
-启用后 `request_user_input` 工具可用，允许代理渲染 TUI 交互选择界面（替代纯文本选项）。
+启用 `spawn_agents_on_csv` CSV 批处理编排能力（UnderDevelopment）。
+由 `codex_config.py` 的 `_configure_codex_csv_batch()` 自动写入。
 
-- **适用**: 主代理和子代理均可使用
-- **HelloAGENTS 使用场景**: R2 确认（问题+选项）、R3 评估追问、R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
-- **安装**: 由 `codex_config.py` 的 `_ensure_feature_collaboration_modes()` 自动写入
+> 注: `multi_agent`（子代理 spawn_agent）已 Stable 且默认开启，无需显式配置。
+> `sqlite` 和 `collaboration_modes` 已 Removed（默认 true），无需配置。
 
 ---
 
