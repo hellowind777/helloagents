@@ -18,7 +18,7 @@ tasks.md: 更新任务状态符号、追加执行日志
 
 ## 子代理上下文隔离
 
-> 子代理的记忆层隔离规则另见 services/memory.md（子代理并行工作章节）
+> 子代理的上下文隔离规则另见 rules/subagent-protocols.md
 
 ```yaml
 主代理 → 子代理: 传递任务描述、必要上下文、相关文件路径

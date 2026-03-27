@@ -63,8 +63,12 @@ def main() -> None:
         print()
     except Exception as e:
         # Dispatcher broken — recovery commands still work
-        if cmd in ("install", "update"):
+        if cmd == "update":
             _reinstall(args[1:])
+        elif cmd == "install":
+            # install <target> — target is a CLI name, not a branch;
+            # reinstall from default branch to fix the broken package first
+            _reinstall([])
         else:
             print(_msg(f"\nHelloAGENTS 错误: {e}",
                        f"\nHelloAGENTS error: {e}"))

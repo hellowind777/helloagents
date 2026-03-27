@@ -27,9 +27,9 @@ if sys.platform == 'win32':
         sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
 
 
-_LS_BEGIN = "<!-- LIVE_STATUS_BEGIN -->"
-_LS_END = "<!-- LIVE_STATUS_END -->"
-
+# NOTE: _find_latest_tasks_md, _parse_task_stats, _determine_status,
+# _get_current_task 与 progress_snapshot.py 中的同名函数保持一致。
+# 修改时需同步更新。
 
 def _find_latest_tasks_md(cwd: str) -> Path | None:
     """查找最新方案包的 tasks.md。"""
@@ -77,34 +77,48 @@ def _determine_status(stats: dict) -> str:
     return "pending"
 
 
-def _update_live_status(content: str, stats: dict) -> str:
-    """更新 LIVE_STATUS 区域（与 progress_snapshot.py 逻辑一致）。"""
+def _get_current_task(content: str) -> str:
+    """从 tasks.md 找到当前正在执行的任务（第一个 [ ] 标记的行）。"""
+    for line in content.splitlines():
+        if "[ ]" in line:
+            desc = re.sub(r'^\s*[-*]\s*\[ \]\s*\d*\.?\d*\s*', '', line).strip()
+            if desc:
+                return desc[:60]
+    return "-"
+
+
+def _write_status_json(tasks_path: Path, stats: dict, content: str):
+    """写入 .status.json 到方案包目录（与 progress_snapshot.py 逻辑一致）。"""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     done = stats["completed"] + stats["skipped"]
     total = stats["total"]
     pct = round(done / total * 100) if total > 0 else 0
     status = _determine_status(stats)
+    current = _get_current_task(content)
 
-    current = "-"
-    for line in content.splitlines():
-        if "[ ]" in line:
-            desc = re.sub(r'^\s*\d+\.\s*\[ \]\s*', '', line).strip()
-            if desc:
-                current = desc[:60]
-            break
+    status_data = {
+        "status": status,
+        "completed": stats["completed"],
+        "failed": stats["failed"],
+        "skipped": stats["skipped"],
+        "pending": stats["pending"],
+        "uncertain": stats["uncertain"],
+        "total": total,
+        "done": done,
+        "percent": pct,
+        "current": current,
+        "updated_at": now,
+    }
 
-    new_status = (
-        f"{_LS_BEGIN}\n"
-        f"状态: {status} | 进度: {done}/{total} ({pct}%) | 更新: {now}\n"
-        f"当前: {current}\n"
-        f"{_LS_END}"
-    )
-
-    begin_idx = content.find(_LS_BEGIN)
-    end_idx = content.find(_LS_END)
-    if begin_idx >= 0 and end_idx >= 0:
-        return content[:begin_idx] + new_status + content[end_idx + len(_LS_END):]
-    return new_status + "\n\n" + content
+    status_path = tasks_path.parent / ".status.json"
+    try:
+        status_path.write_text(
+            json.dumps(status_data, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except OSError as e:
+        print(f"[HelloAGENTS] .status.json write failed: {e}",
+              file=sys.stderr)
 
 
 def _append_compact_log(content: str, stats: dict) -> str:
@@ -175,8 +189,8 @@ def main():
     if stats["total"] == 0:
         sys.exit(0)
 
-    # 更新 LIVE_STATUS（压缩前保存最新状态）
-    content = _update_live_status(content, stats)
+    # 写入 .status.json（压缩前保存最新状态，与 progress_snapshot.py 一致）
+    _write_status_json(tasks_path, stats, content)
 
     # 追加 PreCompact 日志
     content = _append_compact_log(content, stats)

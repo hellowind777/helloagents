@@ -3,7 +3,7 @@
 """
 HelloAGENTS PostToolUse Hook — 进度快照自动触发
 
-每次 Write/Edit/NotebookEdit 操作后触发（async=true）。
+每次 Write/Edit/NotebookEdit 操作后触发（Claude Code/Grok: async=false, Gemini: async=true）。
 维护写操作计数器，每 THRESHOLD 次写操作时自动更新 tasks.md 的
 LIVE_STATUS 区域和执行日志。
 
@@ -75,6 +75,9 @@ def _reset_counter(cwd: str):
 # ---------------------------------------------------------------------------
 # 方案包检测与任务解析
 # ---------------------------------------------------------------------------
+
+# NOTE: _find_latest_tasks_md, _parse_task_stats, _determine_status 与
+# pre_compact.py 中的同名函数保持一致。修改时需同步更新。
 
 def _find_latest_tasks_md(cwd: str) -> Path | None:
     """查找最新方案包的 tasks.md。"""

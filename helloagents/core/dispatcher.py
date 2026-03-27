@@ -177,7 +177,7 @@ def dispatch(args: list[str]) -> None:
     if cmd and cmd != "update" and not os.environ.get("HELLOAGENTS_NO_UPDATE_CHECK"):
         from .version_check import check_update
         force = cmd == "version" and "--force" in args[1:]
-        cache_ttl = None
+        cache_ttl = 72  # default TTL for regular commands (hours)
         if cmd == "version" and "--cache-ttl" in args[1:]:
             try:
                 idx = args.index("--cache-ttl")

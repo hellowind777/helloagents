@@ -6,7 +6,7 @@
 
 ```yaml
 角色类型: 通用能力型（非服务绑定型）
-调用方式: DESIGN 步骤10 自动调用（R3 标准流程，≥3 个并行实例）
+调用方式: DESIGN 步骤10 自动调用（R2 标准流程 TASK_COMPLEXITY=complex，≥3 个并行实例）
 权限: 只读（不可修改文件）
 ```
 
@@ -50,6 +50,7 @@
 ```json
 {
   "status": "completed",
+  "key_findings": ["方案核心亮点摘要（至少1条）"],
   "proposal": {
     "name": "方案名称",
     "approach": "核心思路",

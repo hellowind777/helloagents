@@ -44,6 +44,13 @@
             "async": false,
             "timeout": 5,
             "description": "HelloAGENTS 声音通知（完成）"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"{SCRIPTS_DIR}/notify.py\"",
+            "async": false,
+            "timeout": 5,
+            "description": "HelloAGENTS 桌面通知（完成）"
           }
         ]
       }
@@ -63,7 +70,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|NotebookEdit",
         "hooks": [
           {
             "type": "command",
