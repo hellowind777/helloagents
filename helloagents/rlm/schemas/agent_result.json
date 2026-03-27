@@ -94,6 +94,19 @@
       },
       "description": "后续建议列表"
     },
+    "proposal": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "方案名称" },
+        "approach": { "type": "string", "description": "技术路线" },
+        "impl_path": { "type": "string", "description": "实现路径" },
+        "design_direction": { "type": "string", "description": "设计方向" },
+        "user_value": { "type": "string", "description": "用户价值" },
+        "pros": { "type": "array", "items": { "type": "string" } },
+        "cons": { "type": "array", "items": { "type": "string" } }
+      },
+      "description": "方案提案（brainstormer 角色专用）"
+    },
     "needs_followup": {
       "type": "boolean",
       "default": false,

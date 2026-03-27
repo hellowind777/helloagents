@@ -48,7 +48,7 @@
 
 6. 更新检查:
    - UPDATE_CHECK 当前值（0=关闭，正整数=缓存有效小时数，默认72）
-   - 读取 ~/.helloagents/.update_cache 缓存（expires_at 未过期则使用），超期时执行 `helloagents version --force --cache-ttl {UPDATE_CHECK}`
+   - 读取 {HELLOAGENTS_ROOT}/.update_cache 缓存（expires_at 未过期则使用），超期时执行 `helloagents version --force --cache-ttl {UPDATE_CHECK}`
    - 命令不可用时显示"未安装"
 ```
 

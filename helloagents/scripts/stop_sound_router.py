@@ -15,9 +15,9 @@ Layer 2 — G3 格式检测（语义信号）:
     warning  → ⚠️             EHRB 风险警告 ("需要注意~")
     error    → ❌             错误终止 ("出错了呢~")
     complete → ✅ 💡 ⚡ 🔧    完成/直接响应/快速流程/外部工具 ("完成了~")
-    confirm  → ❓ 📐          通用确认 / R2 确认 ("需要您确认~")
-    confirm  → 🔵（状态含"确认"）R3 确认（核心维度全部充分，等待模式选择）
-    idle     → 🔵（状态不含"确认"）R3 追问/评估/执行等 ("在等你呢~")
+    confirm  → ❓              通用确认 / R2 确认 ("需要您确认~")
+    confirm  → 🔵（状态含"确认"）R2 确认（核心维度全部充分，等待模式选择）
+    idle     → 🔵（状态不含"确认"）R2 追问/评估/执行等 ("在等你呢~")
     idle     → ℹ️ 🚫 及其他   信息提示/取消
     complete → 无 G3 格式      默认
 
@@ -36,13 +36,18 @@ from pathlib import Path
 
 # Windows UTF-8 编码设置
 if sys.platform == 'win32':
-    if hasattr(sys.stdin, 'buffer'):
-        sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
+    for _s in ('stdin', 'stdout', 'stderr'):
+        _stream = getattr(sys, _s, None)
+        if _stream and hasattr(_stream, 'buffer'):
+            setattr(sys, _s, io.TextIOWrapper(_stream.buffer, encoding='utf-8', errors='replace'))
 
 # ---------------------------------------------------------------------------
 # G3 图标→声音检测（图标映射与 codex_notify.py 一致，无标记时行为不同:
 # Claude Code Stop hook 仅主代理触发 → 默认 complete;
 # Codex notify 所有代理触发 → 无标记时跳过声音以过滤子代理）
+# NOTE: _G3_MARKER 和图标常量在 codex_notify.py 中有独立副本。
+# 两个脚本独立部署到不同 CLI 配置目录，无法共享导入。
+# 修改图标映射时必须同步更新两个文件。
 # ---------------------------------------------------------------------------
 
 # G3 格式标记
@@ -149,6 +154,7 @@ def detect_g3_sound(text):
 
 SCRIPTS_DIR = Path(__file__).parent
 SOUND_NOTIFY = SCRIPTS_DIR / "sound_notify.py"
+NOTIFY_DESKTOP = SCRIPTS_DIR / "notify.py"
 CLAUDE_PROJECTS = Path.home() / ".claude" / "projects"
 
 # 从 JSONL 尾部读取的最大字节数
@@ -295,7 +301,7 @@ def main():
             if text:
                 sound_event = detect_g3_sound(text)
 
-    # 播放声音
+    # 播放声音（notify_level 门控在 sound_notify.py 入口）
     if SOUND_NOTIFY.exists():
         try:
             subprocess.run(
@@ -304,6 +310,18 @@ def main():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 timeout=5,
+            )
+        except Exception:
+            pass
+
+    # 桌面通知（后台执行，与声音播放并行；notify_level 门控在 notify.py 入口）
+    if NOTIFY_DESKTOP.exists():
+        try:
+            subprocess.Popen(
+                [sys.executable, str(NOTIFY_DESKTOP)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
         except Exception:
             pass

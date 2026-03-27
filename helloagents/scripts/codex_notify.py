@@ -15,9 +15,9 @@ Codex CLI 调用方式:
     warning  → ⚠️             EHRB 风险警告 ("需要注意~")
     error    → ❌             错误终止 ("出错了呢~")
     complete → ✅💡⚡🔧       完成/直接响应/快速流程/外部工具 ("完成了~")
-    confirm  → ❓📐           通用确认 / R2 确认 ("需要您确认~")
-    confirm  → 🔵（状态含"确认"）R3 确认（核心维度全部充分，等待模式选择）
-    idle     → 🔵（状态不含"确认"）R3 追问/评估/执行等 ("在等你呢~")
+    confirm  → ❓              通用确认 / R2 确认 ("需要您确认~")
+    confirm  → 🔵（状态含"确认"）R2 确认（核心维度全部充分，等待模式选择）
+    idle     → 🔵（状态不含"确认"）R2 追问/评估/执行等 ("在等你呢~")
     idle     → ℹ️🚫及其他     信息提示/取消
     (跳过) → 无 G3 格式      子代理输出，跳过声音
 
@@ -40,9 +40,20 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Windows UTF-8 编码设置
+if sys.platform == 'win32':
+    import io
+    for _s in ('stdin', 'stdout', 'stderr'):
+        _stream = getattr(sys, _s, None)
+        if _stream and hasattr(_stream, 'buffer'):
+            setattr(sys, _s, io.TextIOWrapper(_stream.buffer, encoding='utf-8', errors='replace'))
+
 # ---------------------------------------------------------------------------
 # G3 图标→声音检测（图标映射与 stop_sound_router.py 一致，无标记时返回 None
 # 跳过声音，因为 Codex notify 在所有代理轮次触发，需通过 G3 标记过滤子代理）
+# NOTE: _G3_MARKER 和图标常量在 stop_sound_router.py 中有独立副本。
+# 两个脚本独立部署到不同 CLI 配置目录，无法共享导入。
+# 修改图标映射时必须同步更新两个文件。
 # ---------------------------------------------------------------------------
 
 # G3 格式标记
@@ -148,6 +159,7 @@ TUI_CLIENT = "codex-tui"
 # 脚本路径
 SCRIPTS_DIR = Path(__file__).parent
 SOUND_NOTIFY = SCRIPTS_DIR / "sound_notify.py"
+NOTIFY_DESKTOP = SCRIPTS_DIR / "notify.py"
 
 
 # ---------------------------------------------------------------------------
@@ -178,7 +190,7 @@ def main():
         except (json.JSONDecodeError, TypeError):
             pass
 
-    # 播放声音（同步等待，确保声音完整播放）
+    # 播放声音（同步等待，确保声音完整播放；notify_level 门控在 sound_notify.py 入口）
     if sound_event and not skip_sound and SOUND_NOTIFY.exists():
         try:
             subprocess.run(
@@ -191,13 +203,26 @@ def main():
         except Exception:
             pass
 
-    # 版本检查
+    # 桌面通知（notify_level 门控在 notify.py 入口）
+    if sound_event and not skip_sound and NOTIFY_DESKTOP.exists():
+        try:
+            subprocess.run(
+                [sys.executable, str(NOTIFY_DESKTOP)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+        except Exception:
+            pass
+
+    # 版本检查（后台执行，不阻塞 hook 返回）
     try:
-        subprocess.run(
+        subprocess.Popen(
             ["helloagents", "--check-update", "--silent"],
             stdin=subprocess.DEVNULL,
-            capture_output=True,
-            timeout=10,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
     except Exception:
         pass

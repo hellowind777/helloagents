@@ -230,24 +230,7 @@ def migrate_package(package_path: Path, archive_base: Path, status: str = "compl
         )
         return report
 
-    # 步骤4: 更新 tasks.md 状态
-    task_file = package_path / "tasks.md"
-    try:
-        update_task_status(task_file, status)
-        report.mark_completed(
-            "更新 tasks.md 状态",
-            str(task_file),
-            "检查 tasks.md 中是否包含 @status 状态行"
-        )
-    except Exception as e:
-        report.mark_failed(
-            "更新 tasks.md 状态",
-            ["更新 tasks.md 状态", "移动方案包", "更新 _index.md"],
-            str(e)
-        )
-        return report
-
-    # 步骤5: 移动方案包（覆盖已存在的，安全模式）
+    # 步骤4: 移动方案包（覆盖已存在的，安全模式）
     try:
         backup_path = None
         if target_path.exists():
@@ -277,7 +260,24 @@ def migrate_package(package_path: Path, archive_base: Path, status: str = "compl
     except Exception as e:
         report.mark_failed(
             "移动方案包",
-            ["移动方案包", "更新 _index.md"],
+            ["移动方案包", "更新 tasks.md 状态", "更新 _index.md"],
+            str(e)
+        )
+        return report
+
+    # 步骤5: 更新 tasks.md 状态（移动成功后再更新，避免移动失败时状态不一致）
+    task_file = target_path / "tasks.md"
+    try:
+        update_task_status(task_file, status)
+        report.mark_completed(
+            "更新 tasks.md 状态",
+            str(task_file),
+            "检查 tasks.md 中是否包含 @status 状态行"
+        )
+    except Exception as e:
+        report.mark_failed(
+            "更新 tasks.md 状态",
+            ["更新 tasks.md 状态", "更新 _index.md"],
             str(e)
         )
         return report

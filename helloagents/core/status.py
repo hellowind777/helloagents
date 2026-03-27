@@ -21,24 +21,20 @@ from .win_helpers import win_safe_rmtree
 # ---------------------------------------------------------------------------
 
 def _show_config_status() -> None:
-    """Display config.json override status."""
-    global_cfg = Path.home() / ".helloagents" / "config.json"
-    project_cfg = Path.cwd() / ".helloagents" / "config.json"
+    """Display helloagents.json override status."""
+    global_cfg = Path.home() / ".helloagents" / "helloagents.json"
+    label = _msg("全局配置", "Global config")
 
-    for label, path in [
-        (_msg("全局配置", "Global config"), global_cfg),
-        (_msg("项目配置", "Project config"), project_cfg),
-    ]:
-        if path.exists():
-            try:
-                data = json.loads(path.read_text(encoding="utf-8"))
-                keys = ", ".join(data.keys()) if data else _msg("空", "empty")
-                print(f"  ✓ {label}: {path}")
-                print(f"    {_msg('覆盖项', 'Overrides')}: {keys}")
-            except Exception:
-                print(f"  ⚠ {label}: {path} ({_msg('解析失败', 'parse error')})")
-        else:
-            print(f"  · {label}: {_msg('未配置', 'not set')}")
+    if global_cfg.exists():
+        try:
+            data = json.loads(global_cfg.read_text(encoding="utf-8"))
+            keys = ", ".join(data.keys()) if data else _msg("空", "empty")
+            print(f"  ✓ {label}: {global_cfg}")
+            print(f"    {_msg('覆盖项', 'Overrides')}: {keys}")
+        except Exception:
+            print(f"  ⚠ {label}: {global_cfg} ({_msg('解析失败', 'parse error')})")
+    else:
+        print(f"  · {label}: {_msg('未配置', 'not set')}")
 
 
 def _show_claude_cli_details(cli_dir: Path) -> None:

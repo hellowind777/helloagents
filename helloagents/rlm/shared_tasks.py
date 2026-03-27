@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import os
-import platform
+import re
 import sys
 import time
 try:
@@ -21,6 +21,7 @@ except ImportError:  # Non-Windows
     msvcrt = None
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 
 # ==================== 跨平台文件锁 ====================
@@ -99,6 +100,8 @@ class SharedTasksManager:
         self.is_collaborative = bool(self.list_id)
 
         if self.is_collaborative:
+            # Sanitize list_id to prevent path traversal
+            self.list_id = re.sub(r'[^a-zA-Z0-9_\-]', '_', self.list_id)
             self.tasks_dir.mkdir(parents=True, exist_ok=True)
             self.tasks_file = self.tasks_dir / f"{self.list_id}.json"
             self._init_task_list()
@@ -166,29 +169,40 @@ class SharedTasksManager:
         blocks: list[str] | None = None,
         blocked_by: list[str] | None = None,
     ) -> str | None:
-        """添加任务，返回任务 ID，失败返回 None"""
+        """添加任务（原子操作），返回任务 ID，失败返回 None"""
         if not self.is_collaborative:
             return None
+        if not self.tasks_file.exists():
+            self._init_task_list()
 
-        data = self._read_tasks()
-        task_id = f"t{len(data['tasks']) + 1}_{datetime.now().strftime('%H%M%S')}"
-
-        task = {
-            "id": task_id,
-            "subject": subject,
-            "description": description,
-            "status": "pending",
-            "owner": None,
-            "blocks": blocks or [],
-            "blocked_by": blocked_by or [],
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat(),
-        }
-
-        data["tasks"].append(task)
-        if self._write_tasks(data):
-            return task_id
-        return None
+        import uuid
+        task_id = f"t{uuid.uuid4().hex[:8]}"
+        try:
+            with open(self.tasks_file, 'r+', encoding='utf-8') as f:
+                with _FileLock(f, exclusive=True) as lock:
+                    if not lock.locked:
+                        return None
+                    data = json.load(f)
+                    task = {
+                        "id": task_id,
+                        "subject": subject,
+                        "description": description,
+                        "status": "pending",
+                        "owner": None,
+                        "blocks": blocks or [],
+                        "blocked_by": blocked_by or [],
+                        "created_at": datetime.now().isoformat(),
+                        "updated_at": datetime.now().isoformat(),
+                    }
+                    data["tasks"].append(task)
+                    data["last_updated"] = datetime.now().isoformat()
+                    f.seek(0)
+                    f.truncate()
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                    return task_id
+        except Exception as e:
+            print(f"[HelloAGENTS] add_task failed: {e}", file=sys.stderr)
+            return None
 
     def _atomic_update(self, task_id: str, check_fn, update_fn) -> bool:
         """原子操作：在排他锁内完成 读取→检查→更新→写入，防止 TOCTOU 竞态。"""
@@ -226,24 +240,22 @@ class SharedTasksManager:
         status: str | None = None,
         owner: str | None = None,
     ) -> bool:
-        """更新任务状态 (pending/in_progress/completed/failed)"""
+        """更新任务状态（原子操作，防止 TOCTOU 竞态）"""
         if not self.is_collaborative:
             return False
 
-        data, task = self._find_task(task_id)
-        if not task:
-            return False
+        def check(data, task):
+            return True
 
-        if status:
-            task["status"] = status
-        if owner is not None:
-            task["owner"] = owner
-        task["updated_at"] = datetime.now().isoformat()
+        def update(data, task):
+            if status:
+                task["status"] = status
+            if owner is not None:
+                task["owner"] = owner
+            if status == "completed":
+                self._resolve_dependencies(data, task_id)
 
-        if status == "completed":
-            self._resolve_dependencies(data, task_id)
-
-        return self._write_tasks(data)
+        return self._atomic_update(task_id, check, update)
 
     def complete_task(self, task_id: str, owner: str) -> bool:
         """标记任务完成（需负责人一致），原子操作防止竞态"""

@@ -23,8 +23,8 @@ HelloAGENTS 预定义以下 11 个 Hook 配置供用户可选启用:
       错误类（❌）           → error   ("出错了呢~"，错误终止)
       完成类（✅💡⚡🔧）    → complete ("完成了~")
       确认类（❓📐）         → confirm ("需要您确认~"，始终为确认场景)
-      上下文类（🔵+状态含"确认"） → confirm (R3 确认，核心维度全部充分 等待模式选择)
-      上下文类（🔵+状态不含"确认"） → idle ("在等你呢~"，R3 追问/评估/执行等)
+      上下文类（🔵+状态含"确认"） → confirm (R2 确认，核心维度全部充分 等待模式选择)
+      上下文类（🔵+状态不含"确认"） → idle ("在等你呢~"，R2 追问/评估/执行等)
       其余图标（ℹ️🚫等）    → idle    ("在等你呢~")
       无 G3 格式            → complete（默认）
   Claude Code: 从会话 JSONL 读取最后一条 assistant 消息的 text + stop_reason（stop_sound_router.py）
