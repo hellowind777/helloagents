@@ -295,37 +295,17 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
 
     ok = True
     if plugin_dest.exists():
-        # Preserve user/ directory (all user content consolidated here)
-        import tempfile
-        _user_bak: Path | None = None
         try:
-            _user_src = plugin_dest / "user"
-            if _user_src.exists() and any(_user_src.iterdir()):
-                _user_bak = Path(tempfile.mkdtemp()) / "user"
-                shutil.copytree(_user_src, _user_bak)
-
             if win_safe_rmtree(plugin_dest):
                 removed.append(str(plugin_dest))
             else:
                 print(_msg(f"  ✗ 无法移除 {plugin_dest}（可能被 CLI 进程占用）",
                            f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
                 ok = False
-
-            # Restore preserved user/ directory
-            if _user_bak and _user_bak.exists():
-                _restore = plugin_dest / "user"
-                if not _restore.exists():
-                    _restore.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(_user_bak, _restore)
-                print(_msg(f"  已保留用户目录: {_restore}",
-                           f"  Preserved user directory: {_restore}"))
         except Exception as e:
             print(_msg(f"  ⚠ 移除插件目录时出错: {e}",
                        f"  ⚠ Error removing plugin directory: {e}"))
             ok = False
-        finally:
-            if _user_bak and _user_bak.parent.exists():
-                shutil.rmtree(_user_bak.parent, ignore_errors=True)
 
     if rules_dest.exists():
         if is_helloagents_file(rules_dest) or rules_dest.stat().st_size == 0:
@@ -359,6 +339,7 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
         removed.extend(_uninstall_qwen_extras(dest_dir))
     elif target == "grok":
         removed.extend(_uninstall_grok_extras(dest_dir))
+    # opencode: 纯规则模式，无额外配置需清理
 
     if removed:
         print(_msg(f"  已移除 {len(removed)} 个项目:",

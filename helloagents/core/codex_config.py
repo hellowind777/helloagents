@@ -157,6 +157,33 @@ def _ensure_feature_bool(content: str, key: str) -> tuple[str, bool]:
     return content.rstrip() + f"\n\n[features]\n{kv}\n", True
 
 
+def _remove_feature_key(content: str, key: str) -> tuple[str, bool]:
+    """Remove a key from ``[features]`` section. Returns (content, changed)."""
+    feat = re.search(r'^\[features\]', content, re.MULTILINE)
+    if not feat:
+        return content, False
+    after = content[feat.end():]
+    ns = re.search(r'^\[[\w]', after, re.MULTILINE)
+    scope = after[:ns.start()] if ns else after
+    m = re.search(rf'^{re.escape(key)}\s*=\s*\S+\s*\n?', scope, re.MULTILINE)
+    if not m:
+        return content, False
+    abs_start = feat.end() + m.start()
+    abs_end = feat.end() + m.end()
+    content = content[:abs_start] + content[abs_end:]
+    # Clean up empty [features] section
+    feat2 = re.search(r'^\[features\]\s*\n', content, re.MULTILINE)
+    if feat2:
+        after2 = content[feat2.end():]
+        ns2 = re.search(r'^\[[\w]', after2, re.MULTILINE)
+        scope2 = after2[:ns2.start()] if ns2 else after2
+        if not scope2.strip():
+            end2 = feat2.end() + (ns2.start() if ns2 else len(after2))
+            content = content[:feat2.start()] + content[end2:]
+    content = re.sub(r'\n{3,}', '\n\n', content)
+    return content, True
+
+
 def _configure_codex_csv_batch(dest_dir: Path) -> None:
     """Ensure config.toml has multi-agent settings for spawn_agents_on_csv.
 

@@ -303,7 +303,11 @@ def main():
                 candidate.resolve().relative_to(workspace.resolve())
                 package_path = candidate
             except ValueError:
-                package_path = candidate  # 不在工作空间内，下方 is_dir 检查会拦截
+                print(json.dumps({
+                    "error": f"路径不在工作空间内: {args.package}",
+                    "valid": False
+                }, ensure_ascii=False, indent=2))
+                sys.exit(1)
 
         if package_path.is_dir():
             result = validate_package(package_path)

@@ -196,7 +196,7 @@
 
 | 模式 | 触发 | 记录位置 | 特殊规则 |
 |------|------|----------|----------|
-| R2 简化流程/R3 标准流程 | 开发实施完成后 | CHANGELOG.md | 必填：版本号+日期+分类+模块+描述+方案链接 |
+| R2 标准流程 | 开发实施完成后 | CHANGELOG.md | 必填：版本号+日期+分类+模块+描述+方案链接 |
 | R1 快速流程 | ROUTING_LEVEL = R1 | CHANGELOG.md 快速修改分类 | KB_SKIPPED=true，不触发完整知识库创建 |
 | Overview 归档 | overview 方案包归档时 | CHANGELOG.md 文档分类 | Patch 版本递增 |
 

@@ -55,7 +55,7 @@ helloagents 角色:
     prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。
             你负责: 任务 1.1。操作范围: src/api/filter.py 中的空白判定函数。
             任务: 实现空白判定函数，处理空字符串和纯空格输入。
-            约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。
+            约束: 遵循现有代码风格，单次只改单个函数，大文件先搜索定位。代码体积控制: 文件/类超300行评估拆分、超400行强制拆分，函数超40行评估拆分、超60行强制拆分。
             返回: {status: completed|partial|failed, changes: [{file, type, scope}], issues: [...], verification: {lint_passed, tests_passed}}"
   )
 

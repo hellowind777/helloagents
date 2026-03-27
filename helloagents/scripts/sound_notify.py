@@ -20,6 +20,9 @@ import io
 import os
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from _config import get_notify_mode
+
 # Windows UTF-8 编码设置
 if sys.platform == 'win32':
     if hasattr(sys.stdin, 'buffer'):
@@ -58,7 +61,7 @@ def _play_windows(wav_path: str) -> bool:
             debug_file.parent.mkdir(parents=True, exist_ok=True)
             with open(debug_file, "a", encoding="utf-8") as f:
                 f.write(f"[{os.getpid()}] Windows播放失败: {wav_path}\n错误: {e}\n\n")
-        except:
+        except Exception:
             pass
         return False
 
@@ -137,6 +140,11 @@ def main():
         sys.stdin.read()
     except Exception:
         pass
+
+    # notify_level 门控: 0=off, 1=desktop only → 跳过声音
+    mode = get_notify_mode()
+    if mode not in (2, 3):
+        sys.exit(0)
 
     # 解析事件名
     if len(sys.argv) < 2:
