@@ -127,8 +127,8 @@ Phase2: 方案构思 → 方案包生成（proposal.md + tasks.md）→ validate
 DO NOT: 跳过 Phase1 直接写方案 | 跳过方案包验收 | 设计完成后直接写代码不加载 develop.md"""
 
 GENERIC_RULES = """[HelloAGENTS 核心流程提醒]
-- G4 路由: R0 直接响应 | R1 快速流程 | R2 简化流程（含简单新建项目）| R3 标准流程
-- G4 评估: R2/R3 严格按 G4 需求评估章节执行
+- G4 路由: R0 直接响应 | R1 快速流程 | R2 标准流程
+- G4 评估: R2 严格按 G4 需求评估章节执行
 - G5 阶段链: 评估→确认→DESIGN→DEVELOP→KB同步→完成（每阶段必须加载对应模块文件 G7）
 - G7 模块加载: 进入 DESIGN 读 stages/design.md | 进入 DEVELOP 读 stages/develop.md
 - G9 子代理: ≥2个独立工作单元时自动编排子代理并行执行

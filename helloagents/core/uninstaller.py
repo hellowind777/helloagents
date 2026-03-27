@@ -14,6 +14,7 @@ from .._common import (
 from .codex_config import _cleanup_codex_agents_dotted, _remove_codex_notify
 from .codex_config import _remove_codex_developer_instructions
 from .codex_config import _remove_codex_tui_notification
+from .codex_config import _remove_feature_key
 from .codex_roles import _remove_codex_agent_roles
 from .claude_config import (
     _remove_claude_hooks, _remove_claude_permissions,
@@ -34,6 +35,14 @@ from .win_helpers import (
 # ---------------------------------------------------------------------------
 # Self-uninstall (remove the helloagents package itself)
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Note: ~/.helloagents/ (global config dir) is intentionally preserved during
+# uninstall. It contains user preferences (helloagents.json) and update cache
+# (.update_cache) that should survive reinstalls. Users can manually remove
+# it with: rm -rf ~/.helloagents/
+# ---------------------------------------------------------------------------
+
 
 def _self_uninstall() -> bool:
     """Remove the helloagents Python package itself (pip/uv)."""
@@ -223,19 +232,30 @@ def _uninstall_codex_extras(dest_dir: Path) -> list[str]:
     except Exception as e:
         print(_msg(f"  ⚠ 清理 dotted agents 键时出错: {e}",
                    f"  ⚠ Error cleaning dotted agents keys: {e}"))
+    # Remove enable_fanout feature flag
+    try:
+        config_toml = dest_dir / "config.toml"
+        if config_toml.exists():
+            content = config_toml.read_text(encoding="utf-8")
+            content, r = _remove_feature_key(content, "enable_fanout")
+            if r:
+                config_toml.write_text(content, encoding="utf-8")
+                removed.append("[features] enable_fanout (config.toml)")
+    except Exception as e:
+        print(_msg(f"  ⚠ 清理 enable_fanout 时出错: {e}",
+                   f"  ⚠ Error cleaning enable_fanout: {e}"))
     # Note: The following config keys are intentionally preserved during uninstall:
     # - project_doc_max_bytes: May be used by other project documentation tools
     # - agents.max_threads / agents.max_depth: Generic multi-agent settings
-    # - [features] sqlite: May be used by other Codex features
     # - [memories]: Codex native memory system (not HelloAGENTS-exclusive)
     # These keys correspond to installer functions:
     # - _configure_codex_toml() → project_doc_max_bytes (preserved)
-    # - _configure_codex_csv_batch() → agents.max_threads/max_depth, sqlite (preserved)
+    # - _configure_codex_csv_batch() → agents.max_threads/max_depth (preserved)
     # - [memories] section is Codex-native, not created by HelloAGENTS (preserved)
     # Users can manually remove these if desired.
     print(_msg(
-        "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories 配置已保留（可能被其他工具使用）。",
-        "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / sqlite / memories kept in config.toml (may be used by other tools)."))
+        "  ℹ config.toml 中的 project_doc_max_bytes / agents.max_threads / agents.max_depth / memories 配置已保留（可能被其他工具使用）。",
+        "  ℹ project_doc_max_bytes / agents.max_threads / agents.max_depth / memories kept in config.toml (may be used by other tools)."))
     return removed
 
 
@@ -275,37 +295,17 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
 
     ok = True
     if plugin_dest.exists():
-        # Preserve user/ directory (all user content consolidated here)
-        import tempfile
-        _user_bak: Path | None = None
         try:
-            _user_src = plugin_dest / "user"
-            if _user_src.exists() and any(_user_src.iterdir()):
-                _user_bak = Path(tempfile.mkdtemp()) / "user"
-                shutil.copytree(_user_src, _user_bak)
-
             if win_safe_rmtree(plugin_dest):
                 removed.append(str(plugin_dest))
             else:
                 print(_msg(f"  ✗ 无法移除 {plugin_dest}（可能被 CLI 进程占用）",
                            f"  ✗ Cannot remove {plugin_dest} (may be locked by CLI)"))
                 ok = False
-
-            # Restore preserved user/ directory
-            if _user_bak and _user_bak.exists():
-                _restore = plugin_dest / "user"
-                if not _restore.exists():
-                    _restore.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copytree(_user_bak, _restore)
-                print(_msg(f"  已保留用户目录: {_restore}",
-                           f"  Preserved user directory: {_restore}"))
         except Exception as e:
             print(_msg(f"  ⚠ 移除插件目录时出错: {e}",
                        f"  ⚠ Error removing plugin directory: {e}"))
             ok = False
-        finally:
-            if _user_bak and _user_bak.parent.exists():
-                shutil.rmtree(_user_bak.parent, ignore_errors=True)
 
     if rules_dest.exists():
         if is_helloagents_file(rules_dest) or rules_dest.stat().st_size == 0:
@@ -339,6 +339,7 @@ def uninstall(target: str, show_package_hint: bool = True) -> bool:
         removed.extend(_uninstall_qwen_extras(dest_dir))
     elif target == "grok":
         removed.extend(_uninstall_grok_extras(dest_dir))
+    # opencode: 纯规则模式，无额外配置需清理
 
     if removed:
         print(_msg(f"  已移除 {len(removed)} 个项目:",

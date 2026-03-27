@@ -1,11 +1,13 @@
 """HelloAGENTS Installer - Install operations."""
 
+import json
 import shutil
 from pathlib import Path
 
 from .._common import (
     _msg,
     CLI_TARGETS, PLUGIN_DIR_NAME, AGENT_PREFIX,
+    GLOBAL_CONFIG_DIR, GLOBAL_CONFIG_FILE, VALID_CONFIG_KEYS,
     is_helloagents_file, is_helloagents_rule, backup_user_file,
     get_agents_md_path, get_skill_md_path, get_helloagents_module_path,
     detect_installed_clis, clean_skills_dir,
@@ -133,6 +135,77 @@ def clean_stale_files(dest_dir: Path, current_rules_file: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Global config creation
+# ---------------------------------------------------------------------------
+
+def _sync_global_config() -> None:
+    """Sync ~/.helloagents/helloagents.json with VALID_CONFIG_KEYS.
+
+    - File missing → create with all defaults.
+    - File exists  → add missing keys (defaults), warn unknown keys, preserve
+      user-set values.  Only writes back when something changed.
+    """
+    try:
+        GLOBAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    except Exception as e:
+        print(_msg(f"  ⚠ 创建全局配置目录失败: {e}",
+                   f"  ⚠ Failed to create global config directory: {e}"))
+        return
+
+    if not GLOBAL_CONFIG_FILE.is_file():
+        # --- brand-new file ---
+        try:
+            GLOBAL_CONFIG_FILE.write_text(
+                json.dumps(VALID_CONFIG_KEYS, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            print(_msg(f"  已创建全局配置: {GLOBAL_CONFIG_FILE}",
+                       f"  Created global config: {GLOBAL_CONFIG_FILE}"))
+        except Exception as e:
+            print(_msg(f"  ⚠ 创建全局配置失败: {e}",
+                       f"  ⚠ Failed to create global config: {e}"))
+        return
+
+    # --- existing file: read → patch → write back ---
+    try:
+        raw = GLOBAL_CONFIG_FILE.read_text(encoding="utf-8")
+        data = json.loads(raw)
+    except Exception as e:
+        print(_msg(f"  ⚠ 读取全局配置失败: {e}",
+                   f"  ⚠ Failed to read global config: {e}"))
+        return
+
+    changed = False
+
+    # Add missing keys with defaults
+    added: list[str] = []
+    for key, default in VALID_CONFIG_KEYS.items():
+        if key not in data:
+            data[key] = default
+            added.append(key)
+            changed = True
+    if added:
+        print(_msg(f"  已补充缺失配置项: {', '.join(added)}",
+                   f"  Added missing config keys: {', '.join(added)}"))
+
+    # Warn about unknown keys
+    unknown = [k for k in data if k not in VALID_CONFIG_KEYS]
+    if unknown:
+        print(_msg(f"  ⚠ 未知配置项（可能已废弃或拼写错误）: {', '.join(unknown)}",
+                   f"  ⚠ Unknown config keys (possibly deprecated or misspelled): {', '.join(unknown)}"))
+
+    if changed:
+        try:
+            GLOBAL_CONFIG_FILE.write_text(
+                json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+        except Exception as e:
+            print(_msg(f"  ⚠ 写回全局配置失败: {e}",
+                       f"  ⚠ Failed to write global config: {e}"))
+
+
+# ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
 
@@ -176,26 +249,6 @@ def install(target: str) -> bool:
             print(f"    - {r}")
 
     try:
-        # Preserve user/ directory (all user content consolidated here)
-        import tempfile
-        _user_bak: Path | None = None
-        _user_src = plugin_dest / "user"
-
-        # Migration: move old top-level commands/ into user/commands/ before backup
-        _old_commands = plugin_dest / "commands"
-        if _old_commands.exists() and _old_commands.is_dir():
-            _new_commands = _user_src / "commands"
-            _new_commands.mkdir(parents=True, exist_ok=True)
-            for _f in _old_commands.iterdir():
-                if _f.is_file() and not _f.name.startswith("_"):
-                    _dest_f = _new_commands / _f.name
-                    if not _dest_f.exists():
-                        shutil.copy2(_f, _dest_f)
-
-        if _user_src.exists():
-            _user_bak = Path(tempfile.mkdtemp()) / "user"
-            shutil.copytree(_user_src, _user_bak)
-
         # Remove old module directory completely before copying
         if plugin_dest.exists():
             if not win_safe_rmtree(plugin_dest):
@@ -216,26 +269,6 @@ def install(target: str) -> bool:
         )
         print(_msg(f"  已安装模块到: {plugin_dest}",
                    f"  Installed module to: {plugin_dest}"))
-
-        # Restore user/ directory
-        # - User-created files (memory/profile.md, custom commands, sounds) → restore
-        # - Template files (starting with _) → keep fresh version from package
-        if _user_bak and _user_bak.exists():
-            _target = plugin_dest / "user"
-            for _f in _user_bak.rglob("*"):
-                if not _f.is_file():
-                    continue
-                # Skip template files (starting with _) — keep fresh from package
-                if _f.name.startswith("_"):
-                    continue
-                # Skip .gitkeep — keep fresh from package
-                if _f.name == ".gitkeep":
-                    continue
-                _rel = _f.relative_to(_user_bak)
-                _dest = _target / _rel
-                _dest.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(_f, _dest)
-            shutil.rmtree(_user_bak.parent)
 
         # Deploy rules
         if agents_md_src.exists():
@@ -282,18 +315,21 @@ def install(target: str) -> bool:
         if target == "claude":
             _deploy_agent_files(dest_dir)
     except Exception as e:
-        # Clean up temp directory on failure
-        if _user_bak and _user_bak.parent.exists():
-            shutil.rmtree(_user_bak.parent, ignore_errors=True)
         print(_msg(f"  ✗ 安装失败: {e}", f"  ✗ Installation failed: {e}"))
         return False
 
     print(_msg(f"  {target} 安装完成！请重启终端以应用更改。",
                f"  Installation complete for {target}! Please restart your terminal to apply changes."))
-    config_path = Path.home() / ".helloagents" / "config.json"
-    if not config_path.exists():
-        print(_msg("  ℹ 个性化配置可写入 ~/.helloagents/config.json，更新时不会被覆盖。",
-                   "  ℹ Custom settings can be saved to ~/.helloagents/config.json (preserved across updates)."))
+
+    # 同步全局配置文件（补缺失键、警告未知键）
+    _sync_global_config()
+
+    if GLOBAL_CONFIG_FILE.exists():
+        print(_msg(f"  ℹ 个性化配置: {GLOBAL_CONFIG_FILE}",
+                   f"  ℹ Custom settings: {GLOBAL_CONFIG_FILE}"))
+    else:
+        print(_msg("  ℹ 个性化配置可写入 ~/.helloagents/helloagents.json，更新时不会被覆盖。",
+                   "  ℹ Custom settings can be saved to ~/.helloagents/helloagents.json (preserved across updates)."))
 
     # Target-specific post-install: hooks & config
     _POST_INSTALL = {
@@ -319,6 +355,7 @@ def install(target: str) -> bool:
         "grok": [
             (_configure_grok_hooks, "Hooks", "Hooks"),
         ],
+        # opencode: 纯规则模式，无 hooks/settings.json 配置
     }
     for fn, cn_label, en_label in _POST_INSTALL.get(target, []):
         try:

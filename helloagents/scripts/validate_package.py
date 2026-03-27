@@ -23,10 +23,10 @@ from datetime import datetime
 
 # 导入 utils 模块（优先直接导入，回退时添加脚本目录到路径）
 try:
-    from utils import setup_encoding, get_plan_path, script_error_handler, validate_base_path, get_template_loader
+    from utils import setup_encoding, get_plan_path, get_workspace_path, script_error_handler, validate_base_path, get_template_loader
 except ImportError:
     sys.path.insert(0, str(Path(__file__).parent))
-    from utils import setup_encoding, get_plan_path, script_error_handler, validate_base_path, get_template_loader
+    from utils import setup_encoding, get_plan_path, get_workspace_path, script_error_handler, validate_base_path, get_template_loader
 
 # 任务状态符号
 TASK_STATUS = {
@@ -296,8 +296,18 @@ def main():
         package_path = plan_path / args.package
 
         if not package_path.is_dir():
-            # 尝试作为完整路径
-            package_path = Path(args.package)
+            # 尝试作为完整路径（限制在工作空间内，防止路径穿越）
+            candidate = Path(args.package)
+            workspace = get_workspace_path(args.path)
+            try:
+                candidate.resolve().relative_to(workspace.resolve())
+                package_path = candidate
+            except ValueError:
+                print(json.dumps({
+                    "error": f"路径不在工作空间内: {args.package}",
+                    "valid": False
+                }, ensure_ascii=False, indent=2))
+                sys.exit(1)
 
         if package_path.is_dir():
             result = validate_package(package_path)

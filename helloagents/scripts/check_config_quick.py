@@ -29,6 +29,8 @@ if sys.platform == 'win32':
         sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', errors='replace')
 
 
+# NOTE: _detect_locale 与 utils.py 中的同名函数保持一致。
+# 两个脚本独立部署，无法共享导入。修改时需同步更新。
 def _detect_locale() -> str:
     """Detect system locale. Returns 'zh' for Chinese, 'en' otherwise."""
     for var in ("LC_ALL", "LC_MESSAGES", "LANG", "LANGUAGE"):
@@ -84,16 +86,17 @@ CACHE_FILE = _get_cli_helloagents_dir() / ".config_check_cache"
 
 def get_config_mtime(cli_name: str) -> float:
     """获取配置文件的修改时间。"""
-    if cli_name == "claude":
-        config_path = Path.home() / ".claude" / "settings.json"
-    elif cli_name == "codex":
-        config_path = Path.home() / ".codex" / "config.toml"
-    else:
+    home = Path.home()
+    config_paths = {
+        "claude": home / ".claude" / "settings.json",
+        "codex": home / ".codex" / "config.toml",
+        "gemini": home / ".gemini" / "settings.json",
+        "qwen": home / ".qwen" / "settings.json",
+        "grok": home / ".grok" / "settings.json",
+    }
+    config_path = config_paths.get(cli_name)
+    if not config_path or not config_path.exists():
         return 0.0
-
-    if not config_path.exists():
-        return 0.0
-
     try:
         return config_path.stat().st_mtime
     except Exception:
@@ -121,8 +124,9 @@ def update_cache(mtime: float):
 
 def check_config_integrity(cli_name: str) -> bool:
     """完整检测配置完整性。"""
+    home = Path.home()
     if cli_name == "claude":
-        settings_path = Path.home() / ".claude" / "settings.json"
+        settings_path = home / ".claude" / "settings.json"
         if not settings_path.exists():
             return True
         try:
@@ -131,14 +135,21 @@ def check_config_integrity(cli_name: str) -> bool:
         except Exception:
             return True
     elif cli_name == "codex":
-        config_path = Path.home() / ".codex" / "config.toml"
+        config_path = home / ".codex" / "config.toml"
         if not config_path.exists():
             return True
         try:
             content = config_path.read_text(encoding="utf-8")
-            has_di = 'developer_instructions' in content and 'HelloAGENTS' in content
-            has_memories = '[memories]' in content and 'protocol_anchors' in content
-            return has_di and has_memories
+            return 'developer_instructions' in content and 'HelloAGENTS' in content
+        except Exception:
+            return True
+    elif cli_name in ("gemini", "qwen", "grok"):
+        settings_path = home / f".{cli_name}" / "settings.json"
+        if not settings_path.exists():
+            return True
+        try:
+            content = settings_path.read_text(encoding="utf-8")
+            return '"hooks"' in content and 'HelloAGENTS' in content
         except Exception:
             return True
     return True
@@ -154,42 +165,49 @@ def main():
     # 检查是否强制完整检测
     force_check = "--force" in sys.argv
 
-    # 检测当前 CLI
-    cli_name = "unknown"
-    if Path.home().joinpath(".claude").exists():
-        cli_name = "claude"
-    elif Path.home().joinpath(".codex").exists():
-        cli_name = "codex"
-    else:
+    # 检测当前 CLI（检查所有已安装的 CLI）
+    home = Path.home()
+    cli_checks = [
+        ("claude", home / ".claude"),
+        ("codex", home / ".codex"),
+        ("gemini", home / ".gemini"),
+        ("qwen", home / ".qwen"),
+        ("grok", home / ".grok"),
+    ]
+    detected_clis = [name for name, path in cli_checks if path.exists()]
+    if not detected_clis:
         sys.exit(0)
 
-    # 强制模式：直接完整检测
-    if force_check:
-        config_ok = check_config_integrity(cli_name)
-        current_mtime = get_config_mtime(cli_name)
-        update_cache(current_mtime)
-    else:
-        # 轻量级模式：基于修改时间缓存
-        current_mtime = get_config_mtime(cli_name)
-        cached_mtime = get_cached_mtime()
-        if current_mtime <= cached_mtime:
-            sys.exit(0)
-        config_ok = check_config_integrity(cli_name)
-        update_cache(current_mtime)
+    # 对所有检测到的 CLI 执行检查
+    any_failed = False
+    for cli_name in detected_clis:
+        # 强制模式：直接完整检测
+        if force_check:
+            config_ok = check_config_integrity(cli_name)
+            current_mtime = get_config_mtime(cli_name)
+            update_cache(current_mtime)
+        else:
+            # 轻量级模式：基于修改时间缓存
+            current_mtime = get_config_mtime(cli_name)
+            cached_mtime = get_cached_mtime()
+            if current_mtime <= cached_mtime:
+                continue
+            config_ok = check_config_integrity(cli_name)
+            update_cache(current_mtime)
 
-    if not config_ok:
-        context = _msg("会话启动", "session start") if force_check else _msg(
-            "检测到配置文件被修改（可能是 ccswitch 切换）",
-            "config file modification detected (possibly ccswitch)")
-        print(_msg("\n⚠️  HelloAGENTS 配置缺失或不完整",
-                   "\n⚠️  HelloAGENTS config missing or incomplete"), file=sys.stderr)
-        print(_msg(f"可能原因：{context}",
-                   f"Possible cause: {context}"), file=sys.stderr)
-        print(_msg(f"修复方法：运行 'helloagents install {cli_name}' 恢复配置\n",
-                   f"Fix: run 'helloagents install {cli_name}' to restore config\n"), file=sys.stderr)
-        sys.exit(1)
+        if not config_ok:
+            any_failed = True
+            context = _msg("会话启动", "session start") if force_check else _msg(
+                "检测到配置文件被修改（可能是 ccswitch 切换）",
+                "config file modification detected (possibly ccswitch)")
+            print(_msg(f"\n⚠️  HelloAGENTS 配置缺失或不完整 ({cli_name})",
+                       f"\n⚠️  HelloAGENTS config missing or incomplete ({cli_name})"), file=sys.stderr)
+            print(_msg(f"可能原因：{context}",
+                       f"Possible cause: {context}"), file=sys.stderr)
+            print(_msg(f"修复方法：运行 'helloagents install {cli_name}' 恢复配置\n",
+                       f"Fix: run 'helloagents install {cli_name}' to restore config\n"), file=sys.stderr)
 
-    sys.exit(0)
+    sys.exit(1 if any_failed else 0)
 
 
 if __name__ == "__main__":

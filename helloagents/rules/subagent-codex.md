@@ -106,8 +106,8 @@ helloagents 角色:
   collab wait  # 立即阻塞等待，禁止在此之前执行其他步骤
 
 示例（spawn_agent 异构并行，每个子代理职责范围不重叠）:
-  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。你负责: 任务1.1。操作范围: filter.py 中的空白判定函数。任务: 实现空白判定逻辑。返回: {status, changes: [{file, type, scope}], issues, verification: {lint_passed, tests_passed}}")
-  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。你负责: 任务1.2。操作范围: validator.py 中的输入校验函数。任务: 实现输入校验逻辑。返回: {status, changes, issues, verification}")
+  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。你负责: 任务1.1。操作范围: filter.py 中的空白判定函数。任务: 实现空白判定逻辑。约束: 代码体积控制: 文件/类超300行评估拆分、超400行强制拆分，函数超40行评估拆分、超60行强制拆分。返回: {status, changes: [{file, type, scope}], issues, verification: {lint_passed, tests_passed}}")
+  spawn_agent(agent_type="worker", prompt="直接执行以下任务，跳过路由评分。使用 {OUTPUT_LANGUAGE} 输出。你负责: 任务1.2。操作范围: validator.py 中的输入校验函数。任务: 实现输入校验逻辑。约束: 代码体积控制: 文件/类超300行评估拆分、超400行强制拆分，函数超40行评估拆分、超60行强制拆分。返回: {status, changes, issues, verification}")
   collab wait
 
 示例（spawn_agents_on_csv 同构批处理，批量审查 30 个文件）:

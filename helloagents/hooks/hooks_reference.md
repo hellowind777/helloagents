@@ -23,8 +23,8 @@ HelloAGENTS 预定义以下 11 个 Hook 配置供用户可选启用:
       错误类（❌）           → error   ("出错了呢~"，错误终止)
       完成类（✅💡⚡🔧）    → complete ("完成了~")
       确认类（❓📐）         → confirm ("需要您确认~"，始终为确认场景)
-      上下文类（🔵+状态含"确认"） → confirm (R3 确认，核心维度全部充分 等待模式选择)
-      上下文类（🔵+状态不含"确认"） → idle ("在等你呢~"，R3 追问/评估/执行等)
+      上下文类（🔵+状态含"确认"） → confirm (R2 确认，核心维度全部充分 等待模式选择)
+      上下文类（🔵+状态不含"确认"） → idle ("在等你呢~"，R2 追问/评估/执行等)
       其余图标（ℹ️🚫等）    → idle    ("在等你呢~")
       无 G3 格式            → complete（默认）
   Claude Code: 从会话 JSONL 读取最后一条 assistant 消息的 text + stop_reason（stop_sound_router.py）
@@ -192,18 +192,18 @@ HelloAGENTS 角色昵称映射:
 | writer | RLM | Scribe, Quill, Chronicler |
 | brainstormer | RLM | Muse, Ideator, Catalyst |
 
-### collaboration_modes 功能开关（v0.110+）
+### enable_fanout — CSV 批处理编排开关
 
 ```toml
 [features]
-collaboration_modes = true
+enable_fanout = true
 ```
 
-启用后 `request_user_input` 工具可用，允许代理渲染 TUI 交互选择界面（替代纯文本选项）。
+启用 `spawn_agents_on_csv` CSV 批处理编排能力（UnderDevelopment）。
+由 `codex_config.py` 的 `_configure_codex_csv_batch()` 自动写入。
 
-- **适用**: 主代理和子代理均可使用
-- **HelloAGENTS 使用场景**: R2 确认（问题+选项）、R3 评估追问、R3 确认选项、DESIGN 多方案对比、EHRB 风险确认
-- **安装**: 由 `codex_config.py` 的 `_ensure_feature_collaboration_modes()` 自动写入
+> 注: `multi_agent`（子代理 spawn_agent）已 Stable 且默认开启，无需显式配置。
+> `sqlite` 和 `collaboration_modes` 已 Removed（默认 true），无需配置。
 
 ---
 

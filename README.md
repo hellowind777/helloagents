@@ -8,7 +8,7 @@
 
 **Let AI go beyond analysis — keep pushing until implementation and verification are done.**
 
-[![Version](https://img.shields.io/badge/version-2.3.7-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-2.3.8-orange.svg)](./pyproject.toml)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
 [![Commands](https://img.shields.io/badge/commands-15-6366f1.svg)](./helloagents/functions)
@@ -92,7 +92,7 @@
 
 **Structured Workflow (Evaluate → Design → Develop)**
 
-Every input is scored on five dimensions and routed to R0 direct response, R1 fast flow, R2 simplified flow, or R3 standard flow. R2/R3 enter the full stage chain with explicit entry conditions, deliverables, and verification gates. Supports interactive and fully delegated modes.
+Every input is scored on five dimensions and routed to R0 direct response, R1 fast flow, or R2 standard flow. R2 enters the full stage chain with explicit entry conditions, deliverables, and verification gates. Supports interactive and fully delegated modes.
 
 **Your gain:** proportional effort — simple queries stay fast, complex tasks get full process with verification at every step.
 </td>
@@ -110,11 +110,11 @@ Keyword scan, semantic analysis, and tool-output inspection catch destructive op
 <td width="50%" valign="top">
 <img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
 
-**Two-Layer Memory Model**
+**Project Knowledge Base**
 
-L0 user memory (global preferences) and L1 project knowledge base (structured docs synced from code).
+L1 project knowledge base (structured docs synced from code), context survives across sessions.
 
-**Your gain:** context survives across sessions and projects.
+**Your gain:** project context persists across sessions — no need to re-explain.
 </td>
 </tr>
 <tr>
@@ -123,7 +123,7 @@ L0 user memory (global preferences) and L1 project knowledge base (structured do
 
 **Extensibility & Customization**
 
-Voice notifications (5 event sounds), custom command extension (`.helloagents/commands/*.md`), user-defined tool orchestration (sub-agents, skills, MCP servers, plugins), and flexible configuration options. All features work across 6 CLI targets with graceful degradation.
+Voice notifications (5 event sounds), user-defined tool orchestration (sub-agents, skills, MCP servers, plugins), and flexible configuration options. All features work across 6 CLI targets with graceful degradation.
 
 **Your gain:** tailor the workflow to your team's needs without forking the codebase.
 </td>
@@ -150,14 +150,14 @@ One rule set works across Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI
 | Qwen CLI | Built-in tool calls | Fallback to sequential execution |
 | Grok CLI (Experimental) | Built-in tool calls | Fallback to sequential execution |
 
-Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action need, target clarity, decision scope, impact range, EHRB risk) to automatically determine processing depth for each input; **6 CLI targets** (Claude Code / Codex CLI / OpenCode / Gemini CLI / Qwen CLI / Grok CLI) with one rule set across all; **Hooks integration** (Claude Code 11 lifecycle hooks + Codex CLI notify hook + Gemini/Grok CLI hooks) with automatic graceful degradation when unavailable.
+Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action need, target clarity, decision scope, impact range, EHRB risk) to automatically determine processing depth for each input; **6 CLI targets** (Claude Code / Codex CLI / OpenCode / Gemini CLI / Qwen CLI / Grok CLI) with one rule set across all; **Hooks integration** (Claude Code 11 lifecycle hooks + Codex CLI notify hook + Gemini CLI 6 hooks + Grok CLI 3 hooks) with automatic graceful degradation when unavailable.
 
 ### CLI Compatibility Quick Reference
 
 | CLI | Recommended Version | Key Features | Configuration Notes |
 |-----|-------------------|--------------|---------------------|
-| **Claude Code** | Latest | Agent Teams, 11 lifecycle hooks, auto-memory | Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for teams mode |
-| **Codex CLI** | 0.110+ | spawn_agent, CSV batch, collaboration_modes | Enable sub-agents, CSV orchestration, set `project_doc_max_bytes >= 131072` |
+| **Claude Code** | Latest | Agent Teams, 11 lifecycle hooks | Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for teams mode |
+| **Codex CLI** | 0.110+ | spawn_agent, CSV batch, enable_fanout | Enable sub-agents, CSV orchestration, set `project_doc_max_bytes >= 131072` |
 | **OpenCode** | Latest | Task tool, custom agents, MCP | Supports primary agents (build/plan) + subagents (general/explore) |
 | **Gemini CLI** | Latest | Built-in tool calls | Sequential execution fallback |
 | **Qwen CLI** | Latest | Built-in tool calls | Sequential execution fallback |
@@ -170,14 +170,14 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 - Enable sub-agents and CSV orchestration features
 - Set `project_doc_max_bytes = 131072` in config.toml
 - Configure `developer_instructions` for routing protocol priority
-- Enable `collaboration_modes` for TUI interactive selection (v0.110+)
+- Enable `enable_fanout` for CSV batch orchestration (v0.110+)
 - Configure `nickname_candidates` for agent role identification
 - Configure CSV batch processing if using parallel workflows
 
 **Claude Code Setup:**
 - Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` environment variable for Agent Teams
 - 11 lifecycle hooks auto-configured during installation (SessionStart, UserPromptSubmit, SubagentStart/Stop, PostToolUse, Stop, TeammateIdle, PreCompact, PreToolUse, SessionEnd, PostToolUseFailure)
-- Auto-memory feature enabled by default
+- Auto-memory feature disabled during installation (prevents conflicts with AGENTS.md rules)
 
 **Other CLIs:**
 - OpenCode supports Task tool with primary agents (build/plan) and subagents (general/explore)
@@ -322,11 +322,11 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 > - `agent_max_depth = 1` — limits sub-agent nesting depth, recommend keeping default or ≥2
 > - `agent_max_threads` too low — default 6, lower values limit parallel sub-agent scheduling (CSV batch mode recommends ≥16)
 > - `[features]` `multi_agent = true` — must be enabled for sub-agent orchestration to work
-> - `[features]` `sqlite = true` — must be enabled for CSV batch orchestration (spawn_agents_on_csv)
+> - `[features]` `enable_fanout = true` — must be enabled for CSV batch orchestration (spawn_agents_on_csv)
 > - Collab sub-agent scheduling requires Codex CLI feature gate to be enabled
 >
 > 💡 **Best practices:**
-> - Codex 0.110+ recommended for full feature set (collaboration_modes, nickname_candidates)
+> - Codex 0.110+ recommended for full feature set (enable_fanout, nickname_candidates)
 > - HelloAGENTS is optimized for Codex CLI — supports `high` and below reasoning effort levels. `xhigh` reasoning is **not supported** and may cause instruction-following issues
 > - Use the terminal/CLI version of Codex for the best experience. The VSCode extension updates lag behind the CLI — newer features (e.g., CSV batch orchestration, Collab multi-agent) may require waiting for the extension to catch up
 
@@ -361,13 +361,7 @@ Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action n
 
 ## Configuration
 
-Customize workflow behavior via `config.json` after installation. Only include keys you want to override — missing keys use defaults.
-
-**Storage locations (highest priority first):**
-
-1. Project-level: `{project_root}/.helloagents/config.json` — current project only
-2. Global: `~/.helloagents/config.json` — all projects
-3. Built-in defaults
+Customize workflow behavior via `~/.helloagents/helloagents.json` after installation. Only include keys you want to override — missing keys use defaults.
 
 **Available keys:**
 
@@ -376,9 +370,10 @@ Customize workflow behavior via `config.json` after installation. Only include k
 | `OUTPUT_LANGUAGE` | string | `zh-CN` | Language for AI output and KB files |
 | `KB_CREATE_MODE` | int | `2` | KB creation: `0`=OFF, `1`=on-demand (prompt ~init), `2`=auto on code changes, `3`=always auto |
 | `BILINGUAL_COMMIT` | int | `1` | Commit language: `0`=OUTPUT_LANGUAGE only, `1`=OUTPUT_LANGUAGE + English |
-| `EVAL_MODE` | int | `1` | Clarification mode: `1`=progressive (1 question/round, max 5), `2`=one-shot (all at once, max 3) |
+| `EVAL_MODE` | int | `1` | Clarification mode: `1`=progressive (1 question/round, max 4), `2`=one-shot (all at once, max 2) |
 | `UPDATE_CHECK` | int | `72` | Update check cache TTL in hours: `0`=OFF |
 | `CSV_BATCH_MAX` | int | `16` | CSV batch max concurrency: `0`=OFF, cap 64 (Codex CLI only) |
+| `notify_level` | int | `0` | Notification mode: `0`=OFF, `1`=desktop, `2`=sound, `3`=desktop+sound |
 
 **Example:**
 
@@ -446,7 +441,7 @@ Skip version update checks entirely (not recommended for production use).
   "EVAL_MODE": 2
 }
 ```
-Ask all clarification questions at once (max 3) instead of progressive mode (1 question per round, max 5).
+Ask all clarification questions at once (max 2 rounds) instead of progressive mode (1 question per round, max 4).
 </details>
 
 ## How It Works
@@ -515,24 +510,24 @@ When `~auto` or `~plan` presents its confirmation, you choose:
 - **Delegated (fully automatic):** auto-advances all stages, auto-selects recommended options, only pauses on EHRB risk
 - **Plan-only delegated:** fully automatic but stops after design, never enters development
 
-Without `~` commands, plain-text input is automatically routed to R0–R3 based on complexity.
+Without `~` commands, plain-text input is automatically routed to R0–R2 based on complexity.
 
 ### Requirement Evaluation
 
-Before R2/R3 tasks enter execution, the system scores requirements on four dimensions (scope 0–3, deliverable spec 0–3, implementation conditions 0–2, acceptance criteria 0–2, total 10). Score ≥ 8 proceeds to confirmation; < 8 triggers clarifying questions:
+Before R2 tasks enter execution, the system scores requirements on four dimensions (scope 0–3, deliverable spec 0–3, implementation conditions 0–2, acceptance criteria 0–2). The pass condition is based on core dimension sufficiency (scope ≥ 3, implementation conditions ≥ 1, deliverable spec ≥ 1) rather than a fixed total score threshold. Dimensions below the sufficiency line trigger clarifying questions:
 
-- `EVAL_MODE=1` (default, progressive): asks 1 lowest-scoring dimension per round, up to 5 rounds
-- `EVAL_MODE=2` (one-shot): asks all low-scoring dimensions at once, up to 3 rounds
+- `EVAL_MODE=1` (default, progressive): asks 1 insufficient dimension per round, up to 4 rounds
+- `EVAL_MODE=2` (one-shot): asks all insufficient dimensions at once, up to 2 rounds
 
-Context inferred from the existing codebase counts toward the score automatically. Say "skip evaluation / just do it" to bypass the questioning phase.
+The last round of questioning is combined with confirmation (question + execution mode selection), reducing standalone confirmation steps. Context inferred from the existing codebase counts toward the score automatically. Say "skip evaluation / just do it" to bypass the questioning phase.
 
 ### Parallel Design Proposals
 
-In the R3 standard path, the design stage dispatches 3–6 sub-agents to independently generate competing implementation proposals. The main agent evaluates all proposals across four dimensions: user value, solution soundness, risk (including EHRB), and implementation cost. Weights are dynamically adjusted based on project characteristics (e.g., performance-critical systems weight soundness higher; MVPs weight cost higher).
+In the R2 standard path, the design stage dispatches 3–6 sub-agents to independently generate competing implementation proposals. The main agent evaluates all proposals across four dimensions: user value, solution soundness, risk (including EHRB), and implementation cost. Weights are dynamically adjusted based on project characteristics (e.g., performance-critical systems weight soundness higher; MVPs weight cost higher).
 
 - Interactive mode: user selects a proposal or requests re-generation (max 1 retry)
 - Delegated mode: recommended proposal is auto-selected
-- R2 simplified path skips multi-proposal comparison and goes directly to planning
+- R2 standard path: complex tasks go through multi-proposal comparison; simple tasks skip it and go directly to planning
 
 ### Auto Dependency Management
 
@@ -553,15 +548,6 @@ During development, the system auto-detects the project's package manager via lo
 3. Prevention mechanism suggestions
 4. Systemic scan — same issue in other modules?
 5. Lessons learned recorded in the acceptance report
-
-### Custom Command Extension
-
-Create `.helloagents/commands/` in your project and drop in Markdown files — the filename becomes the command name:
-
-    .helloagents/commands/deploy.md  →  ~deploy
-    .helloagents/commands/release.md →  ~release
-
-File content defines the execution rules. The system applies a lightweight gate (requirement understanding + EHRB check).
 
 ### Smart Commit (~commit)
 
@@ -609,7 +595,7 @@ Tasks are stored in `{KB_ROOT}/tasks/` with file locking to prevent concurrent c
 The knowledge base syncs automatically at these points:
 
 - After every development stage, main agent syncs module docs to reflect actual code
-- After every R1/R2/R3 task completion, CHANGELOG is auto-appended
+- After every R1/R2 task completion, CHANGELOG is auto-appended
 - On session end (Claude Code Stop Hook), KB sync flag set asynchronously
 
 CHANGELOG uses semantic versioning (X.Y.Z). Version source priority: user-specified → project file (package.json, pyproject.toml, etc., supporting 15+ languages/frameworks) → git tag → last CHANGELOG entry → 0.1.0. R1 fast-path changes are recorded under a "Quick Modifications" category with file:line range.
@@ -638,7 +624,7 @@ On the first response of each session, the system silently checks for new versio
 
 - AGENTS.md: router and workflow protocol
 - SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.7)
+- pyproject.toml: package metadata (v2.3.8)
 - helloagents/cli.py: CLI entry point
 - helloagents/_common.py: shared constants and utilities
 - helloagents/core/: CLI management modules (install, uninstall, update, status, dispatcher, hooks settings)
@@ -650,7 +636,6 @@ On the first response of each session, the system silently checks for new versio
 - helloagents/hooks: Claude Code, Codex CLI, Gemini CLI, and Grok CLI hooks configs
 - helloagents/scripts: automation scripts (sound notify, progress snapshot, safety guard, etc.)
 - helloagents/agents: sub-agent definitions (3 RLM roles)
-- helloagents/user/commands: custom command templates
 - helloagents/assets: sound resources (5 event sounds)
 - helloagents/templates: KB and plan templates
 
@@ -674,15 +659,15 @@ A: Role Language Model — HelloAGENTS's sub-agent orchestration system. It incl
 
 **Q: Where does project knowledge go?**
 
-A: In the project-local `.helloagents/` directory. The knowledge base auto-syncs when code changes (controlled by `KB_CREATE_MODE` config). It includes module docs, CHANGELOG, session summaries, and custom commands. See [KB Auto-Sync & CHANGELOG](#kb-auto-sync--changelog).
+A: In the project-local `.helloagents/` directory. The knowledge base auto-syncs when code changes (controlled by `KB_CREATE_MODE` config). It includes module docs and CHANGELOG. See [KB Auto-Sync & CHANGELOG](#kb-auto-sync--changelog).
 
-**Q: Does memory persist across sessions?**
+**Q: Does knowledge persist across sessions?**
 
-A: Yes, through two layers: L0 user memory (global preferences in `~/.helloagents/`) and L1 project KB (per-project in `.helloagents/`). Context survives even if you close and reopen your CLI.
+A: Yes. The project knowledge base is stored in the project-local `.helloagents/` directory. Context survives even if you close and reopen your CLI.
 
 **Q: What are Hooks?**
 
-A: Lifecycle hooks auto-deployed during installation. Claude Code gets 11 event hooks (safety checks, dangerous command guard, progress snapshots, KB sync, sound notifications, tool failure recovery, etc.); Codex CLI gets a notify hook for update and sound notifications; Gemini CLI and Grok CLI get hooks for context injection, progress snapshots, and sound notifications. All optional — features degrade gracefully when hooks aren't available. No manual configuration needed.
+A: Lifecycle hooks auto-deployed during installation. Claude Code gets 11 event hooks (safety checks, dangerous command guard, progress snapshots, KB sync, sound notifications, tool failure recovery, etc.); Codex CLI gets a notify hook for update and sound notifications; Gemini CLI gets 6 hooks (context injection, progress snapshots, sound notifications, pre-compression snapshots); Grok CLI gets 3 hooks (context injection, safety guard, progress snapshots). All optional — features degrade gracefully when hooks aren't available. No manual configuration needed.
 
 **Q: What is Agent Teams?**
 
@@ -738,7 +723,7 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 
 **Diagnosis:** Installation replaces existing files
 
-**Solution:** Restore from timestamped backup in CLI config directory (e.g., `~/.codex/rules/AGENTS.md.backup.20260304_132146`)
+**Solution:** Restore from timestamped backup in CLI config directory (e.g., `~/.codex/AGENTS_20260304132146_bak.md`)
 
 **Verification:** Check backup files in config directory
 
@@ -788,7 +773,44 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 
 ## Version History
 
-### v2.3.7 (current)
+### v2.3.8 (current)
+
+**Architecture Changes:**
+- Routing tier consolidation: removed R2 simplified flow and R3 standard flow, unified to R0/R1/R2 three-tier routing. New R2 standard flow merges use cases from both old R2 and R3
+- Evaluation now driven by dimension sufficiency (scope ≥ 3, implementation conditions ≥ 1, deliverable spec ≥ 1), replacing fixed total score threshold (previously "score ≥ 8")
+- Last-round question+confirmation combined: clarifying question + execution mode selection in the same turn, reducing standalone confirmation steps
+- DESIGN multi-proposal comparison now triggered by TASK_COMPLEXITY (complex → multi-proposal, simple/moderate → skip), replacing route-level triggering
+- Removed L0 user memory system and custom command extension (`user/` directory): simplified to single-layer project knowledge model (L1 project KB only)
+- Config system consolidation: migrated from two-tier priority config (`config.json` at project + global level) to single `~/.helloagents/helloagents.json` with auto-sync on install
+- Added code size control rules: warning threshold (file/class 300 lines, function 40 lines), mandatory split threshold (file/class 400 lines, function 60 lines)
+
+**New Features:**
+- Added 5 new workflow commands: `~test`, `~rollback`, `~validatekb`, `~upgradekb`, `~cleanplan`
+- Added notify_level config key (0=off, 1=desktop, 2=sound, 3=both) for notification behavior control
+- Added standalone config reader module (`scripts/_config.py`) for hook scripts
+- Brainstormer sub-agent output format enhanced: added `key_findings` field for proposal highlights
+
+**Security:**
+- Fixed path injection vulnerability in shared_tasks.py: `list_id` from environment variable now sanitized before use in file path construction
+- Fixed incomplete path traversal guard in validate_package.py: `relative_to()` failure now properly exits with error instead of falling through
+
+**Bug Fixes:**
+- Fixed Gemini/Grok hooks PostToolUse matcher missing NotebookEdit (now `Write|Edit|NotebookEdit`, consistent with Claude Code)
+- Fixed pre_compact.py still using deprecated LIVE_STATUS HTML comments while progress_snapshot.py had migrated to .status.json
+- Fixed pre_compact.py `_get_current_task` regex only matching numbered lists, now supports unordered lists
+- Fixed progress_snapshot.py docstring incorrectly stating Grok uses async=true (actual config is async=false)
+- Fixed dispatcher update check cache_ttl default from None to 72 hours
+- Fixed utils.py incorrectly treating Python package source directories as legacy KB directories during migration
+- Fixed cli.py error recovery passing args as branch name when dispatcher is broken
+
+**Improvements:**
+- Codex CLI feature flags updated: replaced `sqlite`+`collaboration_modes` with `enable_fanout` for CSV batch orchestration
+- Added Windows UTF-8 encoding block to codex_notify.py (all other hook scripts already had it)
+- Extended stop_sound_router.py UTF-8 encoding to cover stdout/stderr (previously only stdin)
+- Added NOTE comments across all intentionally duplicated functions for cross-file sync awareness
+- Added yearly changelog archive template (`CHANGELOG_{YYYY}.md`)
+
+### v2.3.7
 
 **Bug Fixes:**
 - Fixed non-coding tasks incorrectly creating knowledge base when KB_CREATE_MODE=2 (added programming task check in design.md Phase1 step 1)
@@ -812,7 +834,6 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 - Removed session memory features that couldn't be fully implemented in CLI (session_summary template, SessionEnd memory sync), streamlined service layer
 - Sub-agent consolidation: removed 3 redundant sub-agents (kb-keeper, pkg-keeper, synthesizer), functionality returned to main agent and RLM roles
 - Sub-agent voice notification skip, task stability fixes
-- Unified user config directory structure (user/memory/, user/commands/, user/sounds/)
 - Uninstall script enhancements
 - Visual verification gap and UI quality fixes
 
@@ -821,12 +842,11 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 **New Features:**
 - Voice notification system with 5 event sounds (complete, idle, confirm, error, warning) across Windows/macOS/Linux, with smart two-layer routing (stop_reason + G3 format icon detection)
 - Claude Code hooks expanded from 9 to 11 lifecycle event types: added dangerous command guard (PreToolUse), session end cleanup (SessionEnd), and tool failure recovery suggestions (PostToolUseFailure)
-- Hooks support expanded to Gemini CLI and Grok CLI (SessionStart, BeforeAgent/AfterAgent, PreCompress, PreToolUse, PostToolUse)
-- Codex CLI 0.110 features: `collaboration_modes` for TUI interactive selection, `nickname_candidates` for agent role identification
+- Hooks support expanded to Gemini CLI (SessionStart, BeforeAgent/AfterAgent, PreCompress, PreToolUse, PostToolUse) and Grok CLI (UserPromptSubmit, PreToolUse, PostToolUse)
+- Codex CLI 0.110 features: `enable_fanout` for CSV batch orchestration, `nickname_candidates` for agent role identification
 - Configuration integrity check on session start (auto-detect config corruption or replacement by CCswitch etc.)
 - Context compression pre-save with automatic progress snapshot (pre_compact.py, progress_snapshot.py — actual implementations replacing placeholder hooks)
 - User-defined tool registration and orchestration — intelligent invocation of custom sub-agents, skills, MCP servers, and plugins
-- Custom command extension support via `.helloagents/commands/*.md`
 
 **Improvements:**
 - Comprehensive audit fixes (21 issues: 6 HIGH + 9 MEDIUM + 6 LOW)
@@ -839,7 +859,7 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 - Voice notification accuracy and false positive reduction (Codex client filtering, Windows sync playback)
 - Sub-agent nickname optimization across CLIs
 - Codex CLI interactive menu, persistent memory, and context compression optimization
-- R2 simplified flow and evaluation module re-integration
+- R2 flow and evaluation module re-integration
 - Context compression state persistence optimization
 - Tool/Shell usage optimization
 - CCswitch compatibility notes for configuration cleanup after uninstall
@@ -862,7 +882,6 @@ A: An experimental Claude Code feature where multiple Claude Code instances coll
 - Auto-inject project technical guidelines before sub-agent development
 - Pre-commit quality checks (code-doc consistency, test coverage, verification commands)
 - Worktree isolation for parallel editing
-- Custom command extension (.helloagents/commands/)
 - Auto-append Git author info to CHANGELOG entries
 
 ## Contributing

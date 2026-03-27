@@ -4,7 +4,7 @@
 @feature: {feature}
 @created: {YYYY-MM-DD}
 @status: pending
-@mode: {R2|R3}
+@mode: R2
 ```
 
 ## 进度概览
