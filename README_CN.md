@@ -6,14 +6,14 @@
 
 <div align="center">
 
-**让任何 AI CLI 变聪明，且越用越聪明的通用编排内核。**
+**质量驱动的 AI 编码 CLI 编排内核 — 14 个自动激活技能、流程纪律、检查清单门控。**
 
-[![Version](https://img.shields.io/badge/version-3.0.0--dev-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-3.0.0-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
-[![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
-[![Skills](https://img.shields.io/badge/skills-25-6366f1.svg)](./helloagents/skills)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
+[![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hellowind777/helloagents/issues)
 
 </div>
 
@@ -24,403 +24,567 @@
 
 ---
 
-> **不是又一个 skills 集合。** HelloAGENTS 是一个通用编排内核，让任何 AI 编码 CLI 成为自我进化的开发伙伴 — 具备自学习路由记忆、能力图谱 Skill 组合和零配置项目理解。
+> [!IMPORTANT]
+> **找 v2.x？** 旧版 Python 代码库已迁移到独立归档仓库：[helloagents-archive](https://github.com/hellowind777/helloagents-archive)。v3.0.0 是完全重写 — 纯 Node.js/Markdown 架构，无 Python 依赖。
 
-## 为什么选择 HelloAGENTS？
+## 📑 目录
+
+<details>
+<summary><strong>点击展开</strong></summary>
+
+- [🎯 为什么选择 HelloAGENTS？](#-为什么选择-helloagents)
+- [✨ 核心特性](#-核心特性)
+- [🚀 快速开始](#-快速开始)
+- [📖 命令](#-命令)
+- [🔧 配置](#-配置)
+- [⚙️ 工作原理](#️-工作原理)
+- [📚 使用指南](#-使用指南)
+- [❓ FAQ](#-faq)
+- [🛠️ 故障排除](#️-故障排除)
+- [📈 版本历史](#-版本历史)
+- [📜 许可证](#-许可证)
+
+</details>
+
+## 🎯 为什么选择 HelloAGENTS？
+
+你有没有遇到过这种情况：AI 编码助手分析了一通，最后来一句"建议你这样做"就结束了？或者写了代码但跳过测试、忽略边界情况，然后说"完成了"？
+
+HelloAGENTS 就是为了解决这个问题。它是一个编排层，装在你的 AI CLI 上面，在每一步都强制执行质量标准。
 
 <table>
 <tr>
 <td width="50%" valign="top" align="center">
 
-**未使用 HelloAGENTS**
+**没有 HelloAGENTS**
 
-<img src="./readme_images/08-demo-snake-without-helloagents.png" alt="未使用 HelloAGENTS" width="520">
+<img src="./readme_images/08-demo-snake-without-helloagents.png" alt="没有 HelloAGENTS" width="520">
 
 </td>
 <td width="50%" valign="top" align="center">
 
-**使用 HelloAGENTS**
+**有 HelloAGENTS**
 
-<img src="./readme_images/07-demo-snake-with-helloagents.png" alt="使用 HelloAGENTS" width="520">
+<img src="./readme_images/07-demo-snake-with-helloagents.png" alt="有 HelloAGENTS" width="520">
 
 </td>
 </tr>
 </table>
 
-| 挑战 | 原生 AI CLI | 使用 HelloAGENTS |
-|------|-----------|-----------------|
-| 止步于规划 | 给出建议后结束 | 持续推进到实现与验证 |
-| 每次会话从零开始 | 不记得过去的决策 | 学习你的路由模式和项目上下文 |
-| 输出结构不一致 | 每次提示格式不同 | 统一路由 + 结构化阶段链 |
-| 高风险操作容易遗漏 | 容易误执行破坏性命令 | 三层 EHRB 安全检测 |
-| Skills 各自为政 | 手动选择工具 | 能力图谱自动发现和组合 Skills |
-| 新项目有安装税 | 需要手动配置 | 首次交互即零配置生成项目指纹 |
+| 挑战 | 没有 HelloAGENTS | 有 HelloAGENTS |
+|------|-----------------|----------------|
+| **止步于规划** | 给建议就结束 | 推进到实现和验证 |
+| **质量不一致** | 看 prompt 运气 | 14 个技能按任务类型自动激活 |
+| **危险操作** | 容易误执行破坏性命令 | Guard 系统拦截危险命令 |
+| **没有验证** | "应该能用" | Ralph Loop 完成前自动跑 lint/test/build |
+| **知识丢失** | 上下文散落各处 | 项目知识库持久化并持续积累 |
 
-## 三个 Killer Features
+### 💡 最适合
+- ✅ **使用 AI CLI 的开发者**，想要一致的、经过验证的输出
+- ✅ **团队**，需要 AI 辅助编码的质量护栏
+- ✅ **复杂项目**，需要结构化的 设计 → 开发 → 验证 工作流
+
+### ⚠️ 不适合
+- ❌ 简单的一次性问题（HelloAGENTS 会增加流程开销）
+- ❌ 非编码任务（针对软件工程优化）
+- ❌ Claude Code 和 Codex CLI 以外的 CLI（v3.0.0 仅支持这两个）
+
+## ✨ 核心特性
+
+HelloAGENTS 通过三重机制协同保障质量：
 
 <table>
 <tr>
-<td width="33%" valign="top">
+<td width="50%" valign="top">
+<img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
 
-### 自学习路由记忆
+**🎯 14 个自动激活质量技能**
 
-AI 从自己的路由历史中学习。每次会话结果都会记录 — 选择了哪条路由、实际复杂度如何、结果是否成功。
+技能根据你正在做的事情自动激活，无需配置。
+- UI、安全、API、架构、性能
+- 测试、错误处理、数据、代码审查
+- 调试、子代理、文档、验证、反思
 
-下次遇到类似请求时，路由器自动校准：
-- "这个用户的'小修改'请求 80% 实际是 R2"
-- "auth/ 模块的变更总是级联到 3+ 个模块"
-- "这个用户 90% 偏好 DELEGATED 模式"
-
-就像 GPS 学习你的通勤模式，而不是每天从头计算路线。
-
-</td>
-<td width="33%" valign="top">
-
-### Skill 能力图谱
-
-Skills 声明自己 `provides` 什么能力、`requires` 什么依赖。编排内核构建实时能力图谱 — 当任务需要 `test-generation` 时，自动发现提供该能力的 skill。
-
-```yaml
----
-name: workflow-design
-provides:
-  - solution-design
-  - multi-proposal-comparison
-  - task-planning
-requires:
-  - ehrb
-  - memory
----
-```
-
-第三方 skill 只需声明 `provides` 即可接入。无需注册、无需配置 — 声明即组合。
+**你的收益：** 每个任务都能得到正确的质量检查，不用你记着去要求。
 
 </td>
-<td width="33%" valign="top">
+<td width="50%" valign="top">
+<img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
 
-### 零配置项目适配
+**📋 检查清单门控**
 
-无需 `~init`。首次交互时，HelloAGENTS 读取项目特征文件（package.json、pyproject.toml、Cargo.toml、go.mod、目录结构、最近 git 历史）并生成轻量指纹。
+编码完成后，HelloAGENTS 收集所有已激活技能的交付检查清单，逐项验证通过才能报告完成。
 
-缓存到 `.helloagents/context.json`：
-```json
-{
-  "language": "typescript",
-  "framework": "next.js",
-  "test_framework": "vitest",
-  "modules": ["src/api", "src/ui"],
-  "recent_changes": ["auth refactor"]
-}
-```
+**你的收益：** 没有真正通过质量检查的东西不会被标记为"完成"。
 
-第一次交互就立即智能。`~init` 变为可选的进阶功能。
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="./readme_images/04-feature-icon-safety.svg" width="48" align="left">
+
+**🛡️ Guard 系统 + Ralph Loop**
+
+L1 拦截破坏性命令（`rm -rf /`、`git push --force`、`DROP DATABASE`）。L2 扫描硬编码密钥和安全模式。Ralph Loop 在每个任务后自动运行验证命令。
+
+**你的收益：** 零配置的安全防护，每次输出都经过验证。
+
+</td>
+<td width="50%" valign="top">
+<img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
+
+**⚡ 结构化工作流**
+
+简单任务直接执行。复杂任务走完整的 ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE 五阶段流程，包含交互式设计、方案提议和计划包。
+
+**你的收益：** 按需投入 — 简单任务保持快速，复杂任务获得完整流程。
 
 </td>
 </tr>
 </table>
 
-## 支持平台
+## 🚀 快速开始
 
-一次安装，6 个 CLI 目标。同一套工作流，处处可用。
-
-| CLI | 子代理支持 | Hooks | 状态 |
-|-----|----------|-------|------|
-| **Claude Code** | Agent tool + Agent Teams | 9 个生命周期钩子 | 完整支持 |
-| **Codex CLI** | spawn_agent + CSV 批量 | notify 钩子 | 完整支持 |
-| **OpenCode** | Task tool (build/plan/explore) | — | 完整支持 |
-| **Gemini CLI** | 内置工具调用 | 6 个生命周期钩子 | 完整支持 |
-| **Qwen CLI** | 内置工具调用 | Settings hooks | 完整支持 |
-| **Grok CLI** | 内置工具调用 | Settings hooks | 实验性 |
-
-## 快速开始
-
-> 需要 Python >= 3.10。选择你喜欢的安装方式：
-
-### 一键安装（推荐）
-
-**macOS / Linux：**
-
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
-
-**Windows PowerShell：**
-
-    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-
-### 其他方式
-
-<details>
-<summary>npx（Node.js >= 16）</summary>
-
-    npx helloagents
-
-> 感谢 @setsuna1106 慷慨转让 npm 包所有权。
-</details>
-
-<details>
-<summary>UV（隔离环境）</summary>
-
-    # 先安装 UV（已安装可跳过）
-    curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
-    irm https://astral.sh/uv/install.ps1 | iex          # Windows
-
-    # 安装 HelloAGENTS
-    uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents
-</details>
-
-<details>
-<summary>pip</summary>
-
-    pip install git+https://github.com/hellowind777/helloagents.git && helloagents
-</details>
-
-### 安装后可用命令
+### Claude Code（推荐）
 
 ```bash
-helloagents                  # 交互式菜单
-helloagents install claude   # 安装到指定 CLI
-helloagents install --all    # 安装到所有已检测的 CLI
-helloagents status           # 查看安装状态
-helloagents update           # 更新 + 自动同步所有目标
-helloagents uninstall --all  # 从所有目标卸载
-helloagents clean            # 清理缓存
+claude plugin add helloagents
 ```
 
-### 切换到 dev 分支
+搞定。插件自动加载 `bootstrap.md` 规则、hooks 和全部 14 个质量技能。
+
+### Codex CLI
 
 ```bash
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/dev/install.sh | HELLOAGENTS_BRANCH=dev bash
-
-# Windows PowerShell
-$env:HELLOAGENTS_BRANCH="dev"; irm https://raw.githubusercontent.com/hellowind777/helloagents/dev/install.ps1 | iex
-
-# UV
-uv tool install --from git+https://github.com/hellowind777/helloagents@dev helloagents --force
-
-# pip
-pip install --upgrade git+https://github.com/hellowind777/helloagents.git@dev
+npm install -g helloagents
 ```
 
-## 工作原理
+`postinstall` 脚本自动配置 Codex CLI — 设置 `config.toml`、skills 符号链接和 hooks。
 
-```
-用户输入 → 智能路由 → R0 直答 / R1 快速 / R2 简化 / R3 标准
-                                              ↓              ↓
-                                          方案设计 ←──── 方案设计（多方案对比）
-                                              ↓              ↓
-                                          开发实施 ←──── 开发实施（子代理编排）
-                                              ↓              ↓
-                                            验证 ←──────── 验证（Ralph Loop）
-                                              ↓              ↓
-                                            完成 ←──────── 完成 + KB 同步
+### 验证安装
+
+```bash
+# 在 AI CLI 对话中输入：
+~help
 ```
 
-每条输入经 5 个维度评分（行动需求、目标可定位性、决策需求、影响范围、EHRB 风险），路由到合适的处理深度：
+**预期输出：**
+```
+💡【HelloAGENTS】- 帮助
 
-- **R0** — 直接响应。问答、解释、查询。
-- **R1** — 快速流程。目标明确的单点操作。
-- **R2** — 简化流程。需要先分析再执行，有局部决策。
-- **R3** — 标准流程。复杂任务，含多方案设计和子代理编排。
+可用命令: ~auto, ~design, ~prd, ~loop, ~init, ~test, ~verify, ~review, ~commit, ~clean, ~help
 
-路由器从历史中学习。随着使用，评分会根据你的实际模式自动校准。
+自动激活技能 (14): hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
+```
 
-## 聊天内命令
+### 首次使用
 
-以下命令在 AI 聊天会话中使用，而非系统终端。
+```bash
+# 简单任务 — 直接执行
+"修复 src/utils.ts 第 42 行的拼写错误"
 
-| 命令 | 功能 |
+# 复杂任务 — 用 ~auto 走完整流程
+~auto "添加基于 JWT 的用户认证"
+
+# 想先看方案？
+~design "重构支付模块"
+```
+
+## 📖 命令
+
+所有命令在 AI 对话中使用 `~` 前缀：
+
+**工作流命令：**
+
+| 命令 | 说明 |
 |------|------|
-| `~auto` | 全自动工作流（评估→设计→开发→验证） |
-| `~plan` | 生成实施方案，止步于编码前 |
-| `~exec` | 执行已有方案包 |
-| `~commit` | 智能提交，Conventional Commits 格式 |
-| `~review` | 代码审查，含安全和质量分析 |
-| `~test` | 运行项目测试，含失败分析 |
-| `~init` | 初始化项目知识库（v3 中为可选） |
-| `~status` | 查看工作流和安装状态 |
-| `~rlm spawn reviewer,writer` | 手动调度子代理角色 |
+| `~auto` | 全自动工作流 — AI 判断复杂度，自动规划并执行 |
+| `~design` | 深度交互式设计 — 需求挖掘 + 方案提议 + 计划包 |
+| `~prd` | 完整 PRD — 13 维度头脑风暴式探索，生成产品需求文档 |
+| `~loop` | 自主迭代优化 — 设定目标和指标，AI 循环改进直到达标 |
 
-## 架构
+**质量命令：**
 
-### v3 vs v2
+| 命令 | 说明 |
+|------|------|
+| `~test` | 编写完整测试（TDD：Red → Green → Refactor） |
+| `~verify` | 运行所有验证命令（lint/test/build/typecheck） |
+| `~review` | 代码审查，按严重程度分类 |
 
-| 指标 | v2 | v3 |
-|------|----|----|
-| Python 运行时 | 10,452 行（39 文件） | ~4,570 行（23 文件） |
-| 工作流协议 | 954 行 AGENTS.md 单体 | 28 行 bootstrap.md + 25 个 Skills |
-| 模块系统 | 50+ 自定义 .md 文件 | Agent Skills（开放标准） |
-| 路由 | 固定 5 维评分 | 自适应评分 + 历史学习 |
-| Skill 发现 | 隐式，AI 自行推断 | 能力图谱 + `provides`/`requires` |
-| 项目初始化 | 需要 `~init` | 零配置指纹 |
-| 跨平台 | 6 个 CLI + 自定义适配器 | 6 个 CLI + Agent Skills 标准 |
+**工具命令：**
 
-### 仓库结构
+| 命令 | 说明 |
+|------|------|
+| `~init` | 初始化项目知识库（`.helloagents/`） |
+| `~commit` | 生成规范化提交信息 + 知识库同步 |
+| `~clean` | 归档已完成方案，清理临时文件 |
+| `~help` | 显示所有命令和当前配置 |
 
-```
-helloagents/
-├── cli.py                          # CLI 入口
-├── _common.py                      # 共享常量与工具函数
-├── bootstrap.md                    # 28 行编排引导
-├── core/
-│   ├── dispatcher.py               # 命令路由 + 交互菜单
-│   ├── installer.py                # 多 CLI 部署
-│   ├── uninstaller.py              # 按 CLI 清理卸载
-│   ├── updater.py                  # 自更新（含 Windows exe 处理）
-│   ├── version_check.py            # 版本比较 + 更新缓存
-│   ├── cli_adapters.py             # 6 个 CLI 的统一配置
-│   └── win_helpers.py              # Windows 平台兼容
-├── skills/                         # 25 个 Agent Skills（SKILL.md）
-│   ├── _meta/                      # Skill 发现协议
-│   ├── core/                       # 路由、记忆、EHRB、输出格式
-│   ├── commands/                   # 11 个工作流命令（~auto、~plan 等）
-│   ├── workflow/                   # 设计、开发、审查、构思
-│   ├── roles/                      # Reviewer、Writer、Brainstormer
-│   └── integrations/               # 子代理桥接、MCP 桥接
-├── scripts/                        # Hook 脚本（11 个自动化脚本）
-├── hooks/                          # Claude/Gemini/Grok Hook 配置
-├── templates/                      # KB 和方案模板
-└── user/                           # 用户自定义（命令、记忆、音效）
-```
+## 🔧 配置
 
-## 配置
+配置文件：`~/.helloagents/helloagents.json`（安装时自动创建）
 
-通过 `config.json` 自定义。只需包含要覆盖的键。
-
-**优先级：** `{项目}/.helloagents/config.json` > `~/.helloagents/config.json` > 默认值
-
-| 键 | 默认值 | 说明 |
-|----|--------|------|
-| `OUTPUT_LANGUAGE` | `zh-CN` | AI 输出语言 |
-| `KB_CREATE_MODE` | `2` | `0`=关闭，`1`=按需，`2`=代码变更时自动，`3`=始终自动 |
-| `BILINGUAL_COMMIT` | `1` | `0`=单语言，`1`=双语提交信息 |
-| `EVAL_MODE` | `1` | `1`=渐进式追问，`2`=一次性追问 |
-| `UPDATE_CHECK` | `72` | 缓存有效期（小时），`0`=关闭 |
-| `CSV_BATCH_MAX` | `16` | CSV 批量最大并发，仅 Codex（`0`=关闭，上限 64） |
+只需包含你想覆盖的键，缺失的键使用默认值。
 
 ```json
 {
-  "OUTPUT_LANGUAGE": "en-US",
-  "KB_CREATE_MODE": 0,
-  "BILINGUAL_COMMIT": 0
+  "output_language": "",
+  "output_format": true,
+  "notify_level": 0,
+  "ralph_loop_enabled": true,
+  "guard_enabled": true,
+  "kb_create_mode": 1,
+  "commit_attribution": ""
 }
 ```
 
-## 核心能力
+| 配置项 | 默认值 | 说明 |
+|--------|-------|------|
+| `output_language` | `""` | 空=跟随用户语言，填写 `zh-CN`、`en` 等指定 |
+| `output_format` | `true` | `true`=HelloAGENTS 格式输出，`false`=自然输出 |
+| `notify_level` | `0` | `0`=关闭，`1`=桌面通知，`2`=声音，`3`=两者 |
+| `ralph_loop_enabled` | `true` | 任务完成时自动运行验证 |
+| `guard_enabled` | `true` | 拦截危险命令（仅 Claude Code） |
+| `kb_create_mode` | `1` | `0`=关闭，`1`=编码任务自动，`2`=始终 |
+| `commit_attribution` | `""` | 空=不添加，填写内容则追加到 commit message |
 
 <details>
-<summary><b>结构化工作流（评估→设计→开发）</b></summary>
+<summary>📝 常见配置场景</summary>
 
-每条输入经评分路由。R2/R3 任务进入完整阶段链，每个阶段有进入条件、交付物和验证门控。支持交互模式（决策点暂停）和委托模式（自动推进，仅风险时暂停）。
+**纯英文输出：**
+```json
+{ "output_language": "en" }
+```
 
-典型模式：`~plan` → 审查 → `~exec`。或 `~auto` 一步到位。
+**关闭知识库自动创建：**
+```json
+{ "kb_create_mode": 0 }
+```
+
+**开启桌面+声音通知：**
+```json
+{ "notify_level": 3 }
+```
+
+**关闭 Guard（不推荐）：**
+```json
+{ "guard_enabled": false }
+```
+
+</details>
+
+## ⚙️ 工作原理
+
+**简单说：** HelloAGENTS 根据任务复杂度自动选择处理深度。简单任务直接执行，复杂任务走完整的五阶段流程，每一步都有质量验证。
+
+**五阶段流程：**
+
+1. **ORIENT** — 读取项目上下文（`.helloagents/context.md`、`guidelines.md`、`DESIGN.md`），扫描相关代码
+2. **CLARIFY** — 消除歧义。简单任务跳过，复杂任务确认关键决策
+3. **PLAN** — 标记需要哪些质量技能，使用 `~design` 或 `~prd` 时生成设计/计划
+4. **EXECUTE** — 实现，TDD（写测试 → 写代码 → 重构），每步后验证
+5. **VALIDATE** — 运行 Ralph Loop（lint/test/build），收集已激活技能的交付检查清单，逐项验证
+
+**路由规则：**
+- 简单任务（单文件、明确修复）→ 直接执行
+- 复杂任务（3+ 文件、架构变更、新项目）→ 通过 `~design` 或 `~auto` 走完整流程
+
+**质量技能按任务类型自动激活：**
+- 写 UI 代码？→ `hello-ui` 激活（设计 token、无障碍、响应式）
+- 涉及 API？→ `hello-api` 激活（REST 规范、校验、错误格式）
+- 任何代码变更？→ `hello-test`、`hello-verify`、`hello-review` 激活
+
+## 📚 使用指南
+
+### 三种工作流模式
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| `~auto` | 全自动流程：评估 → 设计 → 开发 → 验证 | 需求明确，想要端到端交付 |
+| `~design` | 仅交互式设计，生成计划包 | 想先审查方案再编码 |
+| `~prd` | 13 维度 PRD 生成 | 需要完整的产品需求文档 |
+
+典型模式：先 `~design` → 审查方案 → 开始编码。或者直接 `~auto` 一步到位。
+
+### 质量验证（Ralph Loop）
+
+每个任务完成后，Ralph Loop 自动运行项目的验证命令：
+- 优先级：`.helloagents/verify.yaml` → `package.json` scripts → 自动检测
+- 全部通过？→ 收集技能检查清单 → 验证 → 完成
+- 有失败？→ 反思 → 修复 → 重跑（3 次连续失败后触发熔断）
+
+### 知识库（`.helloagents/`）
+
+`~init` 创建项目本地知识库：
+
+| 文件 | 用途 |
+|------|------|
+| `STATE.md` | AI 上下文快照（≤50 行，压缩后存活） |
+| `DESIGN.md` | 设计系统（仅 UI 项目） |
+| `context.md` | 项目架构、技术栈、约定 |
+| `guidelines.md` | 非显而易见的编码规则 |
+| `verify.yaml` | 验证命令 |
+| `CHANGELOG.md` | 变更历史 |
+| `modules/*.md` | 模块文档 + 经验 |
+| `plans/` | 活跃计划包 |
+| `archive/` | 已完成计划包 |
+
+### 智能提交（~commit）
+
+- 分析 `git diff` 生成 Conventional Commits 格式消息
+- 提交前质量检查（代码-文档一致性、测试覆盖）
+- 自动排除敏感文件（`.env`、`*.pem`、`*.key`）
+- 遵循 `commit_attribution` 配置
+- 按 `kb_create_mode` 设置同步知识库
+
+### 自主迭代优化（~loop）
+
+设定目标和指标，让 AI 自主迭代：
+1. 审查 → 构思 → 修改 → 提交 → 验证 → 决策 → 记录 → 重复
+2. 结果记录在 `.helloagents/loop-results.tsv`
+3. 失败实验使用 `git revert` 干净回滚
+
+## ❓ FAQ
+
+<details>
+<summary><strong>Q：这是 CLI 工具还是 prompt 框架？</strong></summary>
+
+**A：** 两者都是。CLI（`cli.mjs`）负责安装和 Codex 配置。实际的工作流来自 `bootstrap.md` 规则、质量技能和 hook 脚本。可以理解为：交付系统 + 智能质量协议。
 </details>
 
 <details>
-<summary><b>三层安全检测（EHRB）</b></summary>
+<summary><strong>Q：v2.x 到 v3.0.0 有什么变化？</strong></summary>
 
-- 第一层：命令模式匹配（破坏性命令、生产环境操作）
-- 第二层：语义分析（凭证泄露、权限绕过、PII 暴露）
-- 第三层：外部工具输出检查（注入、格式劫持）
-
-检测到风险时，交互模式触发用户确认，委托模式自动暂停。
+**A：** 全部重写了：
+- Python 包 → 纯 Node.js/Markdown 架构
+- 15 个命令 → 11 个命令 + 14 个自动激活质量技能
+- 6 个 CLI 目标 → 2 个（Claude Code + Codex CLI）
+- 新增：检查清单门控、Guard 系统、~prd、~loop、~verify、设计系统生成
+- 详见[版本历史](#-版本历史)。
 </details>
 
 <details>
-<summary><b>子代理编排</b></summary>
+<summary><strong>Q：该用哪个 CLI？</strong></summary>
 
-3 个专业角色（reviewer、writer、brainstormer）+ 原生 CLI 子代理。任务通过 DAG 依赖分析调度，支持并行派发。支持 Claude Code Agent Teams、Codex CSV 批量编排和跨 CLI 并行调度。
+**A：** Claude Code 体验最好（插件系统、11 个生命周期 hooks、Agent Teams 支持）。Codex CLI 也不错（npm postinstall 自动配置）。v3.0.0 不支持其他 CLI。
 </details>
 
 <details>
-<summary><b>质量验证（Ralph Loop）</b></summary>
+<summary><strong>Q：14 个质量技能是什么？</strong></summary>
 
-子代理完成代码修改后，自动运行验证命令。失败时阻断子代理退出，要求修复。验证命令来源优先级：`.helloagents/verify.yaml` → `package.json` scripts → 项目配置自动检测。
+**A：** 按任务类型自动激活：
+- **hello-ui**：UI 构建（设计 token、无障碍、响应式、动画）
+- **hello-api**：API 设计（REST、校验、错误格式、限流）
+- **hello-security**：安全（认证、输入校验、XSS/CSRF、密钥管理）
+- **hello-test**：测试（TDD 流程、边界用例、AAA 模式）
+- **hello-verify**：验证门控（Ralph Loop、熔断器）
+- **hello-errors**：错误处理（结构化错误、日志、恢复策略）
+- **hello-perf**：性能（N+1、缓存、代码分割、虚拟滚动）
+- **hello-data**：数据库（迁移、事务、索引、完整性）
+- **hello-arch**：架构（SOLID、边界、代码体积限制）
+- **hello-debug**：调试（四阶段流程、卡住时升级）
+- **hello-subagent**：子代理编排（分发、协调、审查）
+- **hello-review**：代码审查（逻辑、安全、性能、可维护性）
+- **hello-write**：文档（金字塔原则、受众感知）
+- **hello-reflect**：经验捕获（教训 → 知识库）
 </details>
 
 <details>
-<summary><b>智能提交（~commit）</b></summary>
+<summary><strong>Q：项目知识存在哪里？</strong></summary>
 
-分析 `git diff` 生成 Conventional Commits 格式提交信息。预提交质量检查。自动排除敏感文件。支持仅提交、提交+推送、提交+推送+PR。可配置双语提交信息。
+**A：** 项目本地的 `.helloagents/` 目录。由 `~init` 创建，代码变更时自动同步（由 `kb_create_mode` 控制）。上下文跨会话持久化。
 </details>
 
 <details>
-<summary><b>自定义命令扩展</b></summary>
+<summary><strong>Q：Guard 系统是什么？</strong></summary>
 
-在 `.helloagents/commands/` 中放入 Markdown 文件：
-
-    .helloagents/commands/deploy.md  →  ~deploy
-    .helloagents/commands/release.md →  ~release
-
-文件内容定义执行规则。系统自动应用轻量门控（需求理解 + EHRB 检查）。
+**A：** 两层安全防护：
+- **L1 拦截**：执行前阻止破坏性命令（`rm -rf /`、`git push --force`、`DROP DATABASE`、`chmod 777`、`FLUSHALL`）
+- **L2 建议**：扫描文件写入中的硬编码密钥、API key、.env 暴露 — 警告但不阻止
 </details>
 
 <details>
-<summary><b>双层记忆模型</b></summary>
+<summary><strong>Q：可以关闭不需要的功能吗？</strong></summary>
 
-- L0：用户记忆（全局偏好，存于 `~/.helloagents/user/memory/`）
-- L1：项目知识库（按项目存于 `.helloagents/`）
-- 路由历史：JSONL 日志用于自适应校准
-
-上下文跨会话、跨项目持续保留。
+**A：** 可以。设置 `guard_enabled: false` 关闭 Guard，`ralph_loop_enabled: false` 跳过验证，`kb_create_mode: 0` 关闭知识库。质量技能自动激活但不会给无关任务增加开销。
 </details>
 
 <details>
-<summary><b>CSV 批量编排（Codex CLI）</b></summary>
+<summary><strong>Q：~prd 是什么？</strong></summary>
 
-当存在 6+ 个结构相同的任务时，自动转为 CSV 并通过 `spawn_agents_on_csv` 派发。实时进度追踪、SQLite 崩溃恢复、部分失败处理。通过 `CSV_BATCH_MAX` 配置。
+**A：** 13 维度 PRD 生成器。逐维度走过：产品概述、用户故事、功能需求、UI/UX 设计、技术架构、非功能需求、国际化、无障碍、内容策略、测试策略、部署运维、法律隐私、时间线 — 头脑风暴式，一次一个维度。
 </details>
 
-## FAQ
+## 🛠️ 故障排除
 
-**问：这是 CLI 工具还是提示词包？**
-两者兼有。CLI 负责安装和更新管理。工作流行为来自 bootstrap.md 和 25 个 Agent Skills。可以理解为：交付系统 + 智能编排协议。
+### 插件未加载（Claude Code）
 
-**问：应该安装到哪个 CLI？**
-你在用哪个就装哪个。`helloagents install claude` / `codex` / `gemini` / `qwen` / `grok` / `opencode`。或 `--all` 安装到所有已检测的 CLI。
+**问题：** `claude plugin add helloagents` 后 `~help` 无法识别
 
-**问：已有规则文件怎么办？**
-HelloAGENTS 会在替换前自动备份非 HelloAGENTS 文件。带时间戳的备份存储在 CLI 配置目录中。
+**解决：** 重启 Claude Code。如果仍不行，检查 `claude plugin list` 确认安装状态。
 
-**问：没有 Hooks 能用吗？**
-能。所有 Hook 增强的功能都支持优雅降级。Hooks 让事情更自动化，但没有也不会出问题。
+---
 
-**问：v3 和 v2 有什么区别？**
-Python 代码减少 56%。Agent Skills 替代自定义模块。三个新特性：自学习路由记忆、能力图谱、零配置指纹。同样的工作流，更精简的运行时。
+### 命令未找到（Codex CLI）
 
-## 故障排除
+**问题：** `npm install -g helloagents` 后 `~help` 无法识别
 
-<details>
-<summary><code>helloagents: command not found</code></summary>
+**解决：**
+- 验证安装：`npm list -g helloagents`
+- 检查 `~/.codex/config.toml` 中 `model_instructions_file` 是否指向 `bootstrap.md`
+- 重启 Codex CLI
 
-安装路径未加入 PATH。UV 用户：重启终端。pip 用户：用 `pip show helloagents` 查看安装位置。验证：`which helloagents`（Unix）或 `where helloagents`（Windows）。
-</details>
+---
 
-<details>
-<summary>CLI 目标未检测到</summary>
+### Guard 拦截了合法命令
 
-配置目录尚不存在。先启动目标 CLI 一次以创建配置目录，然后重试 `helloagents install <target>`。
-</details>
+**问题：** Guard 拦截了你确实想执行的命令
 
-<details>
-<summary>CCswitch 切换后配置丢失</summary>
+**解决：** 在 `~/.helloagents/helloagents.json` 中设置 `guard_enabled: false`。或者检查被拦截的命令 — Guard 只拦截真正的破坏性操作如 `rm -rf /` 和 `git push --force`。
 
-切换 CCswitch 配置方案后，运行 `helloagents install claude` 或 `helloagents update` 恢复。v2.3.5+ 会在会话启动时自动检测配置损坏。
-</details>
+---
 
-## 参与贡献
+### Ralph Loop 持续失败
 
-详见 [CONTRIBUTING.md](./CONTRIBUTING.md) 了解贡献规则和 PR 检查清单。
+**问题：** 验证循环无法通过
 
-## 许可证
+**解决：**
+- 检查 `.helloagents/verify.yaml` 中的命令是否正确
+- 手动运行验证命令查看实际错误
+- 3 次连续失败后熔断器激活 — `hello-debug` 升级介入
 
-本项目双重许可：代码采用 Apache-2.0，文档采用 CC BY 4.0。详见 [LICENSE.md](./LICENSE.md)。
+---
+
+### CCswitch 替换了 HelloAGENTS 配置
+
+**问题：** 切换 CCswitch 配置后 HelloAGENTS 停止工作
+
+**解决：** 切换配置后重新运行 `claude plugin add helloagents`。CCswitch 会替换整个 CLI 配置目录。
+
+---
+
+### 通知不工作
+
+**问题：** 没有声音或桌面通知
+
+**解决：**
+- 检查配置中的 `notify_level`（默认 0=关闭）
+- Windows：确保 PowerShell 可以访问 `System.Media.SoundPlayer`
+- macOS：确保 `afplay` 可用
+- Linux：确保安装了 `aplay` 或 `paplay`
+
+## 📈 版本历史
+
+### v3.0.0（当前版本）🎉
+
+**破坏性变更：**
+- 🔴 完全重写：Python 包 → 纯 Node.js/Markdown 架构。`pip`/`uv` 安装方式不再可用
+- 🔴 CLI 支持从 6 个缩减到 2 个：Claude Code（插件）+ Codex CLI（npm）。移除 OpenCode、Gemini CLI、Qwen CLI、Grok CLI
+- 🔴 命令重命名/移除：`~plan` → `~design`，移除 `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan`
+- 🔴 配置键从大写改为小写。移除：`BILINGUAL_COMMIT`、`EVAL_MODE`、`UPDATE_CHECK`、`CSV_BATCH_MAX`
+
+**新功能：**
+- ✨ 14 个自动激活质量技能：hello-ui、hello-api、hello-security、hello-test、hello-verify、hello-errors、hello-perf、hello-data、hello-arch、hello-debug、hello-subagent、hello-review、hello-write、hello-reflect
+- ✨ 检查清单门控：所有已激活技能必须通过交付检查清单才能完成任务
+- ✨ `~prd` 命令：13 维度头脑风暴式 PRD 框架（产品概述、用户故事、功能需求、UI/UX、架构、非功能需求、国际化、无障碍、内容、测试、部署、法律、时间线）
+- ✨ `~loop` 命令：自主迭代优化，带指标追踪和 git 回滚
+- ✨ `~verify` 命令：自动检测并运行所有验证命令
+- ✨ Guard 系统（`guard.mjs`）：L1 拦截破坏性命令 + L2 安全模式建议
+- ✨ Claude Code 插件系统（`.claude-plugin/`）支持 marketplace 安装
+- ✨ 流状态管理（`STATE.md`）：AI 上下文压缩快照（≤50 行）
+- ✨ 设计系统生成（`DESIGN.md`）：UI 项目自动创建
+- ✨ 计划包系统：`requirements.md` + `design.md` + `tasks.md`
+
+**架构：**
+- 📦 统一五阶段执行流程：ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE
+- 📦 简化配置：7 个小写键，合理默认值
+- 📦 Ralph Loop 用 Node.js 重写（`ralph-loop.mjs`）
+- 📦 通知系统用 Node.js 重写（`notify.mjs`），跨平台声音+桌面支持
+- 📦 新配置项：`output_format`、`ralph_loop_enabled`、`guard_enabled`、`commit_attribution`
+
+### v2.3.8
+
+**架构变更：**
+- 路由层级整合：移除 R2 简化流和 R3 标准流，统一为 R0/R1/R2 三层路由
+- 评估改为维度充分性驱动，替代固定总分阈值
+- 末轮提问+确认合并，减少独立确认步骤
+- 移除 L0 用户记忆系统和自定义命令扩展
+- 配置系统整合：单一 `~/.helloagents/helloagents.json`
+- 新增代码体积控制规则：预警 300/40 行，强制拆分 400/60 行
+
+**新功能：**
+- ✨ 5 个新工作流命令：`~test`、`~rollback`、`~validatekb`、`~upgradekb`、`~cleanplan`
+- ✨ `notify_level` 配置项控制通知行为
+- ✨ 独立配置读取模块供 hook 脚本使用
+
+**安全：**
+- 修复 `shared_tasks.py` 路径注入漏洞
+- 修复 `validate_package.py` 路径遍历防护不完整
+
+### v2.3.7
+
+**Bug 修复：**
+- 修复非编码任务在 `KB_CREATE_MODE=2` 时错误创建知识库
+- 修复 R2 标准流在方案选择后重定向到归档而非 DEVELOP
+- 修复非编码任务错误创建计划包
+
+**改进：**
+- 📦 优化上下文压缩后的实施计划状态恢复
+- 📦 优化整体设计流程
+
+### v2.3.6
+
+**新功能：**
+- ✨ 子代理编排大改：新增 brainstormer 子代理用于并行方案构思
+- ✨ 子代理阻塞机制：失败/超时时自动阻塞并回退
+
+**改进：**
+- 📦 工具/Shell 约束优化：内置工具失败时允许回退到 Shell
+- 📦 Shell 编码约束细化：明确 UTF-8 无 BOM 要求
+- 📦 移除 3 个冗余子代理，功能回归主代理和 RLM 角色
+
+### v2.3.5
+
+**新功能：**
+- ✨ 声音通知系统，5 种事件音效，跨 Windows/macOS/Linux
+- ✨ Claude Code hooks 从 9 个扩展到 11 个生命周期事件类型
+- ✨ Hooks 支持扩展到 Gemini CLI 和 Grok CLI
+- ✨ 会话启动时配置完整性检查
+- ✨ 上下文压缩前自动保存进度快照
+- ✨ 用户自定义工具注册和编排
+
+**改进：**
+- 📦 全面审计修复（21 个问题：6 HIGH + 9 MEDIUM + 6 LOW）
+- 📦 核心架构：新增 dispatcher 模块、Codex 角色、Claude 规则管理
+- 📦 安装/更新脚本重构，持久化配置
+
+## 📜 许可证
+
+本项目采用双许可证：代码遵循 [Apache-2.0](./LICENSE.md)，文档遵循 CC BY 4.0。
+
+详见 [LICENSE.md](./LICENSE.md)。
+
+## 🤝 参与贡献
+
+- 🐛 **Bug 报告**：[创建 issue](https://github.com/hellowind777/helloagents/issues)
+- 💡 **功能建议**：[发起讨论](https://github.com/hellowind777/helloagents/issues)
+- 📖 **文档改进**：欢迎 PR
+
+## 支持的 CLI
+
+| CLI | 安装方式 | 卸载方式 |
+|-----|---------|---------|
+| Claude Code | `claude plugin add helloagents` | `claude plugin remove helloagents` |
+| Codex CLI | `npm install -g helloagents` | `npm uninstall -g helloagents` |
 
 ---
 
 <div align="center">
 
-如果 HelloAGENTS 对你的工作流有帮助，欢迎点个 Star。
+如果这个项目对你有帮助，点个 star 就是最好的支持。
 
 感谢 <a href="https://codexzh.com/?ref=EEABC8">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> 对本项目的支持
+
+[⬆ 返回顶部](#helloagents)
 
 </div>
