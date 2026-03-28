@@ -1,20 +1,11 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
 
-# Distribution / packaging
+# Distribution
 dist/
-build/
-*.egg-info/
-*.egg
-
-# Virtual environments
-.env
-.venv/
-env/
-venv/
+*.tgz
 
 # IDE
 .vscode/
@@ -22,20 +13,12 @@ venv/
 *.swp
 *.swo
 
-# Python caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-# Node
-node_modules/
-
 # OS
 .DS_Store
 Thumbs.db
+
+# Project
+/.helloagents
+docs/
 COMMIT_MESSAGE.md
 .claude/settings.local.json
-%TEMP%updater_committed.py
-nul
-完整设计提示词.txt
-/.helloagents
