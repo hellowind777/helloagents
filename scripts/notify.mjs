@@ -157,35 +157,30 @@ function cmdRoute() {
   const cmdMatch = prompt.match(/^~(\w+)/);
   if (cmdMatch) {
     const skillName = cmdMatch[1];
-    const cwd = payload.cwd || process.cwd();
-    const settings = readSettings();
-    const isGlobal = settings.install_mode === 'global';
-    const isActivated = existsSync(join(cwd, '.helloagents'));
-
-    // ~help and ~init always pass through
-    if (skillName === 'help' || skillName === 'init') {
-      suppressedOutput('UserPromptSubmit',
-        `用户使用了 ~${skillName} 命令。请读取 skills/commands/${skillName}/SKILL.md 并按其流程执行。`);
-      return;
-    }
-
     suppressedOutput('UserPromptSubmit',
       `用户使用了 ~${skillName} 命令。请读取 skills/commands/${skillName}/SKILL.md 并按其流程执行。`);
     return;
   }
 
-  // Detect new project keywords → suggest ~design
-  const newProjectPatterns = [
-    /(?:创建|新建|从零|搭建).*(?:项目|应用|系统|网站|游戏|工具|平台|小程序|APP)/,
-    /(?:做|写|开发|实现)[一个]*.*(?:项目|应用|系统|网站|游戏|工具|平台|小程序|APP)/,
-    /\b(build|create|design|make|new|start|init)\b.*\b(app|game|project|site|website|tool|system|platform)\b/i,
-  ];
+  // Detect new project keywords → suggest ~design (only in global mode or activated projects)
+  const cwd = payload.cwd || process.cwd();
+  const settings = readSettings();
+  const isGlobal = settings.install_mode === 'global';
+  const isActivated = existsSync(join(cwd, '.helloagents'));
 
-  for (const pat of newProjectPatterns) {
-    if (pat.test(prompt)) {
-      suppressedOutput('UserPromptSubmit',
-        '检测到可能是新项目/新应用任务。根据 HelloAGENTS 路由规则，新项目必须进入 ~design 设计流程。请引导用户进入 ~design。');
-      return;
+  if (isGlobal || isActivated) {
+    const newProjectPatterns = [
+      /(?:创建|新建|从零|搭建).*(?:项目|应用|系统|网站|游戏|工具|平台|小程序|APP)/,
+      /(?:做|写|开发|实现)[一个]*.*(?:项目|应用|系统|网站|游戏|工具|平台|小程序|APP)/,
+      /\b(build|create|design|make|new|start|init)\b.*\b(app|game|project|site|website|tool|system|platform)\b/i,
+    ];
+
+    for (const pat of newProjectPatterns) {
+      if (pat.test(prompt)) {
+        suppressedOutput('UserPromptSubmit',
+          '检测到可能是新项目/新应用任务。根据 HelloAGENTS 路由规则，新项目必须进入 ~design 设计流程。请引导用户进入 ~design。');
+        return;
+      }
     }
   }
 

@@ -261,7 +261,7 @@ Codex CLI 在两种模式下都自动配置。
 | `output_format` | `true` | `true`=HelloAGENTS 格式输出，`false`=自然输出 |
 | `notify_level` | `0` | `0`=关闭，`1`=桌面通知，`2`=声音，`3`=两者 |
 | `ralph_loop_enabled` | `true` | 任务完成时自动运行验证 |
-| `guard_enabled` | `true` | 拦截危险命令（仅 Claude Code） |
+| `guard_enabled` | `true` | 拦截危险命令 |
 | `kb_create_mode` | `1` | `0`=关闭，`1`=编码任务自动，`2`=始终 |
 | `commit_attribution` | `""` | 空=不添加，填写内容则追加到 commit message |
 | `install_mode` | `"standby"` | `"standby"`=按项目激活（精简规则），`"global"`=所有项目启用完整规则 |
@@ -557,6 +557,8 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 - 📦 简化配置：8 个小写键，合理默认值
 - 📦 双模式安装：标准模式（非插件，自动配置 CLI 配置文件）/ 全局模式（插件/扩展）
 - 📦 模块化脚本架构：`cli-utils.mjs`（共享工具）、`notify-ui.mjs`（跨平台声音/桌面通知）、`guard.mjs`（安全防护）、`ralph-loop.mjs`（质量验证）
+- 📦 Hook 脚本跨平台兼容：事件名动态适配（Claude Code / Gemini CLI / Codex CLI），通过环境变量或 CLI 参数推断
+- 📦 Standby 模式路由隔离：新项目检测仅在 global 模式或已激活项目中触发，不干扰未激活项目
 - 📦 通知系统跨平台支持（Windows toast、macOS osascript、Linux notify-send）
 
 ### v2.3.8

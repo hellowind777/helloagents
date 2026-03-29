@@ -261,7 +261,7 @@ Only include keys you want to override — missing keys use defaults.
 | `output_format` | `true` | `true` = HelloAGENTS formatted output, `false` = natural output |
 | `notify_level` | `0` | `0`=off, `1`=desktop, `2`=sound, `3`=both |
 | `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
-| `guard_enabled` | `true` | Block dangerous commands (Claude Code only) |
+| `guard_enabled` | `true` | Block dangerous commands |
 | `kb_create_mode` | `1` | `0`=off, `1`=auto on coding tasks, `2`=always |
 | `commit_attribution` | `""` | Empty = no attribution. Set text to append to commit messages |
 | `install_mode` | `"standby"` | `"standby"` = per-project activation (lite rules), `"global"` = full rules for all projects |
@@ -557,6 +557,8 @@ Set a target and metric, then let AI iterate:
 - 📦 Simplified configuration: 8 lowercase keys with sensible defaults
 - 📦 Dual-mode installation: standby (non-plugin, auto-configures CLI config files) / global (plugin/extension)
 - 📦 Modular script architecture: `cli-utils.mjs` (shared utilities), `notify-ui.mjs` (cross-platform sound/desktop), `guard.mjs` (security), `ralph-loop.mjs` (verification)
+- 📦 Cross-platform hook compatibility: dynamic event name resolution (Claude Code / Gemini CLI / Codex CLI) via environment variables or CLI argument inference
+- 📦 Standby mode routing isolation: new project detection only triggers in global mode or activated projects, keeping unactivated projects undisturbed
 - 📦 Notification system with cross-platform sound + desktop support (Windows toast, macOS osascript, Linux notify-send)
 
 ### v2.3.8

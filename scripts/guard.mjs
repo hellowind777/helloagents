@@ -10,6 +10,11 @@ import { homedir } from 'node:os';
 
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 
+// Hook event name: read from env (set by hooks config) or infer from CLI mode.
+// This avoids hardcoding platform-specific event names (Claude: PreToolUse/PostToolUse, Gemini: BeforeTool/AfterModel).
+const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
+  || ((process.argv[2] || '') === 'post-write' ? 'PostToolUse' : 'PreToolUse');
+
 function readSettings() {
   try { return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8')); } catch {}
   return {};
@@ -146,7 +151,7 @@ function postWriteScan(data) {
   if (warnings.length > 0) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
-        hookEventName: 'PostToolUse',
+        hookEventName: HOOK_EVENT,
         additionalContext: `⚠️ [HelloAGENTS L2 安全扫描] 检测到潜在问题:\n${warnings.map(w => `  - ${w}`).join('\n')}\n请检查以上问题。`,
       },
       suppressOutput: true,
@@ -202,7 +207,7 @@ async function main() {
       // PreToolUse requires hookSpecificOutput.permissionDecision (not top-level decision)
       process.stdout.write(JSON.stringify({
         hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
+          hookEventName: HOOK_EVENT,
           permissionDecision: 'deny',
           permissionDecisionReason: `[HelloAGENTS Guard] Blocked: ${reason}\nCommand: ${command.slice(0, 200)}`,
         },

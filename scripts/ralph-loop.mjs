@@ -12,6 +12,12 @@ import { homedir } from 'node:os';
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 const CMD_TIMEOUT = 60_000; // 60s
 
+// Hook event name: read from env (set by hooks config) or infer from CLI mode.
+// This avoids hardcoding platform-specific event names (Claude: SubagentStop/Stop, Gemini: AfterAgent/SessionEnd).
+const IS_SUBAGENT = (process.argv[2] || '') === 'subagent';
+const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
+  || (IS_SUBAGENT ? 'SubagentStop' : 'Stop');
+
 // ── Settings ──────────────────────────────────────────────────────────
 function readSettings() {
   try { return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8')); } catch {}
@@ -148,7 +154,7 @@ function handleSuccess(cwd, isSubagent) {
   if (isSubagent) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
-        hookEventName: 'SubagentStop',
+        hookEventName: HOOK_EVENT,
         additionalContext: '子代理快速验证通过（lint/typecheck）。请控制器审查变更后继续。',
       },
       suppressOutput: true,
@@ -160,7 +166,7 @@ function handleSuccess(cwd, isSubagent) {
   if (!hasGitChanges(cwd)) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
-        hookEventName: 'Stop',
+        hookEventName: HOOK_EVENT,
         additionalContext: '⚠️ [Ralph Loop] 验证通过但未检测到代码变更（git diff 为空）。如果确实完成了编码任务，请确认变更已保存。',
       },
       suppressOutput: true,
@@ -196,7 +202,7 @@ function filterSubagentCommands(commands) {
   if (fast.length === 0) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
-        hookEventName: 'SubagentStop',
+        hookEventName: HOOK_EVENT,
         additionalContext: '子代理完成。未找到快速验证命令，请控制器手动审查变更。',
       },
       suppressOutput: true,
@@ -214,8 +220,6 @@ async function main() {
     return;
   }
 
-  const isSubagent = (process.argv[2] || '') === 'subagent';
-
   let data = {};
   try { data = JSON.parse(readFileSync(0, 'utf-8')); } catch {}
   const cwd = data.cwd || process.cwd();
@@ -226,13 +230,13 @@ async function main() {
     return;
   }
 
-  if (isSubagent) {
+  if (IS_SUBAGENT) {
     commands = filterSubagentCommands(commands);
     if (!commands) return;
   }
 
   const failures = runVerify(commands, cwd);
-  if (failures.length === 0) handleSuccess(cwd, isSubagent);
+  if (failures.length === 0) handleSuccess(cwd, IS_SUBAGENT);
   else handleFailure(failures, cwd);
 }
 
