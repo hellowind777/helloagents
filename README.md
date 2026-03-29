@@ -144,31 +144,38 @@ Simple tasks get direct execution. Complex tasks go through ORIENT → CLARIFY �
 
 ## 🚀 Quick Start
 
-### Claude Code (Recommended)
-
-```bash
-# Marketplace (recommended)
-/plugin marketplace add hellowind777/helloagents
-
-# Or direct install
-/plugin install helloagents@helloagents
-```
-
-The plugin auto-loads `bootstrap.md` rules, hooks, and all 14 quality skills.
-
-### Gemini CLI
-
-```bash
-gemini extensions install https://github.com/hellowind777/helloagents
-```
-
-### Codex CLI
+### One-Line Install (All CLIs)
 
 ```bash
 npm install -g helloagents
 ```
 
-The `postinstall` script auto-configures Codex CLI — sets up `config.toml`, hooks, and bootstrap rules.
+The `postinstall` script auto-detects installed CLIs and configures them:
+- **Claude Code** — injects rules into `~/.claude/CLAUDE.md`, sets up hooks and skills symlink
+- **Gemini CLI** — injects rules into `~/.gemini/GEMINI.md`, sets up hooks
+- **Codex CLI** — configures `config.toml`, hooks, and skills symlink
+
+This is **standby mode** (default) — lite rules for all projects, use `~init` in a project to activate full features.
+
+### Global Mode (Plugin Install)
+
+For full rules everywhere, switch to global mode and install plugins:
+
+```bash
+helloagents --global
+```
+
+Then install the plugin/extension for your CLI:
+
+```bash
+# Claude Code
+/plugin marketplace add hellowind777/helloagents
+
+# Gemini CLI
+gemini extensions install https://github.com/hellowind777/helloagents
+```
+
+Codex CLI is auto-configured in both modes.
 
 ### Verify Installation
 
@@ -317,12 +324,14 @@ helloagents --standby
 
 ### Standby vs Global Mode
 
-HelloAGENTS supports two installation modes:
+HelloAGENTS supports two installation modes with different installation methods:
 
-| Mode | Behavior | Best For |
-|------|----------|----------|
-| **Standby** (default) | Lite rules only. Run `~init` in a project to activate full features | Selective use, keeping other projects unaffected |
-| **Global** | Full rules for all projects automatically | All-in on HelloAGENTS across every project |
+| Mode | Install Method | Rules | Skills | Best For |
+|------|---------------|-------|--------|----------|
+| **Standby** (default) | `npm install -g helloagents` auto-configures all CLIs (non-plugin) | `bootstrap-lite.md` (lite rules) | `~command` on demand, `~init` for full activation | Selective use, keeping other projects unaffected |
+| **Global** | Plugin/extension install per CLI | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
+
+Standby mode injects rules directly into CLI config files (`~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, `~/.codex/config.toml`) and creates skills symlinks. Global mode uses each CLI's native plugin/extension system.
 
 Switch modes via CLI: `helloagents --global` or `helloagents --standby`
 
@@ -381,7 +390,7 @@ Set a target and metric, then let AI iterate:
 <details>
 <summary><strong>Q: Is this a CLI tool or a prompt framework?</strong></summary>
 
-**A:** Both. The CLI (`cli.mjs`) handles installation and Codex configuration. The actual workflow comes from `bootstrap.md` rules, quality skills, and hook scripts. Think of it as a delivery system + intelligent quality protocol.
+**A:** Both. The CLI (`cli.mjs`) handles installation, mode switching, and CLI configuration. The actual workflow comes from `bootstrap.md` / `bootstrap-lite.md` rules, quality skills, and hook scripts (`notify.mjs`, `guard.mjs`, `ralph-loop.mjs`). Think of it as a delivery system + intelligent quality protocol.
 </details>
 
 <details>
@@ -398,7 +407,7 @@ Set a target and metric, then let AI iterate:
 <details>
 <summary><strong>Q: Which CLI should I use?</strong></summary>
 
-**A:** Claude Code gets the best experience (plugin system, 11 lifecycle hooks, Agent Teams support). Gemini CLI works via extension system. Codex CLI works well too (auto-configured via npm postinstall). Other CLIs are not supported in v3.0.0.
+**A:** Claude Code gets the best experience (plugin system, 11 lifecycle hooks, Agent Teams support). Gemini CLI works via extension system. Codex CLI works well too. All three are auto-configured by `npm install -g helloagents` in standby mode — no manual plugin install needed.
 </details>
 
 <details>
@@ -424,7 +433,7 @@ Set a target and metric, then let AI iterate:
 <details>
 <summary><strong>Q: What is standby vs global mode?</strong></summary>
 
-**A:** Standby mode (default) injects only lite rules — projects need `~init` to activate full features. Global mode enables full HelloAGENTS rules for all projects automatically. Switch with `helloagents --global` or `helloagents --standby`.
+**A:** Standby mode (default) uses non-plugin installation — `npm install -g helloagents` auto-configures all detected CLIs with lite rules. Projects need `~init` to activate full features. Global mode uses each CLI's native plugin/extension system for full rules everywhere. Switch with `helloagents --global` or `helloagents --standby`.
 </details>
 
 <details>
@@ -471,14 +480,16 @@ Set a target and metric, then let AI iterate:
 
 ---
 
-### Commands not found (Codex CLI)
+### Commands not found
 
-**Problem:** `~help` not recognized after `npm install -g helloagents`
+**Problem:** `~help` not recognized after installation
 
 **Solution:**
 - Verify installation: `npm list -g helloagents`
-- Check that `~/.codex/config.toml` has `model_instructions_file` pointing to `bootstrap.md` or `bootstrap-lite.md`
-- Restart Codex CLI
+- Claude Code: check `~/.claude/CLAUDE.md` contains HelloAGENTS markers
+- Gemini CLI: check `~/.gemini/GEMINI.md` contains HelloAGENTS markers
+- Codex CLI: check `~/.codex/config.toml` has `model_instructions_file` pointing to `bootstrap.md` or `bootstrap-lite.md`
+- Restart your CLI
 
 ---
 
@@ -544,8 +555,9 @@ Set a target and metric, then let AI iterate:
 **Architecture:**
 - 📦 Unified 5-stage execution flow: ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE
 - 📦 Simplified configuration: 8 lowercase keys with sensible defaults
-- 📦 Ralph Loop rewritten in Node.js (`ralph-loop.mjs`)
-- 📦 Notification system rewritten in Node.js (`notify.mjs`) with cross-platform sound + desktop support
+- 📦 Dual-mode installation: standby (non-plugin, auto-configures CLI config files) / global (plugin/extension)
+- 📦 Modular script architecture: `cli-utils.mjs` (shared utilities), `notify-ui.mjs` (cross-platform sound/desktop), `guard.mjs` (security), `ralph-loop.mjs` (verification)
+- 📦 Notification system with cross-platform sound + desktop support (Windows toast, macOS osascript, Linux notify-send)
 
 ### v2.3.8
 
@@ -617,11 +629,11 @@ See [LICENSE.md](./LICENSE.md) for full details.
 
 ## Supported CLIs
 
-| CLI | Install | Uninstall |
-|-----|---------|-----------|
-| Claude Code | `/plugin marketplace add hellowind777/helloagents` | `/plugin remove helloagents` |
-| Gemini CLI | `gemini extensions install https://github.com/hellowind777/helloagents` | `gemini extensions uninstall helloagents` |
-| Codex CLI | `npm install -g helloagents` | `npm uninstall -g helloagents` |
+| CLI | Standby Install (default) | Global Install (plugin) | Uninstall |
+|-----|--------------------------|------------------------|-----------|
+| Claude Code | Auto-configured via `npm install -g helloagents` | `/plugin marketplace add hellowind777/helloagents` | `npm uninstall -g helloagents` (+ `/plugin remove helloagents` if global) |
+| Gemini CLI | Auto-configured via `npm install -g helloagents` | `gemini extensions install https://github.com/hellowind777/helloagents` | `npm uninstall -g helloagents` (+ `gemini extensions uninstall helloagents` if global) |
+| Codex CLI | Auto-configured via `npm install -g helloagents` | Auto-configured via `npm install -g helloagents` | `npm uninstall -g helloagents` |
 
 ---
 
