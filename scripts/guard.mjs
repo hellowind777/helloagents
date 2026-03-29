@@ -69,6 +69,57 @@ function scanForSecrets(content) {
 // Triggered by PostToolUse matcher: Write|Edit|NotebookEdit (see hooks.json).
 // If Claude Code adds new file-writing tools, update the matcher accordingly.
 
+/** Check for unrequested file creation (Write tool only). */
+function scanUnrequestedFiles(filePath, toolName) {
+  if (!filePath || toolName?.toLowerCase() !== 'write') return [];
+  const basename = filePath.split(/[/\\]/).pop() || '';
+  const UNREQUESTED_PATTERNS = [
+    { pattern: /^(SUMMARY|NOTES|TODO|SCRATCH|TEMP)\.(md|txt)$/i, reason: `Unrequested file creation: ${basename}` },
+    { pattern: /^README.*\.md$/i, test: () => {
+      const depth = filePath.replace(/\\/g, '/').split('/').length;
+      return depth > 4;
+    }, reason: `Suspicious README creation in nested path: ${basename}` },
+  ];
+  const warnings = [];
+  for (const { pattern, test, reason } of UNREQUESTED_PATTERNS) {
+    if (pattern.test(basename) && (!test || test())) warnings.push(reason);
+  }
+  return warnings;
+}
+
+/** Check for dangerous npm scripts and unsafe dependency patterns. */
+function scanDangerousPackages(content, filePath) {
+  const warnings = [];
+  if (filePath.endsWith('package.json')) {
+    const dangerousScripts = /("(preinstall|postinstall|preuninstall)")\s*:\s*"[^"]*\b(curl|wget|bash|sh|eval|exec)\b/i;
+    if (dangerousScripts.test(content)) {
+      warnings.push('Potentially dangerous lifecycle script in package.json (preinstall/postinstall with curl/wget/bash/eval)');
+    }
+  }
+  const unsafeInstall = /npm install\s+[^-].*--ignore-scripts\s*=\s*false|pip install\s+--trusted-host|pip install\s+http:/i;
+  if (unsafeInstall.test(content)) {
+    warnings.push('Unsafe dependency installation pattern detected');
+  }
+  return warnings;
+}
+
+/** Check if .env file is covered by .gitignore. */
+function scanEnvCoverage(filePath) {
+  if (!filePath.endsWith('.env') && !filePath.includes('.env.')) return [];
+  let dir = dirname(filePath);
+  for (let i = 0; i < 10; i++) {
+    try {
+      const gitignore = readFileSync(join(dir, '.gitignore'), 'utf-8');
+      return gitignore.includes('.env') ? [] : ['.env file written but .gitignore does not contain .env pattern'];
+    } catch {
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+  return ['.env file written but no .gitignore found'];
+}
+
 function postWriteScan(data) {
   const settings = readSettings();
   if (settings.guard_enabled === false) {
@@ -76,7 +127,6 @@ function postWriteScan(data) {
     return;
   }
 
-  // Extract written content from tool input/output
   const content = data.tool_input?.content || data.tool_input?.new_string || '';
   const filePath = data.tool_input?.file_path || '';
 
@@ -85,71 +135,14 @@ function postWriteScan(data) {
     return;
   }
 
-  const warnings = [];
-
-  // Write guard: block creation of unrequested files
-  if (filePath && data.tool_name?.toLowerCase() === 'write') {
-    const basename = filePath.split(/[/\\]/).pop() || '';
-    const UNREQUESTED_PATTERNS = [
-      { pattern: /^(SUMMARY|NOTES|TODO|SCRATCH|TEMP)\.(md|txt)$/i, reason: `Unrequested file creation: ${basename}` },
-      { pattern: /^README.*\.md$/i, test: () => {
-        // Only warn if creating README outside project root
-        const depth = filePath.replace(/\\/g, '/').split('/').length;
-        return depth > 4; // rough heuristic: deep nested README is suspicious
-      }, reason: `Suspicious README creation in nested path: ${basename}` },
-    ];
-    for (const { pattern, test, reason } of UNREQUESTED_PATTERNS) {
-      if (pattern.test(basename) && (!test || test())) {
-        warnings.push(reason);
-      }
-    }
-  }
-
-  // L2 secret scan
-  if (content) {
-    warnings.push(...scanForSecrets(content));
-
-    // Dangerous npm scripts / dependency patterns
-    if (filePath.endsWith('package.json')) {
-      const dangerousScripts = /("(preinstall|postinstall|preuninstall)")\s*:\s*"[^"]*\b(curl|wget|bash|sh|eval|exec)\b/i;
-      if (dangerousScripts.test(content)) {
-        warnings.push('Potentially dangerous lifecycle script in package.json (preinstall/postinstall with curl/wget/bash/eval)');
-      }
-    }
-
-    // Unsafe dependency installation
-    const unsafeInstall = /npm install\s+[^-].*--ignore-scripts\s*=\s*false|pip install\s+--trusted-host|pip install\s+http:/i;
-    if (unsafeInstall.test(content)) {
-      warnings.push('Unsafe dependency installation pattern detected');
-    }
-  }
-
-  // Check if writing .env without .gitignore coverage
-  if (filePath.endsWith('.env') || filePath.includes('.env.')) {
-    let dir = dirname(filePath);
-    let found = false;
-    for (let i = 0; i < 10; i++) {
-      try {
-        const gitignore = readFileSync(join(dir, '.gitignore'), 'utf-8');
-        found = true;
-        if (!gitignore.includes('.env')) {
-          warnings.push('.env file written but .gitignore does not contain .env pattern');
-        }
-        break;
-      } catch {
-        const parent = dirname(dir);
-        if (parent === dir) break;
-        dir = parent;
-      }
-    }
-    if (!found) {
-      warnings.push('.env file written but no .gitignore found');
-    }
-  }
+  const warnings = [
+    ...scanUnrequestedFiles(filePath, data.tool_name),
+    ...(content ? [...scanForSecrets(content), ...scanDangerousPackages(content, filePath)] : []),
+    ...scanEnvCoverage(filePath),
+  ];
 
   // L2 is advisory (warn, not block): uses additionalContext to surface warnings
   // to the AI, matching bootstrap.md's "警告用户" directive for L2 patterns.
-  // This intentionally does NOT use decision:'block' — blocking is L1 only.
   if (warnings.length > 0) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {

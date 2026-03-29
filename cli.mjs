@@ -1,19 +1,22 @@
 #!/usr/bin/env node
 /**
  * HelloAGENTS CLI — Quality-driven orchestration kernel for AI CLIs.
- * Runs as npm lifecycle script (postinstall/preuninstall). Zero dependencies.
+ * Runs as npm lifecycle script (postinstall/preuninstall). Zero external dependencies.
  */
 'use strict';
 
-import { homedir, platform } from 'node:os';
+import { homedir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync,
-         symlinkSync, lstatSync, unlinkSync, rmdirSync, copyFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import {
+  ensureDir, safeWrite, safeRead, safeJson, removeIfExists,
+  createLink, removeLink, injectMarkedContent, removeMarkedContent,
+  mergeSettingsHooks, cleanSettingsHooks, loadHooksWithAbsPath,
+} from './scripts/cli-utils.mjs';
 
 // ── Constants ────────────────────────────────────────────────────────────
 
-const IS_WIN = platform() === 'win32';
 const HOME = homedir();
 const PKG_ROOT = resolve(dirname(fileURLToPath(import.meta.url)));
 const HELLOAGENTS_HOME = join(HOME, '.helloagents');
@@ -27,40 +30,11 @@ const DEFAULTS = {
   guard_enabled: true,
   kb_create_mode: 1,
   commit_attribution: "",
-  install_mode: "standby",  // "standby" | "global"
+  install_mode: "standby",
 };
 
 let pkg = { version: '0.0.0' };
 try { pkg = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8')); } catch {}
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-function ensureDir(p) { mkdirSync(p, { recursive: true }); }
-function safeWrite(p, c) { ensureDir(dirname(p)); writeFileSync(p, c, 'utf-8'); }
-function safeRead(p) { try { return readFileSync(p, 'utf-8'); } catch { return null; } }
-function safeJson(p) { try { return JSON.parse(readFileSync(p, 'utf-8')); } catch { return null; } }
-function removeIfExists(p) { try { rmSync(p, { recursive: true, force: true }); } catch {} }
-
-function createLink(target, linkPath) {
-  removeLink(linkPath); // Clean up existing link/junction first
-  try {
-    symlinkSync(target, linkPath, IS_WIN ? 'junction' : 'dir');
-    return true;
-  } catch { return false; }
-}
-
-function removeLink(p) {
-  try {
-    const stat = lstatSync(p);
-    if (IS_WIN && stat.isDirectory()) {
-      // Junction on Windows: rmdirSync does not follow junction
-      rmdirSync(p);
-    } else {
-      unlinkSync(p);
-    }
-    return true;
-  } catch { return false; }
-}
 
 const isCN = (() => {
   const lang = (process.env.LANG || process.env.LANGUAGE || process.env.LC_ALL || '').toLowerCase();
@@ -68,50 +42,35 @@ const isCN = (() => {
 })();
 const msg = (cn, en) => isCN ? cn : en;
 const ok = (m) => console.log(`  ✓ ${m}`);
-const fail = (m) => console.error(`  ✗ ${m}`);
 
-// ── Codex Install ────────────────────────────────────────────────────────
+// ── Codex Install/Uninstall ─────────────────────────────────────────────
 
-function installCodex() {
+function installCodex(mode) {
   const codexDir = join(HOME, '.codex');
-  if (!existsSync(codexDir)) return false; // Codex not installed
+  if (!existsSync(codexDir)) return false;
   ensureDir(codexDir);
 
-  // 1. Clean up legacy AGENTS.md injection (replaced by model_instructions_file)
-  const agentsPath = join(codexDir, 'AGENTS.md');
-  const existing = safeRead(agentsPath) || '';
-  const marker = '<!-- HELLOAGENTS_START -->';
-  const markerEnd = '<!-- HELLOAGENTS_END -->';
-  if (existing.includes(marker)) {
-    const cleaned = existing.replace(new RegExp(`\\n*${marker}[\\s\\S]*?${markerEnd}\\n*`, 'g'), '\n').trim();
-    if (cleaned) safeWrite(agentsPath, cleaned);
-    else removeIfExists(agentsPath);
-  }
+  // 1. Clean up legacy AGENTS.md injection
+  removeMarkedContent(join(codexDir, 'AGENTS.md'));
 
   // 2. config.toml
   const configPath = join(codexDir, 'config.toml');
   let toml = safeRead(configPath) || '';
   if (toml && !existsSync(configPath + '.bak')) copyFileSync(configPath, configPath + '.bak');
 
-  // Add top-level keys by prepending (safe, no regex on TOML structure)
   function ensureTopLevel(key, value) {
-    // Already has this key → update value
     const re = new RegExp(`^${key}\\s*=.*$`, 'm');
     if (re.test(toml)) {
       toml = toml.replace(re, `${key} = ${value}`);
     } else {
-      // Prepend before first line, with blank line separator
       toml = `${key} = ${value}\n` + toml;
     }
   }
 
-  // Choose bootstrap file based on install_mode
-  const settings = safeJson(CONFIG_FILE) || {};
-  const bootstrapFile = settings.install_mode === 'global' ? 'bootstrap.md' : 'bootstrap-lite.md';
+  const bootstrapFile = mode === 'global' ? 'bootstrap.md' : 'bootstrap-lite.md';
   ensureTopLevel('model_instructions_file', `"${join(PKG_ROOT, bootstrapFile).replace(/\\/g, '/')}"`);
   ensureTopLevel('notify', `["node", "${join(PKG_ROOT, 'scripts', 'notify.mjs').replace(/\\/g, '/')}", "codex-notify"]`);
 
-  // Add blank line after our injected keys (before user config)
   toml = toml.replace(/^((?:notify|model_instructions_file)\s*=.*\n)((?:notify|model_instructions_file)\s*=.*\n)(?!\n)/, '$1$2\n');
 
   if (!toml.includes('[features]')) toml += '\n[features]\ncodex_hooks = true\n';
@@ -119,17 +78,16 @@ function installCodex() {
 
   safeWrite(configPath, toml);
 
-  // 3. Write hooks.json → ~/.codex/hooks.json (Codex doesn't support hooks in plugin.json)
-  // Codex has no path variable like ${CLAUDE_PLUGIN_ROOT}, so we write with absolute paths
+  // 3. Write hooks.json with absolute paths
   const codexHooksPath = join(codexDir, 'hooks.json');
-  const srcHooksPath = join(PKG_ROOT, 'hooks', 'hooks.json');
-  try {
-    let hooksContent = readFileSync(srcHooksPath, 'utf-8');
-    // Replace Claude Code path variable with absolute path (forward slashes for JSON)
-    const absRoot = PKG_ROOT.replace(/\\/g, '/');
-    hooksContent = hooksContent.replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, absRoot);
-    writeFileSync(codexHooksPath, hooksContent, 'utf-8');
-  } catch {}
+  const hooksData = loadHooksWithAbsPath(PKG_ROOT, 'hooks.json', '${CLAUDE_PLUGIN_ROOT}');
+  if (hooksData) {
+    try { writeFileSync(codexHooksPath, JSON.stringify(hooksData, null, 2), 'utf-8'); } catch {}
+  }
+
+  // 4. Symlink skills directory
+  const codexSkillsLink = join(codexDir, 'helloagents');
+  createLink(join(PKG_ROOT, 'skills'), codexSkillsLink);
 
   return true;
 }
@@ -138,18 +96,8 @@ function uninstallCodex() {
   const codexDir = join(HOME, '.codex');
   if (!existsSync(codexDir)) return false;
 
-  // AGENTS.md
-  const agentsPath = join(codexDir, 'AGENTS.md');
-  const existing = safeRead(agentsPath) || '';
-  const marker = '<!-- HELLOAGENTS_START -->';
-  const markerEnd = '<!-- HELLOAGENTS_END -->';
-  if (existing.includes(marker)) {
-    const cleaned = existing.replace(new RegExp(`\\n*${marker}[\\s\\S]*?${markerEnd}\\n*`, 'g'), '\n').trim();
-    if (cleaned) safeWrite(agentsPath, cleaned);
-    else removeIfExists(agentsPath);
-  }
+  removeMarkedContent(join(codexDir, 'AGENTS.md'));
 
-  // config.toml
   const configPath = join(codexDir, 'config.toml');
   let toml = safeRead(configPath) || '';
   if (toml.includes('helloagents') || toml.includes('HelloAGENTS') || toml.includes('codex_hooks')) {
@@ -160,14 +108,84 @@ function uninstallCodex() {
     safeWrite(configPath, toml.trim() + '\n');
   }
   removeIfExists(configPath + '.bak');
-
-  // hooks.json (written file, not symlink)
   removeIfExists(join(codexDir, 'hooks.json'));
+  removeLink(join(codexDir, 'helloagents'));
 
   // Legacy symlinks cleanup
   for (const p of [join(codexDir, 'skills', 'helloagents'), join(HOME, '.agents', 'skills', 'helloagents')]) {
     removeLink(p);
   }
+
+  return true;
+}
+
+// ── Claude Code Standby Install/Uninstall ───────────────────────────────
+
+function installClaudeStandby() {
+  const claudeDir = join(HOME, '.claude');
+  ensureDir(claudeDir);
+
+  // 1. Inject bootstrap-lite.md content into ~/.claude/CLAUDE.md
+  const bootstrapContent = safeRead(join(PKG_ROOT, 'bootstrap-lite.md'));
+  if (bootstrapContent) {
+    injectMarkedContent(join(claudeDir, 'CLAUDE.md'), bootstrapContent);
+  }
+
+  // 2. Symlink skills directory: ~/.claude/helloagents → PKG_ROOT/skills/
+  createLink(join(PKG_ROOT, 'skills'), join(claudeDir, 'helloagents'));
+
+  // 3. Write hooks into ~/.claude/settings.json (with absolute paths)
+  const settingsPath = join(claudeDir, 'settings.json');
+  const hooksData = loadHooksWithAbsPath(PKG_ROOT, 'hooks.json', '${CLAUDE_PLUGIN_ROOT}');
+  if (hooksData) {
+    mergeSettingsHooks(settingsPath, hooksData, ['Read(~/.claude/helloagents/**)',]);
+  }
+
+  return true;
+}
+
+function uninstallClaudeStandby() {
+  const claudeDir = join(HOME, '.claude');
+  if (!existsSync(claudeDir)) return false;
+
+  removeMarkedContent(join(claudeDir, 'CLAUDE.md'));
+  removeLink(join(claudeDir, 'helloagents'));
+  cleanSettingsHooks(join(claudeDir, 'settings.json'), true);
+
+  return true;
+}
+
+// ── Gemini CLI Standby Install/Uninstall ────────────────────────────────
+
+function installGeminiStandby() {
+  const geminiDir = join(HOME, '.gemini');
+  ensureDir(geminiDir);
+
+  // 1. Inject bootstrap-lite.md content into ~/.gemini/GEMINI.md
+  //    For Gemini, also append PKG_ROOT absolute path for skills resolution
+  let bootstrapContent = safeRead(join(PKG_ROOT, 'bootstrap-lite.md'));
+  if (bootstrapContent) {
+    const absSkillsPath = join(PKG_ROOT, 'skills').replace(/\\/g, '/');
+    bootstrapContent += `\n\n<!-- HelloAGENTS skills absolute path: ${absSkillsPath} -->\n`;
+    injectMarkedContent(join(geminiDir, 'GEMINI.md'), bootstrapContent);
+  }
+
+  // 2. Write hooks into ~/.gemini/settings.json
+  const settingsPath = join(geminiDir, 'settings.json');
+  const hooksData = loadHooksWithAbsPath(PKG_ROOT, 'hooks-gemini.json', '${extensionPath}');
+  if (hooksData) mergeSettingsHooks(settingsPath, hooksData);
+
+  return true;
+}
+
+function uninstallGeminiStandby() {
+  const geminiDir = join(HOME, '.gemini');
+  if (!existsSync(geminiDir)) return false;
+
+  removeMarkedContent(join(geminiDir, 'GEMINI.md'));
+  cleanSettingsHooks(join(geminiDir, 'settings.json'));
+  // Clean up legacy standalone hooks file
+  removeIfExists(join(geminiDir, 'helloagents-hooks.json'));
 
   return true;
 }
@@ -179,70 +197,92 @@ function ensureConfig() {
   if (!existsSync(CONFIG_FILE)) {
     writeFileSync(CONFIG_FILE, JSON.stringify(DEFAULTS, null, 2), 'utf-8');
   } else {
-    // Reconcile: add missing keys, remove obsolete keys, preserve user values
     const existing = safeJson(CONFIG_FILE) || {};
-    const reconciled = {};
+    const reconciled = { ...existing };
     for (const [key, val] of Object.entries(DEFAULTS)) {
-      reconciled[key] = key in existing ? existing[key] : val;
+      if (!(key in reconciled)) reconciled[key] = val;
     }
-    // Only write if changed (key set or values differ)
     if (JSON.stringify(reconciled) !== JSON.stringify(existing)) {
       writeFileSync(CONFIG_FILE, JSON.stringify(reconciled, null, 2), 'utf-8');
     }
   }
 }
 
+// ── Install orchestration ────────────────────────────────────────────────
+
+function installStandby() {
+  if (installClaudeStandby()) ok(msg('Claude Code 已配置（standby 模式）', 'Claude Code configured (standby mode)'));
+  if (installGeminiStandby()) ok(msg('Gemini CLI 已配置（standby 模式）', 'Gemini CLI configured (standby mode)'));
+  if (installCodex('standby')) ok(msg('Codex CLI 已配置（standby 模式）', 'Codex CLI configured (standby mode)'));
+  else console.log(msg('  - Codex CLI 未检测到，跳过', '  - Codex CLI not detected, skipped'));
+}
+
+function installGlobal() {
+  // Global mode: Claude Code & Gemini use plugin/extension (user installs manually)
+  // Clean up any standby artifacts first
+  uninstallClaudeStandby();
+  uninstallGeminiStandby();
+  if (installCodex('global')) ok(msg('Codex CLI 已配置（global 模式）', 'Codex CLI configured (global mode)'));
+  else console.log(msg('  - Codex CLI 未检测到，跳过', '  - Codex CLI not detected, skipped'));
+}
+
+function uninstallAll() {
+  uninstallClaudeStandby();
+  uninstallGeminiStandby();
+  uninstallCodex();
+}
+
 // ── Main ─────────────────────────────────────────────────────────────────
 
 const cmd = process.argv[2] || '';
 
+const codexStatus = () => existsSync(join(HOME, '.codex'))
+  ? msg('已自动配置', 'Auto-configured')
+  : msg('安装 Codex CLI 后重新运行 npm install -g helloagents', 'Install Codex CLI then re-run npm install -g helloagents');
+
+const PLUGIN_CMDS = '    Claude Code:  /plugin marketplace add hellowind777/helloagents\n                  /plugin install helloagents@helloagents\n    Gemini CLI:   gemini extensions install https://github.com/hellowind777/helloagents';
+const REMOVE_HINT = msg(
+  '如已安装 Claude Code 插件，建议手动移除: /plugin remove helloagents\n  如已安装 Gemini CLI 扩展，建议手动移除: gemini extensions uninstall helloagents',
+  'If Claude Code plugin installed, consider removing: /plugin remove helloagents\n  If Gemini CLI extension installed, consider removing: gemini extensions uninstall helloagents');
+
+function printInstallMsg(mode, context) {
+  const isSwitch = context === 'switch';
+  if (mode === 'global') {
+    if (!isSwitch) console.log(msg(
+      `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n${PLUGIN_CMDS}\n    Codex:        ${codexStatus()}\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
+      `\n  ✅ HelloAGENTS installed (global mode)!\n\n${PLUGIN_CMDS}\n    Codex:        ${codexStatus()}\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`));
+    else console.log(msg(`  所有项目将自动启用完整 HelloAGENTS 规则。\n  请手动安装插件：\n${PLUGIN_CMDS}`,
+      `  All projects will use full HelloAGENTS rules.\n  Please install plugins manually:\n${PLUGIN_CMDS}`));
+  } else {
+    if (!isSwitch) console.log(msg(
+      `\n  ✅ HelloAGENTS 已安装（standby 模式）！\n\n    Claude Code:  已自动配置（~/.claude/CLAUDE.md + hooks）\n    Gemini CLI:   已自动配置（~/.gemini/GEMINI.md）\n    Codex:        ${codexStatus()}\n\n  standby 模式下，hello-* 技能不会自动触发。\n  在项目中使用 ~init 激活完整功能，或使用 ~command 按需调用。\n\n  切换模式：\n    helloagents --global    全局模式（安装插件，hello-* 自动触发）`,
+      `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Codex:        ${codexStatus()}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~init in a project to activate full features, or use ~command on demand.\n\n  Switch modes:\n    helloagents --global    Global mode (install plugin, hello-* auto-trigger)`));
+    else console.log(msg(`  项目需通过 ~init 激活完整功能，未激活项目仅注入通用规则。\n  ${REMOVE_HINT}`,
+      `  Projects need ~init to activate full features. Unactivated projects get lite rules only.\n  ${REMOVE_HINT}`));
+  }
+  if (!isSwitch) console.log();
+}
+
 if (cmd === 'postinstall') {
-  // npm postinstall: auto-configure detected CLIs
   console.log(`\n  HelloAGENTS v${pkg.version}\n`);
   ensureConfig();
   ok('~/.helloagents/helloagents.json');
 
-  if (installCodex()) ok('Codex CLI configured');
-  else console.log(msg('  - Codex CLI 未检测到，跳过', '  - Codex CLI not detected, skipped'));
-
-  console.log(msg(
-    `\n  ✅ HelloAGENTS 已安装！\n\n` +
-    `    Claude Code:  /plugin marketplace add hellowind777/helloagents\n` +
-    `                  /plugin install helloagents@helloagents\n` +
-    `    Gemini CLI:   gemini extensions install https://github.com/hellowind777/helloagents\n` +
-    `    Codex:        ${existsSync(join(HOME, '.codex')) ? '已自动配置' : '安装 Codex CLI 后重新运行 npm install -g helloagents'}\n\n` +
-    `  默认为标准模式（项目级按需激活）。切换模式：\n` +
-    `    helloagents --global    全局模式（所有项目自动启用完整规则）\n` +
-    `    helloagents --standby   标准模式（默认）`,
-    `\n  ✅ HelloAGENTS installed!\n\n` +
-    `    Claude Code:  /plugin marketplace add hellowind777/helloagents\n` +
-    `                  /plugin install helloagents@helloagents\n` +
-    `    Gemini CLI:   gemini extensions install https://github.com/hellowind777/helloagents\n` +
-    `    Codex:        ${existsSync(join(HOME, '.codex')) ? 'Auto-configured' : 'Install Codex CLI then re-run npm install -g helloagents'}\n\n` +
-    `  Default: standby mode (per-project activation). Switch modes:\n` +
-    `    helloagents --global    Global mode (full rules for all projects)\n` +
-    `    helloagents --standby   Standby mode (default)`
-  ));
-  console.log();
+  const settings = safeJson(CONFIG_FILE) || {};
+  const mode = settings.install_mode || 'standby';
+  if (mode === 'global') installGlobal(); else installStandby();
+  printInstallMsg(mode, 'install');
 
 } else if (cmd === 'preuninstall') {
-  // npm preuninstall: clean up Codex config, preserve user settings
   console.log(`\n  HelloAGENTS — ${msg('正在清理', 'Cleaning up')}\n`);
-
-  if (uninstallCodex()) ok(msg('Codex CLI 已清理', 'Codex CLI cleaned'));
-  // Preserve ~/.helloagents/helloagents.json (user config survives update/uninstall)
+  uninstallAll();
+  ok(msg('所有 CLI 配置已清理', 'All CLI configurations cleaned'));
   console.log(msg(
-    '  ℹ ~/.helloagents/ 已保留（如需彻底清理请手动删除）\n' +
-    '  ℹ 如已安装 Claude Code 插件，请手动执行: /plugin remove helloagents\n' +
-    '  ℹ 如已安装 Gemini CLI 扩展，请手动执行: gemini extensions uninstall helloagents',
-    '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n' +
-    '  ℹ If Claude Code plugin installed, run: /plugin remove helloagents\n' +
-    '  ℹ If Gemini CLI extension installed, run: gemini extensions uninstall helloagents'
-  ));
+    '  ℹ ~/.helloagents/ 已保留（如需彻底清理请手动删除）\n  ℹ 如已安装 Claude Code 插件，请手动执行: /plugin remove helloagents\n  ℹ 如已安装 Gemini CLI 扩展，请手动执行: gemini extensions uninstall helloagents',
+    '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n  ℹ If Claude Code plugin installed, run: /plugin remove helloagents\n  ℹ If Gemini CLI extension installed, run: gemini extensions uninstall helloagents'));
   console.log();
 
 } else if (cmd === 'sync-version') {
-  // Sync version from package.json to all platform config files
   const ver = pkg.version;
   const targets = [
     join(PKG_ROOT, '.claude-plugin', 'plugin.json'),
@@ -253,65 +293,44 @@ if (cmd === 'postinstall') {
     const obj = safeJson(p);
     if (obj) { obj.version = ver; safeWrite(p, JSON.stringify(obj, null, 2) + '\n'); }
   }
-
   const marketPath = join(PKG_ROOT, '.claude-plugin', 'marketplace.json');
   const market = safeJson(marketPath);
   if (market?.plugins?.[0]) { market.plugins[0].version = ver; safeWrite(marketPath, JSON.stringify(market, null, 2) + '\n'); }
-
   ok(`Version synced to ${ver}`);
 
 } else if (cmd === '--global' || cmd === '--standby') {
-  // Mode switching
-  const mode = cmd === '--global' ? 'global' : 'standby';
+  const newMode = cmd === '--global' ? 'global' : 'standby';
   ensureConfig();
   const config = safeJson(CONFIG_FILE) || {};
-  config.install_mode = mode;
-  writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
-  ok(msg(`模式已切换为: ${mode}`, `Mode switched to: ${mode}`));
+  const oldMode = config.install_mode || 'standby';
 
-  // Update Codex config.toml if Codex is installed
-  const codexDir = join(HOME, '.codex');
-  const configPath = join(codexDir, 'config.toml');
-  let toml = safeRead(configPath);
-  if (toml) {
-    const bootstrapFile = mode === 'global' ? 'bootstrap.md' : 'bootstrap-lite.md';
-    const newVal = `"${join(PKG_ROOT, bootstrapFile).replace(/\\/g, '/')}"`;
-    const re = /^model_instructions_file\s*=.*$/m;
-    if (re.test(toml)) {
-      toml = toml.replace(re, `model_instructions_file = ${newVal}`);
-    } else {
-      toml = `model_instructions_file = ${newVal}\n` + toml;
-    }
-    writeFileSync(configPath, toml, 'utf-8');
-    ok(msg('Codex config.toml 已更新', 'Codex config.toml updated'));
+  if (oldMode === newMode) {
+    ok(msg(`当前已是 ${newMode} 模式`, `Already in ${newMode} mode`));
+    process.exit(0);
   }
 
-  console.log(msg(
-    mode === 'global'
-      ? '  所有项目将自动启用完整 HelloAGENTS 规则。'
-      : '  项目需通过 ~init 激活完整功能，未激活项目仅注入通用规则。',
-    mode === 'global'
-      ? '  All projects will use full HelloAGENTS rules.'
-      : '  Projects need ~init to activate full features. Unactivated projects get lite rules only.'
-  ));
+  config.install_mode = newMode;
+  writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+  ok(msg(`模式已切换为: ${newMode}`, `Mode switched to: ${newMode}`));
+
+  if (newMode === 'global') installGlobal(); else installStandby();
+  printInstallMsg(newMode, 'switch');
 
 } else {
-  // Manual invocation: show help
   console.log(`
 HelloAGENTS v${pkg.version} — The orchestration kernel for AI CLIs
 
 ${msg('安装', 'Install')}:
-  Claude Code:  /plugin marketplace add hellowind777/helloagents
-  Gemini CLI:   gemini extensions install https://github.com/hellowind777/helloagents
-  Codex:        npm install -g helloagents  ${msg('（自动配置）', '(auto-configures)')}
+  npm install -g helloagents  ${msg('（默认 standby 模式，自动配置所有检测到的 CLI）', '(default standby mode, auto-configures all detected CLIs)')}
 
 ${msg('模式切换', 'Mode switching')}:
-  helloagents --global     ${msg('全局模式（所有项目启用完整规则）', 'Global mode (full rules for all projects)')}
-  helloagents --standby    ${msg('标准模式（项目级按需激活，默认）', 'Standby mode (per-project activation, default)')}
+  helloagents --global     ${msg('全局模式（安装插件，hello-* 自动触发）', 'Global mode (install plugin, hello-* auto-trigger)')}
+  helloagents --standby    ${msg('标准模式（非插件安装，hello-* 不自动触发，默认）', "Standby mode (non-plugin install, hello-* won't auto-trigger, default)")}
 
 ${msg('卸载', 'Uninstall')}:
-  Claude Code:  /plugin remove helloagents
-  Gemini CLI:   gemini extensions uninstall helloagents
-  Codex:        npm uninstall -g helloagents
+  npm uninstall -g helloagents
+  ${msg('如已安装插件，另需手动移除：', 'If plugins installed, also remove manually:')}
+    Claude Code:  /plugin remove helloagents
+    Gemini CLI:   gemini extensions uninstall helloagents
 `.trim());
 }
