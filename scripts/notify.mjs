@@ -178,17 +178,21 @@ function cmdPreCompact() {
     } catch {}
   }
 
-  // Re-inject bootstrap essentials
+  // Re-inject bootstrap essentials (choose version based on mode/activation)
+  const settings = readSettings();
+  const isGlobal = settings.install_mode === 'global';
+  const isActivated = existsSync(join(cwd, '.helloagents'));
+  const bootstrapFile = (isGlobal || isActivated) ? 'bootstrap.md' : 'bootstrap-lite.md';
+
   let bootstrap = '';
-  try { bootstrap = readFileSync(join(PKG_ROOT, 'bootstrap.md'), 'utf-8'); } catch {}
+  try { bootstrap = readFileSync(join(PKG_ROOT, bootstrapFile), 'utf-8'); } catch {}
   if (bootstrap) {
     summaryParts.push('');
-    summaryParts.push('## 核心规则（从 bootstrap.md 重新注入）');
+    summaryParts.push('## 核心规则（从 bootstrap 重新注入）');
     summaryParts.push(bootstrap);
   }
 
   // Append user settings
-  const settings = readSettings();
   if (Object.keys(settings).length) {
     summaryParts.push('');
     summaryParts.push(`## 当前用户设置\n\`\`\`json\n${JSON.stringify(settings, null, 2)}\n\`\`\``);
@@ -219,6 +223,26 @@ function cmdRoute() {
   const cmdMatch = prompt.match(/^~(\w+)/);
   if (cmdMatch) {
     const skillName = cmdMatch[1];
+    const cwd = payload.cwd || process.cwd();
+    const settings = readSettings();
+    const isGlobal = settings.install_mode === 'global';
+    const isActivated = existsSync(join(cwd, '.helloagents'));
+
+    // ~help and ~init always pass through
+    if (skillName === 'help' || skillName === 'init') {
+      suppressedOutput('UserPromptSubmit',
+        `用户使用了 ~${skillName} 命令。请读取 skills/commands/${skillName}/SKILL.md 并按其流程执行。`);
+      return;
+    }
+
+    // Unactivated project in standby mode → prompt initialization
+    if (!isGlobal && !isActivated) {
+      suppressedOutput('UserPromptSubmit',
+        `用户使用了 ~${skillName} 命令，但当前项目尚未初始化 HelloAGENTS（.helloagents/ 不存在）。\n` +
+        `请告知用户：当前项目尚未初始化 HelloAGENTS。输入 \`~init\` 初始化后即可使用完整功能（包括 ~${skillName}）。`);
+      return;
+    }
+
     suppressedOutput('UserPromptSubmit',
       `用户使用了 ~${skillName} 命令。请读取 skills/commands/${skillName}/SKILL.md 并按其流程执行。`);
     return;
@@ -248,11 +272,17 @@ function cmdInject() {
   const payload = readStdin();
   const source = payload.source || 'startup'; // startup | resume | clear | compact
 
+  // Determine which bootstrap to inject based on mode and project state
+  const cwd = payload.cwd || process.cwd();
+  const settings = readSettings();
+  const isGlobal = settings.install_mode === 'global';
+  const isActivated = existsSync(join(cwd, '.helloagents'));
+  const bootstrapFile = (isGlobal || isActivated) ? 'bootstrap.md' : 'bootstrap-lite.md';
+
   let bootstrap = '';
-  try { bootstrap = readFileSync(join(PKG_ROOT, 'bootstrap.md'), 'utf-8'); } catch {}
+  try { bootstrap = readFileSync(join(PKG_ROOT, bootstrapFile), 'utf-8'); } catch {}
 
   // Read user settings and append to bootstrap
-  const settings = readSettings();
   const settingsBlock = Object.keys(settings).length
     ? `\n\n## 当前用户设置\n\`\`\`json\n${JSON.stringify(settings, null, 2)}\n\`\`\``
     : '';

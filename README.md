@@ -87,7 +87,6 @@ HelloAGENTS fixes that. It's an orchestration layer that sits on top of your AI 
 ### ⚠️ Not For
 - ❌ Simple one-off questions (HelloAGENTS adds process overhead)
 - ❌ Non-coding tasks (optimized for software engineering)
-- ❌ CLIs other than Claude Code and Codex CLI (v3.0.0 supports these two)
 
 ## ✨ Core Features
 
@@ -148,10 +147,20 @@ Simple tasks get direct execution. Complex tasks go through ORIENT → CLARIFY �
 ### Claude Code (Recommended)
 
 ```bash
-claude plugin add helloagents
+# Marketplace (recommended)
+/plugin marketplace add hellowind777/helloagents
+
+# Or direct install
+/plugin install helloagents@helloagents
 ```
 
-That's it. The plugin auto-loads `bootstrap.md` rules, hooks, and all 14 quality skills.
+The plugin auto-loads `bootstrap.md` rules, hooks, and all 14 quality skills.
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/hellowind777/helloagents
+```
 
 ### Codex CLI
 
@@ -159,7 +168,7 @@ That's it. The plugin auto-loads `bootstrap.md` rules, hooks, and all 14 quality
 npm install -g helloagents
 ```
 
-The `postinstall` script auto-configures Codex CLI — sets up `config.toml`, skills symlinks, and hooks.
+The `postinstall` script auto-configures Codex CLI — sets up `config.toml`, hooks, and bootstrap rules.
 
 ### Verify Installation
 
@@ -170,7 +179,7 @@ The `postinstall` script auto-configures Codex CLI — sets up `config.toml`, sk
 
 **Expected output:**
 ```
-💡【HelloAGENTS】- 帮助
+💡【HelloAGENTS】- Help
 
 Available commands: ~auto, ~design, ~prd, ~loop, ~init, ~test, ~verify, ~review, ~commit, ~clean, ~help
 
@@ -234,7 +243,8 @@ Only include keys you want to override — missing keys use defaults.
   "ralph_loop_enabled": true,
   "guard_enabled": true,
   "kb_create_mode": 1,
-  "commit_attribution": ""
+  "commit_attribution": "",
+  "install_mode": "standby"
 }
 ```
 
@@ -247,9 +257,20 @@ Only include keys you want to override — missing keys use defaults.
 | `guard_enabled` | `true` | Block dangerous commands (Claude Code only) |
 | `kb_create_mode` | `1` | `0`=off, `1`=auto on coding tasks, `2`=always |
 | `commit_attribution` | `""` | Empty = no attribution. Set text to append to commit messages |
+| `install_mode` | `"standby"` | `"standby"` = per-project activation (lite rules), `"global"` = full rules for all projects |
 
 <details>
 <summary>📝 Common configuration scenarios</summary>
+
+**Switch to global mode (full rules everywhere):**
+```bash
+helloagents --global
+```
+
+**Switch back to standby mode (default):**
+```bash
+helloagents --standby
+```
 
 **English-only output:**
 ```json
@@ -293,6 +314,17 @@ Only include keys you want to override — missing keys use defaults.
 - Writing UI code? → `hello-ui` activates (design tokens, accessibility, responsive)
 - Touching API endpoints? → `hello-api` activates (REST conventions, validation, error format)
 - Any code change? → `hello-test`, `hello-verify`, `hello-review` activate
+
+### Standby vs Global Mode
+
+HelloAGENTS supports two installation modes:
+
+| Mode | Behavior | Best For |
+|------|----------|----------|
+| **Standby** (default) | Lite rules only. Run `~init` in a project to activate full features | Selective use, keeping other projects unaffected |
+| **Global** | Full rules for all projects automatically | All-in on HelloAGENTS across every project |
+
+Switch modes via CLI: `helloagents --global` or `helloagents --standby`
 
 ## 📚 Usage Guide
 
@@ -358,7 +390,7 @@ Set a target and metric, then let AI iterate:
 **A:** Everything. v3.0.0 is a complete rewrite:
 - Python package → pure Node.js/Markdown architecture
 - 15 commands → 11 commands + 14 auto-activated quality skills
-- 6 CLI targets → 2 (Claude Code + Codex CLI)
+- 6 CLI targets → 3 (Claude Code + Codex CLI + Gemini CLI)
 - New: checklist gate control, guard system, ~prd, ~loop, ~verify, design system generation
 - See [Version History](#-version-history) for full details.
 </details>
@@ -366,7 +398,7 @@ Set a target and metric, then let AI iterate:
 <details>
 <summary><strong>Q: Which CLI should I use?</strong></summary>
 
-**A:** Claude Code gets the best experience (plugin system, 11 lifecycle hooks, Agent Teams support). Codex CLI works well too (auto-configured via npm postinstall). Other CLIs are not supported in v3.0.0.
+**A:** Claude Code gets the best experience (plugin system, 11 lifecycle hooks, Agent Teams support). Gemini CLI works via extension system. Codex CLI works well too (auto-configured via npm postinstall). Other CLIs are not supported in v3.0.0.
 </details>
 
 <details>
@@ -387,6 +419,12 @@ Set a target and metric, then let AI iterate:
 - **hello-review**: Code review (logic, security, performance, maintainability)
 - **hello-write**: Documentation (pyramid principle, audience-aware)
 - **hello-reflect**: Experience capture (lessons learned → KB)
+</details>
+
+<details>
+<summary><strong>Q: What is standby vs global mode?</strong></summary>
+
+**A:** Standby mode (default) injects only lite rules — projects need `~init` to activate full features. Global mode enables full HelloAGENTS rules for all projects automatically. Switch with `helloagents --global` or `helloagents --standby`.
 </details>
 
 <details>
@@ -419,9 +457,17 @@ Set a target and metric, then let AI iterate:
 
 ### Plugin not loading (Claude Code)
 
-**Problem:** `~help` not recognized after `claude plugin add helloagents`
+**Problem:** `~help` not recognized after plugin installation
 
-**Solution:** Restart Claude Code. If still not working, check `claude plugin list` to verify installation.
+**Solution:** Restart Claude Code. If still not working, check `/plugin list` to verify installation.
+
+---
+
+### Extension not working (Gemini CLI)
+
+**Problem:** `~help` not recognized after `gemini extensions install`
+
+**Solution:** Restart Gemini CLI. Verify with `gemini extensions list`. Make sure the extension is enabled.
 
 ---
 
@@ -431,7 +477,7 @@ Set a target and metric, then let AI iterate:
 
 **Solution:**
 - Verify installation: `npm list -g helloagents`
-- Check that `~/.codex/config.toml` has `model_instructions_file` pointing to `bootstrap.md`
+- Check that `~/.codex/config.toml` has `model_instructions_file` pointing to `bootstrap.md` or `bootstrap-lite.md`
 - Restart Codex CLI
 
 ---
@@ -459,7 +505,7 @@ Set a target and metric, then let AI iterate:
 
 **Problem:** After switching CCswitch profiles, HelloAGENTS stops working
 
-**Solution:** Re-run `claude plugin add helloagents` after switching profiles. CCswitch replaces the entire CLI config directory.
+**Solution:** Re-run `/plugin marketplace add hellowind777/helloagents` after switching profiles. CCswitch replaces the entire CLI config directory.
 
 ---
 
@@ -479,28 +525,27 @@ Set a target and metric, then let AI iterate:
 
 **Breaking Changes:**
 - 🔴 Complete rewrite: Python package → pure Node.js/Markdown architecture. `pip`/`uv` installation no longer available
-- 🔴 CLI support reduced from 6 to 2: Claude Code (plugin) + Codex CLI (npm). OpenCode, Gemini CLI, Qwen CLI, Grok CLI removed
-- 🔴 Commands renamed/removed: `~plan` → `~design`, `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan` removed
+- 🔴 Commands renamed/removed: `~plan` → `~design`, removed `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan`
 - 🔴 Configuration keys changed from uppercase to lowercase. Removed: `BILINGUAL_COMMIT`, `EVAL_MODE`, `UPDATE_CHECK`, `CSV_BATCH_MAX`
 
 **New Features:**
 - ✨ 14 auto-activated quality skills: hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
+- ✨ 3 supported CLIs: Claude Code (plugin/marketplace), Gemini CLI (extension), Codex CLI (npm)
 - ✨ Checklist gate control: all activated skills must pass delivery checklist before task completion
-- ✨ `~prd` command: 13-dimension brainstorm-style PRD framework (product overview, user stories, functional requirements, UI/UX, architecture, NFR, i18n, accessibility, content, testing, deployment, legal, timeline)
+- ✨ `~prd` command: 13-dimension brainstorm-style PRD framework
 - ✨ `~loop` command: autonomous iteration optimization with metric tracking and git-based rollback
 - ✨ `~verify` command: auto-detect and run all verification commands
 - ✨ Guard system (`guard.mjs`): L1 blocking for destructive commands + L2 advisory for security patterns
-- ✨ Claude Code plugin system (`.claude-plugin/`) for marketplace installation
+- ✨ Standby/Global mode: `install_mode` config for per-project or global activation
 - ✨ Flow state management (`STATE.md`): AI context compression snapshot (≤50 lines)
 - ✨ Design system generation (`DESIGN.md`): auto-created for UI projects
 - ✨ Plan package system: `requirements.md` + `design.md` + `tasks.md`
 
 **Architecture:**
 - 📦 Unified 5-stage execution flow: ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE
-- 📦 Simplified configuration: 7 lowercase keys with sensible defaults
+- 📦 Simplified configuration: 8 lowercase keys with sensible defaults
 - 📦 Ralph Loop rewritten in Node.js (`ralph-loop.mjs`)
 - 📦 Notification system rewritten in Node.js (`notify.mjs`) with cross-platform sound + desktop support
-- 📦 New configuration options: `output_format`, `ralph_loop_enabled`, `guard_enabled`, `commit_attribution`
 
 ### v2.3.8
 
@@ -574,7 +619,8 @@ See [LICENSE.md](./LICENSE.md) for full details.
 
 | CLI | Install | Uninstall |
 |-----|---------|-----------|
-| Claude Code | `claude plugin add helloagents` | `claude plugin remove helloagents` |
+| Claude Code | `/plugin marketplace add hellowind777/helloagents` | `/plugin remove helloagents` |
+| Gemini CLI | `gemini extensions install https://github.com/hellowind777/helloagents` | `gemini extensions uninstall helloagents` |
 | Codex CLI | `npm install -g helloagents` | `npm uninstall -g helloagents` |
 
 ---
