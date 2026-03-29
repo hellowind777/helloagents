@@ -26,7 +26,10 @@
     "templates/",
     "assets/",
     "bootstrap.md",
-    ".claude-plugin/"
+    "bootstrap-lite.md",
+    "gemini-extension.json",
+    ".claude-plugin/",
+    ".codex-plugin/"
   ],
   "keywords": ["ai", "agent", "claude", "codex", "cli", "orchestration", "subagent", "hooks", "skills"],
   "engines": {

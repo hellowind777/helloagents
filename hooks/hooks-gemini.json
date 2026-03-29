@@ -1,0 +1,76 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" inject",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" route",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "shell|bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "AfterModel": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" post-write",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/ralph-loop.mjs\" subagent",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" stop",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
