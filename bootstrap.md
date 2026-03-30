@@ -209,7 +209,10 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 - 必须进入设计（不可跳过）：新项目/新应用/从零构建/涉及 3+ 文件的新功能/架构级变更 → ~design 或 ~auto（全自动设计）或 ~prd（完整 PRD）
 - 其他复杂任务 → 建议用户 ~design、~auto 或 ~prd
 - 复杂度信号：文件数 >3 / 跨模块 / 新增依赖 / 涉及数据库 schema → 升级为复杂任务
-- `~command` → 读取 skills/commands/{name}/SKILL.md（具体命令列表见 helloagents/SKILL.md）
+- `~command` → 立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。查找路径（按优先级，找到即停）：
+  1. {CWD}/skills/helloagents/commands/{name}/SKILL.md
+  2. ~/.{当前CLI名称}/helloagents/commands/{name}/SKILL.md
+  3. 本文件所在目录/skills/commands/{name}/SKILL.md
 
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
