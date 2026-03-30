@@ -12,5 +12,5 @@ Trigger: ~review [scope]
    - 无参数：git diff（未提交的变更）
    - 指定文件/目录：只审查指定范围
    - "staged"：git diff --staged
-2. 读取 hello-review SKILL.md，按其审查规范逐文件审查
+2. 按 hello-* 技能查找路径读取 hello-review SKILL.md，按其审查规范逐文件审查
 3. 按严重度分类输出结果，给出具体修复建议

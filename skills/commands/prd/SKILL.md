@@ -6,9 +6,11 @@ policy:
 ---
 Trigger: ~prd [description]
 
+本 skill 自包含，不依赖再读取 `~design` 的 command skill。只有在本 skill 明确要求时，才继续读取对应的 hello-* 技能。
+
 ## 铁律
 - 在用户确认方案之前，禁止编写任何实现代码、创建任何文件、或执行任何实现操作。
-- 每个维度的选项必须体现当前前沿水准（遵循 bootstrap.md 审美基线），不确定时主动搜索查阅。
+- 每个维度的选项必须体现当前前沿水准。若当前已加载 bootstrap 含审美/体验规则则遵循其要求；否则至少给出具体、可执行、非泛化的视觉特征，不确定时主动搜索查阅。
 - 用户说"跳过"某维度 → 跳过，不生成该文件。不强迫用户讨论不关心的维度。
 - 大项目检测：涉及多个独立子系统时，先帮用户分解为子项目，每个子项目走独立的 ~prd 循环。
 
@@ -51,7 +53,13 @@ Trigger: ~prd [description]
 
 ### 1. 上下文收集（ORIENT）
 
-同 ~design 步骤 1（见 skills/commands/design/SKILL.md）。
+已有项目：
+- 读取 .helloagents/context.md 获取项目上下文和模块索引
+- 读取 .helloagents/guidelines.md 获取项目约定
+- 扫描相关代码文件理解现有架构
+
+全新项目（无 .helloagents/ 目录）：
+- 跳过，直接进入项目定位
 
 ### 2. 项目定位（快速，1-2 轮）
 
@@ -89,7 +97,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 全新项目（无 .helloagents/ 目录）：先创建 .helloagents/ 和 STATE.md（按 templates/STATE.md 格式）。这是方案包写入的前置操作，不受 kb_create_mode 开关控制
 - 创建 .helloagents/plans/YYYYMMDDHHMM_{feature}/prd/
 - 按 templates/plans/prd/ 的模板格式，仅写入用户未跳过的维度文件
-- 生成 tasks.md（任务分解，同 ~design）
+- 生成 tasks.md（每个任务包含具体文件路径、预期变更、验证方式；任务独立可验证；依赖顺序明确）
 - 生成 decisions.md（贯穿全程的决策日志）
 - 涉及 UI 的项目：生成或更新 .helloagents/DESIGN.md
 - 重写 .helloagents/STATE.md
@@ -98,11 +106,19 @@ c. AI 总结该维度的决策结果，进入下一个维度
 
 ### 5. 等待确认
 
-同 ~design 步骤 6（见 skills/commands/design/SKILL.md）。
+展示 PRD 摘要后统一询问用户：
+- 确认并开始执行 → 重写 STATE.md（下一步设为第一个任务的具体动作）
+- 修改 PRD / 补充维度 → 回到对应维度继续讨论
+- 暂不执行，保留方案 → 重写 STATE.md（下一步设为“方案已确认，等待用户启动执行”）
 
 ### 6. 执行
 
-同 ~design 步骤 7（见 skills/commands/design/SKILL.md）。
+按 tasks.md 逐项完成，每项进入当前已加载 bootstrap 中定义的统一执行流程，完成后同步重写 STATE.md。
+任务状态标记仅写入 tasks.md、验收清单或验证结果；普通说明、方案解释、状态汇报不用 [√] / [-] / [ ]。
+所有任务完成后进入当前已加载 bootstrap 中定义的 VALIDATE 阶段。
+可并行的任务标记后用子代理并行执行（不同子代理不改同一文件）。
+执行过程中遇到阻塞（依赖缺失、指令不清、验证反复失败）→ 立即停下询问用户，不猜测。
+执行过程中遇到高风险操作（删除文件/修改配置/数据库变更）→ 暂停确认。
 
 ## 方案包结构
 

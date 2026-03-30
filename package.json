@@ -11,7 +11,8 @@
     "url": "git+https://github.com/hellowind777/helloagents.git"
   },
   "bin": {
-    "helloagents": "cli.mjs"
+    "helloagents": "cli.mjs",
+    "helloagents-js": "cli.mjs"
   },
   "scripts": {
     "postinstall": "node cli.mjs postinstall",

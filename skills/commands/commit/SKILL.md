@@ -23,4 +23,4 @@ Trigger: ~commit [message]
 - 0 = 跳过
 - 1 = 编码任务自动同步（默认）
 - 2 = 始终同步
-同步内容（仅知识库文件，规则同 bootstrap.md VALIDATE 阶段的知识库同步）。
+同步内容（仅知识库文件，规则同当前已加载 bootstrap 的 VALIDATE 阶段中的知识库同步）。

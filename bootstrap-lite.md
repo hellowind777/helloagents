@@ -106,9 +106,10 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 
 ### 结构化输出
 所有结构化内容必须逐项换行显示，不压缩为一行或一段：
-- 检查清单：每项独占一行，使用 `[√]` `[-]` `[ ]` 标记
-- 任务列表：每个任务独占一行
-- 验证结果：每个命令的通过/失败独占一行
+- 检查清单：仅用于验收项、完成项、待办项；每项独占一行，使用 `[√]` `[-]` `[ ]` 标记
+- 普通说明：身份说明、能力介绍、方案解释、背景信息等，禁止使用 `[√]` `[-]` `[ ]`，改用普通段落或普通列表
+- 任务列表：每个任务独占一行；仅在明确表示待办/进行中/已完成时使用状态标记
+- 验证结果：每个命令的通过/失败独占一行；仅验证/测试/验收场景可显示通过标记
 - 方案摘要：按章节分段展示（需求/设计/任务），不堆在一起
 - 完成总结：按维度分行列出关键产出和验证结果
 
@@ -117,15 +118,15 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 
 查找路径（按优先级，找到即停）：
 1. {CWD}/skills/helloagents/commands/{name}/SKILL.md
-2. ~/.{当前CLI名称}/helloagents/commands/{name}/SKILL.md
+2. ~/.{当前CLI名称}/helloagents/skills/commands/{name}/SKILL.md
 3. 本文件所在目录/skills/commands/{name}/SKILL.md
 
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 templates/ 查找路径（按优先级，找到即停）：
-1. {CWD}/skills/helloagents/../templates/
-2. ~/.{当前CLI名称}/helloagents/../templates/
+1. {CWD}/skills/helloagents/templates/
+2. ~/.{当前CLI名称}/helloagents/templates/
 3. 本文件所在目录/templates/
 
 ### 流程状态（不受 kb_create_mode 控制，始终可写）

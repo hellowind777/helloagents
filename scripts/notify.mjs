@@ -81,7 +81,7 @@ function runRalphLoop(payload) {
   try {
     const rlPath = join(__dirname, 'ralph-loop.mjs');
     if (!existsSync(rlPath)) return false;
-    const result = spawnSync(process.execPath, [rlPath], {
+    const result = spawnSync(process.execPath, [rlPath, ...(IS_GEMINI ? ['--gemini'] : [])], {
       input: JSON.stringify(payload),
       encoding: 'utf-8',
       timeout: 120_000,
@@ -166,7 +166,7 @@ function cmdRoute() {
   if (cmdMatch) {
     const skillName = cmdMatch[1];
     suppressedOutput(EVENT_NAME.UserPromptSubmit,
-      `用户使用了 ~${skillName} 命令。请读取 skills/commands/${skillName}/SKILL.md 并按其流程执行。`);
+      `用户使用了 ~${skillName} 命令。请按以下顺序读取对应 SKILL.md，找到即停：1. {CWD}/skills/helloagents/commands/${skillName}/SKILL.md 2. ~/.{当前CLI名称}/helloagents/skills/commands/${skillName}/SKILL.md 3. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/${skillName}/SKILL.md。不要自行探索、猜测或改读其他命令 skill。`);
     return;
   }
 
