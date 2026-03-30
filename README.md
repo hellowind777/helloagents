@@ -268,7 +268,7 @@ Only include keys you want to override — missing keys use defaults.
 | Key | Default | Description |
 |-----|---------|-------------|
 | `output_language` | `""` | Empty = follow user language. Set `zh-CN`, `en`, etc. to override |
-| `output_format` | `true` | `true` = HelloAGENTS formatted output, `false` = natural output |
+| `output_format` | `true` | `true` = fixed HelloAGENTS layout (top status bar + bottom next-step bar), `false` = natural output |
 | `notify_level` | `0` | `0`=off, `1`=desktop, `2`=sound, `3`=both |
 | `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
 | `guard_enabled` | `true` | Block dangerous commands |
@@ -313,7 +313,7 @@ helloagents --standby
 
 ## ⚙️ How It Works
 
-**Short version:** HelloAGENTS auto-selects processing depth based on task complexity. Simple tasks get direct execution; complex tasks go through the full 5-stage flow with quality verification at every step.
+**Short version:** HelloAGENTS selects execution depth based on task complexity. Simple tasks run directly; complex tasks use the full 5-stage flow with verification at every step. Once the requirement and execution direction are clear, it prefers direct completion over repeated confirmation.
 
 **The 5-stage flow:**
 
@@ -366,11 +366,13 @@ After every task, Ralph Loop auto-runs your project's verification commands:
 
 ### Knowledge Base (`.helloagents/`)
 
-`~init` creates a project-local knowledge base:
+`~init` creates a project-local knowledge base. `STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction.
+
+It is created and continuously updated for long-running project workflows such as `~init`, `~design`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
 
 | File | Purpose |
 |------|---------|
-| `STATE.md` | AI context snapshot (≤50 lines, survives compression) |
+| `STATE.md` | Project-level recovery snapshot (≤50 lines, survives compression) |
 | `DESIGN.md` | Design system (UI projects only) |
 | `context.md` | Project architecture, tech stack, conventions |
 | `guidelines.md` | Non-obvious coding rules |
@@ -438,6 +440,8 @@ Set a target and metric, then let AI iterate:
 - **hello-review**: Code review (logic, security, performance, maintainability)
 - **hello-write**: Documentation (pyramid principle, audience-aware)
 - **hello-reflect**: Experience capture (lessons learned → KB)
+
+Subagents may skip workflow packaging such as routing, interaction flow, and output formatting, but they still follow core rules such as coding principles, safety constraints, and failure handling.
 </details>
 
 <details>
@@ -449,7 +453,7 @@ Set a target and metric, then let AI iterate:
 <details>
 <summary><strong>Q: Where does project knowledge go?</strong></summary>
 
-**A:** In the project-local `.helloagents/` directory. Created by `~init`, auto-synced on code changes (controlled by `kb_create_mode`). Context survives across sessions.
+**A:** In the project-local `.helloagents/` directory. Created by `~init`, auto-synced on code changes (controlled by `kb_create_mode`). `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
 </details>
 
 <details>
@@ -458,6 +462,12 @@ Set a target and metric, then let AI iterate:
 **A:** Two-layer safety:
 - **L1 Blocking**: Stops destructive commands before execution (`rm -rf /`, `git push --force`, `DROP DATABASE`, `chmod 777`, `FLUSHALL`)
 - **L2 Advisory**: Scans file writes for hardcoded secrets, API keys, .env exposure — warns but doesn't block
+</details>
+
+<details>
+<summary><strong>Q: What does the bottom next-step bar mean when formatted output is enabled?</strong></summary>
+
+**A:** It always shows the most appropriate next action. If a natural follow-up exists, HelloAGENTS states it directly. If the current task is fully complete with no meaningful follow-up, it falls back to a completion/waiting status instead of empty filler.
 </details>
 
 <details>

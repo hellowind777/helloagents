@@ -13,7 +13,7 @@ Trigger: ~clean
 3. 已完成的方案包 → 将整个 plans/{feature}/ 目录归档到 .helloagents/archive/YYYY-MM/
 4. 更新 .helloagents/archive/_index.md（按 templates/archive/_index.md 格式追加一行）
 5. 清理临时文件：.helloagents/loop-results.tsv、.helloagents/.ralph-breaker.json
-6. 重写 STATE.md（清空已归档的方案路径）
+6. 重写 STATE.md（清空已归档的方案路径；这是强制更新，但不要求为仅执行 `~clean` 的场景首次创建）
 7. 输出清理摘要（归档了几个方案包、清理了哪些文件）
 
 ## 不删除
