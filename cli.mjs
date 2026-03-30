@@ -165,15 +165,15 @@ function installGeminiStandby() {
   ensureDir(geminiDir);
 
   // 1. Inject bootstrap-lite.md content into ~/.gemini/GEMINI.md
-  //    For Gemini, also append PKG_ROOT absolute path for skills resolution
-  let bootstrapContent = safeRead(join(PKG_ROOT, 'bootstrap-lite.md'));
+  const bootstrapContent = safeRead(join(PKG_ROOT, 'bootstrap-lite.md'));
   if (bootstrapContent) {
-    const absSkillsPath = join(PKG_ROOT, 'skills').replace(/\\/g, '/');
-    bootstrapContent += `\n\n<!-- HelloAGENTS skills absolute path: ${absSkillsPath} -->\n`;
     injectMarkedContent(join(geminiDir, 'GEMINI.md'), bootstrapContent);
   }
 
-  // 2. Write hooks into ~/.gemini/settings.json
+  // 2. Symlink skills directory: ~/.gemini/helloagents → PKG_ROOT/skills/
+  createLink(join(PKG_ROOT, 'skills'), join(geminiDir, 'helloagents'));
+
+  // 3. Write hooks into ~/.gemini/settings.json
   const settingsPath = join(geminiDir, 'settings.json');
   const hooksData = loadHooksWithAbsPath(PKG_ROOT, 'hooks-gemini.json', '${extensionPath}');
   if (hooksData) mergeSettingsHooks(settingsPath, hooksData);
@@ -186,6 +186,7 @@ function uninstallGeminiStandby() {
   if (!existsSync(geminiDir)) return false;
 
   removeMarkedContent(join(geminiDir, 'GEMINI.md'));
+  removeLink(join(geminiDir, 'helloagents'));
   cleanSettingsHooks(join(geminiDir, 'settings.json'));
   // Clean up legacy standalone hooks file
   removeIfExists(join(geminiDir, 'helloagents-hooks.json'));

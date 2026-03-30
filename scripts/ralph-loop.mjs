@@ -12,11 +12,12 @@ import { homedir } from 'node:os';
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 const CMD_TIMEOUT = 60_000; // 60s
 
-// Hook event name: read from env (set by hooks config) or infer from CLI mode.
-// This avoids hardcoding platform-specific event names (Claude: SubagentStop/Stop, Gemini: AfterAgent/SessionEnd).
+// Hook event name: read from env or infer from CLI mode + --gemini flag.
+// Claude: SubagentStop/Stop, Gemini: AfterAgent/SessionEnd.
 const IS_SUBAGENT = (process.argv[2] || '') === 'subagent';
+const IS_GEMINI = process.argv.includes('--gemini');
 const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
-  || (IS_SUBAGENT ? 'SubagentStop' : 'Stop');
+  || (IS_SUBAGENT ? (IS_GEMINI ? 'AfterAgent' : 'SubagentStop') : (IS_GEMINI ? 'SessionEnd' : 'Stop'));
 
 // ── Settings ──────────────────────────────────────────────────────────
 function readSettings() {

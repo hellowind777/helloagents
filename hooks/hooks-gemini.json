@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${extensionPath}/scripts/notify.mjs\" inject",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" inject --gemini",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${extensionPath}/scripts/notify.mjs\" route",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" route --gemini",
             "timeout": 5
           }
         ]
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${extensionPath}/scripts/guard.mjs\"",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" --gemini",
             "timeout": 5
           }
         ]
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${extensionPath}/scripts/guard.mjs\" post-write",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" post-write --gemini",
             "timeout": 5
           }
         ]
@@ -54,7 +54,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${extensionPath}/scripts/ralph-loop.mjs\" subagent",
+            "command": "node \"${extensionPath}/scripts/ralph-loop.mjs\" subagent --gemini",
             "timeout": 120
           }
         ]
