@@ -62,7 +62,7 @@ Layer 3 — 资源文件（技能内引用时读取）：
 3. 当前已加载 HelloAGENTS 包根目录下的 `skills/{技能名}/SKILL.md`
 
 ### ~command 命令技能
-1. `{CWD}/skills/helloagents/commands/{name}/SKILL.md`
+1. `{CWD}/skills/helloagents/skills/commands/{name}/SKILL.md`
 2. `~/.{当前CLI名称}/helloagents/skills/commands/{name}/SKILL.md`
 3. 当前已加载 HelloAGENTS 包根目录下的 `skills/commands/{name}/SKILL.md`
 

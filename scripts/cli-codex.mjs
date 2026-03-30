@@ -138,36 +138,40 @@ export function installCodexStandby(home, pkgRoot) {
 
 export function uninstallCodexStandby(home) {
   const codexDir = join(home, '.codex');
-  if (!existsSync(codexDir)) return false;
+  let changed = false;
 
-  removeMarkedContent(join(codexDir, 'AGENTS.md'));
+  if (existsSync(codexDir)) {
+    removeMarkedContent(join(codexDir, 'AGENTS.md'));
 
-  const configPath = join(codexDir, 'config.toml');
-  const backupToml = safeRead(configPath + '.bak') || '';
-  let toml = safeRead(configPath) || '';
-  if (toml.includes('helloagents') || toml.includes('HelloAGENTS')) {
-    toml = removeTopLevelTomlLines(toml, (line) => {
-      if (!line) return false;
-      if (line.startsWith('model_instructions_file =') && line.includes('helloagents')) return true;
-      if (line.startsWith('notify =') && line.includes('codex-notify')) return true;
-      return false;
-    }).text;
-    toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
-    toml = ensureTopLevelTomlLine(toml, 'model_instructions_file', readTopLevelTomlLine(backupToml, 'model_instructions_file'));
-    toml = ensureTopLevelTomlLine(toml, 'notify', readTopLevelTomlLine(backupToml, 'notify'));
-    toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
-    if (toml.trim()) safeWrite(configPath, toml);
-    else removeIfExists(configPath);
+    const configPath = join(codexDir, 'config.toml');
+    const backupToml = safeRead(configPath + '.bak') || '';
+    let toml = safeRead(configPath) || '';
+    if (toml.includes('helloagents') || toml.includes('HelloAGENTS')) {
+      toml = removeTopLevelTomlLines(toml, (line) => {
+        if (!line) return false;
+        if (line.startsWith('model_instructions_file =') && line.includes('helloagents')) return true;
+        if (line.startsWith('notify =') && line.includes('codex-notify')) return true;
+        return false;
+      }).text;
+      toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
+      toml = ensureTopLevelTomlLine(toml, 'model_instructions_file', readTopLevelTomlLine(backupToml, 'model_instructions_file'));
+      toml = ensureTopLevelTomlLine(toml, 'notify', readTopLevelTomlLine(backupToml, 'notify'));
+      toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
+      if (toml.trim()) safeWrite(configPath, toml);
+      else removeIfExists(configPath);
+      changed = true;
+    }
+    removeIfExists(configPath + '.bak');
+    removeIfExists(join(codexDir, 'hooks.json'));
+    removeLink(join(codexDir, 'helloagents'));
+    changed = true;
   }
-  removeIfExists(configPath + '.bak');
-  removeIfExists(join(codexDir, 'hooks.json'));
-  removeLink(join(codexDir, 'helloagents'));
 
   for (const path of [join(codexDir, 'skills', 'helloagents'), join(home, '.agents', 'skills', 'helloagents')]) {
-    removeLink(path);
+    changed = removeLink(path) || changed;
   }
 
-  return true;
+  return changed;
 }
 
 export function installCodexGlobal(home, pkgRoot) {
@@ -208,6 +212,11 @@ export function installCodexGlobal(home, pkgRoot) {
     'model_instructions_file',
     `"${join(pluginRoot, 'bootstrap.md').replace(/\\/g, '/')}"`,
   );
+  toml = upsertTopLevelTomlKey(
+    toml,
+    'notify',
+    `["node", "${join(pluginRoot, 'scripts', 'notify.mjs').replace(/\\/g, '/')}", "codex-notify"]`,
+  );
   toml = upsertTomlKeyInSection(toml, '[features]', 'codex_hooks', 'true');
   toml = upsertCodexPluginConfig(toml);
   safeWrite(configPath, toml);
@@ -217,7 +226,6 @@ export function installCodexGlobal(home, pkgRoot) {
 
 export function uninstallCodexGlobal(home) {
   const codexDir = join(home, '.codex');
-  if (!existsSync(codexDir)) return false;
 
   const pluginRoot = join(home, 'plugins', CODEX_PLUGIN_NAME);
   const pluginCacheRoot = join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME);
@@ -235,7 +243,11 @@ export function uninstallCodexGlobal(home) {
   toml = removeTopLevelTomlLines(toml, (line) =>
     line.startsWith('model_instructions_file =')
     && line.includes('/plugins/helloagents/bootstrap.md')).text;
+  toml = removeTopLevelTomlLines(toml, (line) =>
+    line.startsWith('notify =')
+    && line.includes('/plugins/helloagents/scripts/notify.mjs')).text;
   toml = ensureTopLevelTomlLine(toml, 'model_instructions_file', readTopLevelTomlLine(backupToml, 'model_instructions_file'));
+  toml = ensureTopLevelTomlLine(toml, 'notify', readTopLevelTomlLine(backupToml, 'notify'));
   toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
   if (toml.trim()) safeWrite(configPath, toml);
   else removeIfExists(configPath);

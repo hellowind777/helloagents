@@ -35,10 +35,12 @@
 - [🎯 Why HelloAGENTS?](#-why-helloagents)
 - [✨ Core Features](#-core-features)
 - [🚀 Quick Start](#-quick-start)
+- [🔄 Installation Lifecycle & File Writes](#-installation-lifecycle--file-writes)
 - [📖 Commands](#-commands)
 - [🔧 Configuration](#-configuration)
 - [⚙️ How It Works](#️-how-it-works)
 - [📚 Usage Guide](#-usage-guide)
+- [🧪 Verification](#-verification)
 - [❓ FAQ](#-faq)
 - [🛠️ Troubleshooting](#️-troubleshooting)
 - [📈 Version History](#-version-history)
@@ -144,7 +146,7 @@ Simple tasks get direct execution. Complex tasks go through ORIENT → CLARIFY �
 
 ## 🚀 Quick Start
 
-### One-Line Install (All CLIs)
+### 1) Install once
 
 ```bash
 npm install -g helloagents
@@ -163,15 +165,21 @@ The `postinstall` script auto-detects installed CLIs and configures them:
 
 This is **standby mode** (default) — lite rules for all projects, use `~init` in a project to activate full features.
 
-### Global Mode (Plugin Install)
+### 2) Choose your mode
 
-For full rules everywhere, switch to global mode and install plugins:
+| Goal | What to run | What happens |
+|------|-------------|--------------|
+| Keep HelloAGENTS light by default | `npm install -g helloagents` | **Standby mode** auto-configures detected CLIs with lite rules |
+| Enable full rules everywhere | `helloagents --global` | Switches to **global mode**; Claude/Gemini use native plugin/extension installs, Codex gets the native local-plugin chain automatically |
+| Re-sync after local branch switch / file updates | `helloagents --standby` or `helloagents --global` | Re-runs the current mode and refreshes injected/copied files instead of no-op |
+
+If you want full rules everywhere, switch to global mode:
 
 ```bash
 helloagents --global
 ```
 
-Then install the plugin/extension for your CLI:
+Then install the native plugin/extension for your CLI where required:
 
 ```bash
 # Claude Code
@@ -187,7 +195,7 @@ Codex CLI does not need a manual plugin command. `helloagents --global` now inst
 - `~/.codex/plugins/cache/local-plugins/helloagents/local/`
 - `helloagents@local-plugins` in `~/.codex/config.toml`
 
-### Verify Installation
+### 3) Verify in chat
 
 ```bash
 # In your AI CLI chat, type:
@@ -203,7 +211,7 @@ Available commands: ~auto, ~design, ~prd, ~loop, ~init, ~test, ~verify, ~review,
 Auto-activated skills (14): hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
 ```
 
-### First Use
+### 4) First use
 
 ```bash
 # Simple task — direct execution
@@ -215,6 +223,33 @@ Auto-activated skills (14): hello-ui, hello-api, hello-security, hello-test, hel
 # Want to review the plan first?
 ~design "Refactor the payment module"
 ```
+
+## 🔄 Installation Lifecycle & File Writes
+
+HelloAGENTS touches different files depending on mode. The write/cleanup rules are predictable and reversible.
+
+### Standby mode (default)
+
+| CLI | Files HelloAGENTS writes or updates | What it preserves | What uninstall / mode switch cleans |
+|-----|-------------------------------------|-------------------|-------------------------------------|
+| Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> <package-root>` | Existing non-HelloAGENTS markdown, settings, permissions, and hooks | Removes injected marker block, HelloAGENTS hooks/permissions, and symlink |
+| Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> <package-root>` | Existing markdown, hooks, and unrelated settings | Removes injected marker block, HelloAGENTS hooks, and symlink |
+| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/config.toml.bak`, `~/.codex/hooks.json`, `~/.codex/helloagents -> <package-root>` | Existing top-level TOML keys and unrelated sections via backup/restore | Removes injected marker block, HelloAGENTS config keys, hooks file, symlink, and backup |
+
+### Global mode
+
+| CLI | How installation works | Files involved |
+|-----|------------------------|----------------|
+| Claude Code | Native plugin install (manual CLI command) | Managed by Claude's plugin system |
+| Gemini CLI | Native extension install (manual CLI command) | Managed by Gemini's extension system |
+| Codex CLI | Native local-plugin chain (automatic) | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml` |
+
+### Update / reinstall / branch-switch behavior
+
+- **Standby mode** uses symlinks for `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents`, so local file or branch changes are visible immediately.
+- **Codex global mode** uses copied runtime files. Re-running `helloagents --global` refreshes both `~/plugins/helloagents/` and the Codex cache copy.
+- Re-running the current mode command is supported intentionally: `helloagents --standby` and `helloagents --global` both act as **switch-or-refresh** commands.
+- `npm uninstall -g helloagents` cleans CLI injections and plugin/cache artifacts but intentionally preserves `~/.helloagents/helloagents.json`.
 
 ## 📖 Commands
 
@@ -345,6 +380,8 @@ Standby mode injects rules directly into CLI config files (`~/.claude/CLAUDE.md`
 
 Switch modes via CLI: `helloagents --global` or `helloagents --standby`
 
+Re-running the same mode command is also valid. It refreshes the current mode's injected/copied files after branch switches, local development changes, or manual cleanup.
+
 ## 📚 Usage Guide
 
 ### Three Workflow Modes
@@ -396,6 +433,21 @@ Set a target and metric, then let AI iterate:
 1. Review → Ideate → Modify → Commit → Verify → Decide → Log → Repeat
 2. Results tracked in `.helloagents/loop-results.tsv`
 3. Uses `git revert` for clean rollback on failed experiments
+
+## 🧪 Verification
+
+HelloAGENTS ships with Node's built-in test runner:
+
+```bash
+npm test
+```
+
+The test suite validates:
+- standby/global install, reinstall, refresh, uninstall, and cross-mode switching
+- Claude/Gemini/Codex config file merge, restore, and cleanup behavior
+- Codex local-plugin refresh after local branch or file changes
+- runtime inject/route/guard/Ralph Loop chains
+- cleanup when Codex global artifacts exist but `~/.codex/` is already gone
 
 ## ❓ FAQ
 
@@ -518,6 +570,16 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - Gemini CLI: check `~/.gemini/GEMINI.md` contains HelloAGENTS markers
 - Codex CLI: check `~/.codex/config.toml` has `model_instructions_file` pointing to `bootstrap.md` or `bootstrap-lite.md`
 - Restart your CLI
+
+---
+
+### Local branch switched but Codex global plugin still uses old files
+
+**Problem:** You changed branches or updated a linked local checkout, but Codex global mode is still running older copied files.
+
+**Solution:** Re-run the current mode command:
+- `helloagents --global` → refreshes `~/plugins/helloagents/` and the Codex cache copy
+- `helloagents --standby` → refreshes injected files and symlinks for standby mode
 
 ---
 
