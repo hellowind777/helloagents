@@ -50,8 +50,12 @@ function installCodex(mode) {
   if (!existsSync(codexDir)) return false;
   ensureDir(codexDir);
 
-  // 1. Clean up legacy AGENTS.md injection
-  removeMarkedContent(join(codexDir, 'AGENTS.md'));
+  // 1. Inject bootstrap content into ~/.codex/AGENTS.md (like CLAUDE.md / GEMINI.md)
+  const bootstrapFile = mode === 'global' ? 'bootstrap.md' : 'bootstrap-lite.md';
+  const bootstrapContent = safeRead(join(PKG_ROOT, bootstrapFile));
+  if (bootstrapContent) {
+    injectMarkedContent(join(codexDir, 'AGENTS.md'), bootstrapContent);
+  }
 
   // 2. config.toml
   const configPath = join(codexDir, 'config.toml');
@@ -67,7 +71,6 @@ function installCodex(mode) {
     }
   }
 
-  const bootstrapFile = mode === 'global' ? 'bootstrap.md' : 'bootstrap-lite.md';
   ensureTopLevel('model_instructions_file', `"${join(PKG_ROOT, bootstrapFile).replace(/\\/g, '/')}"`);
   ensureTopLevel('notify', `["node", "${join(PKG_ROOT, 'scripts', 'notify.mjs').replace(/\\/g, '/')}", "codex-notify"]`);
 
