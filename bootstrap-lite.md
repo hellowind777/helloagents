@@ -123,6 +123,10 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
+templates/ 查找路径（按优先级，找到即停）：
+1. {CWD}/skills/helloagents/../templates/
+2. ~/.{当前CLI名称}/helloagents/../templates/
+3. 本文件所在目录/templates/
 
 ### 流程状态（不受 kb_create_mode 控制，始终可写）
 - STATE.md — ≤50 行，AI 上下文压缩后的恢复快照。读完它就能接上工作，不需要再读其他文件

@@ -164,12 +164,13 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 ~design / ~auto 在此阶段展开各自的需求挖掘/分析流程。~prd 在此阶段展开逐维度的头脑风暴式需求挖掘。
 
 ### 3. PLAN — 规划
-根据技能索引的元数据，标记本次任务可能需要的技能（不读取文件，仅记录名称）。
+根据 skills/ 目录下各 hello-* 技能的 SKILL.md frontmatter（name + description），标记本次任务可能需要的技能（不读取文件内容，仅记录名称）。
+hello-* 技能查找路径与 ~command 相同（skills/ 下的 hello-* 子目录）。
 ~design / ~auto 在此阶段展开方案设计（按需读取设计类技能如 hello-ui）。~prd 在此阶段完成维度探索后直接写入方案包。
 普通任务：标记完成后直接进入 EXECUTE。
 
 ### 4. EXECUTE — 执行
-进入实现时，读取 PLAN 阶段标记的技能 SKILL.md，按其规范执行。
+进入实现时，读取 PLAN 阶段标记的技能 SKILL.md（路径: skills/{技能名}/SKILL.md，查找路径与 ~command 相同），按其规范执行。
 逐步执行，每步后即时验证。
 
 编码任务：
@@ -182,7 +183,7 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 
 ### 5. VALIDATE — 确认
 编码任务：
-- 读取 hello-verify SKILL.md，执行完整验证循环（Ralph Loop）→ 失败则反思+修复 → 循环直到通过
+- 读取 skills/hello-verify/SKILL.md，执行完整验证循环（Ralph Loop）→ 失败则反思+修复 → 循环直到通过
 - 通过后收集已读取技能的交付检查清单，逐项附带证据确认
 - APGD：确认代理指标通过的同时，用户的真正目标也已达成
 
@@ -217,6 +218,10 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
+templates/ 查找路径（按优先级，找到即停）：
+1. {CWD}/skills/helloagents/../templates/
+2. ~/.{当前CLI名称}/helloagents/../templates/
+3. 本文件所在目录/templates/
 
 ### 流程状态（不受 kb_create_mode 控制，始终可写）
 - STATE.md — ≤50 行，AI 上下文压缩后的恢复快照。读完它就能接上工作，不需要再读其他文件
