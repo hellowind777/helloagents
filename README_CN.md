@@ -304,7 +304,7 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 | 配置项 | 默认值 | 说明 |
 |--------|-------|------|
 | `output_language` | `""` | 空=跟随用户语言，填写 `zh-CN`、`en` 等指定 |
-| `output_format` | `true` | `true`=固定 HelloAGENTS 布局（顶部状态栏 + 底部下一步栏），`false`=自然输出 |
+| `output_format` | `true` | `true`=仅最终收尾回复使用 HelloAGENTS 布局，流式/进度/中间输出保持自然；`false`=自然输出 |
 | `notify_level` | `0` | `0`=关闭，`1`=桌面通知，`2`=声音，`3`=两者 |
 | `ralph_loop_enabled` | `true` | 任务完成时自动运行验证 |
 | `guard_enabled` | `true` | 拦截危险命令 |

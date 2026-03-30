@@ -36,7 +36,7 @@ Trigger: ~help
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
 | output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
-| output_format | true | true=HelloAGENTS格式输出/false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
+| output_format | true | true=仅最终收尾回复使用 HelloAGENTS 格式，流式/中间输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
 | ralph_loop_enabled | true | 自动验证循环（任务完成时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |

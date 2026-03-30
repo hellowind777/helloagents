@@ -304,7 +304,7 @@ Only include keys you want to override — missing keys use defaults.
 | Key | Default | Description |
 |-----|---------|-------------|
 | `output_language` | `""` | Empty = follow user language. Set `zh-CN`, `en`, etc. to override |
-| `output_format` | `true` | `true` = fixed HelloAGENTS layout (top status bar + bottom next-step bar), `false` = natural output |
+| `output_format` | `true` | `true` = only the terminal closing reply uses the HelloAGENTS layout; streaming/progress/intermediate output stays natural, `false` = natural output |
 | `notify_level` | `0` | `0`=off, `1`=desktop, `2`=sound, `3`=both |
 | `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
 | `guard_enabled` | `true` | Block dangerous commands |
