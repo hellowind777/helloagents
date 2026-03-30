@@ -18,6 +18,8 @@
     "test": "node --test",
     "postinstall": "node cli.mjs postinstall",
     "preuninstall": "node cli.mjs preuninstall",
+    "uninstall": "node cli.mjs preuninstall",
+    "postuninstall": "node cli.mjs preuninstall",
     "prepublishOnly": "node cli.mjs sync-version"
   },
   "files": [

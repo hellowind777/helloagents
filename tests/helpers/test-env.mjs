@@ -63,7 +63,11 @@ export function readJson(filePath) {
 }
 
 export function runNode(scriptPath, args = [], options = {}) {
-  const result = spawnSync(process.execPath, [scriptPath, ...args], {
+  return runCommand(process.execPath, [scriptPath, ...args], options);
+}
+
+export function runCommand(command, args = [], options = {}) {
+  const result = spawnSync(command, args, {
     cwd: options.cwd,
     env: { ...process.env, ...(options.env || {}) },
     input: options.input,

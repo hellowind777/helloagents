@@ -249,7 +249,8 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 - **标准模式** 使用 `~/.claude/helloagents`、`~/.gemini/helloagents`、`~/.codex/helloagents` 这三个符号链接，本地文件或分支变化会立即生效。
 - **Codex 全局模式** 使用复制后的运行时文件。重新执行 `helloagents --global` 会刷新 `~/plugins/helloagents/` 和 Codex cache 中的副本。
 - 重新执行当前模式命令是被支持的：`helloagents --standby` 和 `helloagents --global` 都是 **切换或刷新** 命令。
-- `npm uninstall -g helloagents` 会清理 CLI 注入和插件/cache 产物，但会有意保留 `~/.helloagents/helloagents.json`。
+- 如需确定性的手动清理，先执行 `helloagents cleanup`，再执行 `npm uninstall -g helloagents`。
+- `npm uninstall -g helloagents` 会移除包本身；`~/.helloagents/helloagents.json` 会被有意保留。
 
 ## 📖 命令
 

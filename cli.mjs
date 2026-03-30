@@ -118,6 +118,15 @@ if (cmd === 'postinstall') {
     '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n  ℹ If Claude Code plugin installed, run: /plugin remove helloagents\n  ℹ If Gemini CLI extension installed, run: gemini extensions uninstall helloagents',
   ));
   console.log();
+} else if (cmd === 'cleanup' || cmd === '--cleanup') {
+  console.log(`\n  HelloAGENTS — ${msg('正在清理', 'Cleaning up')}\n`);
+  uninstallAll();
+  ok(msg('所有 CLI 配置已清理', 'All CLI configurations cleaned'));
+  console.log(msg(
+    '  ℹ ~/.helloagents/ 已保留（如需彻底清理请手动删除）\n  ℹ 如已安装 Claude Code 插件，请手动执行: /plugin remove helloagents\n  ℹ 如已安装 Gemini CLI 扩展，请手动执行: gemini extensions uninstall helloagents',
+    '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n  ℹ If Claude Code plugin installed, run: /plugin remove helloagents\n  ℹ If Gemini CLI extension installed, run: gemini extensions uninstall helloagents',
+  ));
+  console.log();
 } else if (cmd === 'sync-version') {
   syncVersion();
 } else if (cmd === '--global' || cmd === '--standby') {

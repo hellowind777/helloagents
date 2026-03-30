@@ -173,3 +173,40 @@ test('Codex global cleanup still removes marketplace and plugin roots when .code
   assert.ok(!existsSync(join(home, 'plugins', 'helloagents')));
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')));
 });
+
+test('Codex cleanup ignores contaminated backups and strips managed config lines', () => {
+  const { root: pkgRoot } = createPackageFixture();
+  const home = createHomeFixture();
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'model_instructions_file = "D:/GitHub/dev/helloagents/bootstrap-lite.md"',
+      'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
+      '',
+      '[features]',
+      'codex_hooks = true',
+      'unified_exec = true',
+      '',
+    ].join('\n'),
+  );
+  writeText(
+    join(home, '.codex', 'config.toml.bak'),
+    [
+      'model_instructions_file = "D:/GitHub/dev/helloagents/bootstrap-lite.md"',
+      'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
+      '',
+      '[features]',
+      'codex_hooks = true',
+      '',
+    ].join('\n'),
+  );
+
+  runCli(pkgRoot, home, ['cleanup']);
+
+  const cleaned = readText(join(home, '.codex', 'config.toml'));
+  assert.doesNotMatch(cleaned, /bootstrap-lite\.md/);
+  assert.doesNotMatch(cleaned, /codex-notify/);
+  assert.doesNotMatch(cleaned, /codex_hooks = true/);
+  assert.match(cleaned, /unified_exec = true/);
+});

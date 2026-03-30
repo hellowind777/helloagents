@@ -69,6 +69,7 @@ ${msg('模式切换', 'Mode switching')}:
   helloagents --standby    ${msg('标准模式（非插件安装，hello-* 不自动触发，默认）', "Standby mode (non-plugin install, hello-* won't auto-trigger, default)")}
 
 ${msg('卸载', 'Uninstall')}:
+  helloagents cleanup      ${msg('（推荐先执行，显式清理所有 CLI 注入/链接）', '(recommended first, explicitly cleans CLI injections/links)')}
   npm uninstall -g helloagents
   ${msg('如已安装插件，另需手动移除：', 'If plugins installed, also remove manually:')}
     Claude Code:  /plugin remove helloagents
