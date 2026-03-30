@@ -165,8 +165,11 @@ function cmdRoute() {
   const cmdMatch = prompt.match(/^~(\w+)/);
   if (cmdMatch) {
     const skillName = cmdMatch[1];
+    const extraRules = skillName === 'help'
+      ? ' 这是 HelloAGENTS 的帮助命令，不是宿主 CLI 的内置帮助。不要调用宿主 CLI 的帮助工具（如 cli_help 或 /help），不要使用子代理，不要读取项目文件。优先使用当前上下文中已注入的“当前用户设置”；只有上下文不存在该信息时，才尝试读取 ~/.helloagents/helloagents.json。若受工作区限制无法读取，必须明确说明并按已知默认值或已注入设置展示。'
+      : '';
     suppressedOutput(EVENT_NAME.UserPromptSubmit,
-      `用户使用了 ~${skillName} 命令。请按以下顺序读取对应 SKILL.md，找到即停：1. {CWD}/skills/helloagents/commands/${skillName}/SKILL.md 2. ~/.{当前CLI名称}/helloagents/skills/commands/${skillName}/SKILL.md 3. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/${skillName}/SKILL.md。不要自行探索、猜测或改读其他命令 skill。`);
+      `用户使用了 ~${skillName} 命令。请按以下顺序读取对应 SKILL.md，找到即停：1. {CWD}/skills/helloagents/commands/${skillName}/SKILL.md 2. ~/.{当前CLI名称}/helloagents/skills/commands/${skillName}/SKILL.md 3. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/${skillName}/SKILL.md。不要自行探索、猜测或改读其他命令 skill。${extraRules}`);
     return;
   }
 
