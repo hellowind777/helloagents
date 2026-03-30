@@ -113,12 +113,12 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 - 完成总结：按维度分行列出关键产出和验证结果
 
 ## ~command 路由
-- `~command` → 读取 skills/commands/{name}/SKILL.md 并按其流程执行
-- `~help` → 显示可用命令列表和配置说明
-- skills 路径（按优先级）：
-  1. 项目内 skills/helloagents/ 存在 → 使用
-  2. ~/.{当前CLI}/helloagents/ 存在 → 使用（symlink 指向 skills 目录）
-  3. 本文件所在目录的 skills/ → 使用（绝对路径回退）
+用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。
+
+查找路径（按优先级，找到即停）：
+1. {CWD}/skills/helloagents/commands/{name}/SKILL.md
+2. ~/.{当前CLI名称}/helloagents/commands/{name}/SKILL.md
+3. 本文件所在目录/skills/commands/{name}/SKILL.md
 
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
