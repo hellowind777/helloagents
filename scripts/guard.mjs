@@ -22,6 +22,10 @@ function readSettings() {
   return {};
 }
 
+function emitHookPayload(payload) {
+  process.stdout.write(JSON.stringify(payload));
+}
+
 const DANGEROUS_PATTERNS = [
   // Destructive file operations (including sudo prefix and long options)
   { pattern: /(sudo\s+)?rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?(-[a-zA-Z]*r[a-zA-Z]*\s+)?(\/|~|\*)/, reason: 'Recursive delete of critical path' },
@@ -130,7 +134,6 @@ function scanEnvCoverage(filePath) {
 function postWriteScan(data) {
   const settings = readSettings();
   if (settings.guard_enabled === false) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
     return;
   }
 
@@ -138,7 +141,6 @@ function postWriteScan(data) {
   const filePath = data.tool_input?.file_path || '';
 
   if (!content && !filePath) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
     return;
   }
 
@@ -148,25 +150,22 @@ function postWriteScan(data) {
     ...scanEnvCoverage(filePath),
   ];
 
-  // L2 is advisory (warn, not block): uses additionalContext to surface warnings
-  // to the AI, matching bootstrap.md's "警告用户" directive for L2 patterns.
   if (warnings.length > 0) {
-    process.stdout.write(JSON.stringify({
+    emitHookPayload({
       hookSpecificOutput: {
         hookEventName: HOOK_EVENT,
         additionalContext: `⚠️ [HelloAGENTS L2 安全扫描] 检测到潜在问题:\n${warnings.map(w => `  - ${w}`).join('\n')}\n请检查以上问题。`,
       },
-      suppressOutput: true,
-    }));
-    return;
+    });
   }
-
-  process.stdout.write(JSON.stringify({ suppressOutput: true }));
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
+  // Latest Codex rejects suppressOutput on PreToolUse/PostToolUse.
+  // For pass-through cases, emit nothing and exit 0.
+
   // Check if running in post-write mode (PostToolUse)
   const mode = process.argv[2] || '';
   if (mode === 'post-write') {
@@ -181,7 +180,6 @@ async function main() {
 
   const settings = readSettings();
   if (settings.guard_enabled === false) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
     return;
   }
 
@@ -194,33 +192,26 @@ async function main() {
   // Only check Bash/shell tool calls
   const toolName = (data.tool_name || '').toLowerCase();
   if (!['bash', 'shell', 'terminal', 'command'].some(t => toolName.includes(t))) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
     return;
   }
 
   const command = data.tool_input?.command || data.tool_input?.input || '';
   if (!command) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
     return;
   }
 
   for (const { pattern, reason } of DANGEROUS_PATTERNS) {
     if (pattern.test(command)) {
-      // PreToolUse requires hookSpecificOutput.permissionDecision (not top-level decision)
-      process.stdout.write(JSON.stringify({
+      emitHookPayload({
         hookSpecificOutput: {
           hookEventName: HOOK_EVENT,
           permissionDecision: 'deny',
           permissionDecisionReason: `[HelloAGENTS Guard] Blocked: ${reason}\nCommand: ${command.slice(0, 200)}`,
         },
-      }));
+      });
       return;
     }
   }
-
-  process.stdout.write(JSON.stringify({ suppressOutput: true }));
 }
 
-main().catch(() => {
-  process.stdout.write(JSON.stringify({ suppressOutput: true }));
-});
+main().catch(() => {});

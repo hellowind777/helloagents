@@ -8,7 +8,7 @@ Trigger: ~verify
 
 ## 流程
 
-1. 检测验证命令来源（优先级详见 hello-verify SKILL.md）
+1. 按 hello-* 技能查找路径读取 hello-verify SKILL.md，并按其“验证命令来源”优先级检测命令
 2. 逐个运行所有检测到的命令
 3. 收集每个命令的输出和退出码
 4. 汇总报告：

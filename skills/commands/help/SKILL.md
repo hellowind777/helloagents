@@ -34,10 +34,10 @@ Trigger: ~help
 读取 ~/.helloagents/helloagents.json 显示：
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
-| output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Codex |
-| output_format | true | true=HelloAGENTS格式输出/false=自然输出 | Claude Code + Codex |
-| notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Codex |
-| ralph_loop_enabled | true | 自动验证循环（任务完成时触发 lint/test/build） | Claude Code + Codex |
-| guard_enabled | true | 阻断危险命令 | 仅 Claude Code |
-| kb_create_mode | 1 | 0=关闭/1=编码自动/2=始终 | Claude Code + Codex |
-| commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Codex |
+| output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
+| output_format | true | true=HelloAGENTS格式输出/false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
+| notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
+| ralph_loop_enabled | true | 自动验证循环（任务完成时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
+| guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
+| kb_create_mode | 1 | 0=关闭/1=编码自动/2=始终 | Claude Code + Gemini CLI + Codex CLI |
+| commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |

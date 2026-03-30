@@ -9,7 +9,7 @@ Trigger: ~clean
 ## 流程
 
 1. 扫描 .helloagents/plans/ 下的方案包
-2. 判定完成状态：tasks.md 中所有任务标记 [√] 或 STATE.md "正在做什么"表明已完成
+2. 判定完成状态：tasks.md 中所有任务已标记 [√]（该标记仅用于任务列表/验收清单）或 STATE.md "正在做什么"表明已完成
 3. 已完成的方案包 → 将整个 plans/{feature}/ 目录归档到 .helloagents/archive/YYYY-MM/
 4. 更新 .helloagents/archive/_index.md（按 templates/archive/_index.md 格式追加一行）
 5. 清理临时文件：.helloagents/loop-results.tsv、.helloagents/.ralph-breaker.json

@@ -3,7 +3,7 @@
  * File operations, marker injection, settings merge/clean, hooks loading.
  */
 import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync,
-         symlinkSync, lstatSync, unlinkSync, rmdirSync } from 'node:fs';
+         symlinkSync, lstatSync, unlinkSync, rmdirSync, cpSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { platform } from 'node:os';
 
@@ -14,6 +14,23 @@ export function safeWrite(p, c) { ensureDir(dirname(p)); writeFileSync(p, c, 'ut
 export function safeRead(p) { try { return readFileSync(p, 'utf-8'); } catch { return null; } }
 export function safeJson(p) { try { return JSON.parse(readFileSync(p, 'utf-8')); } catch { return null; } }
 export function removeIfExists(p) { try { rmSync(p, { recursive: true, force: true }); } catch {} }
+export function readJsonOrThrow(p, label = p) {
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, 'utf-8'));
+  } catch {
+    throw new Error(`${label} JSON 解析失败: ${p}`);
+  }
+}
+export function copyEntries(sourceRoot, targetRoot, entries) {
+  for (const entry of entries) {
+    const sourcePath = join(sourceRoot, entry);
+    if (!existsSync(sourcePath)) continue;
+    const targetPath = join(targetRoot, entry);
+    ensureDir(dirname(targetPath));
+    cpSync(sourcePath, targetPath, { recursive: true, force: true });
+  }
+}
 
 export function createLink(target, linkPath) {
   removeLink(linkPath);

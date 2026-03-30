@@ -150,10 +150,16 @@ Simple tasks get direct execution. Complex tasks go through ORIENT → CLARIFY �
 npm install -g helloagents
 ```
 
+If your system already has another `helloagents` executable in `PATH`, use the bundled stable alias instead:
+
+```bash
+helloagents-js
+```
+
 The `postinstall` script auto-detects installed CLIs and configures them:
-- **Claude Code** — injects rules into `~/.claude/CLAUDE.md`, sets up hooks and skills symlink
-- **Gemini CLI** — injects rules into `~/.gemini/GEMINI.md`, sets up hooks
-- **Codex CLI** — configures `config.toml`, hooks, and skills symlink
+- **Claude Code** — injects rules into `~/.claude/CLAUDE.md`, sets up hooks and a `helloagents` package-root symlink
+- **Gemini CLI** — injects rules into `~/.gemini/GEMINI.md`, sets up hooks and a `helloagents` package-root symlink
+- **Codex CLI** — configures `config.toml`, hooks, and a `helloagents` package-root symlink
 
 This is **standby mode** (default) — lite rules for all projects, use `~init` in a project to activate full features.
 
@@ -175,7 +181,11 @@ Then install the plugin/extension for your CLI:
 gemini extensions install https://github.com/hellowind777/helloagents
 ```
 
-Codex CLI is auto-configured in both modes.
+Codex CLI does not need a manual plugin command. `helloagents --global` now installs the native local-plugin chain automatically by writing:
+- `~/.agents/plugins/marketplace.json`
+- `~/plugins/helloagents/`
+- `~/.codex/plugins/cache/local-plugins/helloagents/local/`
+- `helloagents@local-plugins` in `~/.codex/config.toml`
 
 ### Verify Installation
 
@@ -329,9 +339,9 @@ HelloAGENTS supports two installation modes with different installation methods:
 | Mode | Install Method | Rules | Skills | Best For |
 |------|---------------|-------|--------|----------|
 | **Standby** (default) | `npm install -g helloagents` auto-configures all CLIs (non-plugin) | `bootstrap-lite.md` (lite rules) | `~command` on demand, `~init` for full activation | Selective use, keeping other projects unaffected |
-| **Global** | Plugin/extension install per CLI | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
+| **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
 
-Standby mode injects rules directly into CLI config files (`~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, `~/.codex/config.toml`) and creates skills symlinks. Global mode uses each CLI's native plugin/extension system.
+Standby mode injects rules directly into CLI config files (`~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, `~/.codex/config.toml`) and creates a `helloagents` package-root symlink for each CLI, exposing `skills/`, `templates/`, `scripts/`, `assets/`, and `hooks/` via clear literal paths. In global mode, Claude Code and Gemini use their native plugin/extension systems, while Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`).
 
 Switch modes via CLI: `helloagents --global` or `helloagents --standby`
 
@@ -477,6 +487,14 @@ Set a target and metric, then let AI iterate:
 **Problem:** `~help` not recognized after `gemini extensions install`
 
 **Solution:** Restart Gemini CLI. Verify with `gemini extensions list`. Make sure the extension is enabled.
+
+---
+
+### File writes blocked outside workspace
+
+**Problem:** Gemini CLI or Codex CLI reports that a file path is outside the allowed workspace.
+
+**Solution:** Write files inside the current project workspace, or inside the CLI's temporary workspace directory. In headless verification, prefer paths under the current repo instead of arbitrary absolute paths.
 
 ---
 
