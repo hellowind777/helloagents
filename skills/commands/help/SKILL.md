@@ -31,7 +31,8 @@ Trigger: ~help
 完成时：hello-verify, hello-reflect
 
 ### 当前设置
-读取 ~/.helloagents/helloagents.json 显示：
+优先使用当前上下文中已注入的“当前用户设置”显示；仅在上下文不存在该信息时，才尝试读取 `~/.helloagents/helloagents.json`。
+如果当前 CLI 存在工作区限制导致家目录不可读，则明确说明“无法直接读取配置文件，以下按已注入设置或默认值展示”，不要改用无关工具或伪造已读取结果。
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
 | output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
