@@ -100,7 +100,7 @@
 - 不允许吞掉错误：捕获的异常必须处理或上报，不能空 catch 后继续
 
 ## 输出格式
-当 helloagents.json 的 output_format 为 true 时，所有回复必须使用以下格式：
+当 helloagents.json 的 output_format 为 true 时，除子代理外，所有最终回复都必须使用以下格式；主代理读取或触发任意 skill 时同样适用。skill 的固定输出仅约束主体内容，不豁免外层格式包装：
 
 {图标}【HelloAGENTS】- {状态描述}
 {空一行}
