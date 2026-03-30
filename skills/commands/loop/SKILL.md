@@ -19,10 +19,12 @@ Trigger: ~loop <目标描述> [--iterations N] [--metric "命令"] [--direction 
 ## 初始化
 
 1. 确认 git 工作区干净（有未提交变更则先提醒用户处理）
-2. 运行指标命令获取基线值，记录到 results log
-3. 如有守卫命令，运行确认基线通过
-4. 创建 `.helloagents/loop-results.tsv`，并确保 .gitignore 包含该文件
-5. 根据优化目标标记可能需要的 hello-* 质量技能（如性能优化标记 hello-perf，UI 优化标记 hello-ui）
+2. 确保 `.helloagents/` 目录和 `.helloagents/STATE.md` 存在；目录不存在时先创建，`STATE.md` 不存在时按 `templates/STATE.md` 创建。这是 `~loop` 的强制恢复快照，不受 `kb_create_mode` 控制
+3. 运行指标命令获取基线值，记录到 results log
+4. 如有守卫命令，运行确认基线通过
+5. 创建 `.helloagents/loop-results.tsv`，并确保 .gitignore 包含该文件
+6. 根据优化目标标记可能需要的 hello-* 质量技能（如性能优化标记 hello-perf，UI 优化标记 hello-ui）
+7. 重写 `.helloagents/STATE.md`：记录当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
 
 results log 格式：
 ```
@@ -74,6 +76,7 @@ iteration	commit	metric	delta	guard	status	description
 ### Phase 7: Log
 - 追加一行到 results log
 - status: baseline / keep / discard / crash / no-op
+- 重写 `.helloagents/STATE.md`：记录当前轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
 
 ### Phase 8: Repeat
 - 如果 iterations > 0 且 current_iteration >= max_iterations → 输出总结并停止
@@ -86,6 +89,7 @@ iteration	commit	metric	delta	guard	status	description
 - 总迭代次数 / 保留次数 / 丢弃次数
 - 最有效的 3 个改进
 - results log 路径
+- 重写 `.helloagents/STATE.md`：将“正在做什么”更新为已完成，保留最终结论摘要，清空阻塞项，并给出可立即执行的下一步（如继续优化、停止、切换目标）
 
 ## 安全规则
 - 使用 `git revert`（保留历史）而非 `git reset --hard`（丢失历史）
