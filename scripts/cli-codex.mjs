@@ -46,6 +46,14 @@ function removeCodexPluginConfig(text) {
   return stripTomlSection(text, CODEX_PLUGIN_CONFIG_HEADER).text;
 }
 
+function isManagedCodexModelInstruction(line = '') {
+  return line.includes('helloagents') && line.includes('model_instructions_file');
+}
+
+function isManagedCodexNotify(line = '') {
+  return line.includes('codex-notify') || (line.includes('helloagents') && line.includes('notify'));
+}
+
 function getDefaultCodexMarketplace() {
   return {
     name: CODEX_MARKETPLACE_NAME,
@@ -154,8 +162,18 @@ export function uninstallCodexStandby(home) {
         return false;
       }).text;
       toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
-      toml = ensureTopLevelTomlLine(toml, 'model_instructions_file', readTopLevelTomlLine(backupToml, 'model_instructions_file'));
-      toml = ensureTopLevelTomlLine(toml, 'notify', readTopLevelTomlLine(backupToml, 'notify'));
+      const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
+      const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
+      toml = ensureTopLevelTomlLine(
+        toml,
+        'model_instructions_file',
+        isManagedCodexModelInstruction(backupModelInstructions) ? '' : backupModelInstructions,
+      );
+      toml = ensureTopLevelTomlLine(
+        toml,
+        'notify',
+        isManagedCodexNotify(backupNotify) ? '' : backupNotify,
+      );
       toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
       if (toml.trim()) safeWrite(configPath, toml);
       else removeIfExists(configPath);
@@ -246,8 +264,18 @@ export function uninstallCodexGlobal(home) {
   toml = removeTopLevelTomlLines(toml, (line) =>
     line.startsWith('notify =')
     && line.includes('/plugins/helloagents/scripts/notify.mjs')).text;
-  toml = ensureTopLevelTomlLine(toml, 'model_instructions_file', readTopLevelTomlLine(backupToml, 'model_instructions_file'));
-  toml = ensureTopLevelTomlLine(toml, 'notify', readTopLevelTomlLine(backupToml, 'notify'));
+  const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
+  const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
+  toml = ensureTopLevelTomlLine(
+    toml,
+    'model_instructions_file',
+    isManagedCodexModelInstruction(backupModelInstructions) ? '' : backupModelInstructions,
+  );
+  toml = ensureTopLevelTomlLine(
+    toml,
+    'notify',
+    isManagedCodexNotify(backupNotify) ? '' : backupNotify,
+  );
   toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
   if (toml.trim()) safeWrite(configPath, toml);
   else removeIfExists(configPath);

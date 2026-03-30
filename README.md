@@ -249,7 +249,8 @@ HelloAGENTS touches different files depending on mode. The write/cleanup rules a
 - **Standby mode** uses symlinks for `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents`, so local file or branch changes are visible immediately.
 - **Codex global mode** uses copied runtime files. Re-running `helloagents --global` refreshes both `~/plugins/helloagents/` and the Codex cache copy.
 - Re-running the current mode command is supported intentionally: `helloagents --standby` and `helloagents --global` both act as **switch-or-refresh** commands.
-- `npm uninstall -g helloagents` cleans CLI injections and plugin/cache artifacts but intentionally preserves `~/.helloagents/helloagents.json`.
+- For deterministic manual cleanup, run `helloagents cleanup` before `npm uninstall -g helloagents`.
+- `npm uninstall -g helloagents` removes the package; `~/.helloagents/helloagents.json` is intentionally preserved.
 
 ## 📖 Commands
 
