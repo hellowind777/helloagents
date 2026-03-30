@@ -14,6 +14,14 @@ const __dirname = dirname(__filename);
 const PKG_ROOT = join(__dirname, '..');
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 
+// Gemini CLI uses different hook event names than Claude/Codex.
+const IS_GEMINI = process.argv.includes('--gemini');
+const EVENT_NAME = {
+  SessionStart: 'SessionStart', // same for both
+  UserPromptSubmit: IS_GEMINI ? 'BeforeAgent' : 'UserPromptSubmit',
+  PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
+};
+
 // Bind PKG_ROOT to UI functions
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
@@ -133,7 +141,7 @@ function cmdPreCompact() {
   }
 
   const context = summaryParts.join('\n');
-  suppressedOutput('PreCompact', context);
+  suppressedOutput(EVENT_NAME.PreCompact, context);
 }
 
 // ── Sub-command: route (UserPromptSubmit) ────────────────────────────────────
@@ -157,7 +165,7 @@ function cmdRoute() {
   const cmdMatch = prompt.match(/^~(\w+)/);
   if (cmdMatch) {
     const skillName = cmdMatch[1];
-    suppressedOutput('UserPromptSubmit',
+    suppressedOutput(EVENT_NAME.UserPromptSubmit,
       `用户使用了 ~${skillName} 命令。请读取 skills/commands/${skillName}/SKILL.md 并按其流程执行。`);
     return;
   }
@@ -177,7 +185,7 @@ function cmdRoute() {
 
     for (const pat of newProjectPatterns) {
       if (pat.test(prompt)) {
-        suppressedOutput('UserPromptSubmit',
+        suppressedOutput(EVENT_NAME.UserPromptSubmit,
           '检测到可能是新项目/新应用任务。根据 HelloAGENTS 路由规则，新项目必须进入 ~design 设计流程。请引导用户进入 ~design。');
         return;
       }
@@ -216,7 +224,7 @@ function cmdInject() {
     context += '\n\n> ⚠️ 会话已恢复/压缩，请先读取 .helloagents/STATE.md 恢复工作状态。';
   }
 
-  suppressedOutput('SessionStart', context || undefined);
+  suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
   versionCheckBackground();
 }
 

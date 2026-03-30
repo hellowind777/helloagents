@@ -10,10 +10,12 @@ import { homedir } from 'node:os';
 
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 
-// Hook event name: read from env (set by hooks config) or infer from CLI mode.
-// This avoids hardcoding platform-specific event names (Claude: PreToolUse/PostToolUse, Gemini: BeforeTool/AfterModel).
+// Hook event name: read from env or infer from CLI mode + --gemini flag.
+// Claude: PreToolUse/PostToolUse, Gemini: BeforeTool/AfterModel.
+const IS_GEMINI = process.argv.includes('--gemini');
+const IS_POST_WRITE = process.argv.includes('post-write');
 const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
-  || ((process.argv[2] || '') === 'post-write' ? 'PostToolUse' : 'PreToolUse');
+  || (IS_POST_WRITE ? (IS_GEMINI ? 'AfterModel' : 'PostToolUse') : (IS_GEMINI ? 'BeforeTool' : 'PreToolUse'));
 
 function readSettings() {
   try { return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8')); } catch {}
