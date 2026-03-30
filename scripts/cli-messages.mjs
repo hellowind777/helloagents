@@ -24,26 +24,36 @@ export function createInstallMessagePrinter({ home, pkgVersion, msg }) {
 
   function printInstallMsg(mode, context) {
     const isSwitch = context === 'switch';
+    const isRefresh = context === 'refresh';
+    const isInstall = !isSwitch && !isRefresh;
     if (mode === 'global') {
-      if (!isSwitch) console.log(msg(
+      if (isInstall) console.log(msg(
         `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n${PLUGIN_CMDS}\n    Codex:        ${codexGlobalStatus()}（~/.agents/plugins/marketplace.json + ~/plugins/helloagents）\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
         `\n  ✅ HelloAGENTS installed (global mode)!\n\n${PLUGIN_CMDS}\n    Codex:        ${codexGlobalStatus()} (~/.agents/plugins/marketplace.json + ~/plugins/helloagents)\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`,
       ));
       else console.log(msg(
-        '  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 请手动安装插件；Codex 已自动走原生本地插件链路。',
-        '  All projects will use full HelloAGENTS rules.\n  Install Claude Code / Gemini plugins manually; Codex now uses the native local-plugin path automatically.',
+        isRefresh
+          ? '  global 模式已刷新。\n  Claude Code / Gemini 请保持插件已安装；Codex 原生本地插件链路已重装并同步最新文件。'
+          : '  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 请手动安装插件；Codex 已自动走原生本地插件链路。',
+        isRefresh
+          ? '  Global mode refreshed.\n  Keep Claude Code / Gemini plugins installed; Codex native local-plugin files were reinstalled and synced.'
+          : '  All projects will use full HelloAGENTS rules.\n  Install Claude Code / Gemini plugins manually; Codex now uses the native local-plugin path automatically.',
       ));
     } else {
-      if (!isSwitch) console.log(msg(
+      if (isInstall) console.log(msg(
         `\n  ✅ HelloAGENTS 已安装（standby 模式）！\n\n    Claude Code:  已自动配置（~/.claude/CLAUDE.md + hooks）\n    Gemini CLI:   已自动配置（~/.gemini/GEMINI.md）\n    Codex:        ${codexStandbyStatus()}\n\n  standby 模式下，hello-* 技能不会自动触发。\n  在项目中使用 ~init 激活完整功能，或使用 ~command 按需调用。\n\n  切换模式：\n    helloagents --global    全局模式（Claude/Gemini 装插件；Codex 自动装原生本地插件）`,
         `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Codex:        ${codexStandbyStatus()}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~init in a project to activate full features, or use ~command on demand.\n\n  Switch modes:\n    helloagents --global    Global mode (manual plugins for Claude/Gemini; native local plugin auto-install for Codex)`,
       ));
       else console.log(msg(
-        `  项目需通过 ~init 激活完整功能，未激活项目仅注入通用规则。\n  ${REMOVE_HINT}`,
-        `  Projects need ~init to activate full features. Unactivated projects get lite rules only.\n  ${REMOVE_HINT}`,
+        isRefresh
+          ? `  standby 模式已刷新，CLI 注入与链接已同步最新文件。\n  ${REMOVE_HINT}`
+          : `  项目需通过 ~init 激活完整功能，未激活项目仅注入通用规则。\n  ${REMOVE_HINT}`,
+        isRefresh
+          ? `  Standby mode refreshed; injected files and links were synchronized.\n  ${REMOVE_HINT}`
+          : `  Projects need ~init to activate full features. Unactivated projects get lite rules only.\n  ${REMOVE_HINT}`,
       ));
     }
-    if (!isSwitch) console.log();
+    if (isInstall || isRefresh) console.log();
   }
 
   function printHelp() {

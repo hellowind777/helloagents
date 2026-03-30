@@ -15,6 +15,7 @@
     "helloagents-js": "cli.mjs"
   },
   "scripts": {
+    "test": "node --test",
     "postinstall": "node cli.mjs postinstall",
     "preuninstall": "node cli.mjs preuninstall",
     "prepublishOnly": "node cli.mjs sync-version"
@@ -28,6 +29,7 @@
     "assets/",
     "bootstrap.md",
     "bootstrap-lite.md",
+    "README_CN.md",
     "gemini-extension.json",
     ".claude-plugin/",
     ".codex-plugin/"

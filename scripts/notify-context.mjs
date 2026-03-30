@@ -48,7 +48,7 @@ export function buildInjectContext({ source, bootstrap, settings }) {
 }
 
 export function buildRouteInstruction(skillName, extraRules = '') {
-  return `用户使用了 ~${skillName} 命令。请按以下顺序读取对应 SKILL.md，找到即停：1. {CWD}/skills/helloagents/commands/${skillName}/SKILL.md 2. ~/.{当前CLI名称}/helloagents/skills/commands/${skillName}/SKILL.md 3. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/${skillName}/SKILL.md。不要自行探索、猜测或改读其他命令 skill。${extraRules}`;
+  return `用户使用了 ~${skillName} 命令。请按以下顺序读取对应 SKILL.md，找到即停：1. {CWD}/skills/helloagents/skills/commands/${skillName}/SKILL.md 2. ~/.{当前CLI名称}/helloagents/skills/commands/${skillName}/SKILL.md 3. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/${skillName}/SKILL.md。不要自行探索、猜测或改读其他命令 skill。${extraRules}`;
 }
 
 export function detectNewProjectRoute(prompt) {

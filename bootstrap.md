@@ -230,7 +230,7 @@ hello-* 技能查找路径（按优先级，找到即停）：
 - 其他复杂任务 → 建议用户 ~design、~auto 或 ~prd
 - 复杂度信号：文件数 >3 / 跨模块 / 新增依赖 / 涉及数据库 schema → 升级为复杂任务
 - `~command` → 立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。查找路径（按优先级，找到即停）：
-  1. {CWD}/skills/helloagents/commands/{name}/SKILL.md
+  1. {CWD}/skills/helloagents/skills/commands/{name}/SKILL.md
   2. ~/.{当前CLI名称}/helloagents/skills/commands/{name}/SKILL.md
   3. 本文件所在目录/skills/commands/{name}/SKILL.md
 

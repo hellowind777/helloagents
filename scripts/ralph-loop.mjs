@@ -52,7 +52,7 @@ function detectFromPackageJson(cwd) {
   if (!existsSync(f)) return [];
   try {
     const scripts = JSON.parse(readFileSync(f, 'utf-8')).scripts || {};
-    return ['lint', 'typecheck', 'type-check', 'test']
+    return ['lint', 'typecheck', 'type-check', 'test', 'build']
       .filter(k => k in scripts)
       .map(k => `npm run ${k}`);
   } catch { return []; }

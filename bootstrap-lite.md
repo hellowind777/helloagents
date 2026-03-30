@@ -132,7 +132,7 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。
 
 查找路径（按优先级，找到即停）：
-1. {CWD}/skills/helloagents/commands/{name}/SKILL.md
+1. {CWD}/skills/helloagents/skills/commands/{name}/SKILL.md
 2. ~/.{当前CLI名称}/helloagents/skills/commands/{name}/SKILL.md
 3. 本文件所在目录/skills/commands/{name}/SKILL.md
 

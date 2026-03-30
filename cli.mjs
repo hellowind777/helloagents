@@ -83,18 +83,18 @@ function switchMode(newMode) {
   const config = safeJson(CONFIG_FILE) || {};
   const oldMode = config.install_mode || DEFAULTS.install_mode;
 
-  if (oldMode === newMode) {
-    ok(msg(`当前已是 ${newMode} 模式`, `Already in ${newMode} mode`));
-    process.exit(0);
+  const isRefresh = oldMode === newMode;
+  if (!isRefresh) {
+    config.install_mode = newMode;
+    writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+    ok(msg(`模式已切换为: ${newMode}`, `Mode switched to: ${newMode}`));
+  } else {
+    ok(msg(`当前已是 ${newMode} 模式，正在刷新安装`, `Already in ${newMode} mode, refreshing installation`));
   }
-
-  config.install_mode = newMode;
-  writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
-  ok(msg(`模式已切换为: ${newMode}`, `Mode switched to: ${newMode}`));
 
   if (newMode === 'global') installGlobal();
   else installStandby();
-  printInstallMsg(newMode, 'switch');
+  printInstallMsg(newMode, isRefresh ? 'refresh' : 'switch');
 }
 
 const cmd = process.argv[2] || '';
