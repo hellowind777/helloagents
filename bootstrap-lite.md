@@ -5,6 +5,7 @@
 ## 配置
 配置文件: ~/.helloagents/helloagents.json
 首次任务前读取一次，后续不再重复读取。
+同一轮内对同一配置文件、模块、SKILL、模板只读取一次，后续直接复用已得结论，不要重复探测或重复读取同一路径。
 如果当前上下文中已包含“当前用户设置”，视为配置已完成读取，后续禁止为了展示或确认再次读取 `~/.helloagents/helloagents.json`。
 在受限 CLI（如工作区限制导致家目录不可读）中，优先使用已注入的“当前用户设置”；确需读取但失败时必须明确说明，禁止静默回退或假装读取成功。
 
@@ -132,19 +133,18 @@ output_format 为 false 时，所有回复不必遵守以上输出格式。
 
 ## ~command 路由
 用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。
+优先使用当前会话已注入的“当前 HelloAGENTS 读取根目录”或已解析出的具体命令技能文件路径；若当前项目已存在由 `~init` 生成的 AGENTS.md / CLAUDE.md / .gemini/GEMINI.md，这些载体已由宿主自动加载，无需再次读取；仅在需要执行具体命令时读取对应 SKILL.md，不要扫描整个 `skills/helloagents/` 目录，也不要为同一个命令 skill 重复探测多个路径。
 
 查找路径（按优先级，找到即停）：
 1. {CWD}/skills/helloagents/skills/commands/{name}/SKILL.md
-2. ~/.{当前CLI名称}/helloagents/skills/commands/{name}/SKILL.md
-3. 本文件所在目录/skills/commands/{name}/SKILL.md
+2. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/{name}/SKILL.md
 
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 templates/ 查找路径（按优先级，找到即停）：
 1. {CWD}/skills/helloagents/templates/
-2. ~/.{当前CLI名称}/helloagents/templates/
-3. 本文件所在目录/templates/
+2. 当前已加载 HelloAGENTS 包根目录下的 templates/
 
 ### 流程状态（不受 kb_create_mode 控制，始终可写）
 - STATE.md — ≤50 行，项目级恢复快照。读完它就能接上工作，不需要再读其他文件；它不是所有交互的统一记忆载体
@@ -196,7 +196,7 @@ Tier 3 — 深入特定模块时读取：
 - .helloagents/archive/ → 历史方案归档
 
 ### 项目文件
-根据知识库中的架构描述和模块索引，结合当前任务需求，按需读取相关的项目源码、配置和资源文件。不要一次性读取整个项目，先通过知识库了解项目结构，再有针对性地读取需要的文件。
+根据知识库中的架构描述和模块索引，结合当前任务需求，按需读取相关的项目源码、配置和资源文件。不要一次性读取整个项目，先通过知识库了解项目结构，再有针对性地读取需要的文件。不要把项目根 AGENTS.md / CLAUDE.md / .gemini/GEMINI.md 当作普通项目文件重复读取。
 
 ## 状态符号
 任务状态: [ ] 待办 | [√] 完成 | [X] 取消 | [-] 跳过

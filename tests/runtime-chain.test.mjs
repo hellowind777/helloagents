@@ -48,6 +48,8 @@ test('notify route and inject cover standby, activated projects, and global mode
   });
   let payload = parseStdoutJson(result);
   assert.match(payload.hookSpecificOutput.additionalContext, /HelloAGENTS \(Standby\)/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 包根目录/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 读取根目录/);
   assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /统一执行流程/);
 
   result = runNode(notifyScript, ['route'], {
@@ -56,7 +58,9 @@ test('notify route and inject cover standby, activated projects, and global mode
     input: JSON.stringify({ cwd: project, prompt: '~help' }),
   });
   payload = parseStdoutJson(result);
-  assert.match(payload.hookSpecificOutput.additionalContext, /skills\/helloagents\/skills\/commands\/help/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前命令技能文件已解析为：/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\\/]commands[\\\/]help[\\\/]SKILL\.md/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /不要再为同一个命令 skill 重复 Test-Path \/ Get-Content/);
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -75,6 +79,8 @@ test('notify route and inject cover standby, activated projects, and global mode
   });
   payload = parseStdoutJson(result);
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 包根目录/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 读取根目录/);
   assert.match(payload.hookSpecificOutput.additionalContext, /会话已恢复\/压缩/);
 
   result = runNode(notifyScript, ['route'], {
@@ -94,6 +100,8 @@ test('notify route and inject cover standby, activated projects, and global mode
   });
   payload = parseStdoutJson(result);
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 包根目录/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 读取根目录/);
 });
 
 test('guard blocks dangerous commands and warns on risky writes', () => {

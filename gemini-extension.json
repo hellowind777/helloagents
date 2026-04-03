@@ -2,6 +2,7 @@
   "name": "helloagents",
   "version": "3.0.0",
   "description": "Quality-driven orchestration kernel for AI CLIs",
+  "contextFileName": "bootstrap.md",
   "author": "HelloWind",
   "license": "Apache-2.0"
 }

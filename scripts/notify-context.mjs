@@ -1,7 +1,44 @@
 import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 
-export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFile }) {
+function buildPackageRootBlock(pkgRoot) {
+  if (!pkgRoot) return '';
+  return `## 当前 HelloAGENTS 包根目录\n\`\`\`text\n${pkgRoot}\n\`\`\``;
+}
+
+function resolveStandbyHostRoot(host) {
+  const home = homedir();
+  const map = {
+    claude: join(home, '.claude', 'helloagents'),
+    codex: join(home, '.codex', 'helloagents'),
+    gemini: join(home, '.gemini', 'helloagents'),
+  };
+  return map[host] || '';
+}
+
+function resolveReadRoot({ cwd, pkgRoot, host, settings }) {
+  const projectRoot = join(cwd, 'skills', 'helloagents');
+  if (existsSync(projectRoot)) {
+    return { source: 'project', root: projectRoot };
+  }
+
+  if (settings.install_mode === 'standby') {
+    const standbyRoot = resolveStandbyHostRoot(host);
+    if (standbyRoot && existsSync(standbyRoot)) {
+      return { source: 'standby-home', root: standbyRoot };
+    }
+  }
+
+  return { source: 'package', root: pkgRoot };
+}
+
+function buildReadRootBlock(readRoot) {
+  if (!readRoot?.root) return '';
+  return `## 当前 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(readRoot, null, 2)}\n\`\`\``;
+}
+
+export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFile, host }) {
   const summaryParts = [];
   summaryParts.push('## HelloAGENTS 压缩摘要');
   summaryParts.push('以下信息在上下文压缩前保存，确保压缩后不丢失关键状态。');
@@ -27,6 +64,18 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
     summaryParts.push(bootstrap);
   }
 
+  const packageRootBlock = buildPackageRootBlock(pkgRoot);
+  if (packageRootBlock) {
+    summaryParts.push('');
+    summaryParts.push(packageRootBlock);
+  }
+
+  const readRootBlock = buildReadRootBlock(resolveReadRoot({ cwd, pkgRoot, host, settings }));
+  if (readRootBlock) {
+    summaryParts.push('');
+    summaryParts.push(readRootBlock);
+  }
+
   if (Object.keys(settings).length) {
     summaryParts.push('');
     summaryParts.push(`## 当前用户设置\n\`\`\`json\n${JSON.stringify(settings, null, 2)}\n\`\`\``);
@@ -35,20 +84,27 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   return summaryParts.join('\n');
 }
 
-export function buildInjectContext({ source, bootstrap, settings }) {
+export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host, cwd }) {
+  const packageRootBlock = buildPackageRootBlock(pkgRoot);
+  const readRootBlock = buildReadRootBlock(resolveReadRoot({ cwd, pkgRoot, host, settings }));
   const settingsBlock = Object.keys(settings).length
     ? `\n\n## 当前用户设置\n\`\`\`json\n${JSON.stringify(settings, null, 2)}\n\`\`\``
     : '';
 
-  let context = bootstrap + settingsBlock;
+  let context = bootstrap;
+  if (packageRootBlock) context += `\n\n${packageRootBlock}`;
+  if (readRootBlock) context += `\n\n${readRootBlock}`;
+  context += settingsBlock;
   if (source === 'resume' || source === 'compact') {
     context += '\n\n> ⚠️ 会话已恢复/压缩，请先读取 .helloagents/STATE.md 恢复工作状态。';
   }
   return context;
 }
 
-export function buildRouteInstruction(skillName, extraRules = '') {
-  return `用户使用了 ~${skillName} 命令。请按以下顺序读取对应 SKILL.md，找到即停：1. {CWD}/skills/helloagents/skills/commands/${skillName}/SKILL.md 2. ~/.{当前CLI名称}/helloagents/skills/commands/${skillName}/SKILL.md 3. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/${skillName}/SKILL.md。不要自行探索、猜测或改读其他命令 skill。${extraRules}`;
+export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot, host, settings }) {
+  const readRoot = resolveReadRoot({ cwd, pkgRoot, host, settings });
+  const skillPath = join(readRoot.root, 'skills', 'commands', skillName, 'SKILL.md');
+  return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；本轮不要再为同一个命令 skill 重复 Test-Path / Get-Content，也不要探测其他 helloagents 路径。${extraRules}`;
 }
 
 export function detectNewProjectRoute(prompt) {

@@ -13,7 +13,7 @@ Trigger: ~init
 ### 阶段 1：环境搭建（必做）
 
 1. 创建 `.helloagents/` 目录 + STATE.md（按 templates/STATE.md 格式，初始为空闲）
-2. 定位插件根目录：通过 bootstrap 注入时提供的 PKG_ROOT 路径（即 notify.mjs 所在目录的上级）
+2. 定位插件根目录：优先读取当前会话中注入的“当前 HelloAGENTS 包根目录”；若上下文未提供，再根据当前已加载载体和规则反推，禁止猜测其他目录
 3. 创建 `skills/helloagents` symlink → `{插件根目录}/`
 4. 读取 `{插件根目录}/bootstrap.md`，用 `<!-- HELLOAGENTS_START -->` / `<!-- HELLOAGENTS_END -->` 标记包裹后写入：
    - `AGENTS.md`（项目根目录，Codex 读取）
