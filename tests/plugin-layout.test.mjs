@@ -39,6 +39,8 @@ test('bootstrap path rules no longer depend on host-name placeholders or wrong c
     assert.doesNotMatch(content, /当前CLI名称/);
     assert.doesNotMatch(content, /本文件所在目录\/skills\/commands/);
     assert.doesNotMatch(content, /本文件所在目录\/skills\/\{技能名\}/);
+    assert.match(content, /## \.helloagents\/ 目录/);
+    assert.match(content, /## 项目上下文/);
     assert.match(content, /当前已加载 HelloAGENTS 包根目录/);
     assert.match(content, /已由宿主自动加载，无需再次读取/);
     assert.match(content, /同一轮内对同一配置文件、模块、SKILL、模板只读取一次/);

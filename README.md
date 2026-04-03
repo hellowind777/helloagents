@@ -569,7 +569,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - Verify installation: `npm list -g helloagents`
 - Claude Code: check `~/.claude/CLAUDE.md` contains HelloAGENTS markers
 - Gemini CLI: check `~/.gemini/GEMINI.md` contains HelloAGENTS markers
-- Codex CLI: check `~/.codex/config.toml` has `model_instructions_file` pointing to `~/.codex/AGENTS.md` in standby mode, or to plugin `bootstrap.md` in global mode
+- Codex CLI: check `~/.codex/config.toml` has `model_instructions_file` pointing to `~/.codex/AGENTS.md` in standby mode, or to plugin `AGENTS.md` in global mode
 - Restart your CLI
 
 ---

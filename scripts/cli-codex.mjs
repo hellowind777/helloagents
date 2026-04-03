@@ -21,6 +21,7 @@ export const CODEX_PLUGIN_NAME = 'helloagents';
 export const CODEX_PLUGIN_KEY = `${CODEX_PLUGIN_NAME}@${CODEX_MARKETPLACE_NAME}`;
 export const CODEX_PLUGIN_CONFIG_HEADER = `[plugins."${CODEX_PLUGIN_KEY}"]`;
 export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed';
+export const CODEX_RUNTIME_CARRIER = 'AGENTS.md';
 export const CODEX_RUNTIME_ENTRIES = [
   '.codex-plugin',
   'assets',
@@ -34,6 +35,16 @@ export const CODEX_RUNTIME_ENTRIES = [
   'skills',
   'templates',
 ];
+
+function isManagedCodexStandbyInstructionPath(normalized = '') {
+  return /\/\.codex\/AGENTS\.md/i.test(normalized)
+    || /\/\.codex\/helloagents\/bootstrap-lite\.md/i.test(normalized);
+}
+
+function isManagedCodexGlobalInstructionPath(normalized = '') {
+  return /\/plugins\/helloagents\/AGENTS\.md/i.test(normalized)
+    || /\/plugins\/helloagents\/bootstrap\.md/i.test(normalized);
+}
 
 function upsertCodexPluginConfig(text) {
   const stripped = stripTomlSection(text, CODEX_PLUGIN_CONFIG_HEADER).text.trimEnd();
@@ -50,12 +61,23 @@ function isManagedCodexModelInstruction(line = '') {
   return line.includes('model_instructions_file')
     && (
       line.includes(CODEX_MANAGED_TOML_COMMENT)
-      || /\/helloagents\/bootstrap(?:-lite)?\.md/i.test(normalized)
+      || isManagedCodexStandbyInstructionPath(normalized)
+      || isManagedCodexGlobalInstructionPath(normalized)
     );
 }
 
 function isManagedCodexNotify(line = '') {
   return line.includes('codex-notify') || (line.includes('helloagents') && line.includes('notify'));
+}
+
+function isManagedCodexGlobalInstruction(line = '') {
+  const normalized = String(line || '').replace(/\\/g, '/');
+  return line.includes('model_instructions_file')
+    && isManagedCodexGlobalInstructionPath(normalized);
+}
+
+function isManagedCodexBackupInstruction(line = '') {
+  return line.includes(CODEX_MANAGED_TOML_COMMENT);
 }
 
 function formatManagedCodexInstructionPath(path) {
@@ -130,19 +152,19 @@ function buildCodexRuntimeContext(runtimeRoot, mode) {
     `- 当前模板目录: ${root}/templates`,
     `- 当前安装模式: ${mode}`,
     '- Codex 当前不启用 HelloAGENTS hooks：最新 Codex pre 源码下 hook 生命周期会在 TUI 中可见显示，且 suppressOutput 不会静默 SessionStart / UserPromptSubmit / Stop 等注入。请优先依赖本载体与上述固定目录，不要再假设存在静默 hook 注入。',
-    '',
   ].join('\n');
 }
 
-function withCodexRuntimeContext(bootstrapContent, runtimeRoot, mode) {
+function buildCodexRuntimeCarrier(bootstrapContent, runtimeRoot, mode) {
   const context = buildCodexRuntimeContext(runtimeRoot, mode);
-  return bootstrapContent ? `${context}\n${bootstrapContent}` : context;
+  return bootstrapContent ? `${context}\n\n${bootstrapContent.trim()}\n` : `${context}\n`;
 }
 
-function rewriteCodexBootstrap(filePath, runtimeRoot, mode) {
-  const bootstrapContent = safeRead(filePath);
-  if (!bootstrapContent) return;
-  safeWrite(filePath, withCodexRuntimeContext(bootstrapContent, runtimeRoot, mode));
+function writeCodexRuntimeCarrier(filePath, bootstrapPath, runtimeRoot, mode) {
+  const bootstrapContent = safeRead(bootstrapPath);
+  if (!bootstrapContent) return false;
+  safeWrite(filePath, buildCodexRuntimeCarrier(bootstrapContent, runtimeRoot, mode));
+  return true;
 }
 
 export function installCodexStandby(home, pkgRoot) {
@@ -150,13 +172,12 @@ export function installCodexStandby(home, pkgRoot) {
   if (!existsSync(codexDir)) return false;
   ensureDir(codexDir);
 
-  const bootstrapFile = 'bootstrap-lite.md';
-  const codexAgentsPath = join(codexDir, 'AGENTS.md');
-  const bootstrapContent = safeRead(join(pkgRoot, bootstrapFile));
+  const codexAgentsPath = join(codexDir, CODEX_RUNTIME_CARRIER);
+  const bootstrapContent = safeRead(join(pkgRoot, 'bootstrap-lite.md'));
   if (bootstrapContent) {
     injectMarkedContent(
       codexAgentsPath,
-      withCodexRuntimeContext(bootstrapContent, join(codexDir, 'helloagents'), 'standby'),
+      buildCodexRuntimeCarrier(bootstrapContent, join(codexDir, 'helloagents'), 'standby').trimEnd(),
     );
   }
 
@@ -199,7 +220,7 @@ export function uninstallCodexStandby(home) {
       toml = ensureTopLevelTomlLine(
         toml,
         'model_instructions_file',
-        isManagedCodexModelInstruction(backupModelInstructions) ? '' : backupModelInstructions,
+        isManagedCodexBackupInstruction(backupModelInstructions) ? '' : backupModelInstructions,
       );
       toml = ensureTopLevelTomlLine(
         toml,
@@ -249,8 +270,18 @@ export function installCodexGlobal(home, pkgRoot) {
 
   copyEntries(pkgRoot, pluginRoot, CODEX_RUNTIME_ENTRIES);
   copyEntries(pkgRoot, installedPluginRoot, CODEX_RUNTIME_ENTRIES);
-  rewriteCodexBootstrap(join(pluginRoot, 'bootstrap.md'), pluginRoot, 'global');
-  rewriteCodexBootstrap(join(installedPluginRoot, 'bootstrap.md'), installedPluginRoot, 'global-cache');
+  writeCodexRuntimeCarrier(
+    join(pluginRoot, CODEX_RUNTIME_CARRIER),
+    join(pluginRoot, 'bootstrap.md'),
+    pluginRoot,
+    'global',
+  );
+  writeCodexRuntimeCarrier(
+    join(installedPluginRoot, CODEX_RUNTIME_CARRIER),
+    join(installedPluginRoot, 'bootstrap.md'),
+    installedPluginRoot,
+    'global-cache',
+  );
 
   ensureDir(join(home, '.agents', 'plugins'));
   updateCodexMarketplace(marketplaceFile);
@@ -260,7 +291,7 @@ export function installCodexGlobal(home, pkgRoot) {
   toml = upsertTopLevelTomlKey(
     toml,
     'model_instructions_file',
-    `"${normalizePath(join(pluginRoot, 'bootstrap.md'))}"`,
+    formatManagedCodexInstructionPath(join(pluginRoot, CODEX_RUNTIME_CARRIER)),
   );
   toml = upsertTopLevelTomlKey(
     toml,
@@ -291,7 +322,7 @@ export function uninstallCodexGlobal(home) {
   toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
   toml = removeTopLevelTomlLines(toml, (line) =>
     line.startsWith('model_instructions_file =')
-    && line.includes('/plugins/helloagents/bootstrap.md')).text;
+    && isManagedCodexGlobalInstruction(line)).text;
   toml = removeTopLevelTomlLines(toml, (line) =>
     line.startsWith('notify =')
     && line.includes('/plugins/helloagents/scripts/notify.mjs')).text;
@@ -300,7 +331,7 @@ export function uninstallCodexGlobal(home) {
   toml = ensureTopLevelTomlLine(
     toml,
     'model_instructions_file',
-    isManagedCodexModelInstruction(backupModelInstructions) ? '' : backupModelInstructions,
+    isManagedCodexBackupInstruction(backupModelInstructions) ? '' : backupModelInstructions,
   );
   toml = ensureTopLevelTomlLine(
     toml,

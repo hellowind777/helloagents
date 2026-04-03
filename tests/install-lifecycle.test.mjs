@@ -141,29 +141,33 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const pluginRoot = join(home, 'plugins', 'helloagents');
   const pluginCacheRoot = join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local');
+  const expectedGlobalAgentsPath = join(pluginRoot, 'AGENTS.md').replace(/\\/g, '/');
   const expectedGlobalPluginRoot = pluginRoot.replace(/\\/g, '/');
   assert.ok(existsSync(pluginRoot));
   assert.ok(existsSync(pluginCacheRoot));
   assert.ok(existsSync(join(pluginRoot, 'README_CN.md')));
+  assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')));
+  assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')));
 
   const globalCodexConfig = readText(codexConfigPath);
-  assert.match(globalCodexConfig, /plugins\/helloagents\/bootstrap\.md/);
+  assert.match(globalCodexConfig, new RegExp(expectedGlobalAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(globalCodexConfig, /plugins\/helloagents\/scripts\/notify\.mjs/);
   assert.match(globalCodexConfig, /\[plugins\."helloagents@local-plugins"\]\s+enabled = true/);
   assert.doesNotMatch(globalCodexConfig, /codex_hooks = true/);
-  const globalBootstrap = readText(join(pluginRoot, 'bootstrap.md'));
-  assert.match(globalBootstrap, new RegExp(expectedGlobalPluginRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(globalBootstrap, /Codex 当前不启用 HelloAGENTS hooks/);
+  const globalAgents = readText(join(pluginRoot, 'AGENTS.md'));
+  assert.match(globalAgents, /# HelloAGENTS/);
+  assert.match(globalAgents, new RegExp(expectedGlobalPluginRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(globalAgents, /Codex 当前不启用 HelloAGENTS hooks/);
 
   const marketplace = readJson(join(home, '.agents', 'plugins', 'marketplace.json'));
   assert.ok(marketplace.plugins.some((plugin) => plugin.name === 'helloagents'));
 
   writeText(join(pkgRoot, 'bootstrap.md'), '# global updated\n');
   runCli(pkgRoot, home, ['--global']);
-  assert.match(readText(join(pluginRoot, 'bootstrap.md')), /# global updated/);
-  assert.match(readText(join(pluginRoot, 'bootstrap.md')), /Codex 当前不启用 HelloAGENTS hooks/);
-  assert.match(readText(join(pluginCacheRoot, 'bootstrap.md')), /# global updated/);
-  assert.match(readText(join(pluginCacheRoot, 'bootstrap.md')), /Codex 当前不启用 HelloAGENTS hooks/);
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# global updated/);
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /Codex 当前不启用 HelloAGENTS hooks/);
+  assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /# global updated/);
+  assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /Codex 当前不启用 HelloAGENTS hooks/);
 
   runCli(pkgRoot, home, ['--standby']);
   assert.equal(readJson(configFile).install_mode, 'standby');

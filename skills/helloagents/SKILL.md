@@ -65,6 +65,7 @@ Layer 3 — 资源文件（技能内引用时读取）：
 ### ~command 命令技能
 1. `{CWD}/skills/helloagents/skills/commands/{name}/SKILL.md`
 2. 当前已加载 HelloAGENTS 包根目录下的 `skills/commands/{name}/SKILL.md`
+命中路径后立即停止，不要再探测另一路径，也不要重复读取同一命令 skill。
 
 ## 技能索引（仅元数据）
 
