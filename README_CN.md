@@ -569,7 +569,7 @@ npm test
 - 验证安装：`npm list -g helloagents`
 - Claude Code：检查 `~/.claude/CLAUDE.md` 是否包含 HelloAGENTS 标记
 - Gemini CLI：检查 `~/.gemini/GEMINI.md` 是否包含 HelloAGENTS 标记
-- Codex CLI：检查标准模式下 `~/.codex/config.toml` 的 `model_instructions_file` 是否指向 `~/.codex/AGENTS.md`；全局模式下则应指向插件里的 `bootstrap.md`
+- Codex CLI：检查标准模式下 `~/.codex/config.toml` 的 `model_instructions_file` 是否指向 `~/.codex/AGENTS.md`；全局模式下则应指向插件里的 `AGENTS.md`
 - 重启你的 CLI
 
 ---
