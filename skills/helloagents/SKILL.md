@@ -50,6 +50,8 @@ Layer 3 — 资源文件（技能内引用时读取）：
 禁止行为：
 - 禁止在 ORIENT/CLARIFY 阶段读取实现类技能（hello-ui/hello-test/hello-verify 等）
 - 禁止因为"可能用到"就提前读取技能文件——等到真正需要时再读
+- 同一轮内对同一配置文件、模块、SKILL、模板只读取一次，后续直接复用已得结论，不重复探测或重复读取同一路径
+- 若项目已初始化，项目根 AGENTS.md / CLAUDE.md / .gemini/GEMINI.md 已由宿主自动加载，无需再次读取；仅按需读取具体 SKILL.md，不扫描整个 `skills/helloagents/` 目录
 - ~command 命令只读取对应的 command SKILL.md，不连带读取其他技能
 
 ## 技能查找路径
@@ -58,13 +60,11 @@ Layer 3 — 资源文件（技能内引用时读取）：
 
 ### hello-* 技能
 1. `{CWD}/skills/helloagents/skills/{技能名}/SKILL.md`
-2. `~/.{当前CLI名称}/helloagents/skills/{技能名}/SKILL.md`
-3. 当前已加载 HelloAGENTS 包根目录下的 `skills/{技能名}/SKILL.md`
+2. 当前已加载 HelloAGENTS 包根目录下的 `skills/{技能名}/SKILL.md`
 
 ### ~command 命令技能
 1. `{CWD}/skills/helloagents/skills/commands/{name}/SKILL.md`
-2. `~/.{当前CLI名称}/helloagents/skills/commands/{name}/SKILL.md`
-3. 当前已加载 HelloAGENTS 包根目录下的 `skills/commands/{name}/SKILL.md`
+2. 当前已加载 HelloAGENTS 包根目录下的 `skills/commands/{name}/SKILL.md`
 
 ## 技能索引（仅元数据）
 

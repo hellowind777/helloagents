@@ -25,7 +25,6 @@
     "url": "https://github.com/hellowind777/helloagents.git"
   },
   "skills": "./skills",
-  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "HelloAGENTS",
     "shortDescription": "Quality-driven orchestration kernel for AI CLIs",

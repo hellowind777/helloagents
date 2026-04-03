@@ -1,10 +1,9 @@
 import { join } from 'node:path';
-import { existsSync, copyFileSync, writeFileSync } from 'node:fs';
+import { existsSync, copyFileSync } from 'node:fs';
 import {
   ensureDir, safeRead, safeWrite, removeIfExists,
   readJsonOrThrow, copyEntries,
   createLink, removeLink, injectMarkedContent, removeMarkedContent,
-  loadHooksWithAbsPath,
 } from './cli-utils.mjs';
 import {
   upsertTopLevelTomlKey,
@@ -13,7 +12,6 @@ import {
   readTomlKeyInSection,
   removeTomlKeyInSection,
   ensureTomlKeyInSection,
-  upsertTomlKeyInSection,
   stripTomlSection,
   removeTopLevelTomlLines,
 } from './cli-toml.mjs';
@@ -22,6 +20,7 @@ export const CODEX_MARKETPLACE_NAME = 'local-plugins';
 export const CODEX_PLUGIN_NAME = 'helloagents';
 export const CODEX_PLUGIN_KEY = `${CODEX_PLUGIN_NAME}@${CODEX_MARKETPLACE_NAME}`;
 export const CODEX_PLUGIN_CONFIG_HEADER = `[plugins."${CODEX_PLUGIN_KEY}"]`;
+export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed';
 export const CODEX_RUNTIME_ENTRIES = [
   '.codex-plugin',
   'assets',
@@ -47,11 +46,20 @@ function removeCodexPluginConfig(text) {
 }
 
 function isManagedCodexModelInstruction(line = '') {
-  return line.includes('helloagents') && line.includes('model_instructions_file');
+  const normalized = String(line || '').replace(/\\/g, '/');
+  return line.includes('model_instructions_file')
+    && (
+      line.includes(CODEX_MANAGED_TOML_COMMENT)
+      || /\/helloagents\/bootstrap(?:-lite)?\.md/i.test(normalized)
+    );
 }
 
 function isManagedCodexNotify(line = '') {
   return line.includes('codex-notify') || (line.includes('helloagents') && line.includes('notify'));
+}
+
+function formatManagedCodexInstructionPath(path) {
+  return `"${path.replace(/\\/g, '/')}" ${CODEX_MANAGED_TOML_COMMENT}`;
 }
 
 function getDefaultCodexMarketplace() {
@@ -108,10 +116,33 @@ function removeCodexMarketplaceEntry(marketplaceFile) {
   return true;
 }
 
-function rewriteCodexPluginHooks(pluginRoot) {
-  const hooksData = loadHooksWithAbsPath(pluginRoot, 'hooks.json', '${CLAUDE_PLUGIN_ROOT}');
-  if (!hooksData) return;
-  safeWrite(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify(hooksData, null, 2) + '\n');
+function normalizePath(path) {
+  return path.replace(/\\/g, '/');
+}
+
+function buildCodexRuntimeContext(runtimeRoot, mode) {
+  const root = normalizePath(runtimeRoot);
+  return [
+    '## Codex 运行时上下文',
+    `- 当前 HelloAGENTS 包根目录: ${root}`,
+    `- 当前 HelloAGENTS 读取根目录: ${root}`,
+    `- 当前命令技能目录: ${root}/skills/commands`,
+    `- 当前模板目录: ${root}/templates`,
+    `- 当前安装模式: ${mode}`,
+    '- Codex 当前不启用 HelloAGENTS hooks：最新 Codex pre 源码下 hook 生命周期会在 TUI 中可见显示，且 suppressOutput 不会静默 SessionStart / UserPromptSubmit / Stop 等注入。请优先依赖本载体与上述固定目录，不要再假设存在静默 hook 注入。',
+    '',
+  ].join('\n');
+}
+
+function withCodexRuntimeContext(bootstrapContent, runtimeRoot, mode) {
+  const context = buildCodexRuntimeContext(runtimeRoot, mode);
+  return bootstrapContent ? `${context}\n${bootstrapContent}` : context;
+}
+
+function rewriteCodexBootstrap(filePath, runtimeRoot, mode) {
+  const bootstrapContent = safeRead(filePath);
+  if (!bootstrapContent) return;
+  safeWrite(filePath, withCodexRuntimeContext(bootstrapContent, runtimeRoot, mode));
 }
 
 export function installCodexStandby(home, pkgRoot) {
@@ -120,25 +151,26 @@ export function installCodexStandby(home, pkgRoot) {
   ensureDir(codexDir);
 
   const bootstrapFile = 'bootstrap-lite.md';
+  const codexAgentsPath = join(codexDir, 'AGENTS.md');
   const bootstrapContent = safeRead(join(pkgRoot, bootstrapFile));
   if (bootstrapContent) {
-    injectMarkedContent(join(codexDir, 'AGENTS.md'), bootstrapContent);
+    injectMarkedContent(
+      codexAgentsPath,
+      withCodexRuntimeContext(bootstrapContent, join(codexDir, 'helloagents'), 'standby'),
+    );
   }
 
   const configPath = join(codexDir, 'config.toml');
   let toml = safeRead(configPath) || '';
   if (toml && !existsSync(configPath + '.bak')) copyFileSync(configPath, configPath + '.bak');
 
-  toml = upsertTopLevelTomlKey(toml, 'model_instructions_file', `"${join(pkgRoot, bootstrapFile).replace(/\\/g, '/')}"`);
-  toml = upsertTopLevelTomlKey(toml, 'notify', `["node", "${join(pkgRoot, 'scripts', 'notify.mjs').replace(/\\/g, '/')}", "codex-notify"]`);
-  toml = upsertTomlKeyInSection(toml, '[features]', 'codex_hooks', 'true');
+  toml = upsertTopLevelTomlKey(
+    toml,
+    'model_instructions_file',
+    formatManagedCodexInstructionPath(codexAgentsPath),
+  );
+  toml = upsertTopLevelTomlKey(toml, 'notify', `["node", "${normalizePath(join(pkgRoot, 'scripts', 'notify.mjs'))}", "codex-notify"]`);
   safeWrite(configPath, toml);
-
-  const codexHooksPath = join(codexDir, 'hooks.json');
-  const hooksData = loadHooksWithAbsPath(pkgRoot, 'hooks.json', '${CLAUDE_PLUGIN_ROOT}');
-  if (hooksData) {
-    writeFileSync(codexHooksPath, JSON.stringify(hooksData, null, 2), 'utf-8');
-  }
 
   createLink(pkgRoot, join(codexDir, 'helloagents'));
   return true;
@@ -157,7 +189,7 @@ export function uninstallCodexStandby(home) {
     if (toml.includes('helloagents') || toml.includes('HelloAGENTS')) {
       toml = removeTopLevelTomlLines(toml, (line) => {
         if (!line) return false;
-        if (line.startsWith('model_instructions_file =') && line.includes('helloagents')) return true;
+        if (line.startsWith('model_instructions_file =') && isManagedCodexModelInstruction(line)) return true;
         if (line.startsWith('notify =') && line.includes('codex-notify')) return true;
         return false;
       }).text;
@@ -217,8 +249,8 @@ export function installCodexGlobal(home, pkgRoot) {
 
   copyEntries(pkgRoot, pluginRoot, CODEX_RUNTIME_ENTRIES);
   copyEntries(pkgRoot, installedPluginRoot, CODEX_RUNTIME_ENTRIES);
-  rewriteCodexPluginHooks(pluginRoot);
-  rewriteCodexPluginHooks(installedPluginRoot);
+  rewriteCodexBootstrap(join(pluginRoot, 'bootstrap.md'), pluginRoot, 'global');
+  rewriteCodexBootstrap(join(installedPluginRoot, 'bootstrap.md'), installedPluginRoot, 'global-cache');
 
   ensureDir(join(home, '.agents', 'plugins'));
   updateCodexMarketplace(marketplaceFile);
@@ -228,14 +260,13 @@ export function installCodexGlobal(home, pkgRoot) {
   toml = upsertTopLevelTomlKey(
     toml,
     'model_instructions_file',
-    `"${join(pluginRoot, 'bootstrap.md').replace(/\\/g, '/')}"`,
+    `"${normalizePath(join(pluginRoot, 'bootstrap.md'))}"`,
   );
   toml = upsertTopLevelTomlKey(
     toml,
     'notify',
-    `["node", "${join(pluginRoot, 'scripts', 'notify.mjs').replace(/\\/g, '/')}", "codex-notify"]`,
+    `["node", "${normalizePath(join(pluginRoot, 'scripts', 'notify.mjs'))}", "codex-notify"]`,
   );
-  toml = upsertTomlKeyInSection(toml, '[features]', 'codex_hooks', 'true');
   toml = upsertCodexPluginConfig(toml);
   safeWrite(configPath, toml);
 

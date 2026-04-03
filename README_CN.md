@@ -161,7 +161,7 @@ helloagents-js
 `postinstall` 脚本自动检测已安装的 CLI 并配置：
 - **Claude Code** — 注入规则到 `~/.claude/CLAUDE.md`，配置 hooks 和 `helloagents` 包根目录符号链接
 - **Gemini CLI** — 注入规则到 `~/.gemini/GEMINI.md`，配置 hooks 和 `helloagents` 包根目录符号链接
-- **Codex CLI** — 配置 `config.toml`、hooks 和 `helloagents` 包根目录符号链接
+- **Codex CLI** — 注入规则到 `~/.codex/AGENTS.md`，让 `config.toml` 指向该文件，写入静默运行时上下文，并创建 `helloagents` 包根目录符号链接
 
 这是**标准模式**（默认）— 所有项目注入精简规则，在项目中使用 `~init` 激活完整功能。
 
@@ -234,7 +234,7 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 |-----|------------------------------|----------|-------------------------|
 | Claude Code | `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/helloagents -> <包根目录>` | 现有非 HelloAGENTS markdown、settings、permissions、hooks | 删除注入标记块、HelloAGENTS hooks/permissions 和符号链接 |
 | Gemini CLI | `~/.gemini/GEMINI.md`、`~/.gemini/settings.json`、`~/.gemini/helloagents -> <包根目录>` | 现有 markdown、hooks 和无关配置 | 删除注入标记块、HelloAGENTS hooks 和符号链接 |
-| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/config.toml.bak`、`~/.codex/hooks.json`、`~/.codex/helloagents -> <包根目录>` | 通过 backup/restore 保留原有顶层 TOML 配置和无关 section | 删除注入标记块、HelloAGENTS TOML 键、hooks 文件、符号链接和备份 |
+| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/config.toml.bak`、`~/.codex/helloagents -> <包根目录>` | 通过 backup/restore 保留原有顶层 TOML 配置和无关 section | 删除注入标记块、HelloAGENTS TOML 键、符号链接和备份 |
 
 ### 全局模式
 
@@ -377,7 +377,7 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 | **标准模式** (默认) | `npm install -g helloagents` 自动配置所有 CLI（非插件） | `bootstrap-lite.md`（精简规则） | `~command` 按需使用，`~init` 激活完整功能 | 按需使用，不影响其他项目 |
 | **全局模式** | Claude/Gemini 手动装插件；Codex 自动装原生本地插件 | `bootstrap.md`（完整规则） | 14 个技能自动激活 | 全面使用 HelloAGENTS |
 
-标准模式直接注入规则到 CLI 配置文件（`~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/config.toml`），并为每个 CLI 创建 `helloagents` 包根目录符号链接，从而通过字面路径直接暴露 `skills/`、`templates/`、`scripts/`、`assets/`、`hooks/`。全局模式下，Claude Code / Gemini 使用各自原生插件系统；Codex 改为原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段）。
+标准模式会把规则注入到 `~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/AGENTS.md`；其中 Codex 再通过 `~/.codex/config.toml` 中的 `model_instructions_file` 加载这个本地合并后的文件。每个 CLI 还会创建 `helloagents` 包根目录符号链接。Claude Code 和 Gemini 仍使用 hooks，因为宿主可以较安静地承载这类注入；Codex 默认**不启用** HelloAGENTS hooks：最新 pre 源码里 hook 生命周期会在 TUI 中可见显示，且 `suppressOutput` 不能作为真正的静默注入通道，所以 Codex 改为依赖规则文件 + 静态运行时上下文。全局模式下，Claude Code 通过 `.claude-plugin/plugin.json` 中声明的 hooks 工作，Gemini 通过 `contextFileName=bootstrap.md` 和扩展 hooks 工作；Codex 仍使用原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段），但不启用插件 hooks。
 
 通过 CLI 切换：`helloagents --global` 或 `helloagents --standby`
 
@@ -455,7 +455,7 @@ npm test
 <details>
 <summary><strong>Q：这是 CLI 工具还是 prompt 框架？</strong></summary>
 
-**A：** 两者都是。CLI（`cli.mjs`）负责安装、模式切换和 CLI 配置。实际的工作流来自 `bootstrap.md` / `bootstrap-lite.md` 规则、质量技能和 hook 脚本（`notify.mjs`、`guard.mjs`、`ralph-loop.mjs`）。可以理解为：交付系统 + 智能质量协议。
+**A：** 两者都是。CLI（`cli.mjs`）负责安装、模式切换和 CLI 配置。实际工作流来自 `bootstrap.md` / `bootstrap-lite.md` 规则、质量技能，以及按宿主选择的运行时辅助链路。Claude/Gemini 会使用 `notify.mjs`、`guard.mjs`、`ralph-loop.mjs` 等 hooks；Codex 默认走规则文件驱动，尽量保持 TUI 安静。可以理解为：交付系统 + 智能质量协议。
 </details>
 
 <details>
@@ -569,7 +569,7 @@ npm test
 - 验证安装：`npm list -g helloagents`
 - Claude Code：检查 `~/.claude/CLAUDE.md` 是否包含 HelloAGENTS 标记
 - Gemini CLI：检查 `~/.gemini/GEMINI.md` 是否包含 HelloAGENTS 标记
-- Codex CLI：检查 `~/.codex/config.toml` 中 `model_instructions_file` 是否指向 `bootstrap.md` 或 `bootstrap-lite.md`
+- Codex CLI：检查标准模式下 `~/.codex/config.toml` 的 `model_instructions_file` 是否指向 `~/.codex/AGENTS.md`；全局模式下则应指向插件里的 `bootstrap.md`
 - 重启你的 CLI
 
 ---

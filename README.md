@@ -161,7 +161,7 @@ helloagents-js
 The `postinstall` script auto-detects installed CLIs and configures them:
 - **Claude Code** — injects rules into `~/.claude/CLAUDE.md`, sets up hooks and a `helloagents` package-root symlink
 - **Gemini CLI** — injects rules into `~/.gemini/GEMINI.md`, sets up hooks and a `helloagents` package-root symlink
-- **Codex CLI** — configures `config.toml`, hooks, and a `helloagents` package-root symlink
+- **Codex CLI** — injects rules into `~/.codex/AGENTS.md`, points `config.toml` to that file, writes a silent runtime context block, and creates a `helloagents` package-root symlink
 
 This is **standby mode** (default) — lite rules for all projects, use `~init` in a project to activate full features.
 
@@ -234,7 +234,7 @@ HelloAGENTS touches different files depending on mode. The write/cleanup rules a
 |-----|-------------------------------------|-------------------|-------------------------------------|
 | Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> <package-root>` | Existing non-HelloAGENTS markdown, settings, permissions, and hooks | Removes injected marker block, HelloAGENTS hooks/permissions, and symlink |
 | Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> <package-root>` | Existing markdown, hooks, and unrelated settings | Removes injected marker block, HelloAGENTS hooks, and symlink |
-| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/config.toml.bak`, `~/.codex/hooks.json`, `~/.codex/helloagents -> <package-root>` | Existing top-level TOML keys and unrelated sections via backup/restore | Removes injected marker block, HelloAGENTS config keys, hooks file, symlink, and backup |
+| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/config.toml.bak`, `~/.codex/helloagents -> <package-root>` | Existing top-level TOML keys and unrelated sections via backup/restore | Removes injected marker block, HelloAGENTS config keys, symlink, and backup |
 
 ### Global mode
 
@@ -377,7 +377,7 @@ HelloAGENTS supports two installation modes with different installation methods:
 | **Standby** (default) | `npm install -g helloagents` auto-configures all CLIs (non-plugin) | `bootstrap-lite.md` (lite rules) | `~command` on demand, `~init` for full activation | Selective use, keeping other projects unaffected |
 | **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
 
-Standby mode injects rules directly into CLI config files (`~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, `~/.codex/config.toml`) and creates a `helloagents` package-root symlink for each CLI, exposing `skills/`, `templates/`, `scripts/`, `assets/`, and `hooks/` via clear literal paths. In global mode, Claude Code and Gemini use their native plugin/extension systems, while Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`).
+Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; Codex then loads that local merged file via `model_instructions_file` in `~/.codex/config.toml`. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the rules file plus a static runtime-context block instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) without plugin hooks.
 
 Switch modes via CLI: `helloagents --global` or `helloagents --standby`
 
@@ -455,7 +455,7 @@ The test suite validates:
 <details>
 <summary><strong>Q: Is this a CLI tool or a prompt framework?</strong></summary>
 
-**A:** Both. The CLI (`cli.mjs`) handles installation, mode switching, and CLI configuration. The actual workflow comes from `bootstrap.md` / `bootstrap-lite.md` rules, quality skills, and hook scripts (`notify.mjs`, `guard.mjs`, `ralph-loop.mjs`). Think of it as a delivery system + intelligent quality protocol.
+**A:** Both. The CLI (`cli.mjs`) handles installation, mode switching, and CLI configuration. The actual workflow comes from `bootstrap.md` / `bootstrap-lite.md` rules, quality skills, and host-appropriate runtime helpers. On Claude/Gemini that includes hook scripts such as `notify.mjs`, `guard.mjs`, and `ralph-loop.mjs`; on Codex the default path is rules-file driven to keep TUI output quiet. Think of it as a delivery system + intelligent quality protocol.
 </details>
 
 <details>
@@ -569,7 +569,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - Verify installation: `npm list -g helloagents`
 - Claude Code: check `~/.claude/CLAUDE.md` contains HelloAGENTS markers
 - Gemini CLI: check `~/.gemini/GEMINI.md` contains HelloAGENTS markers
-- Codex CLI: check `~/.codex/config.toml` has `model_instructions_file` pointing to `bootstrap.md` or `bootstrap-lite.md`
+- Codex CLI: check `~/.codex/config.toml` has `model_instructions_file` pointing to `~/.codex/AGENTS.md` in standby mode, or to plugin `bootstrap.md` in global mode
 - Restart your CLI
 
 ---

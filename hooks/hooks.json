@@ -6,80 +6,68 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.mjs\" inject",
-            "timeout": 10
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" inject --gemini",
+            "timeout": 10000
           }
         ]
       }
     ],
-    "UserPromptSubmit": [
+    "BeforeAgent": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.mjs\" route",
-            "timeout": 5
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" route --gemini",
+            "timeout": 5000
           }
         ]
       }
     ],
-    "PreToolUse": [
+    "BeforeTool": [
       {
-        "matcher": "Bash",
+        "matcher": "shell|bash",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs\"",
-            "timeout": 5
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" --gemini",
+            "timeout": 5000
           }
         ]
       }
     ],
-    "PostToolUse": [
+    "AfterModel": [
       {
-        "matcher": "Write|Edit|NotebookEdit",
+        "matcher": "write_file|edit_file",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs\" post-write",
-            "timeout": 5
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" post-write --gemini",
+            "timeout": 5000
           }
         ]
       }
     ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.mjs\" pre-compact",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
+    "AfterAgent": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/ralph-loop.mjs\" subagent",
-            "timeout": 120
+            "command": "node \"${extensionPath}/scripts/ralph-loop.mjs\" subagent --gemini",
+            "timeout": 120000
           }
         ]
       }
     ],
-    "Stop": [
+    "SessionEnd": [
       {
         "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/notify.mjs\" stop",
-            "timeout": 120
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" stop --gemini",
+            "timeout": 120000
           }
         ]
       }

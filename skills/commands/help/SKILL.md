@@ -24,7 +24,7 @@ Trigger: ~help
 | ~help | 显示此帮助 |
 
 ### 自动激活技能
-以下技能根据任务内容自动激活，无需手动触发：
+以下技能仅在全局模式，或当前项目已通过 `~init` 激活后自动激活；纯标准模式未激活项目不会自动触发：
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
 特定场景：hello-debug, hello-subagent, hello-write, hello-review
