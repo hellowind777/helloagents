@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, existsSync, realpathSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, existsSync, realpathSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, dirname, parse, resolve } from 'node:path';
@@ -93,4 +93,8 @@ export function buildHomeEnv(home) {
 
 export function realTarget(path) {
   return existsSync(path) ? realpathSync(path) : '';
+}
+
+export function listFiles(dirPath) {
+  return existsSync(dirPath) ? readdirSync(dirPath) : [];
 }

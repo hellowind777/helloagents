@@ -1,5 +1,5 @@
-import { join } from 'node:path';
-import { existsSync, copyFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { existsSync, copyFileSync, readdirSync } from 'node:fs';
 import {
   ensureDir, safeRead, safeWrite, removeIfExists,
   readJsonOrThrow, copyEntries,
@@ -7,10 +7,14 @@ import {
 } from './cli-utils.mjs';
 import {
   upsertTopLevelTomlKey,
+  upsertTopLevelTomlBlock,
   readTopLevelTomlLine,
+  readTopLevelTomlBlock,
   ensureTopLevelTomlLine,
+  ensureTopLevelTomlBlock,
   readTomlKeyInSection,
   removeTomlKeyInSection,
+  removeTopLevelTomlBlock,
   ensureTomlKeyInSection,
   stripTomlSection,
   removeTopLevelTomlLines,
@@ -22,6 +26,12 @@ export const CODEX_PLUGIN_KEY = `${CODEX_PLUGIN_NAME}@${CODEX_MARKETPLACE_NAME}`
 export const CODEX_PLUGIN_CONFIG_HEADER = `[plugins."${CODEX_PLUGIN_KEY}"]`;
 export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed';
 export const CODEX_RUNTIME_CARRIER = 'AGENTS.md';
+const CODEX_BACKUP_TIMESTAMP_RE = /^\d{8}-\d{6}$/;
+const CODEX_CONFIG_BASENAME = 'config.toml';
+const CODEX_DEVELOPER_INSTRUCTIONS_BACKUP_BASENAME = 'developer_instructions';
+export const CODEX_DEVELOPER_INSTRUCTIONS = `CRITICAL: These are HelloAGENTS global defaults for Codex. Use them as the baseline for main-agent behavior. Spawned sub-agents should focus on the delegated task unless they are explicitly required to follow main-agent-only workflow.
+If the current workspace contains a project-level AGENTS.md or other repo-specific instructions, treat those as the more specific and authoritative instructions. Use these global defaults only where they do not conflict. Standby/global behavior is determined by the active workspace instructions, not by this global default block.
+If work was already in progress and earlier context was compressed, first restore the active project state from the most relevant project state files or other project-local context artifacts, then continue from the actual interruption point without restarting the workflow or repeating completed steps.`;
 export const CODEX_RUNTIME_ENTRIES = [
   '.codex-plugin',
   'assets',
@@ -35,6 +45,61 @@ export const CODEX_RUNTIME_ENTRIES = [
   'skills',
   'templates',
 ];
+
+function formatBackupTimestamp(date = new Date()) {
+  const pad = (value, size = 2) => String(value).padStart(size, '0');
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+}
+
+function getTimestampedBackupPath(filePath, backupBaseName) {
+  return join(dirname(filePath), `${backupBaseName}_${formatBackupTimestamp()}.bak`);
+}
+
+function listTimestampedBackups(directory, backupBaseName) {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory)
+    .filter((name) => name.startsWith(`${backupBaseName}_`) && name.endsWith('.bak'))
+    .filter((name) => CODEX_BACKUP_TIMESTAMP_RE.test(name.slice(backupBaseName.length + 1, -4)))
+    .sort();
+}
+
+function getLatestTimestampedBackupPath(filePath, backupBaseName) {
+  const directory = dirname(filePath);
+  const backups = listTimestampedBackups(directory, backupBaseName);
+  const latest = backups.at(-1);
+  return latest ? join(directory, latest) : '';
+}
+
+function readLatestTimestampedBackup(filePath, backupBaseName) {
+  const backupPath = getLatestTimestampedBackupPath(filePath, backupBaseName);
+  return backupPath ? safeRead(backupPath) || '' : '';
+}
+
+function removeLatestTimestampedBackup(filePath, backupBaseName) {
+  const backupPath = getLatestTimestampedBackupPath(filePath, backupBaseName);
+  if (backupPath) removeIfExists(backupPath);
+}
+
+function ensureTimestampedBackup(filePath, backupBaseName) {
+  if (!existsSync(filePath)) return '';
+  const existingBackup = getLatestTimestampedBackupPath(filePath, backupBaseName);
+  if (existingBackup) return existingBackup;
+  const backupPath = getTimestampedBackupPath(filePath, backupBaseName);
+  copyFileSync(filePath, backupPath);
+  return backupPath;
+}
+
+function readCodexBackup(filePath, backupBaseName) {
+  const latest = readLatestTimestampedBackup(filePath, backupBaseName);
+  if (latest) return latest;
+  const legacyPath = `${filePath}.bak`;
+  return safeRead(legacyPath) || '';
+}
+
+function removeCodexBackup(filePath, backupBaseName) {
+  removeLatestTimestampedBackup(filePath, backupBaseName);
+  removeIfExists(`${filePath}.bak`);
+}
 
 function isManagedCodexStandbyInstructionPath(normalized = '') {
   return /\/\.codex\/AGENTS\.md/i.test(normalized)
@@ -70,18 +135,42 @@ function isManagedCodexNotify(line = '') {
   return line.includes('codex-notify') || (line.includes('helloagents') && line.includes('notify'));
 }
 
-function isManagedCodexGlobalInstruction(line = '') {
-  const normalized = String(line || '').replace(/\\/g, '/');
-  return line.includes('model_instructions_file')
-    && isManagedCodexGlobalInstructionPath(normalized);
-}
-
 function isManagedCodexBackupInstruction(line = '') {
   return line.includes(CODEX_MANAGED_TOML_COMMENT);
 }
 
-function formatManagedCodexInstructionPath(path) {
-  return `"${path.replace(/\\/g, '/')}" ${CODEX_MANAGED_TOML_COMMENT}`;
+function formatManagedCodexDeveloperInstructions() {
+  return `"""\n${CODEX_DEVELOPER_INSTRUCTIONS}\n"""`;
+}
+
+function backupUserCodexDeveloperInstructions(configPath, existingBlock) {
+  if (!existingBlock || existingBlock.includes('HelloAGENTS')) return;
+  const backupPath = getTimestampedBackupPath(configPath, CODEX_DEVELOPER_INSTRUCTIONS_BACKUP_BASENAME);
+  safeWrite(backupPath, `${existingBlock}\n`);
+}
+
+function readCodexDeveloperInstructionsBackup(configPath) {
+  return readCodexBackup(configPath, CODEX_DEVELOPER_INSTRUCTIONS_BACKUP_BASENAME);
+}
+
+function removeCodexDeveloperInstructionsBackup(configPath) {
+  removeCodexBackup(configPath, CODEX_DEVELOPER_INSTRUCTIONS_BACKUP_BASENAME);
+}
+
+function installCodexDeveloperInstructions(configPath, toml) {
+  const existing = readTopLevelTomlBlock(toml, 'developer_instructions');
+  backupUserCodexDeveloperInstructions(configPath, existing);
+  return upsertTopLevelTomlBlock(toml, 'developer_instructions', formatManagedCodexDeveloperInstructions());
+}
+
+function uninstallCodexDeveloperInstructions(configPath, toml) {
+  const existing = readTopLevelTomlBlock(toml, 'developer_instructions');
+  if (!existing.includes('HelloAGENTS')) return toml;
+  let next = removeTopLevelTomlBlock(toml, 'developer_instructions');
+  const backupDeveloperInstructions = readCodexDeveloperInstructionsBackup(configPath);
+  next = ensureTopLevelTomlBlock(next, 'developer_instructions', backupDeveloperInstructions);
+  removeCodexDeveloperInstructionsBackup(configPath);
+  return next;
 }
 
 function getDefaultCodexMarketplace() {
@@ -183,14 +272,10 @@ export function installCodexStandby(home, pkgRoot) {
 
   const configPath = join(codexDir, 'config.toml');
   let toml = safeRead(configPath) || '';
-  if (toml && !existsSync(configPath + '.bak')) copyFileSync(configPath, configPath + '.bak');
+  ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
 
-  toml = upsertTopLevelTomlKey(
-    toml,
-    'model_instructions_file',
-    formatManagedCodexInstructionPath(codexAgentsPath),
-  );
   toml = upsertTopLevelTomlKey(toml, 'notify', `["node", "${normalizePath(join(pkgRoot, 'scripts', 'notify.mjs'))}", "codex-notify"]`);
+  toml = installCodexDeveloperInstructions(configPath, toml);
   safeWrite(configPath, toml);
 
   createLink(pkgRoot, join(codexDir, 'helloagents'));
@@ -205,7 +290,7 @@ export function uninstallCodexStandby(home) {
     removeMarkedContent(join(codexDir, 'AGENTS.md'));
 
     const configPath = join(codexDir, 'config.toml');
-    const backupToml = safeRead(configPath + '.bak') || '';
+    const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
     let toml = safeRead(configPath) || '';
     if (toml.includes('helloagents') || toml.includes('HelloAGENTS')) {
       toml = removeTopLevelTomlLines(toml, (line) => {
@@ -214,6 +299,7 @@ export function uninstallCodexStandby(home) {
         if (line.startsWith('notify =') && line.includes('codex-notify')) return true;
         return false;
       }).text;
+      toml = uninstallCodexDeveloperInstructions(configPath, toml);
       toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
       const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
       const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
@@ -232,7 +318,7 @@ export function uninstallCodexStandby(home) {
       else removeIfExists(configPath);
       changed = true;
     }
-    removeIfExists(configPath + '.bak');
+    removeCodexBackup(configPath, CODEX_CONFIG_BASENAME);
     removeIfExists(join(codexDir, 'hooks.json'));
     removeLink(join(codexDir, 'helloagents'));
     changed = true;
@@ -287,18 +373,14 @@ export function installCodexGlobal(home, pkgRoot) {
   updateCodexMarketplace(marketplaceFile);
 
   let toml = safeRead(configPath) || '';
-  if (toml && !existsSync(configPath + '.bak')) copyFileSync(configPath, configPath + '.bak');
-  toml = upsertTopLevelTomlKey(
-    toml,
-    'model_instructions_file',
-    formatManagedCodexInstructionPath(join(pluginRoot, CODEX_RUNTIME_CARRIER)),
-  );
+  ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
   toml = upsertTopLevelTomlKey(
     toml,
     'notify',
     `["node", "${normalizePath(join(pluginRoot, 'scripts', 'notify.mjs'))}", "codex-notify"]`,
   );
   toml = upsertCodexPluginConfig(toml);
+  toml = installCodexDeveloperInstructions(configPath, toml);
   safeWrite(configPath, toml);
 
   return true;
@@ -316,13 +398,14 @@ export function uninstallCodexGlobal(home) {
   removeIfExists(pluginCacheRoot);
   removeCodexMarketplaceEntry(marketplaceFile);
 
-  const backupToml = safeRead(configPath + '.bak') || '';
+  const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
   let toml = safeRead(configPath) || '';
   toml = removeCodexPluginConfig(toml);
+  toml = uninstallCodexDeveloperInstructions(configPath, toml);
   toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
   toml = removeTopLevelTomlLines(toml, (line) =>
     line.startsWith('model_instructions_file =')
-    && isManagedCodexGlobalInstruction(line)).text;
+    && isManagedCodexModelInstruction(line)).text;
   toml = removeTopLevelTomlLines(toml, (line) =>
     line.startsWith('notify =')
     && line.includes('/plugins/helloagents/scripts/notify.mjs')).text;
@@ -341,7 +424,7 @@ export function uninstallCodexGlobal(home) {
   toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
   if (toml.trim()) safeWrite(configPath, toml);
   else removeIfExists(configPath);
-  removeIfExists(configPath + '.bak');
+  removeCodexBackup(configPath, CODEX_CONFIG_BASENAME);
 
   return true;
 }

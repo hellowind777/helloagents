@@ -234,7 +234,7 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 |-----|------------------------------|----------|-------------------------|
 | Claude Code | `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/helloagents -> <包根目录>` | 现有非 HelloAGENTS markdown、settings、permissions、hooks | 删除注入标记块、HelloAGENTS hooks/permissions 和符号链接 |
 | Gemini CLI | `~/.gemini/GEMINI.md`、`~/.gemini/settings.json`、`~/.gemini/helloagents -> <包根目录>` | 现有 markdown、hooks 和无关配置 | 删除注入标记块、HelloAGENTS hooks 和符号链接 |
-| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/config.toml.bak`、`~/.codex/helloagents -> <包根目录>` | 通过 backup/restore 保留原有顶层 TOML 配置和无关 section | 删除注入标记块、HelloAGENTS TOML 键、符号链接和备份 |
+| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、形如 `~/.codex/config.toml_YYYYMMDD-HHMMSS.bak` 的时间戳备份、`~/.codex/helloagents -> <包根目录>` | 通过 backup/restore 保留原有顶层 TOML 配置和无关 section | 删除注入标记块、HelloAGENTS TOML 键、符号链接以及最新的 HelloAGENTS 托管备份 |
 
 ### 全局模式
 
