@@ -234,7 +234,7 @@ HelloAGENTS touches different files depending on mode. The write/cleanup rules a
 |-----|-------------------------------------|-------------------|-------------------------------------|
 | Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> <package-root>` | Existing non-HelloAGENTS markdown, settings, permissions, and hooks | Removes injected marker block, HelloAGENTS hooks/permissions, and symlink |
 | Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> <package-root>` | Existing markdown, hooks, and unrelated settings | Removes injected marker block, HelloAGENTS hooks, and symlink |
-| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/config.toml.bak`, `~/.codex/helloagents -> <package-root>` | Existing top-level TOML keys and unrelated sections via backup/restore | Removes injected marker block, HelloAGENTS config keys, symlink, and backup |
+| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, timestamped backups like `~/.codex/config.toml_YYYYMMDD-HHMMSS.bak`, `~/.codex/helloagents -> <package-root>` | Existing top-level TOML keys and unrelated sections via backup/restore | Removes injected marker block, HelloAGENTS config keys, symlink, and the latest HelloAGENTS-managed backup |
 
 ### Global mode
 

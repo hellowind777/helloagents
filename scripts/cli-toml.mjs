@@ -16,6 +16,83 @@ export function normalizeToml(text) {
   return next ? `${next}\n` : '';
 }
 
+function escapeRegExp(text) {
+  return String(text || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findFirstTomlSectionIndex(text) {
+  const normalized = String(text || '').replace(/\r\n/g, '\n');
+  const lines = normalized.split('\n');
+  let index = 0;
+
+  for (const line of lines) {
+    if (isTomlTableHeader(line)) return index;
+    index += line.length + 1;
+  }
+
+  return normalized.length;
+}
+
+function findTopLevelTomlBlock(text, key) {
+  const normalized = String(text || '').replace(/\r\n/g, '\n');
+  const topLevelEnd = findFirstTomlSectionIndex(normalized);
+  const topLevel = normalized.slice(0, topLevelEnd);
+  const re = new RegExp(`^${escapeRegExp(key)}\\s*=`, 'm');
+  const match = re.exec(topLevel);
+  if (!match) return null;
+
+  const start = match.index;
+  const lineEnd = normalized.indexOf('\n', start);
+  const firstLineEnd = lineEnd >= 0 ? lineEnd : normalized.length;
+  const firstLine = normalized.slice(start, firstLineEnd);
+  const value = firstLine.slice(firstLine.indexOf('=') + 1).trim();
+
+  let end = firstLineEnd;
+  if (value.startsWith('"""')) {
+    const openIndex = normalized.indexOf('"""', firstLine.indexOf('='));
+    const closeIndex = normalized.indexOf('"""', openIndex + 3);
+    end = closeIndex >= 0 ? closeIndex + 3 : normalized.length;
+  }
+
+  while (end < normalized.length && normalized[end] === '\n') {
+    end += 1;
+  }
+
+  return {
+    start,
+    end,
+    text: normalized.slice(start, end).trimEnd(),
+  };
+}
+
+export function readTopLevelTomlBlock(text, key) {
+  return findTopLevelTomlBlock(text, key)?.text || '';
+}
+
+export function upsertTopLevelTomlBlock(text, key, value) {
+  const assignment = `${key} = ${String(value || '').trim()}`;
+  const normalized = String(text || '').replace(/\r\n/g, '\n');
+  const existing = findTopLevelTomlBlock(normalized, key);
+  const next = existing
+    ? `${normalized.slice(0, existing.start)}${assignment}\n${normalized.slice(existing.end)}`
+    : `${assignment}\n${normalized}`;
+  return normalizeToml(next);
+}
+
+export function ensureTopLevelTomlBlock(text, key, block) {
+  const normalized = String(block || '').trim();
+  if (!normalized) return normalizeToml(text);
+  const value = normalized.slice(normalized.indexOf('=') + 1).trim();
+  return upsertTopLevelTomlBlock(text, key, value);
+}
+
+export function removeTopLevelTomlBlock(text, key) {
+  const normalized = String(text || '').replace(/\r\n/g, '\n');
+  const existing = findTopLevelTomlBlock(normalized, key);
+  if (!existing) return normalizeToml(text);
+  return normalizeToml(`${normalized.slice(0, existing.start)}${normalized.slice(existing.end)}`);
+}
+
 export function upsertTopLevelTomlKey(text, key, value) {
   const re = new RegExp(`^${key}\\s*=.*$`, 'm');
   const next = re.test(text)

@@ -14,6 +14,10 @@ import {
   writeText,
 } from './helpers/test-env.mjs';
 
+import {
+  CODEX_DEVELOPER_INSTRUCTIONS,
+} from '../scripts/cli-codex.mjs';
+
 function runNpm(args, cwd, env) {
   const npmCli = process.env.npm_execpath;
   assert.ok(npmCli, 'npm_execpath is required for lifecycle testing');
@@ -42,6 +46,9 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.ok(existsSync(join(home, '.claude', 'helloagents')));
   assert.ok(existsSync(join(home, '.codex', 'helloagents')));
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
+  const installedCodexConfig = readText(join(home, '.codex', 'config.toml'));
+  assert.match(installedCodexConfig, /^developer_instructions = """/);
+  assert.match(installedCodexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
   const cleanup = runCommand(process.execPath, [join(pkgRoot, 'cli.mjs'), 'cleanup'], {
     cwd: pkgRoot,
@@ -53,6 +60,7 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')));
   assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
   assert.doesNotMatch(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/);
+  assert.doesNotMatch(readText(join(home, '.codex', 'config.toml')), /developer_instructions\s*=/);
 
   runNpm(['uninstall', '-g', '--prefix', prefix, 'helloagents'], pkgRoot, env);
 });
