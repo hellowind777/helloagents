@@ -246,28 +246,15 @@ function normalizePath(path) {
   return path.replace(/\\/g, '/');
 }
 
-function buildCodexRuntimeContext(runtimeRoot, mode) {
-  const root = normalizePath(runtimeRoot);
-  return [
-    '## Codex 运行时上下文',
-    `- 当前 HelloAGENTS 包根目录: ${root}`,
-    `- 当前 HelloAGENTS 读取根目录: ${root}`,
-    `- 当前命令技能目录: ${root}/skills/commands`,
-    `- 当前模板目录: ${root}/templates`,
-    `- 当前安装模式: ${mode}`,
-    '- Codex 当前不启用 HelloAGENTS hooks：最新 Codex pre 源码下 hook 生命周期会在 TUI 中可见显示，且 suppressOutput 不会静默 SessionStart / UserPromptSubmit / Stop 等注入。请优先依赖本载体与上述固定目录，不要再假设存在静默 hook 注入。',
-  ].join('\n');
+function buildCodexRuntimeCarrier(bootstrapContent) {
+  const normalized = String(bootstrapContent || '').trim();
+  return normalized ? `${normalized}\n` : '';
 }
 
-function buildCodexRuntimeCarrier(bootstrapContent, runtimeRoot, mode) {
-  const context = buildCodexRuntimeContext(runtimeRoot, mode);
-  return bootstrapContent ? `${context}\n\n${bootstrapContent.trim()}\n` : `${context}\n`;
-}
-
-function writeCodexRuntimeCarrier(filePath, bootstrapPath, runtimeRoot, mode) {
+function writeCodexRuntimeCarrier(filePath, bootstrapPath) {
   const bootstrapContent = safeRead(bootstrapPath);
   if (!bootstrapContent) return false;
-  safeWrite(filePath, buildCodexRuntimeCarrier(bootstrapContent, runtimeRoot, mode));
+  safeWrite(filePath, buildCodexRuntimeCarrier(bootstrapContent));
   return true;
 }
 
@@ -281,7 +268,7 @@ export function installCodexStandby(home, pkgRoot) {
   if (bootstrapContent) {
     injectMarkedContent(
       codexAgentsPath,
-      buildCodexRuntimeCarrier(bootstrapContent, join(codexDir, 'helloagents'), 'standby').trimEnd(),
+      buildCodexRuntimeCarrier(bootstrapContent).trimEnd(),
     );
   }
 
@@ -374,14 +361,10 @@ export function installCodexGlobal(home, pkgRoot) {
   writeCodexRuntimeCarrier(
     join(pluginRoot, CODEX_RUNTIME_CARRIER),
     join(pluginRoot, 'bootstrap.md'),
-    pluginRoot,
-    'global',
   );
   writeCodexRuntimeCarrier(
     join(installedPluginRoot, CODEX_RUNTIME_CARRIER),
     join(installedPluginRoot, 'bootstrap.md'),
-    installedPluginRoot,
-    'global-cache',
   );
 
   ensureDir(join(home, '.agents', 'plugins'));
