@@ -84,7 +84,6 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   const { root: pkgRoot } = createPackageFixture();
   const home = createHomeFixture();
   seedHostConfigs(home);
-  const expectedCodexRuntimeRoot = join(home, '.codex', 'helloagents').replace(/\\/g, '/');
 
   runCli(pkgRoot, home, ['postinstall']);
 
@@ -137,8 +136,9 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(codexAgents, /HELLOAGENTS_START/);
   assert.match(codexAgents, /skills\/helloagents\/skills\/commands/);
   assert.match(codexAgents, /当前已加载 HelloAGENTS 包根目录下的 skills\/commands/);
-  assert.match(codexAgents, new RegExp(expectedCodexRuntimeRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(codexAgents, /Codex 当前不启用 HelloAGENTS hooks/);
+  assert.doesNotMatch(codexAgents, /Codex 运行时上下文/);
+  assert.doesNotMatch(codexAgents, /当前 HelloAGENTS 包根目录/);
+  assert.doesNotMatch(codexAgents, /当前安装模式/);
   assert.doesNotMatch(codexAgents, /当前CLI名称/);
   assert.doesNotMatch(codexAgents, /本文件所在目录\/skills\/commands/);
   assert.match(codexAgents, /# Codex custom/);
@@ -180,8 +180,8 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(globalCodexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   const globalAgents = readText(join(pluginRoot, 'AGENTS.md'));
   assert.match(globalAgents, /# HelloAGENTS/);
-  assert.match(globalAgents, new RegExp(expectedGlobalPluginRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(globalAgents, /Codex 当前不启用 HelloAGENTS hooks/);
+  assert.doesNotMatch(globalAgents, /Codex 运行时上下文/);
+  assert.doesNotMatch(globalAgents, /当前 HelloAGENTS 包根目录/);
 
   const marketplace = readJson(join(home, '.agents', 'plugins', 'marketplace.json'));
   assert.ok(marketplace.plugins.some((plugin) => plugin.name === 'helloagents'));
@@ -189,9 +189,8 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   writeText(join(pkgRoot, 'bootstrap.md'), '# global updated\n');
   runCli(pkgRoot, home, ['--global']);
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# global updated/);
-  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /Codex 当前不启用 HelloAGENTS hooks/);
   assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /# global updated/);
-  assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /Codex 当前不启用 HelloAGENTS hooks/);
+  assert.doesNotMatch(readText(join(pluginCacheRoot, 'AGENTS.md')), /Codex 运行时上下文/);
 
   runCli(pkgRoot, home, ['--standby']);
   assert.equal(readJson(configFile).install_mode, 'standby');
