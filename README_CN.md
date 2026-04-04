@@ -158,20 +158,40 @@ npm install -g helloagents
 helloagents-js
 ```
 
-`postinstall` 脚本自动检测已安装的 CLI 并配置：
-- **Claude Code** — 注入规则到 `~/.claude/CLAUDE.md`，配置 hooks 和 `helloagents` 包根目录符号链接
-- **Gemini CLI** — 注入规则到 `~/.gemini/GEMINI.md`，配置 hooks 和 `helloagents` 包根目录符号链接
-- **Codex CLI** — 注入规则到 `~/.codex/AGENTS.md`，让 `config.toml` 指向该文件，写入静默运行时上下文，并创建 `helloagents` 包根目录符号链接
+`postinstall` 现在只负责安装包和初始化 `~/.helloagents/helloagents.json`，**不会自动部署到任何 CLI**。
 
-这是**标准模式**（默认）— 所有项目注入精简规则，在项目中使用 `~init` 激活完整功能。
+安装包后，用显式命令部署到目标 CLI：
+
+```bash
+helloagents install codex --standby
+helloagents install --all --standby
+```
+
+> 注意：`npm install helloagents`（不带 `-g`）同样只会安装包本身，不会自动改任何 CLI 配置。
 
 ### 2）选择模式
 
 | 目标 | 执行命令 | 结果 |
 |------|----------|------|
-| 默认保持轻量 | `npm install -g helloagents` | **标准模式**：自动为已检测到的 CLI 注入精简规则 |
-| 所有项目启用完整规则 | `helloagents --global` | 切到 **全局模式**：Claude/Gemini 走原生插件/扩展，Codex 自动安装原生本地插件链路 |
-| 本地切分支/改文件后重新同步 | `helloagents --standby` 或 `helloagents --global` | 重新执行当前模式，刷新已注入或已复制的文件，而不是空操作 |
+| 先安装包，不立即改宿主 | `npm install -g helloagents` | 仅安装命令与 `~/.helloagents/helloagents.json` |
+| 默认保持轻量 | `helloagents install --all --standby` | **标准模式**：显式为目标 CLI 注入精简规则 |
+| 所有项目启用完整规则 | `helloagents install --all --global` 或 `helloagents --global` | 切到 **全局模式**：Claude/Gemini 走原生插件/扩展，Codex 自动安装原生本地插件链路 |
+| 本地切分支/改文件后重新同步 | `helloagents update codex`、`helloagents install --all --standby`、`helloagents --global` | 按目标或当前模式刷新已注入/已复制的文件 |
+
+### 2.1）按单个 CLI 管理
+
+```bash
+helloagents install codex --standby
+helloagents install --all --global
+helloagents update codex
+helloagents cleanup claude --global
+helloagents uninstall gemini
+```
+
+- 支持的目标：`claude`、`gemini`、`codex`
+- 省略 `--standby` / `--global` 时：优先沿用该 CLI 已记录或已检测到的模式；如果没有历史记录，则回退到 `standby`
+- `install` / `update` 只处理目标 CLI；用 `--all` 可显式批量处理全部目标
+- Claude Code / Gemini CLI 在 `global` 模式下仍需手动执行原生插件/扩展安装或卸载命令；Codex CLI 仍由 HelloAGENTS 自动处理本地插件链路
 
 如需所有项目启用完整规则，切换到全局模式：
 
@@ -374,12 +394,12 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 
 | 模式 | 安装方式 | 规则 | 技能 | 适用场景 |
 |------|---------|------|------|----------|
-| **标准模式** (默认) | `npm install -g helloagents` 自动配置所有 CLI（非插件） | `bootstrap-lite.md`（精简规则） | `~command` 按需使用，`~init` 激活完整功能 | 按需使用，不影响其他项目 |
+| **标准模式** (默认) | `helloagents install <target> --standby` 或 `helloagents install --all --standby` | `bootstrap-lite.md`（精简规则） | `~command` 按需使用，`~init` 激活完整功能 | 按需使用，不影响其他项目 |
 | **全局模式** | Claude/Gemini 手动装插件；Codex 自动装原生本地插件 | `bootstrap.md`（完整规则） | 14 个技能自动激活 | 全面使用 HelloAGENTS |
 
 标准模式会把规则注入到 `~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/AGENTS.md`；其中 Codex 再通过 `~/.codex/config.toml` 中的 `model_instructions_file` 加载这个本地合并后的文件。每个 CLI 还会创建 `helloagents` 包根目录符号链接。Claude Code 和 Gemini 仍使用 hooks，因为宿主可以较安静地承载这类注入；Codex 默认**不启用** HelloAGENTS hooks：最新 pre 源码里 hook 生命周期会在 TUI 中可见显示，且 `suppressOutput` 不能作为真正的静默注入通道，所以 Codex 改为依赖规则文件 + 静态运行时上下文。全局模式下，Claude Code 通过 `.claude-plugin/plugin.json` 中声明的 hooks 工作，Gemini 通过 `contextFileName=bootstrap.md` 和扩展 hooks 工作；Codex 仍使用原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段），但不启用插件 hooks。
 
-通过 CLI 切换：`helloagents --global` 或 `helloagents --standby`
+整套切换可用：`helloagents --global` 或 `helloagents --standby`
 
 重复执行当前模式命令也是合法的。它会在本地切分支、开发调试或手工清理后刷新当前模式下的注入/复制文件。
 
@@ -472,7 +492,7 @@ npm test
 <details>
 <summary><strong>Q：该用哪个 CLI？</strong></summary>
 
-**A：** Claude Code 体验最好（插件系统、11 个生命周期 hooks、Agent Teams 支持）。Gemini CLI 通过扩展系统支持。Codex CLI 也不错。三者在标准模式下都通过 `npm install -g helloagents` 自动配置，无需手动安装插件。
+**A：** Claude Code 体验最好（插件系统、11 个生命周期 hooks、Agent Teams 支持）。Gemini CLI 通过扩展系统支持。Codex CLI 也不错。先安装包，再用 `helloagents install <target> --standby` 或 `helloagents install --all --standby` 显式部署到你要用的 CLI。
 </details>
 
 <details>
@@ -500,7 +520,7 @@ npm test
 <details>
 <summary><strong>Q：标准模式和全局模式有什么区别？</strong></summary>
 
-**A：** 标准模式（默认）采用非插件安装 — `npm install -g helloagents` 自动配置所有检测到的 CLI，注入精简规则。项目需要 `~init` 才能激活完整功能。全局模式使用各 CLI 原生的插件/扩展系统，所有项目自动启用完整规则。通过 `helloagents --global` 或 `helloagents --standby` 切换。
+**A：** 标准模式（默认）把精简规则部署到你明确指定的目标 CLI，通常用 `helloagents install <target> --standby` 或 `helloagents install --all --standby`。项目需要 `~init` 才能激活完整功能。全局模式使用各 CLI 原生的插件/扩展系统，所有项目自动启用完整规则；可用 `helloagents install <target> --global`、`helloagents install --all --global`，或通过 `helloagents --global` 做整套切换。
 </details>
 
 <details>
@@ -646,7 +666,7 @@ npm test
 **架构：**
 - 📦 统一五阶段执行流程：ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE
 - 📦 简化配置：8 个小写键，合理默认值
-- 📦 双模式安装：标准模式（非插件，自动配置 CLI 配置文件）/ 全局模式（插件/扩展）
+- 📦 双模式安装：标准模式（非插件，显式部署）/ 全局模式（插件/扩展）
 - 📦 模块化脚本架构：`cli-utils.mjs`（共享工具）、`notify-ui.mjs`（跨平台声音/桌面通知）、`guard.mjs`（安全防护）、`ralph-loop.mjs`（质量验证）
 - 📦 Hook 脚本跨平台兼容：事件名动态适配（Claude Code / Gemini CLI / Codex CLI），通过环境变量或 CLI 参数推断
 - 📦 Standby 模式路由隔离：新项目检测仅在 global 模式或已激活项目中触发，不干扰未激活项目
@@ -724,9 +744,9 @@ npm test
 
 | CLI | 标准模式安装（默认） | 全局模式安装（插件） | 卸载 |
 |-----|-------------------|-------------------|------|
-| Claude Code | `npm install -g helloagents` 自动配置 | `/plugin marketplace add hellowind777/helloagents` | `npm uninstall -g helloagents`（全局模式另需 `/plugin remove helloagents`） |
-| Gemini CLI | `npm install -g helloagents` 自动配置 | `gemini extensions install https://github.com/hellowind777/helloagents` | `npm uninstall -g helloagents`（全局模式另需 `gemini extensions uninstall helloagents`） |
-| Codex CLI | `npm install -g helloagents` 自动配置 | `npm install -g helloagents` 自动配置 | `npm uninstall -g helloagents` |
+| Claude Code | `helloagents install claude --standby` | `/plugin marketplace add hellowind777/helloagents` | `npm uninstall -g helloagents`（全局模式另需 `/plugin remove helloagents`） |
+| Gemini CLI | `helloagents install gemini --standby` | `gemini extensions install https://github.com/hellowind777/helloagents` | `npm uninstall -g helloagents`（全局模式另需 `gemini extensions uninstall helloagents`） |
+| Codex CLI | `helloagents install codex --standby` | `helloagents install codex --global` | `npm uninstall -g helloagents` |
 
 ---
 

@@ -18,15 +18,16 @@ import {
   CODEX_DEVELOPER_INSTRUCTIONS,
 } from '../scripts/cli-codex.mjs';
 
+const npmCli = process.env.npm_execpath;
+
 function runNpm(args, cwd, env) {
-  const npmCli = process.env.npm_execpath;
   assert.ok(npmCli, 'npm_execpath is required for lifecycle testing');
   const result = runCommand(process.execPath, [npmCli, ...args], { cwd, env });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   return result;
 }
 
-test('npm global install plus explicit cleanup command removes lifecycle artifacts', () => {
+test('npm global install plus explicit cleanup command removes lifecycle artifacts', { skip: !npmCli }, () => {
   const { root: pkgRoot } = createPackageFixture();
   const home = createHomeFixture();
   const prefix = createTempDir('helloagents-prefix-');
@@ -42,6 +43,17 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   const tarball = join(packDir, 'helloagents-3.0.0.tgz');
 
   runNpm(['install', '-g', '--prefix', prefix, tarball], pkgRoot, env);
+
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')));
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')));
+  assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
+  assert.doesNotMatch(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/);
+
+  const explicitInstall = runCommand(process.execPath, [join(pkgRoot, 'cli.mjs'), 'install', '--all', '--standby'], {
+    cwd: pkgRoot,
+    env,
+  });
+  assert.equal(explicitInstall.status, 0, explicitInstall.stderr || explicitInstall.stdout);
 
   assert.ok(existsSync(join(home, '.claude', 'helloagents')));
   assert.ok(existsSync(join(home, '.codex', 'helloagents')));
