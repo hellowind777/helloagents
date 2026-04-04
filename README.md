@@ -324,7 +324,7 @@ Only include keys you want to override — missing keys use defaults.
 | Key | Default | Description |
 |-----|---------|-------------|
 | `output_language` | `""` | Empty = follow user language. Set `zh-CN`, `en`, etc. to override |
-| `output_format` | `true` | `true` = only a main-agent closing reply may use the HelloAGENTS layout; a skill-generated pause/confirm/summary is wrapped only when it is also the turn's closing reply; streaming/progress/intermediate output and all subagent replies stay natural, `false` = natural output |
+| `output_format` | `true` | `true` = only the main agent's final closing reply after streaming ends may use the HelloAGENTS layout; all streaming/progress/intermediate output and all subagent replies stay natural, `false` = natural output |
 | `notify_level` | `0` | `0`=off, `1`=desktop, `2`=sound, `3`=both |
 | `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
 | `guard_enabled` | `true` | Block dangerous commands |
