@@ -9,26 +9,31 @@ function read(relativePath) {
   return readFileSync(join(REPO_ROOT, relativePath), 'utf-8');
 }
 
-test('bootstrap rules restrict HelloAGENTS wrapper to terminal close-out replies only', () => {
+test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-out replies only', () => {
   for (const file of ['bootstrap.md', 'bootstrap-lite.md']) {
     const content = read(file);
     assert.match(content, /主代理在本轮最后一条/);
     assert.match(content, /必须使用以下格式/);
-    assert.match(content, /某个 skill 在当前轮明确要求输出停顿、确认或总结/);
-    assert.match(content, /子代理无论是否触发或读取 skill，均不得使用以下格式/);
-    assert.match(content, /不再继续调用工具\/不再继续执行/);
-    assert.match(content, /流式输出阶段的可见文本/);
-    assert.match(content, /工具执行中的状态汇报/);
+    assert.match(content, /(某个|任何) skill 在当前轮(?:如)?明确要求输出停顿、确认或总结/);
+    assert.match(content, /已经结束流式输出/);
+    assert.match(content, /不再继续调用工具、不再继续执行/);
+    assert.match(content, /所有流式内容、进度说明、状态汇报、中间输出/);
     assert.match(content, /禁止使用顶部信息栏和底部操作栏/);
+    assert.match(content, /子代理在任何场景下都不得使用该格式/);
   }
 });
 
-test('skill and help docs describe output_format as close-out only, not streaming formatting', () => {
+test('skill and help docs describe output_format as final-summary only', () => {
   const helloagentsSkill = read('skills/helloagents/SKILL.md');
   assert.match(helloagentsSkill, /都不得包装 HelloAGENTS 外层输出格式/);
-  assert.match(helloagentsSkill, /只有当该 skill 在当前轮明确要求输出停顿、确认或总结/);
+  assert.match(helloagentsSkill, /已经结束流式输出的最终收尾消息/);
+  assert.match(helloagentsSkill, /所有流式内容、进度或状态汇报、中间文本/);
+
+  const subagentSkill = read('skills/hello-subagent/SKILL.md');
+  assert.match(subagentSkill, /团队协作中的进度与状态汇报都属于中间输出/);
+  assert.match(subagentSkill, /只有在本轮结束流式输出并最终收尾时才可使用 HelloAGENTS 外层输出格式/);
 
   const helpSkill = read('skills/commands/help/SKILL.md');
-  assert.match(helpSkill, /主代理在最终收尾回复必须使用 HelloAGENTS 格式/);
-  assert.match(helpSkill, /所有子代理输出保持自然/);
+  assert.match(helpSkill, /仅主代理在流式结束后的最终收尾回复可使用 HelloAGENTS 格式/);
+  assert.match(helpSkill, /所有流式\/中间输出及所有子代理输出保持自然/);
 });

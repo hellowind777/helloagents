@@ -24,19 +24,20 @@ Trigger: ~help
 | ~help | 显示此帮助 |
 
 ### 自动激活技能
-以下技能仅在全局模式，或当前项目已通过 `~init` 激活后自动激活；纯标准模式未激活项目不会自动触发：
+适用条件：以下技能仅在全局模式，或当前项目已通过 `~init` 激活后自动激活：
+排除条件：纯标准模式未激活项目不会自动触发。
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
 特定场景：hello-debug, hello-subagent, hello-write, hello-review
 完成时：hello-verify, hello-reflect
 
 ### 当前设置
-优先使用当前上下文中已注入的“当前用户设置”显示；仅在上下文不存在该信息时，才尝试读取 `~/.helloagents/helloagents.json`。
-如果当前 CLI 存在工作区限制导致家目录不可读，则明确说明“无法直接读取配置文件，以下按已注入设置或默认值展示”，不要改用无关工具或伪造已读取结果。
+适用条件：优先使用当前上下文中已注入的“当前用户设置”显示；仅在上下文不存在该信息时，才尝试读取 `~/.helloagents/helloagents.json`。
+排除条件：如果当前 CLI 存在工作区限制导致家目录不可读，则明确说明“无法直接读取配置文件，以下按已注入设置或默认值展示”，不要改用无关工具或伪造已读取结果。
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
 | output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
-| output_format | true | true=主代理在最终收尾回复必须使用 HelloAGENTS 格式；若由 skill 产出停顿/确认/总结，也必须同时是本轮收尾消息；流式/中间输出及所有子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
+| output_format | true | true=适用条件：仅主代理在流式结束后的最终收尾回复可使用 HelloAGENTS 格式；排除条件：所有流式/中间输出及所有子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
 | ralph_loop_enabled | true | 自动验证循环（任务完成时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
