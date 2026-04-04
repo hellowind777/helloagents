@@ -65,6 +65,14 @@ test('notify route and inject cover standby, activated projects, and global mode
   result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
+    input: JSON.stringify({ cwd: project, prompt: '~wiki' }),
+  });
+  payload = parseStdoutJson(result);
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\\/]commands[\\\/]wiki[\\\/]SKILL\.md/);
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
     input: JSON.stringify({ cwd: project, prompt: 'create a new app for expenses' }),
   });
   payload = parseStdoutJson(result);

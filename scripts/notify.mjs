@@ -96,7 +96,7 @@ function cmdRoute() {
   if (cmdMatch) {
     const skillName = cmdMatch[1];
     const extraRules = skillName === 'help'
-      ? ' 这是 HelloAGENTS 的帮助命令，不是宿主 CLI 的内置帮助。适用条件：仅显示 HelloAGENTS 的帮助和当前设置；优先使用当前上下文中已注入的“当前用户设置”，只有上下文不存在该信息时才尝试读取 ~/.helloagents/helloagents.json；自动激活技能说明仅在全局模式或当前项目已通过 ~init 激活后生效。排除条件：不要调用宿主 CLI 的帮助工具（如 cli_help 或 /help），不要使用子代理，不要读取项目文件；若受工作区限制无法读取配置，必须明确说明并按已知默认值或已注入设置展示；纯标准模式未激活项目不会自动触发。'
+      ? ' 这是 HelloAGENTS 的帮助命令，不是宿主 CLI 的内置帮助。适用条件：仅显示 HelloAGENTS 的帮助和当前设置；优先使用当前上下文中已注入的“当前用户设置”，只有上下文不存在该信息时才尝试读取 ~/.helloagents/helloagents.json；自动激活技能说明仅在全局模式，或当前项目已存在 .helloagents/（例如执行过 ~wiki 或 ~init）时生效。排除条件：不要调用宿主 CLI 的帮助工具（如 cli_help 或 /help），不要使用子代理，不要读取项目文件；若受工作区限制无法读取配置，必须明确说明并按已知默认值或已注入设置展示；纯标准模式未激活项目不会自动触发。'
       : '';
     suppressedOutput(EVENT_NAME.UserPromptSubmit, buildRouteInstruction({
       skillName,

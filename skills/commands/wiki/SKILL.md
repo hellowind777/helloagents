@@ -1,0 +1,57 @@
+---
+name: ~wiki
+description: 初始化或同步项目知识库（仅 `.helloagents/`，不写项目根载体）
+policy:
+  allow_implicit_invocation: false
+---
+Trigger: ~wiki
+
+`~wiki` 是用户显式命令，用于只创建、补全或同步项目本地知识库，不创建项目根 `AGENTS.md` / `CLAUDE.md` / `.gemini/GEMINI.md`，也不创建项目级 `skills/helloagents` symlink。适用于标准模式下希望保留项目目录为“非载体项目”，但仍希望当前项目拥有 `.helloagents/`、`STATE.md` 和知识沉淀文件的场景。
+
+`~wiki` 是显式知识库命令，不受 `kb_create_mode` 限制。
+
+## 流程
+
+### 阶段 1：基础准备（必做）
+
+1. 创建 `.helloagents/` 目录 + `STATE.md`（按 templates/STATE.md 格式）
+2. 追加 `.gitignore`（如果对应行不存在）：
+   ```
+   .helloagents/
+   ```
+3. 明确不执行以下操作：
+   - 不创建或更新项目根 `AGENTS.md`
+   - 不创建或更新项目根 `CLAUDE.md`
+   - 不创建或更新 `.gemini/GEMINI.md`
+   - 不创建项目级 `skills/helloagents` symlink
+
+### 阶段 2：知识库创建或补全（条件性）
+
+检查项目是否有实际代码文件（非空项目）：
+- 有代码文件 → 执行完整知识库创建/补全（下方流程）
+- 空项目 → 保留 `.helloagents/` 和 `STATE.md`，告知用户“项目为空，其余知识文件将在后续开发或首次编码任务中补全”
+
+知识库创建/补全流程：
+1. 按 templates/ 目录的模板格式，分析项目代码库后创建或补全：
+   - context.md — 按 templates/context.md 格式，填入项目概述、技术栈、架构、目录结构、模块链接
+   - guidelines.md — 按 templates/guidelines.md 格式，从现有代码推断编码约定
+   - verify.yaml — 验证命令（从 package.json/pyproject.toml 检测）
+   - CHANGELOG.md — 按 templates/CHANGELOG.md 格式创建或更新
+   - DESIGN.md — 如果项目包含 UI 代码，按 templates/DESIGN.md 格式提取设计系统
+2. 创建或补全 modules/ 目录，按 templates/modules/module.md 格式为主要模块生成文档
+3. 已存在的文件按模板格式增量更新，不自由改写结构；无新增信息时保持原样
+
+## verify.yaml 格式
+```yaml
+commands:
+  - npm run lint
+  - npm run test
+```
+
+## 幂等性
+重复执行 `~wiki` 是安全的：
+- `.helloagents/` 缺失时创建，已存在时复用
+- `STATE.md` 按当前任务状态重写，不追加历史
+- 知识库文件缺失时补全，已存在时按模板增量更新
+- `.gitignore` 只追加缺失行
+- 永不写入项目根载体文件，也不创建项目级 `skills/helloagents` symlink

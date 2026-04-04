@@ -226,7 +226,7 @@ Codex CLI does not need a manual plugin command. `helloagents --global` now inst
 ```
 💡【HelloAGENTS】- Help
 
-Available commands: ~auto, ~design, ~prd, ~loop, ~init, ~test, ~verify, ~review, ~commit, ~clean, ~help
+Available commands: ~auto, ~design, ~prd, ~loop, ~wiki, ~init, ~test, ~verify, ~review, ~commit, ~clean, ~help
 
 Auto-activated skills (14): hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
 ```
@@ -297,7 +297,8 @@ All commands run inside AI chat with the `~` prefix:
 
 | Command | Purpose |
 |---------|---------|
-| `~init` | Initialize project knowledge base (`.helloagents/`) |
+| `~wiki` | Create or sync the project knowledge base only (`.helloagents/`) |
+| `~init` | Full project bootstrap: KB + project-local carrier files |
 | `~commit` | Generate conventional commit message + KB sync |
 | `~clean` | Archive completed plans, clean temp files |
 | `~help` | Show all commands and current config |
@@ -328,7 +329,7 @@ Only include keys you want to override — missing keys use defaults.
 | `notify_level` | `0` | `0`=off, `1`=desktop, `2`=sound, `3`=both |
 | `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
 | `guard_enabled` | `true` | Block dangerous commands |
-| `kb_create_mode` | `1` | `0`=off, `1`=auto on coding tasks, `2`=always |
+| `kb_create_mode` | `1` | `0`=off, `1`=auto on coding tasks in activated projects or global mode, `2`=always in activated projects or global mode |
 | `commit_attribution` | `""` | Empty = no attribution. Set text to append to commit messages |
 | `install_mode` | `"standby"` | `"standby"` = per-project activation (lite rules), `"global"` = full rules for all projects |
 
@@ -394,7 +395,7 @@ HelloAGENTS supports two installation modes with different installation methods:
 
 | Mode | Install Method | Rules | Skills | Best For |
 |------|---------------|-------|--------|----------|
-| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules) | `~command` on demand, `~init` for full activation | Selective use, keeping other projects unaffected |
+| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules) | `~command` on demand, project activation via `.helloagents/` (`~wiki` or `~init`) | Selective use, keeping other projects unaffected |
 | **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
 
 Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; Codex then loads that local merged file via `developer_instructions` in `~/.codex/config.toml`. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) without plugin hooks.
@@ -424,9 +425,9 @@ After every task, Ralph Loop auto-runs your project's verification commands:
 
 ### Knowledge Base (`.helloagents/`)
 
-`~init` creates a project-local knowledge base. `STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction.
+`~wiki` creates or syncs the project-local knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
 
-It is created and continuously updated for long-running project workflows such as `~init`, `~design`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
+`STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~design`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
 
 | File | Purpose |
 |------|---------|
@@ -483,7 +484,7 @@ The test suite validates:
 
 **A:** Everything. The v3 line is a complete rewrite:
 - Python package → pure Node.js/Markdown architecture
-- 15 commands → 11 commands + 14 auto-activated quality skills
+- 15 commands → 12 commands + 14 auto-activated quality skills
 - 6 CLI targets → 3 (Claude Code + Codex CLI + Gemini CLI)
 - New: checklist gate control, guard system, ~prd, ~loop, ~verify, design system generation
 - See [Version History](#-version-history) for full details.
@@ -520,13 +521,13 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 <details>
 <summary><strong>Q: What is standby vs global mode?</strong></summary>
 
-**A:** Standby mode (default) deploys lite rules to the targets you choose, typically with `helloagents install <target> --standby` or `helloagents install --all --standby`. Projects need `~init` to activate full features. Global mode uses each CLI's native plugin/extension system for full rules everywhere; deploy it with `helloagents install <target> --global`, `helloagents install --all --global`, or bulk-switch with `helloagents --global`.
+**A:** Standby mode (default) deploys lite rules to the targets you choose, typically with `helloagents install <target> --standby` or `helloagents install --all --standby`. A project enters the full project flow once it has `.helloagents/`, usually via `~wiki` (KB only) or `~init` (full bootstrap). Global mode uses each CLI's native plugin/extension system for full rules everywhere; deploy it with `helloagents install <target> --global`, `helloagents install --all --global`, or bulk-switch with `helloagents --global`.
 </details>
 
 <details>
 <summary><strong>Q: Where does project knowledge go?</strong></summary>
 
-**A:** In the project-local `.helloagents/` directory. Created by `~init`, auto-synced on code changes (controlled by `kb_create_mode`). `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
+**A:** In the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
 </details>
 
 <details>
@@ -643,7 +644,15 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.2 (current)
+### v3.0.3 (current)
+
+**Workflow and KB activation:**
+- ✨ Added `~wiki` for creating or syncing `.helloagents/` without writing project-local carrier files
+- 🔧 Clarified the activation boundary: in standby mode, `.helloagents/` is the actual project activation signal; project-local carrier files remain optional and belong to `~init`
+- 🔧 Refined `kb_create_mode` wording across bootstrap, help text, and README so it only describes sync timing inside activated projects or global mode
+- 🧪 Added routing coverage for `~wiki` and kept standby `.helloagents/` activation behavior under test
+
+### v3.0.2
 
 **Fixes and verification:**
 - 🔧 Removed the Codex-only static runtime-context block that had been reintroduced into generated `AGENTS.md` carriers in standby/global installs
