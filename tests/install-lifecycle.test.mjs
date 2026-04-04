@@ -330,6 +330,39 @@ test('Codex standby preserves a user-owned developer_instructions block and rest
   assert.ok(!hasTimestampedBackup(home, 'developer_instructions'));
 });
 
+test('Codex cleanup ignores contaminated developer_instructions backups', () => {
+  const { root: pkgRoot } = createPackageFixture();
+  const home = createHomeFixture();
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'developer_instructions = """',
+      CODEX_DEVELOPER_INSTRUCTIONS,
+      '"""',
+      'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
+      '',
+      '[features]',
+      'unified_exec = true',
+      '',
+    ].join('\n'),
+  );
+  writeTimestampedBackup(
+    home,
+    'developer_instructions',
+    'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]\n',
+  );
+
+  runCli(pkgRoot, home, ['cleanup', 'codex']);
+
+  const cleaned = readText(join(home, '.codex', 'config.toml'));
+  assert.doesNotMatch(cleaned, /^developer_instructions = \["node"/);
+  assert.doesNotMatch(cleaned, /developer_instructions\s*=/);
+  assert.doesNotMatch(cleaned, /codex-notify/);
+  assert.match(cleaned, /unified_exec = true/);
+  assert.ok(!hasTimestampedBackup(home, 'developer_instructions'));
+});
+
 test('single-host install and cleanup only touch the targeted CLI in standby mode by default', () => {
   const { root: pkgRoot } = createPackageFixture();
   const home = createHomeFixture();
@@ -382,4 +415,59 @@ test('single-host update reuses tracked codex mode and cleanup leaves other CLIs
   assert.ok(existsSync(join(home, '.claude', 'helloagents')));
   assert.equal(readJson(configFile).host_install_modes.codex, undefined);
   assert.equal(readJson(configFile).host_install_modes.claude, 'standby');
+});
+
+test('single-host update infers the detected codex mode when tracked config is stale', () => {
+  const { root: pkgRoot } = createPackageFixture();
+  const home = createHomeFixture();
+  const configFile = join(home, '.helloagents', 'helloagents.json');
+  const pluginRoot = join(home, 'plugins', 'helloagents');
+  seedHostConfigs(home);
+
+  runCli(pkgRoot, home, ['install', 'codex', '--global']);
+  writeJson(configFile, {
+    ...readJson(configFile),
+    install_mode: 'standby',
+    host_install_modes: {},
+  });
+
+  writeText(join(pkgRoot, 'bootstrap.md'), '# detected global refresh\n');
+  runCli(pkgRoot, home, ['update', 'codex']);
+
+  assert.ok(existsSync(pluginRoot));
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# detected global refresh/);
+  assert.equal(readJson(configFile).host_install_modes.codex, 'global');
+});
+
+test('standby refresh updates injected carrier files for every CLI after bootstrap changes', () => {
+  const { root: pkgRoot } = createPackageFixture();
+  const home = createHomeFixture();
+  seedHostConfigs(home);
+
+  runCli(pkgRoot, home, ['install', '--all', '--standby']);
+
+  writeText(join(pkgRoot, 'bootstrap-lite.md'), '# refreshed standby carrier\n');
+  runCli(pkgRoot, home, ['update', '--all']);
+
+  assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /# refreshed standby carrier/);
+  assert.match(readText(join(home, '.gemini', 'GEMINI.md')), /# refreshed standby carrier/);
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /# refreshed standby carrier/);
+});
+
+test('codex cleanup removes an empty local marketplace file left behind by prior global installs', () => {
+  const { root: pkgRoot } = createPackageFixture();
+  const home = createHomeFixture();
+  seedHostConfigs(home);
+
+  writeJson(join(home, '.agents', 'plugins', 'marketplace.json'), {
+    name: 'local-plugins',
+    interface: {
+      displayName: 'Local Plugins',
+    },
+    plugins: [],
+  });
+
+  runCli(pkgRoot, home, ['cleanup', 'codex']);
+
+  assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')));
 });

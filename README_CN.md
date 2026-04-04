@@ -8,7 +8,7 @@
 
 **质量驱动的 AI 编码 CLI 编排内核 — 14 个自动激活技能、流程纪律、检查清单门控。**
 
-[![Version](https://img.shields.io/badge/version-3.0.0-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.1-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -25,7 +25,7 @@
 ---
 
 > [!IMPORTANT]
-> **找 v2.x？** 旧版 Python 代码库已迁移到独立归档仓库：[helloagents-archive](https://github.com/hellowind777/helloagents-archive)。v3.0.0 是完全重写 — 纯 Node.js/Markdown 架构，无 Python 依赖。
+> **找 v2.x？** 旧版 Python 代码库已迁移到独立归档仓库：[helloagents-archive](https://github.com/hellowind777/helloagents-archive)。v3.x 是完全重写 — 纯 Node.js/Markdown 架构，无 Python 依赖。
 
 ## 📑 目录
 
@@ -266,7 +266,7 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 
 ### 更新 / 重装 / 切分支行为
 
-- **标准模式** 使用 `~/.claude/helloagents`、`~/.gemini/helloagents`、`~/.codex/helloagents` 这三个符号链接，本地文件或分支变化会立即生效。
+- **标准模式** 通过 `~/.claude/helloagents`、`~/.gemini/helloagents`、`~/.codex/helloagents` 这三个符号链接保持脚本、技能、模板和 hooks 与包根目录同步，相关链接文件会立即反映本地变化；但 `CLAUDE.md`、`GEMINI.md`、`AGENTS.md` 这类注入载体仍是快照，bootstrap 或分支变化后需要显式刷新。
 - **Codex 全局模式** 使用复制后的运行时文件。重新执行 `helloagents --global` 会刷新 `~/plugins/helloagents/` 和 Codex cache 中的副本。
 - 重新执行当前模式命令是被支持的：`helloagents --standby` 和 `helloagents --global` 都是 **切换或刷新** 命令。
 - 如需确定性的手动清理，先执行 `helloagents cleanup`，再执行 `npm uninstall -g helloagents`。
@@ -479,7 +479,7 @@ npm test
 </details>
 
 <details>
-<summary><strong>Q：v2.x 到 v3.0.0 有什么变化？</strong></summary>
+<summary><strong>Q：v2.x 到 v3.x 有什么变化？</strong></summary>
 
 **A：** 全部重写了：
 - Python 包 → 纯 Node.js/Markdown 架构
@@ -643,7 +643,16 @@ npm test
 
 ## 📈 版本历史
 
-### v3.0.0（当前版本）🎉
+### v3.0.1（当前版本）
+
+**修复与验证：**
+- 🔧 收敛并加强 `STATE.md` 恢复规则：关键决策变更即更新，长流程一旦失真立即重写，宿主明确进入压缩/恢复前置阶段前必须先确认已同步
+- 🔧 修复 Codex 本地插件链路清理后的空 `~/.agents/plugins/marketplace.json` 残留，并在配置恢复时忽略被污染的旧 `developer_instructions` 备份
+- 🔧 修复并验证单 CLI `update` 在记录模式过期时仍会优先复用本地已检测模式，符合 `helloagents update <cli>` 的预期行为
+- 🔧 明确标准模式下“链接文件立即同步、注入载体需显式刷新”的分支/ bootstrap 刷新语义
+- 🧪 新增标准模式载体刷新、模式自动复用、Codex 空 marketplace 清理、Codex 污染备份恢复，以及与版本号无关的 npm pack 生命周期测试
+
+### v3.0.0 🎉
 
 **破坏性变更：**
 - 🔴 完全重写：Python 包 → 纯 Node.js/Markdown 架构。`pip`/`uv` 安装方式不再可用
@@ -720,7 +729,7 @@ npm test
 - ✨ Claude Code hooks 从 9 个扩展到 11 个生命周期事件类型
 - ✨ Hooks 支持扩展到 Gemini CLI 和 Grok CLI
 - ✨ 会话启动时配置完整性检查
-- ✨ 上下文压缩前自动保存进度快照
+- ✨ 上下文压缩前注入恢复快照
 - ✨ 用户自定义工具注册和编排
 
 **改进：**

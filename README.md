@@ -8,7 +8,7 @@
 
 **Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
 
-[![Version](https://img.shields.io/badge/version-3.0.0-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.1-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -25,7 +25,7 @@
 ---
 
 > [!IMPORTANT]
-> **Looking for v2.x?** The legacy Python-based codebase has been moved to a separate archive repository: [helloagents-archive](https://github.com/hellowind777/helloagents-archive). v3.0.0 is a complete rewrite — pure Node.js/Markdown architecture, no Python dependency.
+> **Looking for v2.x?** The legacy Python-based codebase has been moved to a separate archive repository: [helloagents-archive](https://github.com/hellowind777/helloagents-archive). The v3 line is a complete rewrite — pure Node.js/Markdown architecture, no Python dependency.
 
 ## 📑 Table of Contents
 
@@ -266,7 +266,7 @@ HelloAGENTS touches different files depending on mode. The write/cleanup rules a
 
 ### Update / reinstall / branch-switch behavior
 
-- **Standby mode** uses symlinks for `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents`, so local file or branch changes are visible immediately.
+- **Standby mode** keeps scripts, skills, templates, and hooks on `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents` symlinks, so linked package files reflect local changes immediately. The injected carrier files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) are still snapshots and must be refreshed after bootstrap or branch changes.
 - **Codex global mode** uses copied runtime files. Re-running `helloagents --global` refreshes both `~/plugins/helloagents/` and the Codex cache copy.
 - Re-running the current mode command is supported intentionally: `helloagents --standby` and `helloagents --global` both act as **switch-or-refresh** commands.
 - For deterministic manual cleanup, run `helloagents cleanup` before `npm uninstall -g helloagents`.
@@ -479,9 +479,9 @@ The test suite validates:
 </details>
 
 <details>
-<summary><strong>Q: What changed from v2.x to v3.0.0?</strong></summary>
+<summary><strong>Q: What changed from v2.x to v3.x?</strong></summary>
 
-**A:** Everything. v3.0.0 is a complete rewrite:
+**A:** Everything. The v3 line is a complete rewrite:
 - Python package → pure Node.js/Markdown architecture
 - 15 commands → 11 commands + 14 auto-activated quality skills
 - 6 CLI targets → 3 (Claude Code + Codex CLI + Gemini CLI)
@@ -643,7 +643,16 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.0 (current) 🎉
+### v3.0.1 (current)
+
+**Fixes and verification:**
+- 🔧 `STATE.md` recovery rules are tightened: update on key decision changes, rewrite immediately when long-running work makes the snapshot stale, and confirm sync before host-driven compaction/recovery stages
+- 🔧 Codex cleanup now removes empty `~/.agents/plugins/marketplace.json` residue and ignores contaminated legacy `developer_instructions` backups during config restore
+- 🔧 Scoped `update` continues to reuse the detected host mode even when tracked config is stale, matching the intended `helloagents update <cli>` behavior
+- 🔧 Standby branch/bootstrap refresh semantics are now documented precisely: symlinked package files update immediately, while injected carrier files refresh on `install` / `update` / mode-refresh commands
+- 🧪 Added lifecycle coverage for standby carrier refresh, stale-mode inference, empty Codex marketplace cleanup, contaminated Codex backup recovery, and version-agnostic npm pack testing
+
+### v3.0.0 🎉
 
 **Breaking Changes:**
 - 🔴 Complete rewrite: Python package → pure Node.js/Markdown architecture. `pip`/`uv` installation no longer available
@@ -720,7 +729,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - ✨ Claude Code hooks expanded from 9 to 11 lifecycle event types
 - ✨ Hooks support expanded to Gemini CLI and Grok CLI
 - ✨ Configuration integrity check on session start
-- ✨ Context compression pre-save with automatic progress snapshot
+- ✨ Recovery snapshot injection before context compaction
 - ✨ User-defined tool registration and orchestration
 
 **Improvements:**

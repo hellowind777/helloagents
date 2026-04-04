@@ -149,8 +149,17 @@ function backupUserCodexDeveloperInstructions(configPath, existingBlock) {
   safeWrite(backupPath, `${existingBlock}\n`);
 }
 
+function sanitizeCodexDeveloperInstructionsBackup(block = '') {
+  const normalized = String(block || '').trim();
+  if (!normalized.startsWith('developer_instructions =')) return '';
+  if (normalized.includes(CODEX_DEVELOPER_INSTRUCTIONS)) return '';
+  return normalized;
+}
+
 function readCodexDeveloperInstructionsBackup(configPath) {
-  return readCodexBackup(configPath, CODEX_DEVELOPER_INSTRUCTIONS_BACKUP_BASENAME);
+  return sanitizeCodexDeveloperInstructionsBackup(
+    readCodexBackup(configPath, CODEX_DEVELOPER_INSTRUCTIONS_BACKUP_BASENAME),
+  );
 }
 
 function removeCodexDeveloperInstructionsBackup(configPath) {
@@ -217,7 +226,13 @@ function removeCodexMarketplaceEntry(marketplaceFile) {
   const marketplace = readJsonOrThrow(marketplaceFile, 'Codex marketplace 配置');
   const plugins = Array.isArray(marketplace?.plugins) ? marketplace.plugins : [];
   const nextPlugins = plugins.filter((plugin) => plugin?.name !== CODEX_PLUGIN_NAME);
-  if (nextPlugins.length === plugins.length) return false;
+  const removedHelloagents = nextPlugins.length !== plugins.length;
+  const isManagedMarketplace = (marketplace?.name || CODEX_MARKETPLACE_NAME) === CODEX_MARKETPLACE_NAME;
+  if (!nextPlugins.length && isManagedMarketplace) {
+    removeIfExists(marketplaceFile);
+    return removedHelloagents || true;
+  }
+  if (!removedHelloagents) return false;
   if (!nextPlugins.length) {
     removeIfExists(marketplaceFile);
     return true;
