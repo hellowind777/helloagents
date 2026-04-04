@@ -84,13 +84,20 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   const { root: pkgRoot } = createPackageFixture();
   const home = createHomeFixture();
   seedHostConfigs(home);
-  const expectedCodexAgentsPath = join(home, '.codex', 'AGENTS.md').replace(/\\/g, '/');
   const expectedCodexRuntimeRoot = join(home, '.codex', 'helloagents').replace(/\\/g, '/');
 
   runCli(pkgRoot, home, ['postinstall']);
 
   const configFile = join(home, '.helloagents', 'helloagents.json');
   assert.equal(readJson(configFile).install_mode, 'standby');
+  assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
+  assert.doesNotMatch(readText(join(home, '.gemini', 'GEMINI.md')), /HELLOAGENTS_START/);
+  assert.doesNotMatch(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/);
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')));
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')));
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')));
+
+  runCli(pkgRoot, home, ['install', '--all', '--standby']);
 
   const claudeMd = readText(join(home, '.claude', 'CLAUDE.md'));
   assert.match(claudeMd, /HELLOAGENTS_START/);
@@ -215,6 +222,7 @@ test('Codex global cleanup still removes marketplace and plugin roots when .code
   seedHostConfigs(home);
 
   runCli(pkgRoot, home, ['postinstall']);
+  runCli(pkgRoot, home, ['install', 'codex', '--standby']);
   runCli(pkgRoot, home, ['--global']);
 
   rmSync(join(home, '.codex'), { recursive: true, force: true });
@@ -278,6 +286,7 @@ test('Codex standby preserves a user-owned model_instructions_file in backup and
   );
 
   runCli(pkgRoot, home, ['postinstall']);
+  runCli(pkgRoot, home, ['install', 'codex', '--standby']);
 
   const installedConfig = readText(join(home, '.codex', 'config.toml'));
   assert.match(installedConfig, /developer_instructions\s*=\s*"""/);
@@ -307,6 +316,7 @@ test('Codex standby preserves a user-owned developer_instructions block and rest
   );
 
   runCli(pkgRoot, home, ['postinstall']);
+  runCli(pkgRoot, home, ['install', 'codex', '--standby']);
 
   const installedConfig = readText(join(home, '.codex', 'config.toml'));
   assert.match(installedConfig, /developer_instructions\s*=\s*"""/);
@@ -318,4 +328,58 @@ test('Codex standby preserves a user-owned developer_instructions block and rest
   const restoredConfig = readText(join(home, '.codex', 'config.toml'));
   assert.match(restoredConfig, /^developer_instructions = """\nuser custom instructions\n"""/);
   assert.ok(!hasTimestampedBackup(home, 'developer_instructions'));
+});
+
+test('single-host install and cleanup only touch the targeted CLI in standby mode by default', () => {
+  const { root: pkgRoot } = createPackageFixture();
+  const home = createHomeFixture();
+  const configFile = join(home, '.helloagents', 'helloagents.json');
+  seedHostConfigs(home);
+
+  runCli(pkgRoot, home, ['install', 'claude']);
+
+  assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
+  assert.ok(existsSync(join(home, '.claude', 'helloagents')));
+  assert.doesNotMatch(readText(join(home, '.gemini', 'GEMINI.md')), /HELLOAGENTS_START/);
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')));
+  assert.doesNotMatch(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/);
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')));
+  assert.equal(readJson(configFile).host_install_modes.claude, 'standby');
+
+  runCli(pkgRoot, home, ['cleanup', 'claude']);
+
+  assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')));
+  assert.match(readText(join(home, '.gemini', 'GEMINI.md')), /# Gemini custom/);
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /# Codex custom/);
+  assert.equal(readJson(configFile).host_install_modes.claude, undefined);
+});
+
+test('single-host update reuses tracked codex mode and cleanup leaves other CLIs intact', () => {
+  const { root: pkgRoot } = createPackageFixture();
+  const home = createHomeFixture();
+  const configFile = join(home, '.helloagents', 'helloagents.json');
+  const pluginRoot = join(home, 'plugins', 'helloagents');
+  seedHostConfigs(home);
+
+  runCli(pkgRoot, home, ['install', 'codex', '--global']);
+
+  assert.ok(existsSync(pluginRoot));
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')));
+  assert.equal(readJson(configFile).host_install_modes.codex, 'global');
+
+  writeText(join(pkgRoot, 'bootstrap.md'), '# scoped global update\n');
+  runCli(pkgRoot, home, ['update', 'codex']);
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# scoped global update/);
+
+  runCli(pkgRoot, home, ['install', 'claude']);
+  assert.ok(existsSync(join(home, '.claude', 'helloagents')));
+
+  runCli(pkgRoot, home, ['cleanup', 'codex']);
+
+  assert.ok(!existsSync(pluginRoot));
+  assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')));
+  assert.ok(existsSync(join(home, '.claude', 'helloagents')));
+  assert.equal(readJson(configFile).host_install_modes.codex, undefined);
+  assert.equal(readJson(configFile).host_install_modes.claude, 'standby');
 });

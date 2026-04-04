@@ -61,12 +61,20 @@ export function createInstallMessagePrinter({ home, pkgVersion, msg }) {
 HelloAGENTS v${pkgVersion} — The orchestration kernel for AI CLIs
 
 ${msg('安装', 'Install')}:
-  npm install -g helloagents  ${msg('（默认 standby 模式，自动配置所有检测到的 CLI）', '(default standby mode, auto-configures all detected CLIs)')}
+  npm install -g helloagents  ${msg('（只安装包与命令；CLI 部署需显式执行 helloagents install ...）', '(installs the package/command only; deploy to CLIs explicitly with helloagents install ...)')}
   helloagents-js             ${msg('（稳定别名，避免与系统中同名可执行文件冲突）', '(stable alias to avoid conflicts with system executables of the same name)')}
 
 ${msg('模式切换', 'Mode switching')}:
   helloagents --global     ${msg('全局模式（Claude/Gemini 装插件；Codex 自动装原生本地插件）', 'Global mode (manual plugins for Claude/Gemini; native local plugin auto-install for Codex)')}
   helloagents --standby    ${msg('标准模式（非插件安装，hello-* 不自动触发，默认）', "Standby mode (non-plugin install, hello-* won't auto-trigger, default)")}
+
+${msg('单 CLI 管理', 'Scoped CLI management')}:
+  helloagents install codex --standby
+  helloagents install --all --global
+  helloagents update codex
+  helloagents cleanup claude --global
+  helloagents uninstall gemini
+  ${msg('支持: claude | gemini | codex | --all；省略模式时优先沿用该 CLI 已记录/已检测的模式，否则回退 standby', 'Hosts: claude | gemini | codex | --all; omit mode to reuse the tracked/detected mode for that CLI, then fall back to standby')}
 
 ${msg('卸载', 'Uninstall')}:
   helloagents cleanup      ${msg('（推荐先执行，显式清理所有 CLI 注入/链接）', '(recommended first, explicitly cleans CLI injections/links)')}
