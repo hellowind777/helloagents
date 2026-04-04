@@ -33,7 +33,7 @@ jobs:
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ steps.ref.outputs.tag }}
 
@@ -82,17 +82,20 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
 
-      - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@latest && npm --version
+      - name: Show runtime versions
+        run: |
+          node --version
+          npm --version
 
       - name: Set beta version in package.json
         if: needs.prepare.outputs.is_beta == 'true'
@@ -102,7 +105,7 @@ jobs:
         run: npm pack --dry-run 2>&1 | tee /tmp/npm-pack.log
 
       - name: Publish to npm
-        run: npm publish --access public --tag ${{ needs.prepare.outputs.channel }}
+        run: npm publish --provenance --access public --tag ${{ needs.prepare.outputs.channel }}
 
   release:
     needs: [prepare, npm]
@@ -110,7 +113,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
