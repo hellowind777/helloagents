@@ -271,7 +271,9 @@ function installHostGlobal(host) {
 function cleanupHostStandby(host) {
   if (host === 'claude') return { skipped: !uninstallClaudeStandby(HOME) };
   if (host === 'gemini') return { skipped: !uninstallGeminiStandby(HOME) };
-  return { skipped: !uninstallCodexStandby(HOME) };
+  const standbyCleaned = uninstallCodexStandby(HOME);
+  const globalResidueCleaned = uninstallCodexGlobal(HOME);
+  return { skipped: !(standbyCleaned || globalResidueCleaned) };
 }
 
 function cleanupHostGlobal(host) {

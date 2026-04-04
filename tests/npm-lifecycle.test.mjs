@@ -8,6 +8,7 @@ import {
   createHomeFixture,
   createPackageFixture,
   createTempDir,
+  readJson,
   readText,
   runCommand,
   writeJson,
@@ -40,7 +41,7 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   writeText(join(home, '.codex', 'config.toml'), 'model_instructions_file = "C:/original/bootstrap.md"\n');
 
   runNpm(['pack', '--pack-destination', packDir], pkgRoot, env);
-  const tarball = join(packDir, 'helloagents-3.0.0.tgz');
+  const tarball = join(packDir, `helloagents-${readJson(join(pkgRoot, 'package.json')).version}.tgz`);
 
   runNpm(['install', '-g', '--prefix', prefix, tarball], pkgRoot, env);
 
