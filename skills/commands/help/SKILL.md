@@ -15,7 +15,8 @@ Trigger: ~help
 | ~design | 深度设计：交互式需求挖掘 + 方案设计 + 方案包 |
 | ~prd | 完整 PRD：头脑风暴式逐维度挖掘，生成现代产品需求文档 |
 | ~loop | 自主迭代优化：设定目标和指标，循环修改-验证-保留/回滚 |
-| ~init | 初始化项目知识库和配置 |
+| ~wiki | 仅创建/同步项目知识库（`.helloagents/`） |
+| ~init | 完整初始化项目：知识库 + 项目级载体配置 |
 | ~test | 为指定模块或最近变更编写完整测试 |
 | ~verify | 运行所有验证命令并报告结果 |
 | ~review | 代码审查 |
@@ -24,7 +25,7 @@ Trigger: ~help
 | ~help | 显示此帮助 |
 
 ### 自动激活技能
-适用条件：以下技能仅在全局模式，或当前项目已通过 `~init` 激活后自动激活：
+适用条件：以下技能仅在全局模式，或当前项目已存在 `.helloagents/` 后自动激活（例如执行过 `~wiki`、`~init`，或已处于项目级连续流程）：
 排除条件：纯标准模式未激活项目不会自动触发。
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
@@ -41,5 +42,5 @@ Trigger: ~help
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
 | ralph_loop_enabled | true | 自动验证循环（任务完成时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
-| kb_create_mode | 1 | 0=关闭/1=编码自动/2=始终 | Claude Code + Gemini CLI + Codex CLI |
+| kb_create_mode | 1 | 0=关闭/1=已激活项目或全局模式中的编码自动/2=已激活项目或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
 | commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |
