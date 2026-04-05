@@ -8,7 +8,7 @@
 
 **Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
 
-[![Version](https://img.shields.io/badge/version-3.0.2-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.3-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -136,7 +136,7 @@ L1 blocks destructive commands (`rm -rf /`, `git push --force`, `DROP DATABASE`)
 
 **⚡ Structured Workflow**
 
-Simple tasks get direct execution. Complex tasks go through ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE with interactive design, solution proposals, and plan packages.
+Simple tasks stay fast. Complex tasks use a routed kernel workflow: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE, with explicit command lanes for ideation, planning, implementation, and validation.
 
 **Your gain:** proportional effort — quick tasks stay fast, complex tasks get full process.
 
@@ -226,7 +226,7 @@ Codex CLI does not need a manual plugin command. `helloagents --global` now inst
 ```
 💡【HelloAGENTS】- Help
 
-Available commands: ~auto, ~design, ~prd, ~loop, ~wiki, ~init, ~test, ~verify, ~review, ~commit, ~clean, ~help
+Available commands: ~idea, ~auto, ~plan, ~build, ~prd, ~loop, ~wiki, ~init, ~test, ~verify, ~commit, ~clean, ~help
 
 Auto-activated skills (14): hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
 ```
@@ -241,7 +241,7 @@ Auto-activated skills (14): hello-ui, hello-api, hello-security, hello-test, hel
 ~auto "Add user authentication with JWT"
 
 # Want to review the plan first?
-~design "Refactor the payment module"
+~plan "Refactor the payment module"
 ```
 
 ## 🔄 Installation Lifecycle & File Writes
@@ -280,8 +280,10 @@ All commands run inside AI chat with the `~` prefix:
 
 | Command | Purpose |
 |---------|---------|
-| `~auto` | Full autonomous workflow — AI judges complexity, auto-plans and executes |
-| `~design` | Deep interactive design — requirement gathering + solution proposals + plan package |
+| `~idea` | Lightweight ideation — compare directions and explore options without writing files |
+| `~auto` | Automatic orchestration — chooses the right path across ideation / planning / build / verify / PRD |
+| `~plan` | Structured planning — requirement gathering + solution convergence + plan package |
+| `~build` | Execution workflow — implement from the current request or an existing plan package |
 | `~prd` | Complete PRD — 13-dimension brainstorm-style exploration, generates product requirements |
 | `~loop` | Autonomous iteration — set a target + metric, AI loops until goal is met |
 
@@ -290,8 +292,7 @@ All commands run inside AI chat with the `~` prefix:
 | Command | Purpose |
 |---------|---------|
 | `~test` | Write complete tests (TDD: Red → Green → Refactor) |
-| `~verify` | Run all verification commands (lint/test/build/typecheck) |
-| `~review` | Code review with severity classification |
+| `~verify` | Unified verification entry — review, lint, typecheck, test, build, and fix loops |
 
 **Utility Commands:**
 
@@ -302,6 +303,10 @@ All commands run inside AI chat with the `~` prefix:
 | `~commit` | Generate conventional commit message + KB sync |
 | `~clean` | Archive completed plans, clean temp files |
 | `~help` | Show all commands and current config |
+
+Compatibility aliases:
+- `~design` → `~plan`
+- `~review` → `~verify` (review-priority mode)
 
 ## 🔧 Configuration
 
@@ -370,19 +375,28 @@ helloagents --standby
 
 ## ⚙️ How It Works
 
-**Short version:** HelloAGENTS selects execution depth based on task complexity. Simple tasks run directly; complex tasks use the full 5-stage flow with verification at every step. Once the requirement and execution direction are clear, it prefers direct completion over repeated confirmation.
+**Short version:** HelloAGENTS selects execution depth based on task type, risk, and project state. Simple tasks run directly; complex tasks use a routed kernel workflow with explicit ideation, planning, build, and verification lanes. Once the requirement and execution direction are clear, it prefers direct completion over repeated confirmation.
 
-**The 5-stage flow:**
+**The routed 6-stage kernel:**
 
-1. **ORIENT** — Read project context (`.helloagents/context.md`, `guidelines.md`, `DESIGN.md`), scan relevant code
-2. **CLARIFY** — Eliminate ambiguity. Simple tasks skip this. Complex tasks confirm key decisions
-3. **PLAN** — Mark which quality skills are needed, generate design/plan if using `~design` or `~prd`
-4. **EXECUTE** — Implement with TDD (test → code → refactor), verify after each step
-5. **VALIDATE** — Run Ralph Loop (lint/test/build), collect delivery checklists from all activated skills, verify each item
+1. **ROUTE / TIER** — Decide whether the task belongs in `~idea`, `~plan`, `~build`, `~verify`, `~prd`, or `~auto`
+2. **SPEC** — Clarify goals, constraints, and success criteria
+3. **PLAN** — Mark required quality skills and prepare artifacts such as `requirements.md`, `plan.md`, and `tasks.md`
+4. **BUILD** — Implement with TDD (test → code → refactor), verify incrementally
+5. **VERIFY** — Run Ralph Loop, review diffs when needed, and collect delivery checklists
+6. **CONSOLIDATE** — Update `STATE.md`, sync KB artifacts, and archive completed plan packages
+
+**Delivery Tier:**
+- `T0` — read-only exploration and idea comparison
+- `T1` — low-risk focused fixes or explicit verification
+- `T2` — multi-file features, new projects, or work that needs structured artifacts
+- `T3` — high-risk or irreversible chains such as auth, security, payment, database, or production release work
 
 **Routing rules:**
-- Simple tasks (single file, clear fix) → Direct execution
-- Complex tasks (3+ files, architecture change, new project) → Full 5-stage flow via `~design` or `~auto`
+- Exploration / compare options → `~idea`
+- Simple tasks (single file, clear fix) → Direct execution or `~build`
+- Complex tasks (3+ files, architecture change, new project) → `~plan`, `~auto`, or `~prd`
+- Review / validation requests → `~verify`
 
 **Quality skills auto-activate based on task type:**
 - Writing UI code? → `hello-ui` activates (design tokens, accessibility, responsive)
@@ -406,15 +420,18 @@ Re-running the same mode command is also valid. It refreshes the current mode's 
 
 ## 📚 Usage Guide
 
-### Three Workflow Modes
+### Core Workflow Lanes
 
 | Mode | Description | When to use |
 |------|-------------|-------------|
-| `~auto` | Full autonomous flow: evaluate → design → develop → verify | Clear requirement, want end-to-end delivery |
-| `~design` | Interactive design only, generates plan package | Want to review the plan before coding |
+| `~idea` | Lightweight ideation only, no files written | Need help choosing a direction without activating full project flow |
+| `~plan` | Interactive planning only, generates a plan package | Want to review the plan before coding |
+| `~build` | Implementation workflow from the current task or existing plan package | Requirement is clear and you want execution |
+| `~verify` | Verification / review workflow | Want audit, checks, and fix loops |
+| `~auto` | Automatic orchestration across the lanes above | Want HelloAGENTS to choose the right path end-to-end |
 | `~prd` | 13-dimension PRD generation | Need comprehensive product requirements |
 
-Typical pattern: `~design` first → review plan → start coding. Or just `~auto` for one-shot delivery.
+Typical pattern: `~idea` first to compare directions, then `~plan` to lock a solution, then `~build`, then `~verify`. Or just `~auto` for one-shot orchestration. For UI work, the decision priority is always `plan.md` / PRD UI decisions → `DESIGN.md` → generic UI rules.
 
 ### Quality Verification (Ralph Loop)
 
@@ -427,12 +444,12 @@ After every task, Ralph Loop auto-runs your project's verification commands:
 
 `~wiki` creates or syncs the project-local knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
 
-`STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~design`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
+`STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
 
 | File | Purpose |
 |------|---------|
 | `STATE.md` | Project-level recovery snapshot (≤50 lines, survives compression) |
-| `DESIGN.md` | Design system (UI projects only) |
+| `DESIGN.md` | Project-level UI contract (design system, component patterns, state coverage, accessibility) |
 | `context.md` | Project architecture, tech stack, conventions |
 | `guidelines.md` | Non-obvious coding rules |
 | `verify.yaml` | Verification commands |
@@ -686,8 +703,8 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - ✨ Guard system (`guard.mjs`): L1 blocking for destructive commands + L2 advisory for security patterns
 - ✨ Standby/Global mode: `install_mode` config for per-project or global activation
 - ✨ Flow state management (`STATE.md`): AI context compression snapshot (≤50 lines)
-- ✨ Design system generation (`DESIGN.md`): auto-created for UI projects
-- ✨ Plan package system: `requirements.md` + `design.md` + `tasks.md`
+- ✨ Design system generation (`DESIGN.md`): auto-created for UI projects as a project-level contract
+- ✨ Plan package system: `requirements.md` + `plan.md` + `tasks.md`
 
 **Architecture:**
 - 📦 Unified 5-stage execution flow: ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE

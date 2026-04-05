@@ -107,17 +107,12 @@ export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot
   return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；本轮不要再为同一个命令 skill 重复 Test-Path / Get-Content，也不要探测其他 helloagents 路径。${extraRules}`;
 }
 
-export function detectNewProjectRoute(prompt) {
-  const newProjectPatterns = [
-    /(?:创建|新建|从零|搭建).*(?:项目|应用|系统|网站|游戏|工具|平台|小程序|APP)/,
-    /(?:做|写|开发|实现)[一个]*.*(?:项目|应用|系统|网站|游戏|工具|平台|小程序|APP)/,
-    /\b(build|create|design|make|new|start|init)\b.*\b(app|game|project|site|website|tool|system|platform)\b/i,
-  ];
-
-  for (const pattern of newProjectPatterns) {
-    if (pattern.test(prompt)) {
-      return '检测到可能是新项目/新应用任务。根据 HelloAGENTS 路由规则，新项目必须进入 ~design 设计流程。请引导用户进入 ~design。';
-    }
-  }
-  return '';
+export function buildSemanticRouteInstruction() {
+  return [
+    '当前消息未使用 ~command。',
+    '请先基于用户请求的真实意图做一次语言无关的 ROUTE / TIER 语义判断，不依赖关键词表，也不要通过扩充多语言词库来选路。',
+    'Delivery Tier: T0=探索/比较/发散；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化 artifact；T3=高风险或不可逆链路（如认证、安全、支付、数据库、生产发布）。',
+    '路由映射：~idea=轻量探索；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动编排。',
+    '若意图已明确，直接按对应路径推进；不要把这一步暴露成额外说明，也不要为了选路重复向用户提问。',
+  ].join(' ');
 }

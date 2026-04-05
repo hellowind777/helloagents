@@ -97,7 +97,27 @@ test('notify route and inject cover standby, activated projects, and global mode
     input: JSON.stringify({ cwd: project, prompt: 'create a new app for expenses' }),
   });
   payload = parseStdoutJson(result);
-  assert.match(payload.hookSpecificOutput.additionalContext, /必须进入 ~design/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /语言无关的 ROUTE \/ TIER/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /不依赖关键词表/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /Delivery Tier: T0=探索\/比较\/发散/);
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '先想想登录页还能有什么方向，比较几个方案' }),
+  });
+  payload = parseStdoutJson(result);
+  assert.match(payload.hookSpecificOutput.additionalContext, /语言无关的 ROUTE \/ TIER/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /~idea=轻量探索/);
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: 'run tests and do a security review for auth changes' }),
+  });
+  payload = parseStdoutJson(result);
+  assert.match(payload.hookSpecificOutput.additionalContext, /语言无关的 ROUTE \/ TIER/);
+  assert.match(payload.hookSpecificOutput.additionalContext, /~verify=审查\/验证/);
 
   writeSettings(home, { install_mode: 'global' });
   const freshProject = createTempDir('helloagents-project-global-');

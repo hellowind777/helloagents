@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
-import { buildCompactionContext, buildInjectContext, buildRouteInstruction, detectNewProjectRoute } from './notify-context.mjs';
+import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction } from './notify-context.mjs';
 import { claimsTaskComplete, shouldIgnoreCodexNotifyClient, shouldIgnoreFormattedSubagent } from './notify-events.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress, versionCheckBackground } from './notify-shared.mjs';
 
@@ -111,11 +111,8 @@ function cmdRoute() {
 
   const bootstrapFile = resolveBootstrapFile(cwd, settings);
   if (bootstrapFile === 'bootstrap.md') {
-    const routeMessage = detectNewProjectRoute(prompt);
-    if (routeMessage) {
-      suppressedOutput(EVENT_NAME.UserPromptSubmit, routeMessage);
-      return;
-    }
+    suppressedOutput(EVENT_NAME.UserPromptSubmit, buildSemanticRouteInstruction());
+    return;
   }
 
   emptySuppress();
