@@ -41,7 +41,7 @@ Trigger: ~init
    - guidelines.md — 按 templates/guidelines.md 格式，从现有代码推断编码约定
    - verify.yaml — 验证命令（从 package.json/pyproject.toml 检测）
    - CHANGELOG.md — 按 templates/CHANGELOG.md 格式，初始版本
-   - DESIGN.md — 如果项目包含 UI 代码，按 templates/DESIGN.md 格式提取设计系统
+   - DESIGN.md — 如果项目包含 UI 代码，按 templates/DESIGN.md 格式提取项目级设计契约（产品表面、设计 token、组件与模式、状态覆盖、无障碍要求、禁止事项等）
 2. 创建 modules/ 目录，按 templates/modules/module.md 格式为主要模块生成文档
 3. 不覆盖已存在的文件
 
