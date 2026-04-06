@@ -7,12 +7,13 @@ policy:
 Trigger: ~init
 
 ~init 是用户显式命令，创建完整知识库，不受 kb_create_mode 限制。
+执行 `~init` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 规则按当前已加载 bootstrap 执行；本命令额外负责项目根载体和项目级 `skills/helloagents` 链接。
 
 ## 流程
 
 ### 阶段 1：环境搭建（必做）
 
-1. 创建 `.helloagents/` 目录 + STATE.md（按 templates/STATE.md 格式，初始为空闲）
+1. 创建 `.helloagents/` 目录 + `STATE.md`（按 templates/STATE.md 格式，初始“主线目标”写当前初始化链路，初始状态为空闲）
 2. 定位插件根目录：优先读取当前会话中注入的“当前 HelloAGENTS 包根目录”；若上下文未提供，再根据当前已加载载体和规则反推，禁止猜测其他目录
 3. 创建 `skills/helloagents` symlink → `{插件根目录}/`
 4. 读取 `{插件根目录}/bootstrap.md`，用 `<!-- HELLOAGENTS_START -->` / `<!-- HELLOAGENTS_END -->` 标记包裹后写入：
@@ -55,6 +56,7 @@ commands:
 ## 幂等性
 重复执行 ~init 是安全的：
 - 已存在的 .helloagents/ 文件不覆盖
+- `STATE.md` 只作为当前初始化链路的恢复游标；后续进入其他主线任务时必须按新主线重写
 - symlink 刷新（删除旧的重建）
 - AGENTS.md/CLAUDE.md/GEMINI.md 中标记内容替换更新
 - .gitignore 只追加缺失行

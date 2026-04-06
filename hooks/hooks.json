@@ -34,6 +34,16 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" pre-write --gemini",
+            "timeout": 5000
+          }
+        ]
       }
     ],
     "AfterModel": [

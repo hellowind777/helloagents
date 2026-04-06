@@ -26,6 +26,7 @@ Trigger: ~help
 | ~help | 显示此帮助 |
 
 兼容别名：
+- `~do` → 等同 `~build`
 - `~design` → 等同 `~plan`
 - `~review` → 等同 `~verify` 的审查优先模式
 

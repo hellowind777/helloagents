@@ -6,7 +6,8 @@ policy:
 ---
 Trigger: ~prd [description]
 
-本 skill 自包含，不依赖再读取 `~plan` 的 command skill。只有在本 skill 明确要求时，才继续读取对应的 hello-* 技能。
+执行 `~prd` 时，不读取 `~plan` 的 command skill；只有当前流程明确需要时，才继续读取对应的 hello-* 技能。
+执行 `~prd` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充规格探索、PRD 落盘与执行衔接要求。
 
 ## 铁律
 - 在用户确认方案之前，禁止编写任何实现代码、创建任何文件、或执行任何实现操作。
@@ -52,12 +53,11 @@ Trigger: ~prd [description]
 
 ## 流程
 
-### 1. 上下文收集（ORIENT）
+### 1. 上下文收集
 
 已有项目：
-- 读取 .helloagents/context.md 获取项目上下文和模块索引
-- 读取 .helloagents/guidelines.md 获取项目约定
-- 扫描相关代码文件理解现有架构
+- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先把 `.helloagents/STATE.md` 当恢复游标使用，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实校正主线
+- 在进入维度探索前，至少确认 `.helloagents/context.md`、`.helloagents/guidelines.md`，并只扫描与当前产品范围直接相关的代码和配置
 
 全新项目（无 .helloagents/ 目录）：
 - 跳过，直接进入项目定位
@@ -95,30 +95,32 @@ c. AI 总结该维度的决策结果，进入下一个维度
 ### 4. 写入方案包
 
 将讨论结果写入本地项目：
-- 全新项目（无 .helloagents/ 目录）：先创建 .helloagents/ 和 STATE.md（按 templates/STATE.md 格式）。这是方案包写入的前置操作，不受 kb_create_mode 开关控制
+- 按当前已加载 bootstrap 的 `.helloagents/` 与流程状态规则，确保最小项目状态已建立；这是方案包写入的前置操作，不受 kb_create_mode 开关控制
 - 创建 .helloagents/plans/YYYYMMDDHHMM_{feature}/prd/
 - 按 templates/plans/prd/ 的模板格式，仅写入用户未跳过的维度文件
-- 生成 tasks.md（每个任务包含具体文件路径、预期变更、验证方式；任务独立可验证；依赖顺序明确）
+- 生成 tasks.md（每个任务包含具体文件路径、预期变更、完成标准、验证方式；任务独立可验证；依赖顺序明确）
 - 生成 decisions.md（贯穿全程的决策日志）
+- 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
+- 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要只把验证路径留在 prose 里
 - 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`；若原文件不存在，先按模板建立最小设计契约，再同步已确认的稳定 UI 决策
-- 重写 .helloagents/STATE.md
+- 重写 `.helloagents/STATE.md`，其中“主线目标”写当前 PRD 链路真正要完成的产品 / 功能目标，不延续无关旧主线
 
 输出 PRD 完整度摘要：已覆盖 N/13 个维度，建议后续补充的维度（如有）。
 
 ### 5. 执行决策
 
 展示 PRD 摘要后，仅在是否进入执行仍构成阻塞决策时才询问用户：
-- 开始执行 → 重写 STATE.md（下一步设为第一个任务的具体动作）
+- 开始执行 → 重写 `STATE.md`（“主线目标”保持当前 PRD 目标，下一步设为第一个任务的具体动作）
 - 修改 PRD / 补充维度 → 回到对应维度继续讨论
-- 暂不执行，保留方案 → 重写 STATE.md（下一步设为“方案已确认；执行需用户明确启动”）
+- 暂不执行，保留方案 → 重写 `STATE.md`（“主线目标”保持当前 PRD 目标，下一步设为“方案已确认；执行需用户明确启动”）
 
 如果用户已对当前 PRD 或继续执行作出明确同意，视为执行授权成立，可直接进入执行，或按需先补一轮 `~plan` 收敛实现方案。
 
-### 6. 执行
+### 6. 执行衔接
 
 按 tasks.md 逐项完成，每项进入当前已加载 bootstrap 中定义的统一执行流程，完成后同步重写 STATE.md。
 任务状态标记仅写入 tasks.md、验收清单或验证结果；普通说明、方案解释、状态汇报不用 [√] / [-] / [ ]。
-所有任务完成后进入当前已加载 bootstrap 中定义的 VALIDATE 阶段。
+所有任务完成后进入当前已加载 bootstrap 中定义的 VERIFY / CONSOLIDATE 收尾阶段。
 可并行的任务标记后用子代理并行执行（不同子代理不改同一文件）。
 执行过程中遇到阻塞（依赖缺失、指令不清、验证反复失败）→ 立即停下询问用户，不猜测。
 执行过程中遇到高风险操作（删除文件/修改配置/数据库变更）→ 暂停确认。
@@ -134,6 +136,7 @@ plans/YYYYMMDDHHMM_{feature}/
 │   ├── 01-user-stories.md  # 仅用户未跳过的维度
 │   ├── 02-functional.md
 │   └── ...
+├── contract.json           # 机器可消费的验证 / 审查 contract
 ├── tasks.md                # 任务分解
 └── decisions.md            # 决策日志
 ```

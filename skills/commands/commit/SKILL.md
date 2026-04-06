@@ -6,6 +6,8 @@ policy:
 ---
 Trigger: ~commit [message]
 
+执行 `~commit` 时，知识库同步与 `STATE.md` 更新边界按当前已加载 bootstrap 的 CONSOLIDATE / 流程状态规则执行；本命令只负责生成提交信息、读取提交归属配置并完成提交动作。
+
 ## 流程
 
 1. 检查 staged changes（git diff --staged）
@@ -17,10 +19,11 @@ Trigger: ~commit [message]
    - ""（空，默认）→ 不添加归属
    - 有内容（如 "Co-Authored-By: HelloAGENTS"）→ 添加该内容到 commit message
 5. 执行 git commit
+6. 若项目已有 `.helloagents/STATE.md`，按 bootstrap 的“已有则更新”规则同步当前已提交状态
 
 ## 知识库同步
 提交后，优先使用当前上下文中已注入的“当前用户设置”获取 `kb_create_mode`；只有上下文不存在时才读取 `~/.helloagents/helloagents.json`：
 - 0 = 跳过
 - 1 = 编码任务自动同步（默认）
 - 2 = 始终同步
-同步内容（仅知识库文件，规则同当前已加载 bootstrap 的 VALIDATE 阶段中的知识库同步）。
+同步范围与更新格式按当前已加载 bootstrap 的 CONSOLIDATE 阶段执行。

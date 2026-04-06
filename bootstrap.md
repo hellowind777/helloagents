@@ -194,11 +194,12 @@ hello-* 技能查找路径（按优先级，找到即停）：
 2. 当前已加载 HelloAGENTS 包根目录下的 skills/{技能名}/SKILL.md
 
 命令职责：
-- `~plan` 生成 `requirements.md`、`plan.md`、`tasks.md`
+- `~plan` 生成 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`
 - `~prd` 生成 PRD 维度文档、`tasks.md`、`decisions.md`
 - `~build` 读取现有方案包并做定位，不重复发明方案
+- `contract.json` 是方案包的机器 contract，至少要明确 `verifyMode`、`reviewerFocus`、`testerFocus`；只有在 T3 / UI / 高风险链路确有收益时，才额外声明 `advisor`；进入 `~verify`、gate 或交付门控前，优先消费它而不是从 prose 里猜验证路径
 - 涉及 UI 时，设计约束优先级固定为：当前 `plan.md` / PRD UI 决策 → `.helloagents/DESIGN.md` → 通用 UI 规则
-- `~idea` 在输出比较与推荐后结束，不进入实现
+- `~idea` 在输出比较与推荐后结束，不进入实现，也不创建 `.helloagents/`、`STATE.md` 或方案包
 
 ### 4. BUILD — 实现
 进入实现时，读取 PLAN 阶段标记的技能 SKILL.md（按上方 hello-* 技能查找路径读取 `skills/{技能名}/SKILL.md`），按其规范执行。
@@ -214,7 +215,7 @@ hello-* 技能查找路径（按优先级，找到即停）：
 ### 5. VERIFY — 审查与验证
 编码任务：
 - 读取 `skills/hello-verify/SKILL.md`，执行完整验证循环（Ralph Loop）→ 失败则修复 → 循环直到通过
-- 如本次任务是审查优先或显式使用 `~review`，先读取 `skills/hello-review/SKILL.md` 做范围审查，再进入验证
+- 如本次任务是审查优先或显式使用 `~review`，先读取 `skills/hello-review/SKILL.md` 做范围审查；审查完成后调用 `scripts/review-state.mjs write` 写 `.helloagents/.ralph-review.json`，再进入验证
 - 通过后收集已读取技能的交付检查清单，逐项附带证据确认
 - APGD：确认代理指标通过的同时，用户的真正目标也已达成
 
@@ -223,8 +224,9 @@ hello-* 技能查找路径（按优先级，找到即停）：
 
 ### 6. CONSOLIDATE — 状态、沉淀与归档
 所有任务：
+- 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录本轮“需求覆盖”和“交付清单”的收尾证据；每项都写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - `STATE.md` 维护：按上文“流程状态”中的适用边界执行。属于“强制创建并持续更新”范围时，重写 `.helloagents/STATE.md`（"正在做什么"更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
-- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理临时文件（`loop-results.tsv`、`.ralph-breaker.json`）
+- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理临时文件（`loop-results.tsv`、`.ralph-breaker.json`、`.ralph-verify.json`、`.ralph-review.json`、`.ralph-closeout.json`）
 - 按 `kb_create_mode` 同步知识库（0=关闭 / 1=已激活项目或全局模式中的编码自动 / 2=已激活项目或全局模式中始终）：
   - `.helloagents/` 不存在则按 templates/ 创建知识库文件（`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`）
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
@@ -238,13 +240,11 @@ hello-* 技能查找路径（按优先级，找到即停）：
 3. 检查清单 — 完成前收集已激活技能的交付检查清单，逐项附带证据确认通过才能报告完成
 
 ## 路由
+- 默认按上文“统一执行流程 / ROUTE / TIER”选路；除显式 `~command` 外，不另起独立路由规则
 - 简单任务（单文件修改/明确修复/小调整/已有代码的局部改动）→ 直接执行（⚡）
-- 轻量探索 / 方向比较 / 想先想点子 → `~idea`
-- 必须进入规划（不可跳过）：新项目 / 新应用 / 从零构建 / 涉及 3+ 文件的新功能 / 架构级变更 → `~plan` 或 `~auto` 或 `~prd`
-- 需要明确验证或审查 → `~verify`
-- 其他复杂任务 → 建议用户 `~plan`、`~auto` 或 `~prd`
-- 复杂度信号：文件数 >3 / 跨模块 / 新增依赖 / 涉及数据库 schema → 升级为复杂任务
-- `~design` 是 `~plan` 的兼容别名；`~review` 是 `~verify` 的兼容别名
+- 必须进入规划（不可跳过）：新项目 / 新应用 / 从零构建 / 涉及 3+ 文件的新功能 / 架构级变更
+- 轻量探索、显式验证/审查、重型规格等其他分流，均按 ROUTE / TIER 的命令映射执行
+- `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名；`~review` 是 `~verify` 的兼容别名
 - `~command` → 立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。查找路径（按优先级，找到即停）：
   1. {CWD}/skills/helloagents/skills/commands/{name}/SKILL.md
   2. 当前已加载 HelloAGENTS 包根目录下的 skills/commands/{name}/SKILL.md
@@ -258,23 +258,26 @@ templates/ 查找路径（按优先级，找到即停）：
 2. 当前已加载 HelloAGENTS 包根目录下的 templates/
 
 ### 流程状态（不受 kb_create_mode 控制，始终可写）
-- STATE.md — ≤50 行，项目级恢复快照。读完它就能接上工作，不需要再读其他文件；它不是所有交互的统一记忆载体
-  内容：正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
+- STATE.md — ≤70 行，项目级恢复游标。它只用于恢复“上次做到哪里”，不是主线任务的唯一事实源，也不是所有交互的统一记忆载体；当前用户消息、显式命令、活跃方案包 / PRD、代码与验证证据优先于 STATE.md
+  内容：主线目标、正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
   适用边界：
   - 强制创建并持续更新：`~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop`，以及进入统一执行流程的项目级连续任务
   - 强制更新，不要求首次创建：`~clean`，主代理汇总子代理结果后
   - 已有则更新：`~verify`、`~review`（兼容别名）、`~test`、`~commit`
-  - 不创建：`~help`、一次性只读任务、子代理自身执行过程、压缩/恢复钩子
+  - 不创建：`~help`、`~idea`、一次性只读任务、子代理自身执行过程、压缩/恢复钩子
   更新规则：
   - 属于“强制创建并持续更新”范围且文件不存在时，按 templates/STATE.md 创建
   - 每次更新是重写，不是追加。STATE.md 永远反映"此刻"的状态，不是历史
   - 更新时机：任务开始、关键决策落定、子任务完成、遇到/解除阻塞、任务完成
   - 长流程中，只要当前 STATE.md 已不足以覆盖最新决策、已改文件或下一步动作，就必须立即重写，不得等待任务结束
   - 若宿主明确进入压缩/恢复前置阶段，且当前任务属于 STATE.md 适用范围，必须先确认 STATE.md 已同步到最新；不能确认时，按当前已知进展立即重写
-  - 自检：如果现在上下文被压缩，仅凭 STATE.md 能否立即接上工作？不能 → 该更新了
+  - 恢复时先判断当前用户消息是否仍在延续同一主线；只有确认仍是同一主线时，才按 STATE.md 接续，否则先按当前消息、活跃方案包 / PRD 与代码事实重建主线，并立即重写 STATE.md
+  - 标准模式下若当前项目的 `.helloagents/` 里暂时只有 `STATE.md`，它只表示“这里曾有一个待恢复链路”；不要把它当作当前任务的自动授权、长期目标契约或项目规则全集
+  - 自检：如果现在上下文被压缩，下一轮能否先从当前用户消息确认主线，再凭 STATE.md 找回进度？不能 → 该更新了
   - "关键上下文"只保留恢复所需的信息，已不再相关的决策和变更移除
 - DESIGN.md — 项目级稳定 UI 契约（仅 UI 项目），`~plan` / `~auto` / `~prd` 创建或更新；不存在且当前任务涉及 UI → 按 templates/DESIGN.md 创建；不替代单次需求的 `plan.md`
-- plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md`
+- plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md` + `contract.json`
+- .ralph-advisor.json — 可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
 - archive/YYYY-MM/ — 已归档的方案包（整个 plans/{feature}/ 目录移入）
 - archive/_index.md — 归档索引
 
@@ -288,14 +291,23 @@ templates/ 查找路径（按优先级，找到即停）：
 ### 临时文件（流程产物，~clean 时清理）
 - loop-results.tsv — ~loop 迭代记录
 - .ralph-breaker.json — hello-verify 断路器状态
+- .ralph-verify.json — 最近一次成功验证的证据快照
+- .ralph-review.json — 最近一次成功审查的证据快照
+- .ralph-closeout.json — 最近一次成功收尾的交付证据快照
 
 ## 项目上下文
+
+主线事实源优先级：
+1. 当前用户最新消息、显式 `~command`、本轮已确认的范围与结论
+2. 当前活跃方案包 / PRD、代码与验证证据
+3. `.helloagents/STATE.md`（恢复游标，只用于补齐最近进度）
+4. 其他知识沉淀与历史归档
 
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
 
-Tier 1 — 恢复会话时读取：
-- .helloagents/STATE.md → 恢复快照（读完即可接上工作）
+Tier 1 — 恢复当前链路时优先读取：
+- .helloagents/STATE.md → 恢复游标（先确认当前消息仍是同一主线，再用它找回最近进度）
 
 Tier 2 — 理解项目时读取：
 - .helloagents/context.md → 项目架构、技术栈、目录结构、模块索引

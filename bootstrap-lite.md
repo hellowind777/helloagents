@@ -145,23 +145,26 @@ templates/ 查找路径（按优先级，找到即停）：
 2. 当前已加载 HelloAGENTS 包根目录下的 templates/
 
 ### 流程状态（不受 kb_create_mode 控制，始终可写）
-- STATE.md — ≤50 行，项目级恢复快照。读完它就能接上工作，不需要再读其他文件；它不是所有交互的统一记忆载体
-  内容：正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
+- STATE.md — ≤70 行，项目级恢复游标。它只用于恢复“上次做到哪里”，不是主线任务的唯一事实源，也不是所有交互的统一记忆载体；当前用户消息、显式命令、活跃方案包 / PRD、代码与验证证据优先于 STATE.md
+  内容：主线目标、正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
   适用边界：
   - 强制创建并持续更新：`~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop`
   - 强制更新，不要求首次创建：`~clean`，主代理汇总子代理结果后
   - 已有则更新：`~verify`、`~review`（兼容别名）、`~test`、`~commit`
-  - 不创建：`~help`、未激活项目中的普通问答或一次性只读任务、子代理自身执行过程、压缩/恢复钩子
+  - 不创建：`~help`、`~idea`、未激活项目中的普通问答或一次性只读任务、子代理自身执行过程、压缩/恢复钩子
   更新规则：
   - 属于“强制创建并持续更新”范围且文件不存在时，按 templates/STATE.md 创建
   - 每次更新是重写，不是追加。STATE.md 永远反映"此刻"的状态，不是历史
   - 更新时机：任务开始、关键决策落定、子任务完成、遇到/解除阻塞、任务完成
   - 长流程中，只要当前 STATE.md 已不足以覆盖最新决策、已改文件或下一步动作，就必须立即重写，不得等待任务结束
   - 若宿主明确进入压缩/恢复前置阶段，且当前任务属于 STATE.md 适用范围，必须先确认 STATE.md 已同步到最新；不能确认时，按当前已知进展立即重写
-  - 自检：如果现在上下文被压缩，仅凭 STATE.md 能否立即接上工作？不能 → 该更新了
+  - 恢复时先判断当前用户消息是否仍在延续同一主线；只有确认仍是同一主线时，才按 STATE.md 接续，否则先按当前消息、活跃方案包 / PRD 与代码事实重建主线，并立即重写 STATE.md
+  - 标准模式下若当前项目的 `.helloagents/` 里暂时只有 `STATE.md`，它只表示“这里曾有一个待恢复链路”；不要把它当作当前任务的自动授权、长期目标契约或项目规则全集
+  - 自检：如果现在上下文被压缩，下一轮能否先从当前用户消息确认主线，再凭 STATE.md 找回进度？不能 → 该更新了
   - "关键上下文"只保留恢复所需的信息，已不再相关的决策和变更移除
 - DESIGN.md — 项目级稳定 UI 契约（仅 UI 项目），`~plan` / `~auto` / `~prd` 创建或更新；不存在且当前任务涉及 UI → 按 templates/DESIGN.md 创建；不替代单次需求的 `plan.md`
-- plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md`
+- plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md` + `contract.json`
+- .ralph-advisor.json — 可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
 - archive/YYYY-MM/ — 已归档的方案包（整个 plans/{feature}/ 目录移入）
 - archive/_index.md — 归档索引
 
@@ -175,14 +178,23 @@ templates/ 查找路径（按优先级，找到即停）：
 ### 临时文件（流程产物，~clean 时清理）
 - loop-results.tsv — ~loop 迭代记录
 - .ralph-breaker.json — hello-verify 断路器状态
+- .ralph-verify.json — 最近一次成功验证的证据快照
+- .ralph-review.json — 最近一次成功审查的证据快照
+- .ralph-closeout.json — 最近一次成功收尾的交付证据快照
 
 ## 项目上下文
+
+主线事实源优先级：
+1. 当前用户最新消息、显式 `~command`、本轮已确认的范围与结论
+2. 当前活跃方案包 / PRD、代码与验证证据
+3. `.helloagents/STATE.md`（恢复游标，只用于补齐最近进度）
+4. 其他知识沉淀与历史归档
 
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
 
-Tier 1 — 恢复会话时读取：
-- .helloagents/STATE.md → 恢复快照（读完即可接上工作）
+Tier 1 — 恢复当前链路时优先读取：
+- .helloagents/STATE.md → 恢复游标（先确认当前消息仍是同一主线，再用它找回最近进度）
 
 Tier 2 — 理解项目时读取：
 - .helloagents/context.md → 项目架构、技术栈、目录结构、模块索引

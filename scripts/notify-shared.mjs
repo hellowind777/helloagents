@@ -43,5 +43,3 @@ export function suppressedOutput(hookEventName, additionalContext) {
 export function emptySuppress() {
   output({ suppressOutput: true });
 }
-
-export function versionCheckBackground() {}
