@@ -8,7 +8,7 @@
 
 **质量驱动的 AI 编码 CLI 编排内核 — 14 个自动激活技能、流程纪律、检查清单门控。**
 
-[![Version](https://img.shields.io/badge/version-3.0.4-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.5-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -665,7 +665,14 @@ npm test
 
 ## 📈 版本历史
 
-### v3.0.4（当前版本）
+### v3.0.5（当前版本）
+
+**通知来源标识：**
+- ✨ 桌面通知现在会显示来源标签，包含 CLI 宿主、项目名和会话短标识，多个 Codex / Claude Code / Gemini 窗口并行时可以直接区分是谁触发了通知
+- 🔧 统一通知来源解析链路：优先使用显式 session 标识，其次使用终端会话环境信息，最后回退到进程级标识，避免宿主上送信息不完整时通知失去辨识度
+- 🧪 新增通知来源回归测试，并保持运行时通知 / 工作流相关测试持续通过
+
+### v3.0.4
 
 **标准待机与运行时边界：**
 - 🔧 相对 `v3.0.3`，进一步明确激活边界：完整六阶段内核保留在 `bootstrap.md`，`bootstrap-lite.md` 作为项目激活前的待机载体

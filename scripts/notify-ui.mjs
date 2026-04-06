@@ -19,6 +19,36 @@ const NOTIFY_MESSAGES = {
 
 const WIN_APPID = 'HelloAgents.Notification';
 
+function escapeToastText(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeAppleScriptText(value = '') {
+  return String(value).replace(/"/g, '\\"');
+}
+
+export function buildDesktopNotificationContent(event, extra) {
+  const options = extra && typeof extra === 'object'
+    ? extra
+    : { message: extra || '' };
+  const message = options.message || NOTIFY_MESSAGES[event] || event;
+  const title = options.title || 'HelloAgents 通知';
+  const sourceLabel = options.sourceLabel || '';
+  const body = sourceLabel ? `${sourceLabel}\n${message}` : message;
+  const toastLines = sourceLabel ? [sourceLabel, message] : [message];
+
+  return {
+    title,
+    message,
+    sourceLabel,
+    body,
+    toastLines,
+  };
+}
+
 function resolveWav(pkgRoot, event) {
   const p = join(pkgRoot, 'assets', 'sounds', `${event}.wav`);
   return existsSync(p) ? p : null;
@@ -53,14 +83,15 @@ function ensureWinAppId(pkgRoot) {
 }
 
 export function desktopNotify(pkgRoot, event, extra) {
-  const msg = extra || NOTIFY_MESSAGES[event] || event;
-  const title = 'HelloAgents 通知';
+  const notification = buildDesktopNotificationContent(event, extra);
   try {
     if (PLAT === 'win32') {
       ensureWinAppId(pkgRoot);
-      const safeMsg = msg.replace(/'/g, "''");
       const iconPath = join(pkgRoot, 'assets', 'icons', 'icon.png').replace(/\//g, '\\');
       const iconXml = existsSync(iconPath) ? `<image placement="appLogoOverride" src="${iconPath}" />` : '';
+      const textXml = notification.toastLines
+        .map((line) => `<text>${escapeToastText(line)}</text>`)
+        .join('\n      ');
       const ps = `
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime] | Out-Null
@@ -69,7 +100,7 @@ $xml = @"
   <visual>
     <binding template="ToastGeneric">
       ${iconXml}
-      <text>${safeMsg}</text>
+      ${textXml}
     </binding>
   </visual>
 </toast>
@@ -81,11 +112,14 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 `.trim();
       spawnSync('powershell', ['-NoProfile', '-c', ps], { stdio: 'ignore', windowsHide: true });
     } else if (PLAT === 'darwin') {
+      const subtitle = notification.sourceLabel
+        ? ` subtitle "${escapeAppleScriptText(notification.sourceLabel)}"`
+        : '';
       spawnSync('osascript', ['-e',
-        `display notification "${msg.replace(/"/g, '\\"')}" with title "${title}"`],
+        `display notification "${escapeAppleScriptText(notification.message)}" with title "${escapeAppleScriptText(notification.title)}"${subtitle}`],
         { stdio: 'ignore' });
     } else {
-      const result = spawnSync('notify-send', [title, msg], { stdio: 'ignore' });
+      const result = spawnSync('notify-send', [notification.title, notification.body], { stdio: 'ignore' });
       if (result.status !== 0) process.stderr.write('\x07');
     }
   } catch { process.stderr.write('\x07'); }
