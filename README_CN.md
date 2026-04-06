@@ -376,7 +376,7 @@ helloagents --standby
 
 ## ⚙️ 工作原理
 
-**简单说：** HelloAGENTS 根据任务类型、风险等级和项目状态选择执行深度。简单任务直接执行；复杂任务走“路由前置”的内核工作流，并通过显式命令通道拆分脑暴、规划、实现与验证。
+**简单说：** HelloAGENTS 根据任务类型、风险等级和项目状态选择执行深度。标准模式下，未激活项目只保留轻量规则：安全、完成约束、压缩版质量下限，以及显式 `~command` 通道；一旦项目通过 `.helloagents/` 激活，或启用全局模式，就切换到完整内核工作流，显式经过脑暴、规划、实现、验证与收尾阶段。
 
 **六阶段内核：**
 
@@ -410,10 +410,12 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 
 | 模式 | 安装方式 | 规则 | 技能 | 适用场景 |
 |------|---------|------|------|----------|
-| **标准模式** (默认) | `helloagents install <target> --standby` 或 `helloagents install --all --standby` | `bootstrap-lite.md`（精简规则） | `~command` 按需使用，通过 `.helloagents/` 激活项目（`~wiki` 或 `~init`） | 按需使用，不影响其他项目 |
+| **标准模式** (默认) | `helloagents install <target> --standby` 或 `helloagents install --all --standby` | `bootstrap-lite.md`（含压缩版质量下限、安全规则与完成约束的精简规则） | `~command` 按需使用，通过 `.helloagents/` 激活项目（`~wiki` 或 `~init`） | 按需使用，不影响其他项目 |
 | **全局模式** | Claude/Gemini 手动装插件；Codex 自动装原生本地插件 | `bootstrap.md`（完整规则） | 14 个技能自动激活 | 全面使用 HelloAGENTS |
 
 标准模式会把规则注入到 `~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/AGENTS.md`；其中 Codex 再通过 `~/.codex/config.toml` 中的 `developer_instructions` 加载这个本地合并后的文件。每个 CLI 还会创建 `helloagents` 包根目录符号链接。Claude Code 和 Gemini 仍使用 hooks，因为宿主可以较安静地承载这类注入；Codex 默认**不启用** HelloAGENTS hooks：最新 pre 源码里 hook 生命周期会在 TUI 中可见显示，且 `suppressOutput` 不能作为真正的静默注入通道，所以 Codex 改为依赖注入后的规则文件，以及本地符号链接 / 原生本地插件目录结构。全局模式下，Claude Code 通过 `.claude-plugin/plugin.json` 中声明的 hooks 工作，Gemini 通过 `contextFileName=bootstrap.md` 和扩展 hooks 工作；Codex 仍使用原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段），但不启用插件 hooks。
+
+在标准模式下，`.helloagents/` 就是项目激活边界。激活前，lite 载体**不会**运行完整六阶段内核，也不会启用语义自动选路；它只保留轻量执行规则、显式 `~command` 入口，以及最低质量/完成门槛。项目一旦存在 `.helloagents/`，当前项目就切换到完整项目流程，并以 `bootstrap.md` 作为运行时事实源。
 
 整套切换可用：`helloagents --global` 或 `helloagents --standby`
 
@@ -669,6 +671,7 @@ npm test
 - ✨ 新增 `~wiki`，用于只创建或同步 `.helloagents/`，不写项目级载体文件
 - 🔧 明确标准模式下的激活边界：`.helloagents/` 才是项目进入完整流程的实际信号；项目级载体文件仍属于 `~init` 的职责
 - 🔧 统一修正 bootstrap、帮助文本和 README 中 `kb_create_mode` 的表述，使其只描述已激活项目或全局模式下的同步时机
+- 🔧 重新收敛 `bootstrap.md` 与 `bootstrap-lite.md`：完整内核保留在 `bootstrap.md`，标准待机未激活项目保留压缩版完成约束、命令路由与质量下限
 - 🧪 新增 `~wiki` 路由覆盖，并持续验证标准模式下基于 `.helloagents/` 的激活行为
 
 ### v3.0.2
