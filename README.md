@@ -8,7 +8,7 @@
 
 **Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
 
-[![Version](https://img.shields.io/badge/version-3.0.4-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.5-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -665,7 +665,14 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.4 (current)
+### v3.0.5 (current)
+
+**Notification source labels:**
+- ✨ Desktop notifications now include a source label with CLI host, project, and session short ID so parallel Codex / Claude Code / Gemini windows are distinguishable at a glance
+- 🔧 Unified notification source resolution across explicit session identifiers, terminal session env values, and process fallback so sparse host payloads still produce usable source tags
+- 🧪 Added notification-source regression coverage and kept the runtime notification / workflow suites green
+
+### v3.0.4
 
 **Standby and runtime boundaries:**
 - 🔧 Clarified the activation boundary relative to `v3.0.3`: the full 6-stage kernel stays in `bootstrap.md`, while `bootstrap-lite.md` is treated as the standby carrier before project activation

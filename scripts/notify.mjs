@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
+import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
 import { claimsTaskComplete, shouldIgnoreCodexNotifyClient, shouldIgnoreFormattedSubagent } from './notify-events.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
@@ -34,6 +35,18 @@ const EVENT_NAME = {
 
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
+
+function buildNotifyExtra(payload = {}, options = {}) {
+  const source = resolveNotificationSource({
+    host: HOST,
+    cwd: payload.cwd || process.cwd(),
+    payload,
+  });
+  return {
+    message: options.message || '',
+    sourceLabel: source.sourceLabel,
+  };
+}
 
 function getSettings() {
   return readSettings(CONFIG_FILE);
@@ -190,19 +203,19 @@ function cmdStop() {
   clearRouteContext();
   if (runRalphLoop(payload)) {
     playSound('warning');
-    desktopNotify('warning');
+    desktopNotify('warning', buildNotifyExtra(payload));
     return;
   }
   if (claimsTaskComplete(lastMsg) && runDeliveryGate(payload)) {
     playSound('warning');
-    desktopNotify('warning');
+    desktopNotify('warning', buildNotifyExtra(payload));
     return;
   }
 
   const settings = getSettings();
   const level = settings.notify_level ?? 0;
   if (level === 2 || level === 3) playSound('complete');
-  if (level === 1 || level === 3) desktopNotify('complete');
+  if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(payload));
   emptySuppress();
 }
 
@@ -211,7 +224,7 @@ function cmdSound() {
 }
 
 function cmdDesktop() {
-  desktopNotify(process.argv[3] || 'complete');
+  desktopNotify(process.argv[3] || 'complete', buildNotifyExtra({ cwd: process.cwd() }));
 }
 
 function cmdCodexNotify() {
@@ -224,7 +237,7 @@ function cmdCodexNotify() {
 
   if (type === 'approval-requested') {
     playSound('confirm');
-    desktopNotify('confirm');
+    desktopNotify('confirm', buildNotifyExtra(data));
     return;
   }
   if (type !== 'agent-turn-complete') return;
@@ -236,18 +249,18 @@ function cmdCodexNotify() {
   const cwd = data.cwd || process.cwd();
   if (claimsTaskComplete(lastMsg) && runRalphLoop({ cwd })) {
     playSound('warning');
-    desktopNotify('warning');
+    desktopNotify('warning', buildNotifyExtra(data));
     return;
   }
   if (claimsTaskComplete(lastMsg) && runDeliveryGate({ cwd })) {
     playSound('warning');
-    desktopNotify('warning');
+    desktopNotify('warning', buildNotifyExtra(data));
     return;
   }
 
   const level = settings.notify_level ?? 0;
   if (level === 2 || level === 3) playSound('complete');
-  if (level === 1 || level === 3) desktopNotify('complete');
+  if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(data));
 }
 
 const cmd = process.argv[2] || '';
