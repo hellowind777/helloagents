@@ -376,7 +376,7 @@ helloagents --standby
 
 ## ⚙️ How It Works
 
-**Short version:** HelloAGENTS selects execution depth based on task type, risk, and project state. Simple tasks run directly; complex tasks use a routed kernel workflow with explicit ideation, planning, build, and verification lanes. Once the requirement and execution direction are clear, it prefers direct completion over repeated confirmation.
+**Short version:** HelloAGENTS selects execution depth based on task type, risk, and project state. In standby mode, unactivated projects keep a lightweight rule set: safety, completion constraints, a compact quality floor, and explicit `~command` lanes. Once the project is activated through `.helloagents/`, or when global mode is enabled, HelloAGENTS switches to the full routed kernel workflow with explicit ideation, planning, build, verification, and consolidation stages.
 
 **The routed 6-stage kernel:**
 
@@ -410,10 +410,12 @@ HelloAGENTS supports two installation modes with different installation methods:
 
 | Mode | Install Method | Rules | Skills | Best For |
 |------|---------------|-------|--------|----------|
-| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules) | `~command` on demand, project activation via `.helloagents/` (`~wiki` or `~init`) | Selective use, keeping other projects unaffected |
+| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules with compact quality floor, safety, and completion constraints) | `~command` on demand, project activation via `.helloagents/` (`~wiki` or `~init`) | Selective use, keeping other projects unaffected |
 | **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
 
 Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; Codex then loads that local merged file via `developer_instructions` in `~/.codex/config.toml`. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) without plugin hooks.
+
+In standby mode, `.helloagents/` is the activation boundary. Before activation, the lite carrier does **not** run the full 6-stage kernel or semantic auto-routing; it keeps the lightweight execution rules, explicit `~command` entry points, and minimum quality/completion guardrails. Once `.helloagents/` exists, the active project switches to the full project workflow and `bootstrap.md` becomes the runtime source of truth.
 
 Bulk switch via CLI: `helloagents --global` or `helloagents --standby`
 
@@ -669,6 +671,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - ✨ Added `~wiki` for creating or syncing `.helloagents/` without writing project-local carrier files
 - 🔧 Clarified the activation boundary: in standby mode, `.helloagents/` is the actual project activation signal; project-local carrier files remain optional and belong to `~init`
 - 🔧 Refined `kb_create_mode` wording across bootstrap, help text, and README so it only describes sync timing inside activated projects or global mode
+- 🔧 Rebalanced `bootstrap.md` and `bootstrap-lite.md`: the full kernel stays in `bootstrap.md`, while standby keeps compact completion constraints, command routing, and a compressed quality floor for unactivated projects
 - 🧪 Added routing coverage for `~wiki` and kept standby `.helloagents/` activation behavior under test
 
 ### v3.0.2
