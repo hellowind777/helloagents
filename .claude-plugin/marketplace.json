@@ -9,7 +9,7 @@
     {
       "name": "helloagents",
       "description": "Quality-driven orchestration kernel for AI CLIs: intelligent routing, quality verification, safety guards, and notifications",
-      "version": "3.0.3",
+      "version": "3.0.4",
       "source": "./",
       "author": {
         "name": "HelloWind",

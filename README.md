@@ -8,7 +8,7 @@
 
 **Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
 
-[![Version](https://img.shields.io/badge/version-3.0.3-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.4-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -665,13 +665,19 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.3 (current)
+### v3.0.4 (current)
+
+**Standby and runtime boundaries:**
+- 🔧 Clarified the activation boundary relative to `v3.0.3`: the full 6-stage kernel stays in `bootstrap.md`, while `bootstrap-lite.md` is treated as the standby carrier before project activation
+- ✨ Solidified standby, unactivated projects with a compact quality floor so lightweight mode still keeps modern stack, performance, and UI-quality baselines
+- 🔧 Refined bootstrap terminology and runtime wording for more precise, professional guidance without changing the existing guardrail model
+
+### v3.0.3
 
 **Workflow and KB activation:**
 - ✨ Added `~wiki` for creating or syncing `.helloagents/` without writing project-local carrier files
 - 🔧 Clarified the activation boundary: in standby mode, `.helloagents/` is the actual project activation signal; project-local carrier files remain optional and belong to `~init`
 - 🔧 Refined `kb_create_mode` wording across bootstrap, help text, and README so it only describes sync timing inside activated projects or global mode
-- 🔧 Rebalanced `bootstrap.md` and `bootstrap-lite.md`: the full kernel stays in `bootstrap.md`, while standby keeps compact completion constraints, command routing, and a compressed quality floor for unactivated projects
 - 🧪 Added routing coverage for `~wiki` and kept standby `.helloagents/` activation behavior under test
 
 ### v3.0.2

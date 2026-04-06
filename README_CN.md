@@ -8,7 +8,7 @@
 
 **质量驱动的 AI 编码 CLI 编排内核 — 14 个自动激活技能、流程纪律、检查清单门控。**
 
-[![Version](https://img.shields.io/badge/version-3.0.3-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.4-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -665,13 +665,19 @@ npm test
 
 ## 📈 版本历史
 
-### v3.0.3（当前版本）
+### v3.0.4（当前版本）
+
+**标准待机与运行时边界：**
+- 🔧 相对 `v3.0.3`，进一步明确激活边界：完整六阶段内核保留在 `bootstrap.md`，`bootstrap-lite.md` 作为项目激活前的待机载体
+- ✨ 固化标准模式、未激活项目的压缩版质量下限，让轻量模式仍能维持现代技术基线、性能基线和 UI 质量要求
+- 🔧 统一精修 bootstrap 的运行时术语与规则表述，在不改变既有门控模型的前提下提升准确性和专业性
+
+### v3.0.3
 
 **流程与知识库激活：**
 - ✨ 新增 `~wiki`，用于只创建或同步 `.helloagents/`，不写项目级载体文件
 - 🔧 明确标准模式下的激活边界：`.helloagents/` 才是项目进入完整流程的实际信号；项目级载体文件仍属于 `~init` 的职责
 - 🔧 统一修正 bootstrap、帮助文本和 README 中 `kb_create_mode` 的表述，使其只描述已激活项目或全局模式下的同步时机
-- 🔧 重新收敛 `bootstrap.md` 与 `bootstrap-lite.md`：完整内核保留在 `bootstrap.md`，标准待机未激活项目保留压缩版完成约束、命令路由与质量下限
 - 🧪 新增 `~wiki` 路由覆盖，并持续验证标准模式下基于 `.helloagents/` 的激活行为
 
 ### v3.0.2
