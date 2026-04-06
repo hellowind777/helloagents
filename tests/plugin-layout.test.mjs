@@ -23,11 +23,15 @@ test('plugin manifests and host hook files match their target CLIs', () => {
 
   const geminiHooks = read('hooks/hooks.json');
   assert.match(geminiHooks, /BeforeAgent/);
+  assert.match(geminiHooks, /pre-write --gemini/);
+  assert.match(geminiHooks, /write_file\|edit_file/);
   assert.match(geminiHooks, /\$\{extensionPath\}/);
   assert.doesNotMatch(geminiHooks, /UserPromptSubmit/);
 
   const claudeHooks = read('hooks/hooks-claude.json');
   assert.match(claudeHooks, /UserPromptSubmit/);
+  assert.match(claudeHooks, /guard\.mjs\\\" pre-write/);
+  assert.match(claudeHooks, /Write\|Edit\|NotebookEdit/);
   assert.match(claudeHooks, /\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.match(claudeHooks, /--claude/);
   assert.doesNotMatch(claudeHooks, /BeforeAgent/);

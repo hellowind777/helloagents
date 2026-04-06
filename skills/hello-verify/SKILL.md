@@ -72,6 +72,8 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 2. 逐项确认每个检查项，标记 [√] 并附带证据（如：`src/api.ts:42` 使用了参数化查询）
 3. 不适用的项标记 [-] 并说明原因
 4. 有未通过项 → 修复 → 重新运行验证循环
+5. 若当前存在方案包并准备最终收尾，优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录 `requirementsCoverage` 与 `deliveryChecklist` 两项结论；两项都必须包含 `status`（`PASS` / `BLOCKED`）和 `summary`
+6. 若当前方案包要求 `review-first`，必须先确认 `.helloagents/.ralph-review.json` 已通过 `scripts/review-state.mjs write` 写成最新结构化证据；不要把审查自然语言消息直接当成交付证据
 
 ## 需求追踪验证
 
@@ -79,7 +81,10 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 1. 逐条读取 requirements.md 的需求（核心目标、功能边界、质量要求）
 2. 确认每条需求都有对应的任务实现，没有被静默丢弃
 3. 确认非目标章节列出的内容确实没有被实现（防止范围蔓延）
-4. 发现遗漏 → 补充实现 → 重新验证
+4. 若 tasks.md 中定义了“完成标准”，逐项确认每个任务的完成标准确实成立，不能只因为代码存在或命令通过就视为完成
+5. 若存在 `contract.json`，逐项确认其中的 `verifyMode`、reviewer / tester 关注边界都已被本轮验证覆盖
+6. 若 `contract.json` 中 `advisor.required=true`，额外确认 `.helloagents/.ralph-advisor.json` 已存在且结论为 clean；若没有 advisor artifact，不得把本轮视为可交付
+6. 发现遗漏 → 补充实现 → 重新验证
 
 ## 反代理目标漂移 (APGD)
 

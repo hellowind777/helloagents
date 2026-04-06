@@ -281,7 +281,7 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 | 命令 | 说明 |
 |------|------|
 | `~idea` | 轻量点子探索 — 比较方向与方案，不写文件 |
-| `~auto` | 自动选路 — 在脑暴 / 规划 / 实现 / 验证 / PRD 间选择合适路径 |
+| `~auto` | 自动选路 — 在脑暴 / 规划 / 实现 / 验证 / PRD 间选择合适路径，并优先复用现有活跃方案包 |
 | `~plan` | 结构化规划 — 需求澄清 + 方案收敛 + 计划包 |
 | `~build` | 执行实现 — 基于当前需求或现有计划包完成实现 |
 | `~prd` | 完整 PRD — 13 维度头脑风暴式探索，生成产品需求文档 |
@@ -306,6 +306,7 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 
 兼容别名：
 - `~design` → `~plan`
+- `~do` → `~build`
 - `~review` → `~verify`（审查优先模式）
 
 ## 🔧 配置
@@ -431,7 +432,7 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 | `~auto` | 在以上模式之间自动选路 | 需求明确，想要端到端交付 |
 | `~prd` | 13 维度 PRD 生成 | 需要完整的产品需求文档 |
 
-典型模式：先 `~idea` 比较方向，再 `~plan` 收敛方案，然后 `~build` 实现，最后 `~verify` 验证。或者直接 `~auto` 一步到位。涉及 UI 时，决策优先级固定为：`plan.md` / PRD 中的 UI 决策 → `DESIGN.md` → 通用 UI 规则。
+典型模式：先 `~idea` 比较方向，再 `~plan` 收敛方案，然后 `~build` 实现，最后 `~verify` 验证。或者直接 `~auto` 一步到位。如果项目里已经有活跃方案包，`~auto` 应先复用这条现有链路，而不是无故重新脑暴或重新规划。涉及 UI 时，决策优先级固定为：`plan.md` / PRD 中的 UI 决策 → `DESIGN.md` → 通用 UI 规则。
 
 ### 质量验证（Ralph Loop）
 
@@ -439,23 +440,24 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 - 优先级：`.helloagents/verify.yaml` → `package.json` scripts → 自动检测
 - 全部通过？→ 收集技能检查清单 → 验证 → 完成
 - 有失败？→ 反思 → 修复 → 重跑（3 次连续失败后触发熔断）
+- 若当前活跃方案包仍有未完成任务、缺少必需 artifact，或残留模板占位内容，交付也会被额外门控阻止
 
 ### 知识库（`.helloagents/`）
 
 `~wiki` 只创建或同步项目本地知识库。`~init` 是更完整的项目初始化：它还会写入项目级载体文件（`AGENTS.md`、`CLAUDE.md`、`.gemini/GEMINI.md`）、刷新项目 `skills/helloagents` 链接，并补齐相关忽略项。在标准模式下，真正让当前项目进入完整项目流程的是 `.helloagents/` 的存在，项目级载体文件只是 `~init` 的附加能力。
 
-`STATE.md` 是项目级恢复快照，不是所有交互的统一记忆文件。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
+`STATE.md` 是项目级恢复游标，不是所有交互的统一记忆文件。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
 
 | 文件 | 用途 |
 |------|------|
-| `STATE.md` | 项目级恢复快照（≤50 行，压缩后存活） |
+| `STATE.md` | 项目级恢复游标（≤70 行，压缩后可据此续接） |
 | `DESIGN.md` | 项目级 UI 契约（设计系统、组件模式、状态覆盖、无障碍要求） |
 | `context.md` | 项目架构、技术栈、约定 |
 | `guidelines.md` | 非显而易见的编码规则 |
 | `verify.yaml` | 验证命令 |
 | `CHANGELOG.md` | 变更历史 |
 | `modules/*.md` | 模块文档 + 经验 |
-| `plans/` | 活跃计划包 |
+| `plans/` | 活跃计划包（`requirements.md`、`plan.md`、`tasks.md`、`contract.json`） |
 | `archive/` | 已完成计划包 |
 
 ### 智能提交（~commit）
@@ -544,7 +546,7 @@ npm test
 <details>
 <summary><strong>Q：项目知识存在哪里？</strong></summary>
 
-**A：** 项目本地的 `.helloagents/` 目录。可以由 `~wiki`（仅知识库）或 `~init`（完整项目初始化）创建；之后会按 `kb_create_mode` 在代码变更场景中自动同步。其中 `STATE.md` 只作为长流程任务的精简恢复快照，不承担所有交互的统一记忆。
+**A：** 项目本地的 `.helloagents/` 目录。可以由 `~wiki`（仅知识库）或 `~init`（完整项目初始化）创建；之后会按 `kb_create_mode` 在代码变更场景中自动同步。其中 `STATE.md` 只作为长流程任务的精简恢复游标，不承担所有交互的统一记忆。
 </details>
 
 <details>
@@ -690,7 +692,7 @@ npm test
 
 **破坏性变更：**
 - 🔴 完全重写：Python 包 → 纯 Node.js/Markdown 架构。`pip`/`uv` 安装方式不再可用
-- 🔴 命令重命名/移除：`~plan` → `~design`，移除 `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan`
+- 🔴 命令重命名/移除：`~design` → `~plan`、`~review` → `~verify`、`~do` → `~build`，移除 `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan`
 - 🔴 配置键从大写改为小写。移除：`BILINGUAL_COMMIT`、`EVAL_MODE`、`UPDATE_CHECK`、`CSV_BATCH_MAX`
 
 **新功能：**
@@ -702,12 +704,13 @@ npm test
 - ✨ `~verify` 命令：自动检测并运行所有验证命令
 - ✨ Guard 系统（`guard.mjs`）：L1 拦截破坏性命令 + L2 安全模式建议
 - ✨ 标准/全局模式：`install_mode` 配置项支持按项目或全局激活
-- ✨ 流状态管理（`STATE.md`）：AI 上下文压缩快照（≤50 行）
+- ✨ 流状态管理（`STATE.md`）：用于压缩/恢复衔接的恢复游标（≤70 行）
 - ✨ 设计系统生成（`DESIGN.md`）：作为项目级 UI 契约自动创建
-- ✨ 计划包系统：`requirements.md` + `plan.md` + `tasks.md`
+- ✨ 计划包系统：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`
+- ✨ 可选 advisor contract / evidence：仅在 T3 / UI / 高风险链路启用，通过 `contract.json` + `.helloagents/.ralph-advisor.json` 落地
 
 **架构：**
-- 📦 统一五阶段执行流程：ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE
+- 📦 路由前置的六阶段内核：ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
 - 📦 简化配置：8 个小写键，合理默认值
 - 📦 双模式安装：标准模式（非插件，显式部署）/ 全局模式（插件/扩展）
 - 📦 模块化脚本架构：`cli-utils.mjs`（共享工具）、`notify-ui.mjs`（跨平台声音/桌面通知）、`guard.mjs`（安全防护）、`ralph-loop.mjs`（质量验证）
@@ -763,7 +766,7 @@ npm test
 - ✨ Claude Code hooks 从 9 个扩展到 11 个生命周期事件类型
 - ✨ Hooks 支持扩展到 Gemini CLI 和 Grok CLI
 - ✨ 会话启动时配置完整性检查
-- ✨ 上下文压缩前注入恢复快照
+- ✨ 上下文压缩前注入恢复游标
 - ✨ 用户自定义工具注册和编排
 
 **改进：**

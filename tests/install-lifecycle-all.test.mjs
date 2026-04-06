@@ -1,0 +1,84 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+
+import { CODEX_DEVELOPER_INSTRUCTIONS } from '../scripts/cli-codex.mjs'
+import { createHomeFixture, createPackageFixture, readJson, readText, realTarget, writeText } from './helpers/test-env.mjs'
+import { hasTimestampedBackup, runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
+
+test('CLI lifecycle covers standby, global, update, cleanup, and config preservation', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['postinstall'])
+
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  assert.equal(readJson(configFile).install_mode, 'standby')
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
+
+  runCli(pkgRoot, home, ['install', '--all', '--standby'])
+
+  const claudeMd = readText(join(home, '.claude', 'CLAUDE.md'))
+  assert.match(claudeMd, /HELLOAGENTS_START/)
+  assert.match(claudeMd, /skills\/helloagents\/skills\/commands/)
+  assert.match(claudeMd, /# Claude custom/)
+
+  const geminiMd = readText(join(home, '.gemini', 'GEMINI.md'))
+  assert.match(geminiMd, /HELLOAGENTS_START/)
+  assert.match(geminiMd, /# Gemini custom/)
+
+  const codexConfigPath = join(home, '.codex', 'config.toml')
+  const codexConfig = readText(codexConfigPath)
+  assert.match(codexConfig, /^developer_instructions = """/)
+  assert.match(codexConfig, /codex-notify/)
+  assert.match(codexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.ok(hasTimestampedBackup(home, 'config.toml'))
+  assert.equal(realTarget(join(home, '.claude', 'helloagents')), pkgRoot)
+  assert.equal(realTarget(join(home, '.gemini', 'helloagents')), pkgRoot)
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pkgRoot)
+
+  writeText(join(pkgRoot, 'bootstrap-lite.md'), '# standby updated\n')
+  assert.equal(readText(join(home, '.claude', 'helloagents', 'bootstrap-lite.md')), '# standby updated\n')
+
+  runCli(pkgRoot, home, ['--global'])
+
+  assert.equal(readJson(configFile).install_mode, 'global')
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
+
+  const pluginRoot = join(home, 'plugins', 'helloagents')
+  const pluginCacheRoot = join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local')
+  assert.ok(existsSync(pluginRoot))
+  assert.ok(existsSync(pluginCacheRoot))
+  assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
+  assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
+
+  const globalCodexConfig = readText(codexConfigPath)
+  assert.match(globalCodexConfig, /plugins\/helloagents\/scripts\/notify\.mjs/)
+  assert.match(globalCodexConfig, /\[plugins\."helloagents@local-plugins"\]\s+enabled = true/)
+  assert.match(globalCodexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+
+  writeText(join(pkgRoot, 'bootstrap.md'), '# global updated\n')
+  runCli(pkgRoot, home, ['--global'])
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# global updated/)
+  assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /# global updated/)
+
+  runCli(pkgRoot, home, ['--standby'])
+  assert.equal(readJson(configFile).install_mode, 'standby')
+  assert.ok(!existsSync(pluginRoot))
+  assert.ok(!existsSync(pluginCacheRoot))
+  assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
+
+  runCli(pkgRoot, home, ['preuninstall'])
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
+  assert.ok(!hasTimestampedBackup(home, 'config.toml'))
+  const finalCodexConfig = readText(codexConfigPath)
+  assert.match(finalCodexConfig, /C:\/original\/bootstrap\.md/)
+  assert.doesNotMatch(finalCodexConfig, /developer_instructions\s*=/)
+})

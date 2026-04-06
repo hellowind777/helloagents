@@ -19,12 +19,12 @@ Trigger: ~loop <目标描述> [--iterations N] [--metric "命令"] [--direction 
 ## 初始化
 
 1. 确认 git 工作区干净（有未提交变更则先提醒用户处理）
-2. 确保 `.helloagents/` 目录和 `.helloagents/STATE.md` 存在；目录不存在时先创建，`STATE.md` 不存在时按 `templates/STATE.md` 创建。这是 `~loop` 的强制恢复快照，不受 `kb_create_mode` 控制
+2. 确保 `.helloagents/` 目录和 `.helloagents/STATE.md` 存在；目录不存在时先创建，`STATE.md` 不存在时按 `templates/STATE.md` 创建。这是 `~loop` 的强制恢复游标，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免被旧任务主线污染
 3. 运行指标命令获取基线值，记录到 results log
 4. 如有守卫命令，运行确认基线通过
 5. 创建 `.helloagents/loop-results.tsv`，并确保 .gitignore 包含该文件
 6. 根据优化目标标记可能需要的 hello-* 质量技能（如性能优化标记 hello-perf，UI 优化标记 hello-ui）
-7. 重写 `.helloagents/STATE.md`：记录当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
+7. 重写 `.helloagents/STATE.md`：记录主线目标=当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
 
 results log 格式：
 ```
@@ -35,7 +35,8 @@ iteration	commit	metric	delta	guard	status	description
 
 ## 八阶段循环
 
-~loop 的八阶段循环是统一执行流程（ORIENT→CLARIFY→PLAN→EXECUTE→VALIDATE）在迭代优化场景下的特化形式。每轮迭代的 Modify 阶段遵循已标记的 hello-* 质量技能规范，Verify 阶段遵循 hello-verify 的验证规范。
+`~loop` 的八阶段循环是统一执行流程（ROUTE/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE）在迭代优化场景下的特化形式。每轮迭代的 Modify 阶段遵循已标记的 hello-* 质量技能规范，Verify 阶段遵循 hello-verify 的验证规范。
+执行 `~loop` 时，涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载 bootstrap 执行；本 skill 负责补充 loop 场景的迭代顺序与回滚规则。
 
 不要停止。不要询问是否继续。
 每轮迭代必须完整走完以下八个阶段：
@@ -76,7 +77,7 @@ iteration	commit	metric	delta	guard	status	description
 ### Phase 7: Log
 - 追加一行到 results log
 - status: baseline / keep / discard / crash / no-op
-- 重写 `.helloagents/STATE.md`：记录当前轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
+- 重写 `.helloagents/STATE.md`：保持主线目标=当前优化目标，并记录当前轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
 
 ### Phase 8: Repeat
 - 如果 iterations > 0 且 current_iteration >= max_iterations → 输出总结并停止
@@ -89,7 +90,7 @@ iteration	commit	metric	delta	guard	status	description
 - 总迭代次数 / 保留次数 / 丢弃次数
 - 最有效的 3 个改进
 - results log 路径
-- 重写 `.helloagents/STATE.md`：将“正在做什么”更新为已完成，保留最终结论摘要，清空阻塞项，并给出可立即执行的下一步（如继续优化、停止、切换目标）
+- 重写 `.helloagents/STATE.md`：将“主线目标”保留为本次优化目标，“正在做什么”更新为已完成，保留最终结论摘要，清空阻塞项，并给出可立即执行的下一步（如继续优化、停止、切换目标）
 
 ## 安全规则
 - 使用 `git revert`（保留历史）而非 `git reset --hard`（丢失历史）

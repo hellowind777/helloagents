@@ -9,12 +9,13 @@ Trigger: ~wiki
 `~wiki` 是用户显式命令，用于只创建、补全或同步项目本地知识库，不创建项目根 `AGENTS.md` / `CLAUDE.md` / `.gemini/GEMINI.md`，也不创建项目级 `skills/helloagents` symlink。适用于标准模式下希望保留项目目录为“非载体项目”，但仍希望当前项目拥有 `.helloagents/`、`STATE.md` 和知识沉淀文件的场景。
 
 `~wiki` 是显式知识库命令，不受 `kb_create_mode` 限制。
+执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 重写规则按当前已加载 bootstrap 执行；本命令只补充“只写知识库、不写项目根载体”的边界。
 
 ## 流程
 
 ### 阶段 1：基础准备（必做）
 
-1. 创建 `.helloagents/` 目录 + `STATE.md`（按 templates/STATE.md 格式）
+1. 创建 `.helloagents/` 目录 + `STATE.md`（按 templates/STATE.md 格式）；初始“主线目标”只写当前知识库初始化 / 同步目标，不把它写成长期项目总目标
 2. 追加 `.gitignore`（如果对应行不存在）：
    ```
    .helloagents/
@@ -51,7 +52,7 @@ commands:
 ## 幂等性
 重复执行 `~wiki` 是安全的：
 - `.helloagents/` 缺失时创建，已存在时复用
-- `STATE.md` 按当前任务状态重写，不追加历史
+- `STATE.md` 按当前任务状态重写，不追加历史；它只记录当前知识库链路的恢复游标，不承担项目主线的唯一记忆
 - 知识库文件缺失时补全，已存在时按模板增量更新
 - `.gitignore` 只追加缺失行
 - 永不写入项目根载体文件，也不创建项目级 `skills/helloagents` symlink

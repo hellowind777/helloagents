@@ -1,0 +1,182 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { existsSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
+import { REPO_ROOT, readText } from './helpers/test-env.mjs'
+
+function listSkillFiles(dirPath) {
+  const files = []
+  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
+    const fullPath = join(dirPath, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...listSkillFiles(fullPath))
+      continue
+    }
+    if (entry.isFile() && entry.name === 'SKILL.md') {
+      files.push(fullPath)
+    }
+  }
+  return files
+}
+
+test('workflow skill contracts stay aligned with command aliases and artifacts', () => {
+  const helloagents = readText(join(REPO_ROOT, 'skills', 'helloagents', 'SKILL.md'))
+  assert.match(helloagents, /公共阶段边界以当前已加载 bootstrap 为准/)
+  assert.match(helloagents, /ROUTE\/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE/)
+  assert.match(helloagents, /ROUTE \/ TIER \/ SPEC 阶段/)
+  assert.match(helloagents, /BUILD 开始时读取/)
+  assert.match(helloagents, /`~do` → 直接按 `~build` 的 command skill 路径读取并执行/)
+  assert.match(helloagents, /`~design` → 直接按 `~plan` 的 command skill 路径读取并执行/)
+  assert.match(helloagents, /`~review` → 直接按 `~verify` 的 command skill 路径读取并执行/)
+  assert.equal(existsSync(join(REPO_ROOT, 'skills', 'commands', 'do', 'SKILL.md')), false)
+  assert.equal(existsSync(join(REPO_ROOT, 'skills', 'commands', 'design', 'SKILL.md')), false)
+  assert.equal(existsSync(join(REPO_ROOT, 'skills', 'commands', 'review', 'SKILL.md')), false)
+
+  const helloUi = readText(join(REPO_ROOT, 'skills', 'hello-ui', 'SKILL.md'))
+  assert.match(helloUi, /设计契约优先级/)
+  assert.match(helloUi, /plan\.md/)
+  assert.match(helloUi, /\.helloagents\/DESIGN\.md/)
+  assert.match(helloUi, /最小设计契约/)
+
+  const idea = readText(join(REPO_ROOT, 'skills', 'commands', 'idea', 'SKILL.md'))
+  assert.match(idea, /不创建或更新 `\.helloagents\/STATE\.md`/)
+  assert.match(idea, /不执行会改变工作区或外部状态的命令/)
+  assert.match(idea, /不在 `~idea` 内偷偷落地/)
+
+  const helloReview = readText(join(REPO_ROOT, 'skills', 'hello-review', 'SKILL.md'))
+  assert.match(helloReview, /审查结束时必须单独给出一行“审查结论：\.\.\.”/)
+  assert.match(helloReview, /scripts\/review-state\.mjs write/)
+  assert.match(helloReview, /`outcome`（`clean` \/ `findings`）/)
+  assert.match(helloReview, /未发现阻塞问题/)
+
+  const helloVerify = readText(join(REPO_ROOT, 'skills', 'hello-verify', 'SKILL.md'))
+  assert.match(helloVerify, /\.helloagents\/\.ralph-review\.json/)
+  assert.match(helloVerify, /\.helloagents\/\.ralph-closeout\.json/)
+  assert.match(helloVerify, /contract\.json/)
+  assert.match(helloVerify, /scripts\/closeout-state\.mjs write/)
+  assert.match(helloVerify, /requirementsCoverage/)
+  assert.match(helloVerify, /deliveryChecklist/)
+  assert.match(helloVerify, /PASS` \/ `BLOCKED/)
+  assert.match(helloVerify, /完成标准/)
+
+  const auto = readText(join(REPO_ROOT, 'skills', 'commands', 'auto', 'SKILL.md'))
+  assert.match(auto, /当前工作流优先/)
+  assert.match(auto, /推荐下一命令 \/ 主路径/)
+  assert.match(auto, /活跃方案包不完整或缺少任务清单 → 先 `~plan`/)
+  assert.match(auto, /活跃方案包仍在执行 → 先 `~build`/)
+  assert.match(auto, /`T3` 高风险或不可逆链路默认不直接进入 `~build`/)
+  assert.match(auto, /纯审查\/纯验证请求才可先进入 `~verify`/)
+  assert.match(auto, /不要在 `~auto` 内另建一套关键词路由表/)
+  assert.match(auto, /不依赖关键词命中做机械分流/)
+  assert.doesNotMatch(auto, /它的职责是选路/)
+
+  const plan = readText(join(REPO_ROOT, 'skills', 'commands', 'plan', 'SKILL.md'))
+  assert.match(plan, /执行 `~plan` 时，通用阶段边界按当前已加载 bootstrap 执行/)
+  assert.match(plan, /按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”和“项目文件”规则恢复上下文/)
+  assert.match(plan, /`\.helloagents\/STATE\.md` 当恢复游标使用/)
+  assert.match(plan, /按当前已加载 bootstrap 的 `\.helloagents\/` 与流程状态规则，确保最小项目状态已建立/)
+  assert.match(plan, /`contract\.json`/)
+  assert.match(plan, /scripts\/plan-contract\.mjs write/)
+  assert.match(plan, /知识库完整创建与归档按当前已加载 bootstrap 的后续规则执行/)
+  assert.match(plan, /“主线目标”写当前规划链路真正要完成的目标/)
+  assert.match(plan, /完成定义/)
+  assert.match(plan, /完成标准与验证方式/)
+  assert.doesNotMatch(plan, /ROUTE \/ SPEC 前置/)
+  assert.doesNotMatch(plan, /统一处理/)
+
+  const verify = readText(join(REPO_ROOT, 'skills', 'commands', 'verify', 'SKILL.md'))
+  assert.match(verify, /当前工作流约束/)
+  assert.match(verify, /不能越过当前方案包边界/)
+  assert.match(verify, /审查、验真和交付收尾/)
+  assert.match(verify, /evaluator contract/)
+  assert.match(verify, /`requirements\.md`、`plan\.md`、`tasks\.md`、`contract\.json`/)
+  assert.match(verify, /scripts\/review-state\.mjs write/)
+  assert.match(verify, /当前上下文已注入“验证分流”/)
+  assert.match(verify, /默认先做全量验证/)
+  assert.match(verify, /立即补做 `hello-review`/)
+  assert.match(verify, /\.helloagents\/\.ralph-advisor\.json/)
+  assert.match(verify, /requirements 是否覆盖、tasks 中每项“完成标准”是否满足/)
+  assert.match(verify, /合同核对结论/)
+  assert.match(verify, /不能把“命令通过”直接等同于“风险已解除”/)
+  assert.match(verify, /进入当前已加载 bootstrap 的 CONSOLIDATE 收尾/)
+
+  const build = readText(join(REPO_ROOT, 'skills', 'commands', 'build', 'SKILL.md'))
+  assert.match(build, /执行 `~build` 时，通用阶段边界按当前已加载 bootstrap 执行/)
+  assert.match(build, /优先按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”恢复当前链路/)
+  assert.match(build, /`\.helloagents\/STATE\.md` 作为恢复游标/)
+  assert.match(build, /“完成标准”当作本轮 build contract/)
+  assert.match(build, /`contract\.json`/)
+  assert.match(build, /其余项目知识库与相关代码文件，按 bootstrap 的项目上下文规则按需读取/)
+  assert.match(build, /当前工作流约束/)
+  assert.match(build, /只有推荐仍为 `~build`/)
+  assert.match(build, /进入 `~verify`/)
+  assert.match(build, /按当前已加载 bootstrap 的 VERIFY \/ CONSOLIDATE 规则执行/)
+  assert.doesNotMatch(build, /需要时同步知识库、`CHANGELOG\.md`、modules 文档与反思/)
+
+  const prd = readText(join(REPO_ROOT, 'skills', 'commands', 'prd', 'SKILL.md'))
+  assert.match(prd, /执行 `~prd` 时，通用阶段边界按当前已加载 bootstrap 执行/)
+  assert.match(prd, /执行 `~prd` 时，不读取 `~plan` 的 command skill/)
+  assert.match(prd, /按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”和“项目文件”规则恢复上下文/)
+  assert.match(prd, /`\.helloagents\/STATE\.md` 当恢复游标使用/)
+  assert.match(prd, /按当前已加载 bootstrap 的 `\.helloagents\/` 与流程状态规则，确保最小项目状态已建立/)
+  assert.match(prd, /`contract\.json`/)
+  assert.match(prd, /scripts\/plan-contract\.mjs write/)
+  assert.match(prd, /“主线目标”写当前 PRD 链路真正要完成的产品 \/ 功能目标/)
+  assert.match(prd, /完成标准、验证方式/)
+  assert.doesNotMatch(prd, /SPEC 前置/)
+  assert.doesNotMatch(prd, /本 skill 自包含/)
+
+  const wiki = readText(join(REPO_ROOT, 'skills', 'commands', 'wiki', 'SKILL.md'))
+  assert.match(wiki, /目录结构、模板格式和 `STATE\.md` 重写规则按当前已加载 bootstrap 执行/)
+  assert.match(wiki, /初始“主线目标”只写当前知识库初始化 \/ 同步目标/)
+  assert.match(wiki, /只记录当前知识库链路的恢复游标/)
+
+  const init = readText(join(REPO_ROOT, 'skills', 'commands', 'init', 'SKILL.md'))
+  assert.match(init, /目录结构、模板格式和 `STATE\.md` 规则按当前已加载 bootstrap 执行/)
+  assert.match(init, /初始“主线目标”写当前初始化链路/)
+  assert.match(init, /只作为当前初始化链路的恢复游标/)
+
+  const clean = readText(join(REPO_ROOT, 'skills', 'commands', 'clean', 'SKILL.md'))
+  assert.match(clean, /方案包归档、临时文件清理和 `STATE\.md` 更新边界按当前已加载 bootstrap 执行/)
+  assert.match(clean, /只有任务清单无法判断时/)
+  assert.match(clean, /按 bootstrap 的归档规则/)
+  assert.match(clean, /不删除知识沉淀文件或项目级设计契约/)
+
+  assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /ROUTE\/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE/)
+  assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载 bootstrap 执行/)
+  assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /强制恢复游标/)
+  assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /主线目标=当前优化目标/)
+
+  const commit = readText(join(REPO_ROOT, 'skills', 'commands', 'commit', 'SKILL.md'))
+  assert.match(commit, /知识库同步与 `STATE\.md` 更新边界按当前已加载 bootstrap 的 CONSOLIDATE \/ 流程状态规则执行/)
+  assert.match(commit, /按 bootstrap 的“已有则更新”规则同步当前已提交状态/)
+  assert.match(commit, /同步范围与更新格式按当前已加载 bootstrap 的 CONSOLIDATE 阶段执行/)
+})
+
+test('runtime rule files avoid maintainer-facing prose', () => {
+  const runtimeFiles = [
+    join(REPO_ROOT, 'bootstrap.md'),
+    join(REPO_ROOT, 'bootstrap-lite.md'),
+    ...listSkillFiles(join(REPO_ROOT, 'skills')),
+  ]
+
+  const bannedPatterns = [
+    /唯一规则源/,
+    /不再单独维护/,
+    /并行阶段定义/,
+    /本 skill 只描述/,
+    /本 skill 只覆盖/,
+    /不在此重复改写/,
+    /维护说明/,
+    /作者说明/,
+    /重构说明/,
+  ]
+
+  for (const filePath of runtimeFiles) {
+    const content = readText(filePath)
+    for (const pattern of bannedPatterns) {
+      assert.doesNotMatch(content, pattern, `${filePath} should avoid maintainer-facing prose: ${pattern}`)
+    }
+  }
+})

@@ -8,9 +8,13 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
-import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction } from './notify-context.mjs';
+import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
 import { claimsTaskComplete, shouldIgnoreCodexNotifyClient, shouldIgnoreFormattedSubagent } from './notify-events.mjs';
-import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress, versionCheckBackground } from './notify-shared.mjs';
+import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
+import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
+import { clearRouteContext, writeRouteContext } from './runtime-context.mjs';
+import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
+import { getWorkflowRecommendation } from './workflow-state.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,6 +53,12 @@ function runRalphLoop(payload) {
     if (result.stdout) {
       const rlOut = JSON.parse(result.stdout);
       if (rlOut.decision === 'block') {
+        appendReplayEvent(payload.cwd || process.cwd(), {
+          host: HOST,
+          event: 'verify_gate_blocked',
+          source: 'ralph-loop',
+          reason: rlOut.reason || '',
+        });
         output(rlOut);
         return true;
       }
@@ -57,17 +67,44 @@ function runRalphLoop(payload) {
   return false;
 }
 
-function resolveBootstrapFile(cwd, settings) {
-  const isGlobal = settings.install_mode === 'global';
-  const isActivated = existsSync(join(cwd, '.helloagents'));
-  return (isGlobal || isActivated) ? 'bootstrap.md' : 'bootstrap-lite.md';
+function runDeliveryGate(payload) {
+  try {
+    const gatePath = join(__dirname, 'delivery-gate.mjs');
+    if (!existsSync(gatePath)) return false;
+    const result = spawnSync(process.execPath, [gatePath], {
+      input: JSON.stringify(payload),
+      encoding: 'utf-8',
+      timeout: 30_000,
+    });
+    if (result.stdout) {
+      const gateOut = JSON.parse(result.stdout);
+      if (gateOut.decision === 'block') {
+        appendReplayEvent(payload.cwd || process.cwd(), {
+          host: HOST,
+          event: 'delivery_gate_blocked',
+          source: 'delivery-gate',
+          reason: gateOut.reason || '',
+        });
+        output(gateOut);
+        return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
+function readCompletionText(payload = {}) {
+  return payload['last-assistant-message']
+    || payload.last_assistant_message
+    || payload.lastAssistantMessage
+    || '';
 }
 
 function cmdPreCompact() {
   const payload = readStdinJson();
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
-  const bootstrapFile = resolveBootstrapFile(cwd, settings);
+  const bootstrapFile = resolveBootstrapFile(cwd, settings.install_mode);
   const context = buildCompactionContext({
     payload,
     pkgRoot: PKG_ROOT,
@@ -75,47 +112,35 @@ function cmdPreCompact() {
     bootstrapFile,
     host: HOST,
   });
+  appendReplayEvent(cwd, {
+    host: HOST,
+    event: 'pre_compact_snapshot',
+    source: 'pre-compact',
+    details: {
+      bootstrapFile,
+      installMode: settings.install_mode || '',
+    },
+  });
   suppressedOutput(EVENT_NAME.PreCompact, context);
 }
 
 function cmdRoute() {
   const payload = readStdinJson();
-  const prompt = (payload.prompt || '').trim();
-  const cwd = payload.cwd || process.cwd();
-  const settings = getSettings();
-  if (!prompt) {
-    emptySuppress();
-    return;
-  }
-  if (/^\[子代理任务\]/.test(prompt)) {
-    emptySuppress();
-    return;
-  }
-
-  const cmdMatch = prompt.match(/^~(\w+)/);
-  if (cmdMatch) {
-    const skillName = cmdMatch[1];
-    const extraRules = skillName === 'help'
-      ? ' 这是 HelloAGENTS 的帮助命令，不是宿主 CLI 的内置帮助。适用条件：仅显示 HelloAGENTS 的帮助和当前设置；优先使用当前上下文中已注入的“当前用户设置”，只有上下文不存在该信息时才尝试读取 ~/.helloagents/helloagents.json；自动激活技能说明仅在全局模式，或当前项目已存在 .helloagents/（例如执行过 ~wiki 或 ~init）时生效。排除条件：不要调用宿主 CLI 的帮助工具（如 cli_help 或 /help），不要使用子代理，不要读取项目文件；若受工作区限制无法读取配置，必须明确说明并按已知默认值或已注入设置展示；纯标准模式未激活项目不会自动触发。'
-      : '';
-    suppressedOutput(EVENT_NAME.UserPromptSubmit, buildRouteInstruction({
-      skillName,
-      extraRules,
-      cwd,
-      pkgRoot: PKG_ROOT,
-      host: HOST,
-      settings,
-    }));
-    return;
-  }
-
-  const bootstrapFile = resolveBootstrapFile(cwd, settings);
-  if (bootstrapFile === 'bootstrap.md') {
-    suppressedOutput(EVENT_NAME.UserPromptSubmit, buildSemanticRouteInstruction());
-    return;
-  }
-
-  emptySuppress();
+  handleRouteCommand({
+    payload,
+    host: HOST,
+    pkgRoot: PKG_ROOT,
+    settings: getSettings(),
+    buildRouteInstruction,
+    buildSemanticRouteInstruction,
+    resolveCanonicalCommandSkill,
+    writeRouteContext,
+    clearRouteContext,
+    appendReplayEvent,
+    getWorkflowRecommendation,
+    suppress: (context) => suppressedOutput(EVENT_NAME.UserPromptSubmit, context),
+    emptySuppress,
+  });
 }
 
 function cmdInject() {
@@ -123,13 +148,29 @@ function cmdInject() {
   const source = payload.source || 'startup';
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
-  const bootstrapFile = resolveBootstrapFile(cwd, settings);
+  const bootstrapFile = resolveBootstrapFile(cwd, settings.install_mode);
 
   let bootstrap = '';
   try {
     bootstrap = readFileSync(join(PKG_ROOT, bootstrapFile), 'utf-8');
   } catch {}
 
+  startReplaySession(cwd, {
+    host: HOST,
+    source,
+    bootstrapFile,
+    installMode: settings.install_mode || '',
+  });
+  appendReplayEvent(cwd, {
+    host: HOST,
+    event: 'session_injected',
+    source,
+    details: {
+      bootstrapFile,
+      installMode: settings.install_mode || '',
+      activatedProject: existsSync(join(cwd, '.helloagents')),
+    },
+  });
   const context = buildInjectContext({
     source,
     bootstrap,
@@ -138,13 +179,21 @@ function cmdInject() {
     host: HOST,
     cwd,
   });
+  clearRouteContext();
   suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
-  versionCheckBackground();
 }
 
 function cmdStop() {
   const payload = readStdinJson();
+  const lastMsg = readCompletionText(payload);
+  const cwd = payload.cwd || process.cwd();
+  clearRouteContext();
   if (runRalphLoop(payload)) {
+    playSound('warning');
+    desktopNotify('warning');
+    return;
+  }
+  if (claimsTaskComplete(lastMsg) && runDeliveryGate(payload)) {
     playSound('warning');
     desktopNotify('warning');
     return;
@@ -190,14 +239,16 @@ function cmdCodexNotify() {
     desktopNotify('warning');
     return;
   }
+  if (claimsTaskComplete(lastMsg) && runDeliveryGate({ cwd })) {
+    playSound('warning');
+    desktopNotify('warning');
+    return;
+  }
 
   const level = settings.notify_level ?? 0;
   if (level === 2 || level === 3) playSound('complete');
   if (level === 1 || level === 3) desktopNotify('complete');
-  versionCheckBackground();
 }
-
-function cmdVersionCheck() {}
 
 const cmd = process.argv[2] || '';
 
@@ -209,7 +260,6 @@ switch (cmd) {
   case 'sound':         cmdSound(); break;
   case 'desktop':       cmdDesktop(); break;
   case 'codex-notify':  cmdCodexNotify(); break;
-  case 'version-check': cmdVersionCheck(); break;
   default:
     process.stderr.write(`notify.mjs: unknown command "${cmd}"\n`);
     process.exit(1);

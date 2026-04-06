@@ -4,10 +4,11 @@
  * Runs on SubagentStop (Claude Code) and Stop (Codex CLI).
  * Auto-detects lint/test commands and blocks if they fail.
  */
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
+import { clearVerifyEvidence, detectCommands, hasUnsafeVerifyCommand, writeVerifyEvidence } from './verify-state.mjs';
 
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 const CMD_TIMEOUT = 60_000; // 60s
@@ -23,60 +24,6 @@ const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
 function readSettings() {
   try { return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8')); } catch {}
   return {};
-}
-
-// ── Detect verification commands ──────────────────────────────────────
-function loadVerifyYaml(cwd) {
-  const f = join(cwd, '.helloagents', 'verify.yaml');
-  if (!existsSync(f)) return null;
-  try {
-    const content = readFileSync(f, 'utf-8');
-    const cmds = [];
-    let inCmds = false;
-    for (const line of content.split('\n')) {
-      const s = line.trim();
-      if (s.startsWith('commands:')) { inCmds = true; continue; }
-      if (inCmds) {
-        if (s.startsWith('- ') && !s.startsWith('# ')) {
-          const cmd = s.slice(2).trim().replace(/^["']|["']$/g, '');
-          if (cmd && !cmd.startsWith('#')) cmds.push(cmd);
-        } else if (s && !s.startsWith('#')) break;
-      }
-    }
-    return cmds.length ? cmds : null;
-  } catch { return null; }
-}
-
-function detectFromPackageJson(cwd) {
-  const f = join(cwd, 'package.json');
-  if (!existsSync(f)) return [];
-  try {
-    const scripts = JSON.parse(readFileSync(f, 'utf-8')).scripts || {};
-    return ['lint', 'typecheck', 'type-check', 'test', 'build']
-      .filter(k => k in scripts)
-      .map(k => `npm run ${k}`);
-  } catch { return []; }
-}
-
-function detectFromPyproject(cwd) {
-  const f = join(cwd, 'pyproject.toml');
-  if (!existsSync(f)) return [];
-  try {
-    const content = readFileSync(f, 'utf-8');
-    const cmds = [];
-    if (content.includes('[tool.ruff')) cmds.push('ruff check .');
-    if (content.includes('[tool.mypy')) cmds.push('mypy .');
-    if (content.includes('[tool.pytest')) cmds.push('pytest --tb=short -q');
-    return cmds;
-  } catch { return []; }
-}
-
-function detectCommands(cwd) {
-  const yaml = loadVerifyYaml(cwd);
-  if (yaml?.length) return yaml;
-  const pkg = detectFromPackageJson(cwd);
-  if (pkg.length) return pkg;
-  return detectFromPyproject(cwd);
 }
 
 // ── Circuit Breaker (consecutive failure tracking) ───────────────────
@@ -123,12 +70,10 @@ function hasGitChanges(cwd) {
 }
 
 // ── Run verification ──────────────────────────────────────────────────
-const SHELL_OPERATORS = /[;&|`$(){}\n\r]/;
-
 function runVerify(commands, cwd) {
   const failures = [];
   for (const cmd of commands) {
-    if (SHELL_OPERATORS.test(cmd)) {
+    if (hasUnsafeVerifyCommand([cmd])) {
       failures.push({ cmd, output: 'Blocked: shell operators not allowed in verify commands' });
       continue;
     }
@@ -151,6 +96,11 @@ function runVerify(commands, cwd) {
 
 function handleSuccess(cwd, isSubagent) {
   resetBreaker(cwd);
+  writeVerifyEvidence(cwd, {
+    commands: detectCommands(cwd),
+    fastOnly: isSubagent,
+    source: isSubagent ? 'subagent' : 'stop',
+  });
 
   if (isSubagent) {
     process.stdout.write(JSON.stringify({
@@ -178,6 +128,7 @@ function handleSuccess(cwd, isSubagent) {
 }
 
 function handleFailure(failures, cwd) {
+  clearVerifyEvidence(cwd);
   const breaker = readBreaker(cwd);
   breaker.consecutive_failures += 1;
   breaker.last_failure = new Date().toISOString();

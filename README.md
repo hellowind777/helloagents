@@ -281,7 +281,7 @@ All commands run inside AI chat with the `~` prefix:
 | Command | Purpose |
 |---------|---------|
 | `~idea` | Lightweight ideation — compare directions and explore options without writing files |
-| `~auto` | Automatic orchestration — chooses the right path across ideation / planning / build / verify / PRD |
+| `~auto` | Automatic orchestration — chooses the right path across ideation / planning / build / verify / PRD, and reuses an active plan package before reopening a new lane |
 | `~plan` | Structured planning — requirement gathering + solution convergence + plan package |
 | `~build` | Execution workflow — implement from the current request or an existing plan package |
 | `~prd` | Complete PRD — 13-dimension brainstorm-style exploration, generates product requirements |
@@ -306,6 +306,7 @@ All commands run inside AI chat with the `~` prefix:
 
 Compatibility aliases:
 - `~design` → `~plan`
+- `~do` → `~build`
 - `~review` → `~verify` (review-priority mode)
 
 ## 🔧 Configuration
@@ -431,7 +432,7 @@ Re-running the same mode command is also valid. It refreshes the current mode's 
 | `~auto` | Automatic orchestration across the lanes above | Want HelloAGENTS to choose the right path end-to-end |
 | `~prd` | 13-dimension PRD generation | Need comprehensive product requirements |
 
-Typical pattern: `~idea` first to compare directions, then `~plan` to lock a solution, then `~build`, then `~verify`. Or just `~auto` for one-shot orchestration. For UI work, the decision priority is always `plan.md` / PRD UI decisions → `DESIGN.md` → generic UI rules.
+Typical pattern: `~idea` first to compare directions, then `~plan` to lock a solution, then `~build`, then `~verify`. Or just `~auto` for one-shot orchestration. If the project already has an active plan package, `~auto` should reuse that workflow state before reopening ideation or planning. For UI work, the decision priority is always `plan.md` / PRD UI decisions → `DESIGN.md` → generic UI rules.
 
 ### Quality Verification (Ralph Loop)
 
@@ -439,23 +440,24 @@ After every task, Ralph Loop auto-runs your project's verification commands:
 - Priority: `.helloagents/verify.yaml` → `package.json` scripts → auto-detected
 - All pass? → Collect skill checklists → Verify → Done
 - Any fail? → Reflect → Fix → Re-run (circuit breaker after 3 failures)
+- Completion is also held back if the active plan package still has open tasks, missing required artifacts, or unreplaced template placeholders
 
 ### Knowledge Base (`.helloagents/`)
 
 `~wiki` creates or syncs the project-local knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
 
-`STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
+`STATE.md` is a project-level recovery cursor, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
 
 | File | Purpose |
 |------|---------|
-| `STATE.md` | Project-level recovery snapshot (≤50 lines, survives compression) |
+| `STATE.md` | Project-level recovery cursor (≤70 lines, survives compression as a resumable cursor) |
 | `DESIGN.md` | Project-level UI contract (design system, component patterns, state coverage, accessibility) |
 | `context.md` | Project architecture, tech stack, conventions |
 | `guidelines.md` | Non-obvious coding rules |
 | `verify.yaml` | Verification commands |
 | `CHANGELOG.md` | Change history |
 | `modules/*.md` | Module documentation + experience |
-| `plans/` | Active plan packages |
+| `plans/` | Active plan packages (`requirements.md`, `plan.md`, `tasks.md`, `contract.json`) |
 | `archive/` | Completed plan packages |
 
 ### Smart Commit (`~commit`)
@@ -544,7 +546,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 <details>
 <summary><strong>Q: Where does project knowledge go?</strong></summary>
 
-**A:** In the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
+**A:** In the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. `STATE.md` is used as a concise recovery cursor for long-running workflows, not as a catch-all memory file for every interaction.
 </details>
 
 <details>
@@ -690,7 +692,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 **Breaking Changes:**
 - 🔴 Complete rewrite: Python package → pure Node.js/Markdown architecture. `pip`/`uv` installation no longer available
-- 🔴 Commands renamed/removed: `~plan` → `~design`, removed `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan`
+- 🔴 Commands renamed/removed: `~design` → `~plan`, `~review` → `~verify`, `~do` → `~build`, removed `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan`
 - 🔴 Configuration keys changed from uppercase to lowercase. Removed: `BILINGUAL_COMMIT`, `EVAL_MODE`, `UPDATE_CHECK`, `CSV_BATCH_MAX`
 
 **New Features:**
@@ -702,12 +704,13 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - ✨ `~verify` command: auto-detect and run all verification commands
 - ✨ Guard system (`guard.mjs`): L1 blocking for destructive commands + L2 advisory for security patterns
 - ✨ Standby/Global mode: `install_mode` config for per-project or global activation
-- ✨ Flow state management (`STATE.md`): AI context compression snapshot (≤50 lines)
+- ✨ Flow state management (`STATE.md`): recovery cursor for compaction/resume handoff (≤70 lines)
 - ✨ Design system generation (`DESIGN.md`): auto-created for UI projects as a project-level contract
-- ✨ Plan package system: `requirements.md` + `plan.md` + `tasks.md`
+- ✨ Plan package system: `requirements.md` + `plan.md` + `tasks.md` + `contract.json`
+- ✨ Optional advisor contract/evidence: only for T3 / UI / high-risk flows, via `contract.json` + `.helloagents/.ralph-advisor.json`
 
 **Architecture:**
-- 📦 Unified 5-stage execution flow: ORIENT → CLARIFY → PLAN → EXECUTE → VALIDATE
+- 📦 Routed 6-stage kernel: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
 - 📦 Simplified configuration: 8 lowercase keys with sensible defaults
 - 📦 Dual-mode installation: standby (explicit non-plugin deploy) / global (plugin/extension)
 - 📦 Modular script architecture: `cli-utils.mjs` (shared utilities), `notify-ui.mjs` (cross-platform sound/desktop), `guard.mjs` (security), `ralph-loop.mjs` (verification)
