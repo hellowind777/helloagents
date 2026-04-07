@@ -12,7 +12,7 @@ Trigger: ~verify [scope]
    - 若当前上下文已注入“当前工作流约束”或“当前建议下一命令”，先服从它
    - 即使命令通过，也不能越过当前方案包边界：不完整方案包不能视为可信交付记录，未闭合方案包不能被整体报告为已完成
    - 当推荐路径已进入 `~verify` / 收尾时，优先把本命令用于审查、验真和交付收尾
-   - 若当前存在活跃方案包，先读取 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`，把它们当作本轮 evaluator contract；不要只看命令结果
+   - 若当前存在活跃方案包，先读取 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`，把它们当作本轮验证契约；不要只看命令结果
    - 若 `contract.json` 声明 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，则本轮还必须补齐 `.helloagents/.ralph-advisor.json`；advisor / style advisor 都是可选能力，不是默认常驻步骤
    - 若 `contract.json` 声明 `ui.visualValidation.required=true`，则本轮还必须补齐 `.helloagents/.ralph-visual.json`；视觉验收优先用截图/浏览器工具，没有工具时才降级为结构化代码级自检
 1. 先决定验证分流：

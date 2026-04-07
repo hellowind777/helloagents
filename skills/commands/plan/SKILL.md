@@ -20,7 +20,7 @@ Trigger: ~plan [description]
 ### 1. 上下文收集与需求澄清准备
 
 已有项目：
-- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先把 `.helloagents/STATE.md` 当恢复游标使用，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实校正主线
+- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先把 `.helloagents/STATE.md` 当恢复快照使用，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实校正主线
 - 在需求澄清前，至少确认 `.helloagents/context.md`、`.helloagents/guidelines.md`；涉及 UI 时，如存在 `.helloagents/DESIGN.md`，一并读取现有设计契约
 - 只扫描与当前需求直接相关的代码文件，用于形成假设和识别约束
 

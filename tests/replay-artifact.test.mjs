@@ -41,7 +41,7 @@ test('replay artifact stays inactive until project activation and records event-
   writeText(
     join(project, '.helloagents', 'STATE.md'),
     [
-      '# 恢复游标',
+      '# 恢复快照',
       '',
       '## 主线目标',
       '完成结账流程规划',

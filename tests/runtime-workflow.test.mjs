@@ -27,7 +27,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   writeText(
     join(project, '.helloagents', 'STATE.md'),
     [
-      '# 恢复游标',
+      '# 恢复快照',
       '',
       '## 主线目标',
       '完成认证功能',

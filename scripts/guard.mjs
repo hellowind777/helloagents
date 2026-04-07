@@ -85,7 +85,7 @@ function buildHighRiskGate(matches, cwd) {
 }
 
 function buildIdeaBoundaryReason(kind) {
-  return `[HelloAGENTS Guard] Blocked ${kind} during ~idea.\n当前路由：~idea 是零副作用探索；先停留在方向比较与方案收敛。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
+  return `[HelloAGENTS Guard] Blocked ${kind} during ~idea.\n当前路由：~idea 是只读探索；先停留在比较方案。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
 }
 
 function detectIdeaBoundaryContext(data) {
@@ -122,7 +122,7 @@ function buildPostWriteWarnings(data) {
   const filePath = data.tool_input?.file_path || ''
   return [
     ...(detectIdeaBoundaryContext(data)?.zeroSideEffect
-      ? ['~idea 当前轮要求零副作用；检测到写入工具落地，请回退到探索输出或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
+      ? ['~idea 当前轮要求只读探索；检测到写入工具落地，请回退到探索输出或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
       : []),
     ...scanUnrequestedFiles(filePath, data.tool_name),
     ...(content ? [...scanForSecrets(content), ...scanDangerousPackages(content, filePath)] : []),
@@ -191,7 +191,7 @@ function handleHighRiskCommand(data, command) {
   emitHookPayload({
     hookSpecificOutput: {
       hookEventName: HOOK_EVENT,
-      additionalContext: `⚠️ [HelloAGENTS 高风险链路提醒] 检测到高风险命令:\n${warnings.map((warning) => `  - ${warning.reason}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权；命令通过不等同于风险已解除。`,
+      additionalContext: `⚠️ [HelloAGENTS 高风险链路提醒] 检测到高风险命令:\n${warnings.map((warning) => `  - ${warning.reason}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`,
     },
   })
   emitGuardEvent(cwd, 'guard_warning', 'command', '', {

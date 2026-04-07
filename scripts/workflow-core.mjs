@@ -131,7 +131,7 @@ export function buildVerifyModeHintFromSnapshot(snapshot) {
 export function buildStateSyncHintFromSnapshot(snapshot) {
   const issues = collectStateSyncIssues(snapshot)
   if (issues.length === 0) return ''
-  return `STATE.md 提醒：${issues.join('；')}；继续项目级流程、收尾或进入压缩前先同步恢复游标。`
+  return `STATE.md 提醒：${issues.join('；')}；继续项目级流程、收尾或进入压缩前先同步恢复快照。`
 }
 
 export function buildStateRoleHintFromSnapshot(snapshot) {

@@ -19,7 +19,7 @@ Trigger: ~build [description]
 
 ### 1. 恢复与定位
 
-- 优先按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”恢复当前链路；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先读取 `.helloagents/STATE.md` 作为恢复游标，再用当前用户消息、活跃方案包 / PRD 与代码事实校正主线
+- 优先按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”恢复当前链路；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先读取 `.helloagents/STATE.md` 作为恢复快照，再用当前用户消息、活跃方案包 / PRD 与代码事实校正主线
 - 若存在最近的活跃方案包，读取对应的：
   - `requirements.md`
   - `plan.md`

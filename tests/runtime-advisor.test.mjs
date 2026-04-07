@@ -23,7 +23,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   const advisorScript = join(pkgRoot, 'scripts', 'advisor-state.mjs')
 
   writeSettings(home)
-  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复游标', '', '## 方案', '.helloagents/plans/202604050501_release', ''].join('\n'))
+  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604050501_release', ''].join('\n'))
   writeText(join(project, '.helloagents', 'plans', '202604050501_release', 'requirements.md'), '# release requirements\n')
   writeText(join(project, '.helloagents', 'plans', '202604050501_release', 'plan.md'), '# release plan\n')
   writeText(
@@ -152,7 +152,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   const advisorScript = join(pkgRoot, 'scripts', 'advisor-state.mjs')
 
   writeSettings(home)
-  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复游标', '', '## 方案', '.helloagents/plans/202604060101_dashboard', ''].join('\n'))
+  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604060101_dashboard', ''].join('\n'))
   writeText(join(project, '.helloagents', 'plans', '202604060101_dashboard', 'requirements.md'), '# dashboard requirements\n')
   writeText(join(project, '.helloagents', 'plans', '202604060101_dashboard', 'plan.md'), '# dashboard plan\n')
   writeText(

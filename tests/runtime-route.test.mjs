@@ -31,7 +31,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /HelloAGENTS \(Standby\)/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 包根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 读取根目录/)
-  assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -41,7 +41,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前命令技能文件已解析为：/)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]help[\\/]SKILL\.md/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /不要再为同一个命令 skill 重复 Test-Path \/ Get-Content/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /请直接读取这个 SKILL\.md/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -69,7 +69,17 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
   assert.match(payload.hookSpecificOutput.additionalContext, /会话已恢复\/压缩/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /只有同一主线才按 STATE\.md 接续/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /先看当前用户消息确认仍是同一任务/)
+
+  result = runNode(notifyScript, ['pre-compact'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /恢复快照/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /只用于找回上次停在哪/)
+  assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /读完即可接上工作/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -77,11 +87,11 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, prompt: 'create a new app for expenses' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /语言无关的 ROUTE \/ TIER/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
   assert.match(payload.hookSpecificOutput.additionalContext, /不依赖关键词表/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /Delivery Tier: T0=探索\/比较\/发散/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /不要直接跳入 ~build/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前活跃 plan \/ PRD 的 UI 决策/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /Delivery Tier: T0=探索\/比较/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /默认先走 ~plan \/ ~prd/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前活跃 plan \/ PRD/)
   assert.match(payload.hookSpecificOutput.additionalContext, /STATE\.md 只用于找回上次停在哪/)
 
   writeText(
@@ -99,7 +109,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   writeText(
     join(project, '.helloagents', 'STATE.md'),
     [
-      '# 恢复游标',
+      '# 恢复快照',
       '',
       '## 正在做什么',
       '继续当前功能实现',
@@ -124,7 +134,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, prompt: '先想想登录页还能有什么方向，比较几个方案' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /~idea=轻量探索/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /~idea=只读探索/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -148,7 +158,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~idea 是零副作用探索/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~idea 是只读探索/)
 
   result = runNode(guardScript, [], {
     cwd: project,

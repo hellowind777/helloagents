@@ -58,7 +58,8 @@ function runRalphLoop(payload) {
   try {
     const rlPath = join(__dirname, 'ralph-loop.mjs');
     if (!existsSync(rlPath)) return false;
-    const result = spawnSync(process.execPath, [rlPath, ...(IS_GEMINI ? ['--gemini'] : [])], {
+    const hostFlag = IS_GEMINI ? ['--gemini'] : HOST === 'codex' ? ['--codex'] : [];
+    const result = spawnSync(process.execPath, [rlPath, ...hostFlag], {
       input: JSON.stringify(payload),
       encoding: 'utf-8',
       timeout: 120_000,

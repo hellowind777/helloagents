@@ -33,7 +33,7 @@ export function selectCapabilities({ cwd, skillName = '' }) {
   if (plan?.contract?.verifyMode === 'review-first') {
     capabilities.push({
       id: 'review-evaluator',
-      description: '审查优先 evaluator：当前验证主路径是 review-first，先做 hello-review，再做 hello-verify。',
+      description: '审查优先：当前验证主路径是 review-first，先做 hello-review，再做 hello-verify。',
     })
   }
   if (plan?.contract?.ui?.required || existsSync(join(cwd, '.helloagents', 'DESIGN.md'))) {
