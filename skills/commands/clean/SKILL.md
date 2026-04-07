@@ -11,7 +11,7 @@ Trigger: ~clean
 ## 流程
 
 1. 扫描 .helloagents/plans/ 下的方案包
-2. 判定完成状态：优先以 tasks.md 中所有任务已标记 [√] 为准；只有任务清单无法判断时，才把 `STATE.md` 中与当前方案一致的“主线目标”+“正在做什么”作为辅助信号，避免把旧恢复游标误当当前主线
+2. 判定完成状态：优先以 tasks.md 中所有任务已标记 [√] 为准；只有任务清单无法判断时，才把 `STATE.md` 中与当前方案一致的“主线目标”+“正在做什么”作为辅助信号，避免把旧恢复快照误当当前主线
 3. 已完成的方案包 → 按 bootstrap 的归档规则移入 `.helloagents/archive/YYYY-MM/`，并同步更新 `.helloagents/archive/_index.md`
 4. 清理 bootstrap 中定义的临时文件
 5. 按 bootstrap 的流程状态规则更新 `STATE.md`；若当前状态指向已归档方案包，则清空对应方案路径

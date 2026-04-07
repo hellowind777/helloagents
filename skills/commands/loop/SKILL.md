@@ -19,7 +19,7 @@ Trigger: ~loop <目标描述> [--iterations N] [--metric "命令"] [--direction 
 ## 初始化
 
 1. 确认 git 工作区干净（有未提交变更则先提醒用户处理）
-2. 确保 `.helloagents/` 目录和 `.helloagents/STATE.md` 存在；目录不存在时先创建，`STATE.md` 不存在时按 `templates/STATE.md` 创建。这是 `~loop` 的强制恢复游标，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免被旧任务主线污染
+2. 确保 `.helloagents/` 目录和 `.helloagents/STATE.md` 存在；目录不存在时先创建，`STATE.md` 不存在时按 `templates/STATE.md` 创建。这是 `~loop` 的强制恢复快照，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免被旧任务主线污染
 3. 运行指标命令获取基线值，记录到 results log
 4. 如有守卫命令，运行确认基线通过
 5. 创建 `.helloagents/loop-results.tsv`，并确保 .gitignore 包含该文件

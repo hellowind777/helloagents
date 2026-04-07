@@ -31,22 +31,22 @@ Trigger: ~help
 - `~review` → 等同 `~verify` 的审查优先模式
 
 ### 自动激活技能
-适用条件：以下技能仅在全局模式，或当前项目已存在 `.helloagents/` 后自动激活（例如执行过 `~wiki`、`~init`，或已处于项目级连续流程）：
-排除条件：纯标准模式未激活项目不会自动触发这些深层技能；但涉及 UI 的任务仍受当前 bootstrap-lite 中的 UI 质量内核约束。
+以下技能仅在全局模式或已激活项目中自动激活（例如执行过 `~wiki`、`~init`，或已处于项目级连续流程）。
+纯标准模式未激活项目不会自动触发这些深层技能；但涉及 UI 的任务仍受 UI 质量内核约束。
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
 特定场景：hello-debug, hello-subagent, hello-write, hello-review
 完成时：hello-verify, hello-reflect
 
 ### 当前设置
-适用条件：优先使用当前上下文中已注入的“当前用户设置”显示；仅在上下文不存在该信息时，才尝试读取 `~/.helloagents/helloagents.json`。
-排除条件：如果当前 CLI 存在工作区限制导致家目录不可读，则明确说明“无法直接读取配置文件，以下按已注入设置或默认值展示”，不要改用无关工具或伪造已读取结果。
+优先使用当前上下文中已注入的“当前用户设置”显示；仅在上下文不存在该信息时，才尝试读取 `~/.helloagents/helloagents.json`。
+如果当前 CLI 存在工作区限制导致家目录不可读，则明确说明“无法直接读取配置文件，以下按已注入设置或默认值展示”，不要改用无关工具或伪造已读取结果。
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
 | output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
-| output_format | true | true=适用条件：仅主代理在流式结束后的最终收尾回复可使用 HelloAGENTS 格式；排除条件：所有流式/中间输出及所有子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
+| output_format | true | true=仅主代理在最终收尾回复使用 HelloAGENTS 格式，所有流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
 | ralph_loop_enabled | true | 自动验证循环（任务完成时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
-| kb_create_mode | 1 | 0=关闭/1=已激活项目或全局模式中的编码自动/2=已激活项目或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
+| kb_create_mode | 1 | 0=关闭/1=已激活项目或全局模式中编码自动/2=已激活项目或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
 | commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |

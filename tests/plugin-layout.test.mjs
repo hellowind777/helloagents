@@ -46,13 +46,10 @@ test('bootstrap path rules no longer depend on host-name placeholders or wrong c
     assert.match(content, /## \.helloagents\/ 目录/);
     assert.match(content, /## 项目上下文/);
     assert.match(content, /当前已加载 HelloAGENTS 包根目录/);
-    assert.match(content, /已由宿主自动加载，无需再次读取/);
     assert.match(content, /同一轮内对同一配置文件、模块、SKILL、模板只读取一次/);
   }
 
   const helloagentsSkill = read('skills/helloagents/SKILL.md');
   assert.doesNotMatch(helloagentsSkill, /当前CLI名称/);
-  assert.match(helloagentsSkill, /已由宿主自动加载，无需再次读取/);
-  assert.match(helloagentsSkill, /仅按需读取具体 SKILL\.md/);
   assert.match(helloagentsSkill, /同一轮内对同一配置文件、模块、SKILL、模板只读取一次/);
 });

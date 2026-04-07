@@ -75,8 +75,8 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
     try {
       const stateContent = readFileSync(statePath, 'utf-8');
       summaryParts.push('');
-      summaryParts.push('## 恢复游标（从 STATE.md 读取，只用于找回上次停在哪）');
-      summaryParts.push('使用约束：当前用户消息、显式命令、活跃方案包 / PRD 与代码事实优先；只有确认仍是同一主线时，才按 STATE.md 接续。');
+      summaryParts.push('## 恢复快照（从 STATE.md 读取，只用于找回上次停在哪）');
+      summaryParts.push('恢复时先看当前用户消息，确认仍是同一任务再按 STATE.md 接续。');
       summaryParts.push(stateContent);
     } catch {}
   }
@@ -135,7 +135,7 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
   if (stateSyncHint) context += `\n\n## STATE.md 提醒\n${stateSyncHint}`;
   context += settingsBlock;
   if (source === 'resume' || source === 'compact') {
-    context += '\n\n> ⚠️ 会话已恢复/压缩，请先读取 `.helloagents/STATE.md` 找回上次停在哪；但必须先用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实确认是否仍是同一主线，只有同一主线才按 STATE.md 接续。';
+    context += '\n\n> ⚠️ 会话已恢复/压缩，请先读取 `.helloagents/STATE.md` 恢复工作状态；先看当前用户消息确认仍是同一任务，再按 STATE.md 接续。';
   }
   return context;
 }
@@ -147,7 +147,7 @@ export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot
   const aliasNote = buildAliasRouteNote(skillName);
   const commandHint = buildCommandRouteHint(canonicalSkillName, cwd);
   const capabilityHint = buildCapabilityHint({ cwd, skillName: canonicalSkillName });
-  return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；本轮不要再为同一个命令 skill 重复 Test-Path / Get-Content，也不要探测其他 helloagents 路径。${aliasNote ? ` ${aliasNote}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
+  return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；不要再探测其他 helloagents 路径。${aliasNote ? ` ${aliasNote}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
 }
 
 export function buildSemanticRouteInstruction(cwd) {
@@ -155,13 +155,13 @@ export function buildSemanticRouteInstruction(cwd) {
   const capabilityHint = buildCapabilityHint({ cwd });
   return [
     '当前消息未使用 ~command。',
-    '请先基于用户请求的真实意图做一次语言无关的 ROUTE / TIER 语义判断，不依赖关键词表，也不要通过扩充多语言词库来选路。',
-    'Delivery Tier: T0=探索/比较/发散；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化 artifact；T3=高风险或不可逆链路（如认证、安全、支付、数据库、生产发布）。',
-    '路由映射：~idea=轻量探索且零副作用，不创建 .helloagents / STATE.md / 方案包，也不执行会改写工作区或外部状态的操作；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动编排。',
-    '若判定为 T3，默认先走 ~plan / ~prd；只有纯审查、纯验真或纯验证请求才优先走 ~verify，不要直接跳入 ~build。',
-    '若判定为 UI / 视觉 / 交互任务，后续所选路径中优先把当前活跃 plan / PRD 的 UI 决策作为 feature 约束，其次读取 `.helloagents/DESIGN.md`，最后才补充通用 UI 规则。',
-    workflowHint ? `项目状态补充：${workflowHint}` : '',
+    '请根据用户请求的真实意图选路，不依赖关键词表。',
+    'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆链路。',
+    '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动选路。',
+    '若判定为 T3，默认先走 ~plan / ~prd；纯审查/验证请求才优先 ~verify。',
+    '涉及 UI 任务时，设计决策优先级：当前活跃 plan / PRD → `.helloagents/DESIGN.md` → 通用 UI 规则。',
+    workflowHint ? `项目状态：${workflowHint}` : '',
     capabilityHint,
-    '若意图已明确，直接按对应路径推进；不要把这一步暴露成额外说明，也不要为了选路重复向用户提问。',
+    '意图明确时直接按对应路径推进，不要把选路过程暴露给用户。',
   ].filter(Boolean).join(' ');
 }

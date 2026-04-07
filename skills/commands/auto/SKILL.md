@@ -1,12 +1,12 @@
 ---
 name: ~auto
-description: 总控编排命令 — 自动选择 ~idea / ~plan / ~build / ~verify / ~prd 的组合路径（~auto 命令）
+description: 自动选路命令 — 根据任务自动选择 ~idea / ~plan / ~build / ~verify / ~prd 的组合路径（~auto 命令）
 policy:
   allow_implicit_invocation: false
 ---
 Trigger: ~auto <任务描述>
 
-`~auto` 是总控编排命令。它根据任务类型、复杂度、风险等级与项目状态，自动在 `~idea`、`~plan`、`~build`、`~verify`、`~prd` 之间选择合适路径。
+`~auto` 是自动选路命令。它根据任务类型、复杂度、风险等级与项目状态，自动在 `~idea`、`~plan`、`~build`、`~verify`、`~prd` 之间选择合适路径。
 `~auto` 只做选路。路径一旦确定，立即读取对应 command skill 并按其流程执行。
 
 ## 铁律

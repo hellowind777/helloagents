@@ -51,7 +51,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   writeText(
     join(gateProject, '.helloagents', 'STATE.md'),
     [
-      '# 恢复游标',
+      '# 恢复快照',
       '',
       '## 主线目标',
       '完成发布前收尾并在验证通过后发布',
@@ -103,7 +103,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   writeText(
     join(planFirstProject, '.helloagents', 'STATE.md'),
     [
-      '# 恢复游标',
+      '# 恢复快照',
       '',
       '## 主线目标',
       '先补齐数据库变更方案，再执行迁移',

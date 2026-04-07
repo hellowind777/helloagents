@@ -56,7 +56,7 @@ Trigger: ~prd [description]
 ### 1. 上下文收集
 
 已有项目：
-- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先把 `.helloagents/STATE.md` 当恢复游标使用，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实校正主线
+- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先把 `.helloagents/STATE.md` 当恢复快照使用，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实校正主线
 - 在进入维度探索前，至少确认 `.helloagents/context.md`、`.helloagents/guidelines.md`，并只扫描与当前产品范围直接相关的代码和配置
 
 全新项目（无 .helloagents/ 目录）：

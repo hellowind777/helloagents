@@ -23,7 +23,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
   const visualScript = join(pkgRoot, 'scripts', 'visual-state.mjs')
 
   writeSettings(home)
-  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复游标', '', '## 方案', '.helloagents/plans/202604060201_ui-release', ''].join('\n'))
+  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604060201_ui-release', ''].join('\n'))
   writeText(join(project, '.helloagents', 'plans', '202604060201_ui-release', 'requirements.md'), '# ui release requirements\n')
   writeText(join(project, '.helloagents', 'plans', '202604060201_ui-release', 'plan.md'), '# ui release plan\n')
   writeText(

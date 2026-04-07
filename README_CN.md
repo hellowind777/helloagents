@@ -8,7 +8,7 @@
 
 **质量驱动的 AI 编码 CLI 编排内核 — 14 个自动激活技能、流程纪律、检查清单门控。**
 
-[![Version](https://img.shields.io/badge/version-3.0.5-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.6-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -450,11 +450,11 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 
 `~wiki` 只创建或同步项目本地知识库。`~init` 是更完整的项目初始化：它还会写入项目级载体文件（`AGENTS.md`、`CLAUDE.md`、`.gemini/GEMINI.md`）、刷新项目 `skills/helloagents` 链接，并补齐相关忽略项。在标准模式下，真正让当前项目进入完整项目流程的是 `.helloagents/` 的存在，项目级载体文件只是 `~init` 的附加能力。
 
-`STATE.md` 是项目级恢复游标，不是所有交互的统一记忆文件。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
+`STATE.md` 是项目级恢复快照，不是所有交互的统一记忆文件。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
 
 | 文件 | 用途 |
 |------|------|
-| `STATE.md` | 项目级恢复游标（≤70 行，压缩后可据此续接） |
+| `STATE.md` | 项目级恢复快照（≤70 行，压缩后可据此续接） |
 | `DESIGN.md` | 项目级 UI 契约（设计系统、组件模式、状态覆盖、无障碍要求） |
 | `context.md` | 项目架构、技术栈、约定 |
 | `guidelines.md` | 非显而易见的编码规则 |
@@ -550,7 +550,7 @@ npm test
 <details>
 <summary><strong>Q：项目知识存在哪里？</strong></summary>
 
-**A：** 项目本地的 `.helloagents/` 目录。可以由 `~wiki`（仅知识库）或 `~init`（完整项目初始化）创建；之后会按 `kb_create_mode` 在代码变更场景中自动同步。其中 `STATE.md` 只作为长流程任务的精简恢复游标，不承担所有交互的统一记忆。
+**A：** 项目本地的 `.helloagents/` 目录。可以由 `~wiki`（仅知识库）或 `~init`（完整项目初始化）创建；之后会按 `kb_create_mode` 在代码变更场景中自动同步。其中 `STATE.md` 只作为长流程任务的精简恢复快照，不承担所有交互的统一记忆。
 </details>
 
 <details>
@@ -667,12 +667,12 @@ npm test
 
 ## 📈 版本历史
 
-### v3.0.5（当前版本）
+### v3.0.6（当前版本）
 
-**通知来源标识：**
-- ✨ 桌面通知现在会显示来源标签，包含 CLI 宿主、项目名和会话短标识，多个 Codex / Claude Code / Gemini 窗口并行时可以直接区分是谁触发了通知
-- 🔧 统一通知来源解析链路：优先使用显式 session 标识，其次使用终端会话环境信息，最后回退到进程级标识，避免宿主上送信息不完整时通知失去辨识度
-- 🧪 新增通知来源回归测试，并保持运行时通知 / 工作流相关测试持续通过
+**恢复链路与完成态更清晰：**
+- ✨ 恢复提示现在把 `STATE.md` 明确为“恢复快照”，压缩 / 恢复后会先校对当前用户请求，再继续之前的工作
+- ✨ `~idea` 现在明确为只读探索，语义选路和 UI 决策优先级提示也更直接，进入实现前更容易走对路径
+- ✨ HelloAGENTS 外层格式现在只用于最终收尾回复；等待输入等中间态会保持明确，不再看起来像已经完成
 
 ### v3.0.4
 
@@ -722,7 +722,7 @@ npm test
 - ✨ `~verify` 命令：自动检测并运行所有验证命令
 - ✨ Guard 系统（`guard.mjs`）：L1 拦截破坏性命令 + L2 安全模式建议
 - ✨ 标准/全局模式：`install_mode` 配置项支持按项目或全局激活
-- ✨ 流状态管理（`STATE.md`）：用于压缩/恢复衔接的恢复游标（≤70 行）
+- ✨ 流状态管理（`STATE.md`）：用于压缩/恢复衔接的恢复快照（≤70 行）
 - ✨ 设计系统生成（`DESIGN.md`）：作为项目级 UI 契约自动创建
 - ✨ 计划包系统：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`
 - ✨ 可选 advisor contract / evidence：仅在 T3 / UI / 高风险链路启用，通过 `contract.json` + `.helloagents/.ralph-advisor.json` 落地

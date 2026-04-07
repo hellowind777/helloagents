@@ -56,7 +56,7 @@ commands:
 ## 幂等性
 重复执行 ~init 是安全的：
 - 已存在的 .helloagents/ 文件不覆盖
-- `STATE.md` 只作为当前初始化链路的恢复游标；后续进入其他主线任务时必须按新主线重写
+- `STATE.md` 只作为当前初始化链路的恢复快照；后续进入其他主线任务时必须按新主线重写
 - symlink 刷新（删除旧的重建）
 - AGENTS.md/CLAUDE.md/GEMINI.md 中标记内容替换更新
 - .gitignore 只追加缺失行

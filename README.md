@@ -8,7 +8,7 @@
 
 **Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
 
-[![Version](https://img.shields.io/badge/version-3.0.5-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.6-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -450,11 +450,11 @@ After every task, Ralph Loop auto-runs your project's verification commands:
 
 `~wiki` creates or syncs the project-local knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
 
-`STATE.md` is a project-level recovery cursor, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
+`STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
 
 | File | Purpose |
 |------|---------|
-| `STATE.md` | Project-level recovery cursor (≤70 lines, survives compression as a resumable cursor) |
+| `STATE.md` | Project-level recovery snapshot (≤70 lines, survives compression as a resumable snapshot) |
 | `DESIGN.md` | Project-level UI contract (design system, component patterns, state coverage, accessibility) |
 | `context.md` | Project architecture, tech stack, conventions |
 | `guidelines.md` | Non-obvious coding rules |
@@ -550,7 +550,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 <details>
 <summary><strong>Q: Where does project knowledge go?</strong></summary>
 
-**A:** In the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. `STATE.md` is used as a concise recovery cursor for long-running workflows, not as a catch-all memory file for every interaction.
+**A:** In the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
 </details>
 
 <details>
@@ -667,12 +667,12 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.5 (current)
+### v3.0.6 (current)
 
-**Notification source labels:**
-- ✨ Desktop notifications now include a source label with CLI host, project, and session short ID so parallel Codex / Claude Code / Gemini windows are distinguishable at a glance
-- 🔧 Unified notification source resolution across explicit session identifiers, terminal session env values, and process fallback so sparse host payloads still produce usable source tags
-- 🧪 Added notification-source regression coverage and kept the runtime notification / workflow suites green
+**Workflow recovery and finish-state clarity:**
+- ✨ Recovery guidance now treats `STATE.md` as a recovery snapshot, so resume / compaction flows re-check the current user request before continuing prior work
+- ✨ `~idea` is now framed as read-only exploration with clearer semantic routing and explicit UI decision priority before implementation starts
+- ✨ The HelloAGENTS formatted wrapper is now reserved for the final close-out reply, while waiting states stay explicit instead of looking completed
 
 ### v3.0.4
 
@@ -722,7 +722,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - ✨ `~verify` command: auto-detect and run all verification commands
 - ✨ Guard system (`guard.mjs`): L1 blocking for destructive commands + L2 advisory for security patterns
 - ✨ Standby/Global mode: `install_mode` config for per-project or global activation
-- ✨ Flow state management (`STATE.md`): recovery cursor for compaction/resume handoff (≤70 lines)
+- ✨ Flow state management (`STATE.md`): recovery snapshot for compaction/resume handoff (≤70 lines)
 - ✨ Design system generation (`DESIGN.md`): auto-created for UI projects as a project-level contract
 - ✨ Plan package system: `requirements.md` + `plan.md` + `tasks.md` + `contract.json`
 - ✨ Optional advisor contract/evidence: only for T3 / UI / high-risk flows, via `contract.json` + `.helloagents/.ralph-advisor.json`
