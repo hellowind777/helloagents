@@ -37,11 +37,13 @@ test('single-host update reuses tracked codex mode and cleanup leaves other CLIs
 
   runCli(pkgRoot, home, ['install', 'codex', '--global'])
   assert.ok(existsSync(pluginRoot))
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/)
   assert.equal(readJson(configFile).host_install_modes.codex, 'global')
 
   writeText(join(pkgRoot, 'bootstrap.md'), '# scoped global update\n')
   runCli(pkgRoot, home, ['update', 'codex'])
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# scoped global update/)
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /# scoped global update/)
 
   runCli(pkgRoot, home, ['install', 'claude'])
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
@@ -50,6 +52,7 @@ test('single-host update reuses tracked codex mode and cleanup leaves other CLIs
 
   assert.ok(!existsSync(pluginRoot))
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
+  assert.doesNotMatch(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/)
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
   assert.equal(readJson(configFile).host_install_modes.codex, undefined)
   assert.equal(readJson(configFile).host_install_modes.claude, 'standby')

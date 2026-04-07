@@ -399,8 +399,10 @@ helloagents --standby
 - Complex tasks (3+ files, architecture change, new project) → `~plan`, `~auto`, or `~prd`
 - Review / validation requests → `~verify`
 
-**Quality skills auto-activate based on task type:**
-- Writing UI code? → `hello-ui` activates (design tokens, accessibility, responsive)
+**Quality rules and skills by task type:**
+- UI / frontend / visual interaction work always follows the active bootstrap carrier's shared UI kernel
+- In activated projects, global mode, or explicit UI workflow commands, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation
+- When a UI `contract.json` explicitly asks for heavier UI assurance, HelloAGENTS keeps the default path light and only then adds optional `.helloagents/.ralph-advisor.json` and `.helloagents/.ralph-visual.json` evidence
 - Touching API endpoints? → `hello-api` activates (REST conventions, validation, error format)
 - Any code change? → `hello-test`, `hello-verify`, `hello-review` activate
 
@@ -410,10 +412,10 @@ HelloAGENTS supports two installation modes with different installation methods:
 
 | Mode | Install Method | Rules | Skills | Best For |
 |------|---------------|-------|--------|----------|
-| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules with compact quality floor, safety, and completion constraints) | `~command` on demand, project activation via `.helloagents/` (`~wiki` or `~init`) | Selective use, keeping other projects unaffected |
+| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules with compact quality floor, shared UI kernel, safety, and completion constraints) | `~command` on demand; before activation, UI tasks still follow the shared UI kernel; after `.helloagents/`, the full workflow activates | Selective use, keeping other projects unaffected |
 | **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
 
-Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; Codex then loads that local merged file via `developer_instructions` in `~/.codex/config.toml`. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) without plugin hooks.
+Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; Codex then keeps `developer_instructions` in `~/.codex/config.toml` as the managed fallback so the home `AGENTS.md` remains the primary baseline. During a managed Codex install, HelloAGENTS temporarily removes any existing `model_instructions_file` entry because that setting can shadow the `AGENTS.md` chain; cleanup restores the user's original value. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) plus a synced `~/.codex/AGENTS.md` home baseline, still without plugin hooks.
 
 In standby mode, `.helloagents/` is the activation boundary. Before activation, the lite carrier does **not** run the full 6-stage kernel or semantic auto-routing; it keeps the lightweight execution rules, explicit `~command` entry points, and minimum quality/completion guardrails. Once `.helloagents/` exists, the active project switches to the full project workflow and `bootstrap.md` becomes the runtime source of truth.
 
@@ -521,7 +523,7 @@ The test suite validates:
 <summary><strong>Q: What are the 14 quality skills?</strong></summary>
 
 **A:** They auto-activate based on task type:
-- **hello-ui**: UI construction (design tokens, accessibility, responsive, animation)
+- **hello-ui**: deep UI implementation and validation (contracts, design-system mapping, accessibility, responsive, animation)
 - **hello-api**: API design (REST, validation, error format, rate limiting)
 - **hello-security**: Security (auth, input validation, XSS/CSRF, secrets management)
 - **hello-test**: Testing (TDD workflow, boundary cases, AAA pattern)
@@ -611,7 +613,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - Verify installation: `npm list -g helloagents`
 - Claude Code: check `~/.claude/CLAUDE.md` contains HelloAGENTS markers
 - Gemini CLI: check `~/.gemini/GEMINI.md` contains HelloAGENTS markers
-- Codex CLI: check `~/.codex/config.toml` has `model_instructions_file` pointing to `~/.codex/AGENTS.md` in standby mode, or to plugin `AGENTS.md` in global mode
+- Codex CLI: check `~/.codex/AGENTS.md` contains HelloAGENTS markers, `~/.codex/config.toml` still has HelloAGENTS `developer_instructions` and `notify`, and no unexpected `model_instructions_file` is shadowing the managed baseline
 - Restart your CLI
 
 ---
@@ -724,6 +726,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - ✨ Design system generation (`DESIGN.md`): auto-created for UI projects as a project-level contract
 - ✨ Plan package system: `requirements.md` + `plan.md` + `tasks.md` + `contract.json`
 - ✨ Optional advisor contract/evidence: only for T3 / UI / high-risk flows, via `contract.json` + `.helloagents/.ralph-advisor.json`
+- ✨ Optional visual validation evidence: only when the UI contract explicitly requires it, via `contract.json` + `.helloagents/.ralph-visual.json`
 
 **Architecture:**
 - 📦 Routed 6-stage kernel: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE

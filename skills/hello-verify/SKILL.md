@@ -74,6 +74,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 4. 有未通过项 → 修复 → 重新运行验证循环
 5. 若当前存在方案包并准备最终收尾，优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录 `requirementsCoverage` 与 `deliveryChecklist` 两项结论；两项都必须包含 `status`（`PASS` / `BLOCKED`）和 `summary`
 6. 若当前方案包要求 `review-first`，必须先确认 `.helloagents/.ralph-review.json` 已通过 `scripts/review-state.mjs write` 写成最新结构化证据；不要把审查自然语言消息直接当成交付证据
+7. 若 `contract.json` 中 `ui.visualValidation.required=true`，必须确认 `.helloagents/.ralph-visual.json` 已通过 `scripts/visual-state.mjs write` 写成最新结构化证据；若没有视觉 evidence，不得把本轮视为 UI 可交付
 
 ## 需求追踪验证
 
@@ -83,8 +84,9 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 3. 确认非目标章节列出的内容确实没有被实现（防止范围蔓延）
 4. 若 tasks.md 中定义了“完成标准”，逐项确认每个任务的完成标准确实成立，不能只因为代码存在或命令通过就视为完成
 5. 若存在 `contract.json`，逐项确认其中的 `verifyMode`、reviewer / tester 关注边界都已被本轮验证覆盖
-6. 若 `contract.json` 中 `advisor.required=true`，额外确认 `.helloagents/.ralph-advisor.json` 已存在且结论为 clean；若没有 advisor artifact，不得把本轮视为可交付
-6. 发现遗漏 → 补充实现 → 重新验证
+6. 若 `contract.json` 中 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，额外确认 `.helloagents/.ralph-advisor.json` 已存在且结论为 clean；若没有 advisor artifact，不得把本轮视为可交付
+7. 若 `contract.json` 中 `ui.visualValidation.required=true`，额外确认 `.helloagents/.ralph-visual.json` 已存在、覆盖要求的关键 screens / states，且结论为 `PASS`；若没有 visual artifact，不得把本轮视为 UI 可交付
+8. 发现遗漏 → 补充实现 → 重新验证
 
 ## 反代理目标漂移 (APGD)
 

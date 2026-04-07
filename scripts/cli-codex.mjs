@@ -117,11 +117,25 @@ function buildCodexRuntimeCarrier(bootstrapContent) {
   return normalized ? `${normalized}\n` : '';
 }
 
+function injectCodexRuntimeCarrier(filePath, bootstrapPath) {
+  const bootstrapContent = safeRead(bootstrapPath);
+  if (!bootstrapContent) return false;
+  injectMarkedContent(filePath, buildCodexRuntimeCarrier(bootstrapContent).trimEnd());
+  return true;
+}
+
 function writeCodexRuntimeCarrier(filePath, bootstrapPath) {
   const bootstrapContent = safeRead(bootstrapPath);
   if (!bootstrapContent) return false;
   safeWrite(filePath, buildCodexRuntimeCarrier(bootstrapContent));
   return true;
+}
+
+function stripCodexModelInstructions(toml = '') {
+  return removeTopLevelTomlLines(
+    toml,
+    (line) => line.startsWith('model_instructions_file ='),
+  ).text;
 }
 
 export function installCodexStandby(home, pkgRoot) {
@@ -130,18 +144,13 @@ export function installCodexStandby(home, pkgRoot) {
   ensureDir(codexDir);
 
   const codexAgentsPath = join(codexDir, CODEX_RUNTIME_CARRIER);
-  const bootstrapContent = safeRead(join(pkgRoot, 'bootstrap-lite.md'));
-  if (bootstrapContent) {
-    injectMarkedContent(
-      codexAgentsPath,
-      buildCodexRuntimeCarrier(bootstrapContent).trimEnd(),
-    );
-  }
+  injectCodexRuntimeCarrier(codexAgentsPath, join(pkgRoot, 'bootstrap-lite.md'));
 
   const configPath = join(codexDir, 'config.toml');
   let toml = safeRead(configPath) || '';
   ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
 
+  toml = stripCodexModelInstructions(toml);
   toml = upsertTopLevelTomlKey(toml, 'notify', `["node", "${normalizePath(join(pkgRoot, 'scripts', 'notify.mjs'))}", "codex-notify"]`);
   toml = installCodexDeveloperInstructions(configPath, toml);
   safeWrite(configPath, toml);
@@ -232,12 +241,14 @@ export function installCodexGlobal(home, pkgRoot) {
     join(installedPluginRoot, CODEX_RUNTIME_CARRIER),
     join(installedPluginRoot, 'bootstrap.md'),
   );
+  injectCodexRuntimeCarrier(join(codexDir, CODEX_RUNTIME_CARRIER), join(pkgRoot, 'bootstrap.md'));
 
   ensureDir(join(home, '.agents', 'plugins'));
   updateCodexMarketplace(marketplaceFile);
 
   let toml = safeRead(configPath) || '';
   ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
+  toml = stripCodexModelInstructions(toml);
   toml = upsertTopLevelTomlKey(
     toml,
     'notify',
@@ -261,6 +272,7 @@ export function uninstallCodexGlobal(home) {
   removeIfExists(pluginRoot);
   removeIfExists(pluginCacheRoot);
   removeCodexMarketplaceEntry(marketplaceFile);
+  removeMarkedContent(join(codexDir, 'AGENTS.md'));
 
   const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
   let toml = safeRead(configPath) || '';

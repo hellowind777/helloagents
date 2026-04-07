@@ -60,6 +60,7 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.ok(existsSync(join(home, '.codex', 'helloagents')));
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
   const installedCodexConfig = readText(join(home, '.codex', 'config.toml'));
+  assert.doesNotMatch(installedCodexConfig, /model_instructions_file\s*=/);
   assert.match(installedCodexConfig, /^developer_instructions = """/);
   assert.match(installedCodexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 
@@ -74,6 +75,7 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
   assert.doesNotMatch(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/);
   assert.doesNotMatch(readText(join(home, '.codex', 'config.toml')), /developer_instructions\s*=/);
+  assert.match(readText(join(home, '.codex', 'config.toml')), /model_instructions_file = "C:\/original\/bootstrap\.md"/);
 
   runNpm(['uninstall', '-g', '--prefix', prefix, 'helloagents'], pkgRoot, env);
 });

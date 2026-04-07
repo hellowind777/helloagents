@@ -399,8 +399,10 @@ helloagents --standby
 - 复杂任务（3+ 文件、架构变更、新项目）→ 通过 `~plan`、`~auto` 或 `~prd` 走完整流程
 - 审查 / 验证类任务 → `~verify`
 
-**质量技能按任务类型自动激活：**
-- 写 UI 代码？→ `hello-ui` 激活（设计 token、无障碍、响应式）
+**按任务类型生效的质量规则与技能：**
+- UI / 前端 / 视觉交互任务始终先遵循当前 bootstrap 载体中的共享 UI 内核
+- 在已激活项目、全局模式或显式 UI 工作流命令中，`hello-ui` 会进一步补充设计契约执行、设计系统映射与视觉验收
+- 只有当 UI `contract.json` 显式要求更强 UI 保障时，HelloAGENTS 才会在保持默认路径轻量的前提下，额外引入 `.helloagents/.ralph-advisor.json` 和 `.helloagents/.ralph-visual.json`
 - 涉及 API？→ `hello-api` 激活（REST 规范、校验、错误格式）
 - 任何代码变更？→ `hello-test`、`hello-verify`、`hello-review` 激活
 
@@ -410,10 +412,10 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 
 | 模式 | 安装方式 | 规则 | 技能 | 适用场景 |
 |------|---------|------|------|----------|
-| **标准模式** (默认) | `helloagents install <target> --standby` 或 `helloagents install --all --standby` | `bootstrap-lite.md`（含压缩版质量下限、安全规则与完成约束的精简规则） | `~command` 按需使用，通过 `.helloagents/` 激活项目（`~wiki` 或 `~init`） | 按需使用，不影响其他项目 |
+| **标准模式** (默认) | `helloagents install <target> --standby` 或 `helloagents install --all --standby` | `bootstrap-lite.md`（含压缩版质量下限、共享 UI 内核、安全规则与完成约束的精简规则） | `~command` 按需使用；激活前 UI 任务仍受共享 UI 内核约束，出现 `.helloagents/` 后切换到完整流程 | 按需使用，不影响其他项目 |
 | **全局模式** | Claude/Gemini 手动装插件；Codex 自动装原生本地插件 | `bootstrap.md`（完整规则） | 14 个技能自动激活 | 全面使用 HelloAGENTS |
 
-标准模式会把规则注入到 `~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/AGENTS.md`；其中 Codex 再通过 `~/.codex/config.toml` 中的 `developer_instructions` 加载这个本地合并后的文件。每个 CLI 还会创建 `helloagents` 包根目录符号链接。Claude Code 和 Gemini 仍使用 hooks，因为宿主可以较安静地承载这类注入；Codex 默认**不启用** HelloAGENTS hooks：最新 pre 源码里 hook 生命周期会在 TUI 中可见显示，且 `suppressOutput` 不能作为真正的静默注入通道，所以 Codex 改为依赖注入后的规则文件，以及本地符号链接 / 原生本地插件目录结构。全局模式下，Claude Code 通过 `.claude-plugin/plugin.json` 中声明的 hooks 工作，Gemini 通过 `contextFileName=bootstrap.md` 和扩展 hooks 工作；Codex 仍使用原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段），但不启用插件 hooks。
+标准模式会把规则注入到 `~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/AGENTS.md`；其中 Codex 在 `~/.codex/config.toml` 中保留 `developer_instructions` 作为受管兜底，使 home `AGENTS.md` 继续作为主基线。HelloAGENTS 在受管安装 Codex 时会临时移除已有的 `model_instructions_file`，因为该配置会遮蔽 `AGENTS.md` 链路；执行清理时会恢复用户原值。每个 CLI 还会创建 `helloagents` 包根目录符号链接。Claude Code 和 Gemini 仍使用 hooks，因为宿主可以较安静地承载这类注入；Codex 默认**不启用** HelloAGENTS hooks：最新 pre 源码里 hook 生命周期会在 TUI 中可见显示，且 `suppressOutput` 不能作为真正的静默注入通道，所以 Codex 改为依赖注入后的规则文件，以及本地符号链接 / 原生本地插件目录结构。全局模式下，Claude Code 通过 `.claude-plugin/plugin.json` 中声明的 hooks 工作，Gemini 通过 `contextFileName=bootstrap.md` 和扩展 hooks 工作；Codex 仍使用原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段），并同步维护 `~/.codex/AGENTS.md` 这层 home 基线，但不启用插件 hooks。
 
 在标准模式下，`.helloagents/` 就是项目激活边界。激活前，lite 载体**不会**运行完整六阶段内核，也不会启用语义自动选路；它只保留轻量执行规则、显式 `~command` 入口，以及最低质量/完成门槛。项目一旦存在 `.helloagents/`，当前项目就切换到完整项目流程，并以 `bootstrap.md` 作为运行时事实源。
 
@@ -521,7 +523,7 @@ npm test
 <summary><strong>Q：14 个质量技能是什么？</strong></summary>
 
 **A：** 按任务类型自动激活：
-- **hello-ui**：UI 构建（设计 token、无障碍、响应式、动画）
+- **hello-ui**：深层 UI 实现与验收（设计契约、设计系统映射、无障碍、响应式、动画）
 - **hello-api**：API 设计（REST、校验、错误格式、限流）
 - **hello-security**：安全（认证、输入校验、XSS/CSRF、密钥管理）
 - **hello-test**：测试（TDD 流程、边界用例、AAA 模式）
@@ -611,7 +613,7 @@ npm test
 - 验证安装：`npm list -g helloagents`
 - Claude Code：检查 `~/.claude/CLAUDE.md` 是否包含 HelloAGENTS 标记
 - Gemini CLI：检查 `~/.gemini/GEMINI.md` 是否包含 HelloAGENTS 标记
-- Codex CLI：检查标准模式下 `~/.codex/config.toml` 的 `model_instructions_file` 是否指向 `~/.codex/AGENTS.md`；全局模式下则应指向插件里的 `AGENTS.md`
+- Codex CLI：检查 `~/.codex/AGENTS.md` 是否包含 HelloAGENTS 标记，`~/.codex/config.toml` 是否仍保留 HelloAGENTS 的 `developer_instructions` 与 `notify`，并确认不存在意外重新出现的 `model_instructions_file` 遮蔽受管基线
 - 重启你的 CLI
 
 ---
@@ -724,6 +726,7 @@ npm test
 - ✨ 设计系统生成（`DESIGN.md`）：作为项目级 UI 契约自动创建
 - ✨ 计划包系统：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`
 - ✨ 可选 advisor contract / evidence：仅在 T3 / UI / 高风险链路启用，通过 `contract.json` + `.helloagents/.ralph-advisor.json` 落地
+- ✨ 可选视觉验收 evidence：仅在 UI contract 明确要求时启用，通过 `contract.json` + `.helloagents/.ralph-visual.json` 落地
 
 **架构：**
 - 📦 路由前置的六阶段内核：ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE

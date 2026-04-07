@@ -1,6 +1,8 @@
 import { getCloseoutEvidenceStatus } from './closeout-state.mjs'
 import { getAdvisorEvidenceStatus } from './advisor-state.mjs'
+import { getAdvisorRequirement, getVisualValidationRequirement } from './plan-contract.mjs'
 import { getReviewEvidenceStatus } from './review-state.mjs'
+import { getVisualEvidenceStatus } from './visual-state.mjs'
 import { getVerifyEvidenceStatus } from './verify-state.mjs'
 import {
   classifyPlan,
@@ -11,23 +13,42 @@ import {
 
 function getClosedPlanEvidenceStatus(cwd, plan) {
   const verifyMode = determineVerifyMode(plan)
+  const advisorRequirement = getAdvisorRequirement(plan.contract)
+  const visualRequirement = getVisualValidationRequirement(plan.contract)
   const verificationStatus = getVerifyEvidenceStatus(cwd)
   const reviewStatus = getReviewEvidenceStatus(cwd, {
     required: verifyMode?.mode === 'review-first',
   })
+  const advisorStatus = getAdvisorEvidenceStatus(cwd, {
+    required: advisorRequirement.required,
+    focus: advisorRequirement.focus,
+  })
+  const visualStatus = getVisualEvidenceStatus(cwd, {
+    required: visualRequirement.required,
+    screens: visualRequirement.screens,
+    states: visualRequirement.states,
+  })
   const verifyReady = !verificationStatus.required || verificationStatus.status === 'valid'
   const reviewReady = !reviewStatus.required || reviewStatus.status === 'valid'
+  const advisorReady = !advisorStatus.required || advisorStatus.status === 'valid'
+  const visualReady = !visualStatus.required || visualStatus.status === 'valid'
   const closeoutStatus = getCloseoutEvidenceStatus(cwd, {
-    required: verifyReady && reviewReady,
+    required: verifyReady && reviewReady && advisorReady && visualReady,
   })
 
   return {
     verifyMode,
+    advisorRequirement,
+    visualRequirement,
     verificationStatus,
     reviewStatus,
+    advisorStatus,
+    visualStatus,
     closeoutStatus,
     verifyReady,
     reviewReady,
+    advisorReady,
+    visualReady,
     closeoutReady: !closeoutStatus.required || closeoutStatus.status === 'valid',
   }
 }
@@ -52,15 +73,22 @@ function buildConsolidateAction(recommendation) {
 
 function buildVerifyAction(plan, verifyMode) {
   if (!verifyMode) return null
-  const advisorHint = plan.contract?.advisor?.required
-    ? '先完成独立 advisor 复查并写入 `.helloagents/.ralph-advisor.json`，再进入 CONSOLIDATE。'
-    : ''
+  const advisorRequirement = getAdvisorRequirement(plan.contract)
+  const visualRequirement = getVisualValidationRequirement(plan.contract)
+  const extraChecks = []
+  if (advisorRequirement.required) {
+    extraChecks.push('完成独立 advisor / style advisor 复查并写入 `.helloagents/.ralph-advisor.json`')
+  }
+  if (visualRequirement.required) {
+    extraChecks.push('完成视觉验收并写入 `.helloagents/.ralph-visual.json`')
+  }
+  const gateSuffix = extraChecks.length > 0 ? ` ${extraChecks.join('，')}，再进入 CONSOLIDATE。` : ''
   if (verifyMode.mode === 'review-first') {
     return {
       phase: 'verify',
       mode: verifyMode.mode,
       routeHint: verifyMode.guidance,
-      gateHint: `交付门控：进入 CONSOLIDATE 前，必须先完成 reviewer / hello-review 范围审查，再完成 tester / hello-verify 全量验证，并留下最新验证证据；两步都通过后才可交付。${advisorHint}`.trim(),
+      gateHint: `交付门控：进入 CONSOLIDATE 前，必须先完成 reviewer / hello-review 范围审查，再完成 tester / hello-verify 全量验证，并留下最新验证证据；两步都通过后才可交付。${gateSuffix}`.trim(),
     }
   }
   if (verifyMode.mode === 'metadata-first') {
@@ -78,7 +106,7 @@ function buildVerifyAction(plan, verifyMode) {
     phase: 'verify',
     mode: verifyMode.mode,
     routeHint: verifyMode.guidance,
-    gateHint: `交付门控：进入 CONSOLIDATE 前，先完成 tester / hello-verify 全量验证并留下最新验证证据，再针对失败点或关键边界补充 hello-review；确认通过后才可交付。${advisorHint}`.trim(),
+    gateHint: `交付门控：进入 CONSOLIDATE 前，先完成 tester / hello-verify 全量验证并留下最新验证证据，再针对失败点或关键边界补充 hello-review；确认通过后才可交付。${gateSuffix}`.trim(),
   }
 }
 
@@ -145,10 +173,6 @@ function buildInProgressRecommendation(scopeLabel, plan, classification) {
 
 function buildClosedRecommendation(scopeLabel, plan, cwd) {
   const closedPlanEvidence = getClosedPlanEvidenceStatus(cwd, plan)
-  const advisorStatus = getAdvisorEvidenceStatus(cwd, {
-    required: Boolean(plan.contract?.advisor?.required),
-    focus: plan.contract?.advisor?.focus || [],
-  })
   if (closedPlanEvidence.verifyMode?.mode === 'metadata-first') {
     return {
       scopeLabel,
@@ -161,7 +185,24 @@ function buildClosedRecommendation(scopeLabel, plan, cwd) {
     }
   }
 
-  if (advisorStatus.required && advisorStatus.status !== 'valid') {
+  if (
+    closedPlanEvidence.advisorStatus.required
+    && closedPlanEvidence.advisorStatus.status !== 'valid'
+    && closedPlanEvidence.visualStatus.required
+    && closedPlanEvidence.visualStatus.status !== 'valid'
+  ) {
+    return {
+      scopeLabel,
+      plan,
+      status: 'closed',
+      nextCommand: 'verify',
+      nextPath: '~verify -> CONSOLIDATE',
+      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI contract 仍要求独立 advisor 复查与视觉验收。`,
+      guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入 `.helloagents/.ralph-advisor.json`；再完成视觉验收并写入 `.helloagents/.ralph-visual.json`，记录 reason、tooling、screensChecked、statesChecked、status 与 summary；两项都通过后再进入 CONSOLIDATE。',
+    }
+  }
+
+  if (closedPlanEvidence.advisorStatus.required && closedPlanEvidence.advisorStatus.status !== 'valid') {
     return {
       scopeLabel,
       plan,
@@ -169,11 +210,23 @@ function buildClosedRecommendation(scopeLabel, plan, cwd) {
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
       summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 contract 仍要求独立 advisor 复查。`,
-      guidance: '先在 ~verify 阶段完成独立 advisor 复查，并写入 `.helloagents/.ralph-advisor.json` 记录复查原因、focus、来源与结论；advisor 通过后再进入 CONSOLIDATE。',
+      guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入 `.helloagents/.ralph-advisor.json` 记录复查原因、focus、来源与结论；advisor 通过后再进入 CONSOLIDATE。',
     }
   }
 
-  if (closedPlanEvidence.verifyReady && closedPlanEvidence.reviewReady) {
+  if (closedPlanEvidence.visualStatus.required && closedPlanEvidence.visualStatus.status !== 'valid') {
+    return {
+      scopeLabel,
+      plan,
+      status: 'closed',
+      nextCommand: 'verify',
+      nextPath: '~verify -> CONSOLIDATE',
+      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI contract 仍要求视觉验收。`,
+      guidance: '先在 ~verify 阶段完成视觉验收，并写入 `.helloagents/.ralph-visual.json` 记录 reason、tooling、screensChecked、statesChecked、status 与 summary；视觉验收通过后再进入 CONSOLIDATE。',
+    }
+  }
+
+  if (closedPlanEvidence.verifyReady && closedPlanEvidence.reviewReady && closedPlanEvidence.advisorReady && closedPlanEvidence.visualReady) {
     return {
       scopeLabel,
       plan,

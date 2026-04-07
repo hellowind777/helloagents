@@ -79,7 +79,9 @@ Trigger: ~plan [description]
   - `tasks.md`
   - `contract.json`
 - 写 `contract.json` 时，至少落成以下字段：`verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时再写 `ui.required`、`ui.designContract` 与 `ui.sourcePriority`
-- 只有在 `T3`、UI 验收、高风险审查等场景确有收益时，才额外写 `advisor.required`、`advisor.reason`、`advisor.focus` 与 `advisor.preferredSources`；不要把 advisor 变成默认常驻流程
+- 只有在 UI 方向确需前置收敛时，才额外写 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason` 与 `ui.styleAdvisor.focus`；它复用 `.helloagents/.ralph-advisor.json`，不是默认常驻步骤
+- 只有在 UI 验收确有收益时，才额外写 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens` 与 `ui.visualValidation.states`；不要把视觉验收扩成所有 UI 任务的固定步骤
+- 只有在 `T3`、非 UI 的高风险审查或确需额外跨模型建议时，才写 `advisor.required`、`advisor.reason`、`advisor.focus` 与 `advisor.preferredSources`；不要把 advisor 变成默认常驻流程
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要让 gate / validator 再从 `plan.md` prose 里猜验证主路径
 - 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`；若原文件不存在，先按模板建立最小设计契约，再写入已确认的稳定设计决策
 - 重写 `.helloagents/STATE.md`，其中“主线目标”写当前规划链路真正要完成的目标，不把旧任务残留为当前主线
@@ -108,4 +110,6 @@ Trigger: ~plan [description]
 - `testerFocus` 必填
 - `review-first` 时 `reviewerFocus` 必填
 - 涉及 UI 时显式写出 UI 契约来源优先级
+- 若启用 `ui.styleAdvisor`，必须写清触发原因与 focus
+- 若启用 `ui.visualValidation`，必须写清触发原因，以及至少一组关键 screens 或 states
 - 仅在明确需要独立 advisor 时，才填写 advisor 区块；填写后必须写清触发原因、focus 与优先来源

@@ -33,6 +33,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const codexConfigPath = join(home, '.codex', 'config.toml')
   const codexConfig = readText(codexConfigPath)
+  assert.doesNotMatch(codexConfig, /model_instructions_file\s*=/)
   assert.match(codexConfig, /^developer_instructions = """/)
   assert.match(codexConfig, /codex-notify/)
   assert.match(codexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
@@ -58,6 +59,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
 
   const globalCodexConfig = readText(codexConfigPath)
+  assert.doesNotMatch(globalCodexConfig, /model_instructions_file\s*=/)
   assert.match(globalCodexConfig, /plugins\/helloagents\/scripts\/notify\.mjs/)
   assert.match(globalCodexConfig, /\[plugins\."helloagents@local-plugins"\]\s+enabled = true/)
   assert.match(globalCodexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))

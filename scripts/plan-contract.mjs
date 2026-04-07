@@ -18,11 +18,39 @@ function normalizeVerifyMode(value) {
   return VALID_VERIFY_MODES.has(normalized) ? normalized : ''
 }
 
-function normalizeUiContract(input = {}) {
+function normalizeUiStyleAdvisorContract(input = {}) {
   return {
     required: Boolean(input.required),
-    designContract: Boolean(input.designContract),
-    sourcePriority: normalizeStringArray(input.sourcePriority),
+    reason: typeof input.reason === 'string' ? input.reason.trim() : '',
+    focus: normalizeStringArray(input.focus),
+  }
+}
+
+function normalizeUiVisualValidationContract(input = {}) {
+  return {
+    required: Boolean(input.required),
+    reason: typeof input.reason === 'string' ? input.reason.trim() : '',
+    screens: normalizeStringArray(input.screens),
+    states: normalizeStringArray(input.states),
+  }
+}
+
+function normalizeUiContract(input = {}) {
+  const styleAdvisor = normalizeUiStyleAdvisorContract(input.styleAdvisor)
+  const visualValidation = normalizeUiVisualValidationContract(input.visualValidation)
+  const sourcePriority = normalizeStringArray(input.sourcePriority)
+  const designContract = Boolean(input.designContract)
+
+  return {
+    required: Boolean(input.required)
+      || designContract
+      || sourcePriority.length > 0
+      || styleAdvisor.required
+      || visualValidation.required,
+    designContract,
+    sourcePriority,
+    styleAdvisor,
+    visualValidation,
   }
 }
 
@@ -96,31 +124,66 @@ export function normalizePlanContract(input = {}) {
   }
 }
 
+export function getAdvisorRequirement(contract = null) {
+  const normalized = normalizePlanContract(contract || {})
+  const advisor = normalized.advisor || normalizeAdvisorContract()
+  const styleAdvisor = normalized.ui?.styleAdvisor || normalizeUiStyleAdvisorContract()
+
+  return {
+    required: Boolean(advisor.required || styleAdvisor.required),
+    genericRequired: advisor.required,
+    styleRequired: styleAdvisor.required,
+    reason: [advisor.reason, styleAdvisor.reason].filter(Boolean).join('；'),
+    focus: normalizeStringArray([...advisor.focus, ...styleAdvisor.focus]),
+    preferredSources: advisor.preferredSources,
+  }
+}
+
+export function getVisualValidationRequirement(contract = null) {
+  const normalized = normalizePlanContract(contract || {})
+  return normalized.ui?.visualValidation || normalizeUiVisualValidationContract()
+}
+
 export function getPlanContractIssues(contract = null) {
   if (!contract) {
     return ['missing contract.json']
   }
 
+  const normalized = normalizePlanContract(contract)
+  const advisorRequirement = getAdvisorRequirement(normalized)
+  const visualValidation = getVisualValidationRequirement(normalized)
   const issues = []
-  if (!normalizeVerifyMode(contract.verifyMode)) {
+  if (!normalizeVerifyMode(normalized.verifyMode)) {
     issues.push('contract.json missing valid verifyMode')
   }
-  if (normalizeStringArray(contract.testerFocus).length === 0) {
+  if (normalizeStringArray(normalized.testerFocus).length === 0) {
     issues.push('contract.json missing testerFocus')
   }
-  if (normalizeVerifyMode(contract.verifyMode) === 'review-first' && normalizeStringArray(contract.reviewerFocus).length === 0) {
+  if (normalizeVerifyMode(normalized.verifyMode) === 'review-first' && normalizeStringArray(normalized.reviewerFocus).length === 0) {
     issues.push('contract.json missing reviewerFocus for review-first flow')
   }
-  if (contract.ui?.required && normalizeStringArray(contract.ui.sourcePriority).length === 0) {
+  if (normalized.ui?.required && normalizeStringArray(normalized.ui.sourcePriority).length === 0) {
     issues.push('contract.json missing ui.sourcePriority')
   }
-  if (contract.advisor?.required && !String(contract.advisor.reason || '').trim()) {
+  if (normalized.ui?.styleAdvisor?.required && !String(normalized.ui.styleAdvisor.reason || '').trim()) {
+    issues.push('contract.json missing ui.styleAdvisor.reason')
+  }
+  if (normalized.ui?.styleAdvisor?.required && normalizeStringArray(normalized.ui.styleAdvisor.focus).length === 0) {
+    issues.push('contract.json missing ui.styleAdvisor.focus')
+  }
+  if (visualValidation.required && !String(visualValidation.reason || '').trim()) {
+    issues.push('contract.json missing ui.visualValidation.reason')
+  }
+  if (visualValidation.required && visualValidation.screens.length === 0 && visualValidation.states.length === 0) {
+    issues.push('contract.json missing ui.visualValidation.screens or ui.visualValidation.states')
+  }
+  if (advisorRequirement.genericRequired && !String(normalized.advisor.reason || '').trim()) {
     issues.push('contract.json missing advisor.reason')
   }
-  if (contract.advisor?.required && normalizeStringArray(contract.advisor.focus).length === 0) {
+  if (advisorRequirement.genericRequired && normalizeStringArray(normalized.advisor.focus).length === 0) {
     issues.push('contract.json missing advisor.focus')
   }
-  if (contract.advisor?.required && normalizeAdvisorSources(contract.advisor.preferredSources).length === 0) {
+  if (advisorRequirement.genericRequired && normalizeAdvisorSources(normalized.advisor.preferredSources).length === 0) {
     issues.push('contract.json missing advisor.preferredSources')
   }
   return issues

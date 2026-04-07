@@ -100,7 +100,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 按 templates/plans/prd/ 的模板格式，仅写入用户未跳过的维度文件
 - 生成 tasks.md（每个任务包含具体文件路径、预期变更、完成标准、验证方式；任务独立可验证；依赖顺序明确）
 - 生成 decisions.md（贯穿全程的决策日志）
-- 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
+- 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需前置审美收敛时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要只把验证路径留在 prose 里
 - 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`；若原文件不存在，先按模板建立最小设计契约，再同步已确认的稳定 UI 决策
 - 重写 `.helloagents/STATE.md`，其中“主线目标”写当前 PRD 链路真正要完成的产品 / 功能目标，不延续无关旧主线
