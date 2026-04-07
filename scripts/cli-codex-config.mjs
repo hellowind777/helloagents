@@ -21,8 +21,7 @@ If the current workspace contains a project-level AGENTS.md or other repo-specif
 If work was already in progress and earlier context was compressed, first restore the active project state from the most relevant project state files or other project-local context artifacts, then continue from the actual interruption point without restarting the workflow or repeating completed steps.`
 
 export function isManagedCodexStandbyInstructionPath(normalized = '') {
-  return /\/\.codex\/AGENTS\.md/i.test(normalized)
-    || /\/\.codex\/helloagents\/bootstrap-lite\.md/i.test(normalized)
+  return /\/\.codex\/helloagents\/bootstrap-lite\.md/i.test(normalized)
 }
 
 export function isManagedCodexGlobalInstructionPath(normalized = '') {

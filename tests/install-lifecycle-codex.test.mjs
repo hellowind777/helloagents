@@ -70,7 +70,7 @@ test('Codex cleanup ignores contaminated backups and strips managed config lines
   assert.match(cleaned, /unified_exec = true/)
 })
 
-test('Codex standby preserves a user-owned model_instructions_file in backup and restores it on cleanup', () => {
+test('Codex standby temporarily suspends a user-owned model_instructions_file and restores it on cleanup', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const userAgentsPath = join(home, '.codex', 'AGENTS.md').replace(/\\/g, '/')
@@ -82,12 +82,13 @@ test('Codex standby preserves a user-owned model_instructions_file in backup and
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const installedConfig = readText(join(home, '.codex', 'config.toml'))
+  assert.doesNotMatch(installedConfig, /model_instructions_file\s*=/)
   assert.match(installedConfig, /developer_instructions\s*=\s*"""/)
   assert.ok(installedConfig.indexOf('developer_instructions = """') < installedConfig.indexOf('notify = ['))
 
   runCli(pkgRoot, home, ['cleanup'])
 
-  assert.ok(!existsSync(join(home, '.codex', 'config.toml')))
+  assert.match(readText(join(home, '.codex', 'config.toml')), new RegExp(`model_instructions_file = "${userAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
   assert.equal(readText(join(home, '.codex', 'AGENTS.md')), '# Codex custom\n')
 })
 

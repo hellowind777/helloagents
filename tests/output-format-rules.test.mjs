@@ -20,6 +20,9 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /所有流式内容、进度说明、状态汇报、中间输出/);
     assert.match(content, /禁止使用顶部信息栏和底部操作栏/);
     assert.match(content, /子代理在任何场景下都不得使用该格式/);
+    assert.match(content, /状态图标与收尾内容必须一致/);
+    assert.match(content, /仅在本轮执行已完成且不再等待用户输入时才能使用 `✅完成`/);
+    assert.match(content, /条件式能力表述或询问句/);
   }
 });
 

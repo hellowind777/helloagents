@@ -7,5 +7,9 @@ export function shouldIgnoreFormattedSubagent(lastMsg, outputFormatEnabled) {
 }
 
 export function claimsTaskComplete(lastMsg) {
-  return /✅|完成|已修复|done|fixed|completed|finished/i.test(lastMsg);
+  if (!lastMsg) return false;
+  if (/^✅【HelloAGENTS】- .*(当前任务已完成|任务已完成|已修复|完成交付|done|fixed|completed|finished)/im.test(lastMsg)) {
+    return true;
+  }
+  return /(当前任务已完成|任务已完成|已全部完成|已修复|修复完成|\b(done|fixed|completed|finished)\b)/i.test(lastMsg);
 }

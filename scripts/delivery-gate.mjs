@@ -7,6 +7,8 @@
 import { readFileSync } from 'node:fs'
 import { getAdvisorEvidenceStatus } from './advisor-state.mjs'
 import { getCloseoutEvidenceStatus } from './closeout-state.mjs'
+import { getAdvisorRequirement, getVisualValidationRequirement } from './plan-contract.mjs'
+import { getVisualEvidenceStatus } from './visual-state.mjs'
 import { buildDeliveryGateHint, getDeliveryAction, getWorkflowRecommendation, getWorkflowSnapshot } from './workflow-state.mjs'
 import { getReviewEvidenceStatus } from './review-state.mjs'
 import { getVerifyEvidenceStatus } from './verify-state.mjs'
@@ -92,7 +94,7 @@ function collectPlanIssues(planEntries) {
   return issues
 }
 
-function collectEvidenceIssues(issues, verificationStatus, reviewStatus, advisorStatus, closeoutStatus) {
+function collectEvidenceIssues(issues, verificationStatus, reviewStatus, advisorStatus, visualStatus, closeoutStatus) {
   if (verificationStatus?.required && verificationStatus.status !== 'valid') {
     issues.push({
       type: 'missing-verify-evidence',
@@ -115,6 +117,13 @@ function collectEvidenceIssues(issues, verificationStatus, reviewStatus, advisor
       details: advisorStatus.details,
     })
   }
+  if (visualStatus?.required && visualStatus.status !== 'valid') {
+    issues.push({
+      type: 'missing-visual-evidence',
+      planName: 'delivery',
+      details: visualStatus.details,
+    })
+  }
 
   if (issues.length === 0 && closeoutStatus?.required && closeoutStatus.status !== 'valid') {
     issues.push({
@@ -125,9 +134,9 @@ function collectEvidenceIssues(issues, verificationStatus, reviewStatus, advisor
   }
 }
 
-function collectGateIssues(planEntries, verificationStatus, reviewStatus, advisorStatus, closeoutStatus) {
+function collectGateIssues(planEntries, verificationStatus, reviewStatus, advisorStatus, visualStatus, closeoutStatus) {
   const issues = collectPlanIssues(planEntries)
-  collectEvidenceIssues(issues, verificationStatus, reviewStatus, advisorStatus, closeoutStatus)
+  collectEvidenceIssues(issues, verificationStatus, reviewStatus, advisorStatus, visualStatus, closeoutStatus)
   return issues
 }
 
@@ -151,6 +160,8 @@ function issueHeading(issue) {
       return 'current workflow is missing fresh review evidence'
     case 'missing-advisor-evidence':
       return 'current workflow is missing fresh advisor evidence'
+    case 'missing-visual-evidence':
+      return 'current workflow is missing fresh visual validation evidence'
     case 'missing-closeout-evidence':
       return 'current workflow is missing fresh closeout evidence'
     default:
@@ -178,6 +189,9 @@ function buildBlockReason(issues, recommendation, gateHint) {
   if (issues.some((issue) => issue.type === 'missing-closeout-evidence')) {
     lines.push('Next closeout step: write `.helloagents/.ralph-closeout.json` with `requirementsCoverage` and `deliveryChecklist` before reporting completion.')
   }
+  if (issues.some((issue) => issue.type === 'missing-visual-evidence')) {
+    lines.push('Next visual step: write `.helloagents/.ralph-visual.json` with `tooling`, `screensChecked`, `statesChecked`, `status`, and `summary` before reporting completion.')
+  }
   if (gateHint) {
     lines.push(gateHint)
   }
@@ -204,22 +218,29 @@ function main() {
     return
   }
 
-  const advisorPlans = gatePlans.filter((entry) => entry.contract?.advisor?.required)
+  const advisorRequirements = gatePlans.map((entry) => getAdvisorRequirement(entry.contract))
   const advisorStatus = getAdvisorEvidenceStatus(cwd, {
-    required: advisorPlans.length > 0,
-    focus: advisorPlans.flatMap((entry) => entry.contract?.advisor?.focus || []),
+    required: advisorRequirements.some((entry) => entry.required),
+    focus: advisorRequirements.flatMap((entry) => entry.focus || []),
+  })
+  const visualRequirements = gatePlans.map((entry) => getVisualValidationRequirement(entry.contract))
+  const visualStatus = getVisualEvidenceStatus(cwd, {
+    required: visualRequirements.some((entry) => entry.required),
+    screens: visualRequirements.flatMap((entry) => entry.screens || []),
+    states: visualRequirements.flatMap((entry) => entry.states || []),
   })
   const closeoutRequired = (
     gatePlans.every((entry) => entry.missingFiles.length === 0 && entry.templateIssues.length === 0 && entry.taskSummary.total > 0 && entry.taskSummary.open === 0 && entry.taskSummary.underSpecifiedCount === 0)
     && (!verificationStatus.required || verificationStatus.status === 'valid')
     && (!reviewStatus.required || reviewStatus.status === 'valid')
     && (!advisorStatus.required || advisorStatus.status === 'valid')
+    && (!visualStatus.required || visualStatus.status === 'valid')
   )
   const closeoutStatus = getCloseoutEvidenceStatus(cwd, {
     required: closeoutRequired,
   })
 
-  const issues = collectGateIssues(gatePlans, verificationStatus, reviewStatus, advisorStatus, closeoutStatus)
+  const issues = collectGateIssues(gatePlans, verificationStatus, reviewStatus, advisorStatus, visualStatus, closeoutStatus)
   if (issues.length === 0) {
     process.stdout.write(JSON.stringify({ suppressOutput: true }))
     return
