@@ -1,0 +1,20 @@
+{
+  "name": "helloagents-dev",
+  "description": "Development marketplace for HelloAGENTS quality-driven orchestration kernel",
+  "owner": {
+    "name": "HelloWind",
+    "email": "hellowind777@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "helloagents",
+      "description": "Quality-driven orchestration kernel for AI CLIs: intelligent routing, quality verification, safety guards, and notifications",
+      "version": "3.0.7",
+      "source": "./",
+      "author": {
+        "name": "HelloWind",
+        "email": "hellowind777@gmail.com"
+      }
+    }
+  ]
+}

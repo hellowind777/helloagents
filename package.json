@@ -1,8 +1,8 @@
 {
   "name": "helloagents",
-  "version": "2.3.8",
+  "version": "3.0.7",
   "type": "module",
-  "description": "HelloAGENTS - AI-native sub-agent orchestration framework for multi-CLI environments",
+  "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, quality verification (Ralph Loop), safety guards, and notifications.",
   "author": "HelloWind",
   "license": "Apache-2.0",
   "homepage": "https://github.com/hellowind777/helloagents",
@@ -11,13 +11,33 @@
     "url": "git+https://github.com/hellowind777/helloagents.git"
   },
   "bin": {
-    "helloagents": "./bin/cli.mjs"
+    "helloagents": "cli.mjs",
+    "helloagents-js": "cli.mjs"
+  },
+  "scripts": {
+    "test": "node --test",
+    "postinstall": "node cli.mjs postinstall",
+    "preuninstall": "node cli.mjs preuninstall",
+    "uninstall": "node cli.mjs preuninstall",
+    "postuninstall": "node cli.mjs preuninstall",
+    "prepublishOnly": "node cli.mjs sync-version"
   },
   "files": [
-    "bin/"
+    "cli.mjs",
+    "scripts/",
+    "hooks/",
+    "skills/",
+    "templates/",
+    "assets/",
+    "bootstrap.md",
+    "bootstrap-lite.md",
+    "README_CN.md",
+    "gemini-extension.json",
+    ".claude-plugin/",
+    ".codex-plugin/"
   ],
-  "keywords": ["ai", "agent", "claude", "codex", "gemini", "qwen", "grok", "opencode", "cli", "workflow"],
+  "keywords": ["ai", "agent", "claude", "codex", "cli", "orchestration", "subagent", "hooks", "skills"],
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   }
 }

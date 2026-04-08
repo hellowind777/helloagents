@@ -1,0 +1,67 @@
+---
+name: ~build
+description: 执行实现工作流 — 基于当前需求或现有方案包完成实现、验证与状态同步（~build 命令）
+policy:
+  allow_implicit_invocation: false
+---
+Trigger: ~build [description]
+
+`~build` 是执行实现命令。它负责读取现有需求、方案包与项目上下文，完成实现、局部验证、修复循环，并把结果衔接到后续验证与收尾。
+执行 `~build` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充实现前定位、实现约束，以及进入 `~verify` / 收尾前的实现边界。
+`.helloagents/` 在本 skill 中表示逻辑项目空间：`STATE.md` 与 `.ralph-*.json` 保持项目本地；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md`、`verify.yaml` 与方案包按当前会话注入的项目知识/方案目录解析。
+
+## 铁律
+- 默认先定位上下文与范围，再修改代码
+- 已有方案包时，优先按方案包执行，不重复发明方案
+- 没有运行验证，不能报告完成
+- 遇到高风险或阻塞情况立即停下确认
+
+## 流程
+
+### 1. 恢复与定位
+
+- 优先按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”恢复当前链路；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先读取 `.helloagents/STATE.md` 作为恢复快照，再用当前用户消息、活跃方案包 / PRD 与代码事实校正主线
+- 若存在最近的活跃方案包，读取对应的：
+  - `requirements.md`
+  - `plan.md`
+  - `tasks.md`
+  - `contract.json`
+  - 实现时优先把 `tasks.md` 中每个任务的“完成标准”当作本轮 build contract，不要只按任务标题猜测范围
+  - `contract.json` 存在时，优先按其中的 `verifyMode`、`reviewerFocus`、`testerFocus` 理解后续验证边界
+- 若当前上下文已注入“当前工作流约束”或“当前建议下一命令”，先服从它；只有推荐仍为 `~build`，或用户明确提出新增实现范围时，才继续 `~build`
+- 其余项目知识库与相关代码文件，按 bootstrap 的项目上下文规则按需读取
+- 若任务涉及 UI，按以下优先级读取并遵循：当前活跃 `plan.md` / PRD 中的 UI 决策 > 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析） > `hello-ui` 通用规则
+- 若已激活项目且当前任务属于整页新建、设计系统改造、或跨多个组件的视觉重做，但逻辑 `.helloagents/DESIGN.md` 不存在，先按模板创建最小设计契约，再继续大规模实现
+
+如果 `.helloagents/` 不存在：
+- 按当前已加载 bootstrap 的 `.helloagents/` 与流程状态规则创建最小项目状态
+- 仅补足执行当前任务所需的最小状态，不自动展开完整知识库
+
+### 2. 需求与范围确认
+
+- 若用户提供的是明确执行任务，直接确认范围
+- 若当前活跃方案包已能覆盖需求，按方案执行
+- 若仍存在真实歧义，仅询问阻塞执行的关键决策
+
+### 3. 执行实现
+
+- 根据任务拆解逐步修改
+- 读取 PLAN 阶段所需的 hello-* 技能并遵循其规范
+- 编码任务遵循：
+  - 先补测试或最小验证手段，再写实现
+  - 每次编辑后主动跑确定性检查
+- 可并行任务通过子代理执行，但不同子代理不得改同一文件
+
+### 4. 验证与修复循环
+
+- 读取 `hello-verify` SKILL.md
+- 运行 lint / typecheck / test / build 等验证
+- 若失败，修复后重跑
+- 若涉及 review 场景，可按需读取 `hello-review`
+
+### 5. 交付衔接
+
+- 有方案包时，只同步本次实现直接影响的任务状态；未完成项保持打开
+- 当前实现已闭合、且需要进入交付或收尾时，转入 `~verify`
+- `STATE.md`、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载 bootstrap 的 VERIFY / CONSOLIDATE 规则执行
+- 不在 `~build` 内把仍未闭合的方案包整体报告为已完成
