@@ -1,0 +1,86 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" inject --gemini",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" route --gemini",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "shell|bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" --gemini",
+            "timeout": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" pre-write --gemini",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "AfterModel": [
+      {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/guard.mjs\" post-write --gemini",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/ralph-loop.mjs\" subagent --gemini",
+            "timeout": 120000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${extensionPath}/scripts/notify.mjs\" stop --gemini",
+            "timeout": 120000
+          }
+        ]
+      }
+    ]
+  }
+}

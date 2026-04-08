@@ -1,0 +1,239 @@
+#!/usr/bin/env node
+/**
+ * HelloAGENTS Guard — Dangerous command blocker + L2 semantic security scan
+ * Runs on PreToolUse hook for Bash/shell commands.
+ * Runs on PostToolUse hook for Write/Edit (L2 scan).
+ */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { homedir } from 'node:os'
+
+import { buildStateSyncHint, getWorkflowRecommendation } from './workflow-state.mjs'
+import { getApplicableRouteContext } from './runtime-context.mjs'
+import { appendReplayEvent } from './replay-state.mjs'
+import {
+  DANGEROUS_PATTERNS,
+  IDEA_SIDE_EFFECT_COMMAND_PATTERNS,
+  scanDangerousPackages,
+  scanEnvCoverage,
+  scanForSecrets,
+  scanHighRiskCommands,
+  scanUnrequestedFiles,
+} from './guard-rules.mjs'
+
+const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json')
+const IS_GEMINI = process.argv.includes('--gemini')
+const HOST = IS_GEMINI ? 'gemini' : 'claude'
+const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
+  || (
+    process.argv.includes('post-write')
+      ? (IS_GEMINI ? 'AfterModel' : 'PostToolUse')
+      : (IS_GEMINI ? 'BeforeTool' : 'PreToolUse')
+  )
+
+function readSettings() {
+  try {
+    return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'))
+  } catch {
+    return {}
+  }
+}
+
+function readHookInput() {
+  try {
+    return JSON.parse(readFileSync(0, 'utf-8'))
+  } catch {
+    return {}
+  }
+}
+
+function emitHookPayload(payload) {
+  process.stdout.write(JSON.stringify(payload))
+}
+
+function emitGuardEvent(cwd, event, source, reason, details = {}) {
+  appendReplayEvent(cwd, {
+    host: HOST,
+    event,
+    source,
+    reason,
+    details,
+  })
+}
+
+function buildHighRiskGate(matches, cwd) {
+  const stateSyncHint = buildStateSyncHint(cwd)
+  if (stateSyncHint) {
+    return {
+      reason: `[HelloAGENTS Guard] Blocked T3 command until project recovery state is synced.\n${stateSyncHint}`,
+    }
+  }
+
+  const recommendation = getWorkflowRecommendation(cwd)
+  if (!recommendation) return null
+  if (matches.some((match) => match.gate === 'post-verify')) {
+    return {
+      reason: `[HelloAGENTS Guard] Blocked T3 command until workflow reaches VERIFY / CONSOLIDATE.\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
+    }
+  }
+  if (matches.some((match) => match.gate === 'plan-first') && recommendation.nextCommand === 'plan') {
+    return {
+      reason: `[HelloAGENTS Guard] Blocked T3 command because the current workflow still requires ~plan before risky schema changes.\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
+    }
+  }
+  return null
+}
+
+function buildIdeaBoundaryReason(kind) {
+  return `[HelloAGENTS Guard] Blocked ${kind} during ~idea.\n当前路由：~idea 是只读探索；先停留在比较方案。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
+}
+
+function detectIdeaBoundaryContext(data) {
+  return getApplicableRouteContext({
+    cwd: data.cwd || process.cwd(),
+    filePath: data.tool_input?.file_path || '',
+  })
+}
+
+function emitIdeaBoundaryBlock(data, kind, target) {
+  const reason = `${buildIdeaBoundaryReason(kind)}\n${target}`
+  emitHookPayload({
+    hookSpecificOutput: {
+      hookEventName: HOOK_EVENT,
+      permissionDecision: 'deny',
+      permissionDecisionReason: reason,
+    },
+  })
+  emitGuardEvent(data.cwd || process.cwd(), 'guard_blocked', kind === 'write' ? 'pre-write' : 'command', buildIdeaBoundaryReason(kind), {
+    command: kind === 'side-effect command' ? target.replace(/^Command:\s*/, '') : '',
+    target: kind === 'write' ? target.replace(/^Target:\s*/, '') : '',
+    guardType: kind === 'write' ? 'idea-write-boundary' : 'idea-command-boundary',
+  })
+}
+
+function preWriteGuard(data) {
+  if (readSettings().guard_enabled === false) return
+  if (!detectIdeaBoundaryContext(data)?.zeroSideEffect) return
+  emitIdeaBoundaryBlock(data, 'write', `Target: ${data.tool_input?.file_path || '(unknown file)'}`)
+}
+
+function buildPostWriteWarnings(data) {
+  const content = data.tool_input?.content || data.tool_input?.new_string || ''
+  const filePath = data.tool_input?.file_path || ''
+  return [
+    ...(detectIdeaBoundaryContext(data)?.zeroSideEffect
+      ? ['~idea 当前轮要求只读探索；检测到写入工具落地，请回退到探索输出或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
+      : []),
+    ...scanUnrequestedFiles(filePath, data.tool_name),
+    ...(content ? [...scanForSecrets(content), ...scanDangerousPackages(content, filePath)] : []),
+    ...scanEnvCoverage(filePath),
+  ]
+}
+
+function postWriteScan(data) {
+  if (readSettings().guard_enabled === false) return
+  const warnings = buildPostWriteWarnings(data)
+  if (warnings.length === 0) return
+
+  emitHookPayload({
+    hookSpecificOutput: {
+      hookEventName: HOOK_EVENT,
+      additionalContext: `⚠️ [HelloAGENTS L2 安全扫描] 检测到潜在问题:\n${warnings.map((warning) => `  - ${warning}`).join('\n')}\n请检查以上问题。`,
+    },
+  })
+  emitGuardEvent(data.cwd || process.cwd(), 'guard_warning', 'post-write', '', {
+    warnings,
+    guardType: 'post-write-l2',
+  })
+}
+
+function handleDangerousCommand(data, command) {
+  for (const { pattern, reason } of DANGEROUS_PATTERNS) {
+    if (!pattern.test(command)) continue
+    emitHookPayload({
+      hookSpecificOutput: {
+        hookEventName: HOOK_EVENT,
+        permissionDecision: 'deny',
+        permissionDecisionReason: `[HelloAGENTS Guard] Blocked: ${reason}\nCommand: ${command.slice(0, 200)}`,
+      },
+    })
+    emitGuardEvent(data.cwd || process.cwd(), 'guard_blocked', 'command', reason, {
+      command: command.slice(0, 200),
+      guardType: 'dangerous-command',
+    })
+    return true
+  }
+  return false
+}
+
+function handleHighRiskCommand(data, command) {
+  const warnings = scanHighRiskCommands(command)
+  if (warnings.length === 0) return
+
+  const cwd = data.cwd || process.cwd()
+  const gate = buildHighRiskGate(warnings, cwd)
+  if (gate) {
+    emitHookPayload({
+      hookSpecificOutput: {
+        hookEventName: HOOK_EVENT,
+        permissionDecision: 'deny',
+        permissionDecisionReason: `${gate.reason}\nCommand: ${command.slice(0, 200)}`,
+      },
+    })
+    emitGuardEvent(cwd, 'guard_blocked', 'command', gate.reason, {
+      command: command.slice(0, 200),
+      guardType: 'high-risk-gate',
+      matches: warnings.map((warning) => warning.reason),
+    })
+    return
+  }
+
+  emitHookPayload({
+    hookSpecificOutput: {
+      hookEventName: HOOK_EVENT,
+      additionalContext: `⚠️ [HelloAGENTS 高风险链路提醒] 检测到高风险命令:\n${warnings.map((warning) => `  - ${warning.reason}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`,
+    },
+  })
+  emitGuardEvent(cwd, 'guard_warning', 'command', '', {
+    guardType: 'high-risk-warning',
+    command: command.slice(0, 200),
+    warnings: warnings.map((warning) => warning.reason),
+  })
+}
+
+function handleShellCommand(data) {
+  const toolName = (data.tool_name || '').toLowerCase()
+  if (!['bash', 'shell', 'terminal', 'command'].some((name) => toolName.includes(name))) return
+
+  const command = data.tool_input?.command || data.tool_input?.input || ''
+  if (!command) return
+
+  if (detectIdeaBoundaryContext(data)?.zeroSideEffect) {
+    for (const pattern of IDEA_SIDE_EFFECT_COMMAND_PATTERNS) {
+      if (!pattern.test(command)) continue
+      emitIdeaBoundaryBlock(data, 'side-effect command', `Command: ${command.slice(0, 200)}`)
+      return
+    }
+  }
+
+  if (handleDangerousCommand(data, command)) return
+  handleHighRiskCommand(data, command)
+}
+
+async function main() {
+  const mode = process.argv[2] || ''
+  const data = readHookInput()
+
+  if (mode === 'pre-write') {
+    preWriteGuard(data)
+    return
+  }
+  if (mode === 'post-write') {
+    postWriteScan(data)
+    return
+  }
+  if (readSettings().guard_enabled === false) return
+  handleShellCommand(data)
+}
+
+main().catch(() => {})

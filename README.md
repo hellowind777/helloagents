@@ -6,14 +6,14 @@
 
 <div align="center">
 
-**Let AI go beyond analysis — keep pushing until implementation and verification are done.**
+**Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
 
-[![Version](https://img.shields.io/badge/version-2.3.8-orange.svg)](./pyproject.toml)
+[![Version](https://img.shields.io/badge/version-3.0.7-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
-[![Python](https://img.shields.io/badge/python-%3E%3D3.10-3776AB.svg)](./pyproject.toml)
-[![Commands](https://img.shields.io/badge/commands-15-6366f1.svg)](./helloagents/functions)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
+[![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hellowind777/helloagents/issues)
 
 </div>
 
@@ -25,27 +25,35 @@
 ---
 
 > [!IMPORTANT]
-> **Looking for the old version of HelloAGENTS?** The legacy codebase has been moved to a separate archive repository: [helloagents-archive](https://github.com/hellowind777/helloagents-archive)
+> **Looking for v2.x?** The legacy Python-based codebase has been moved to a separate archive repository: [helloagents-archive](https://github.com/hellowind777/helloagents-archive). The v3 line is a complete rewrite — pure Node.js/Markdown architecture, no Python dependency.
 
-## Table of Contents
+## 📑 Table of Contents
 
-- [Before and After](#before-and-after)
-- [Core Features](#core-features)
-  - [Sub-Agent Native Mapping](#sub-agent-native-mapping)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [How It Works](#how-it-works)
-- [In-Chat Workflow Commands](#in-chat-workflow-commands)
-- [Usage Guide](#usage-guide)
-- [Repository Guide](#repository-guide)
-- [FAQ](#faq)
-- [Troubleshooting](#troubleshooting)
-- [Version History](#version-history)
-- [Contributing](#contributing)
-- [License](#license)
-- [Next Steps](#next-steps)
+<details>
+<summary><strong>Click to expand</strong></summary>
 
-## Before and After
+- [🎯 Why HelloAGENTS?](#-why-helloagents)
+- [🆚 Compared with v2.3.8](#-compared-with-v238)
+- [✨ Core Features](#-core-features)
+- [🚀 Quick Start](#-quick-start)
+- [🔄 Installation Lifecycle & File Writes](#-installation-lifecycle--file-writes)
+- [📖 Commands](#-commands)
+- [🔧 Configuration](#-configuration)
+- [⚙️ How It Works](#️-how-it-works)
+- [📚 Usage Guide](#-usage-guide)
+- [🧪 Verification](#-verification)
+- [❓ FAQ](#-faq)
+- [🛠️ Troubleshooting](#️-troubleshooting)
+- [📈 Version History](#-version-history)
+- [📜 License](#-license)
+
+</details>
+
+## 🎯 Why HelloAGENTS?
+
+Ever had an AI coding assistant that stops at "here's what you should do" instead of actually doing it? Or one that writes code but skips tests, ignores edge cases, and calls it done?
+
+HelloAGENTS fixes that. It's an orchestration layer that sits on top of your AI CLI and enforces quality at every step.
 
 <table>
 <tr>
@@ -53,14 +61,14 @@
 
 **Without HelloAGENTS**
 
-<img src="./readme_images/08-demo-snake-without-helloagents.png" alt="Snake demo without HelloAGENTS" width="520">
+<img src="./readme_images/08-demo-snake-without-helloagents.png" alt="Without HelloAGENTS" width="520">
 
 </td>
 <td width="50%" valign="top" align="center">
 
 **With HelloAGENTS**
 
-<img src="./readme_images/07-demo-snake-with-helloagents.png" alt="Snake demo with HelloAGENTS" width="520">
+<img src="./readme_images/07-demo-snake-with-helloagents.png" alt="With HelloAGENTS" width="520">
 
 </td>
 </tr>
@@ -68,846 +76,796 @@
 
 | Challenge | Without HelloAGENTS | With HelloAGENTS |
 |-----------|-------------------|-----------------|
-| Stops at planning | Ends with suggestions | Pushes to implementation and validation |
-| Output drift | Different structure every prompt | Unified routing and stage chain |
-| Risky operations | Easier to make destructive mistakes | EHRB risk detection and escalation |
-| Knowledge continuity | Context gets scattered | Built-in KB and session memory |
-| Reusability | Prompt-by-prompt effort | Commandized reusable workflow |
+| **Stops at planning** | Ends with suggestions | Pushes through to implementation and verification |
+| **Quality inconsistency** | Varies by prompt | 14 skills auto-activate based on task type |
+| **Risky operations** | Easy to make destructive mistakes | Guard system blocks dangerous commands |
+| **No verification** | "It should work" | Ralph Loop runs lint/test/build before completion |
+| **Knowledge loss** | Context scattered across sessions | Project KB persists and grows |
 
-## Core Features
+### 💡 Best For
+- ✅ **Developers using AI CLIs** who want consistent, verified output
+- ✅ **Teams** that need quality guardrails on AI-assisted coding
+- ✅ **Complex projects** requiring structured design → develop → verify workflows
+
+### ⚠️ Not For
+- ❌ Simple one-off questions (HelloAGENTS adds process overhead)
+- ❌ Non-coding tasks (optimized for software engineering)
+
+## 🆚 Compared with v2.3.8
+
+If the last version you used seriously was `v2.3.8`, this is not a minor update. The current line is a full product-line reset.
+
+| Dimension | v2.3.8 | Local `v3.0.7` |
+|-----------|--------|----------------|
+| **Implementation base** | Python package plus mixed scripts/rules | Pure Node.js + Markdown runtime built around `cli.mjs`, `bootstrap*.md`, `skills/`, and `scripts/` |
+| **Product shape** | More like a multi-CLI management tool plus prompt protocol bundle | More like a quality orchestration kernel for AI CLIs, centered on routing, gating, verification, and resumable execution |
+| **Installation model** | pip / uv / npx / shell installers in parallel | npm-first; install the package, then deploy explicitly to Claude / Gemini / Codex |
+| **CLI strategy** | 6 targets with uneven capabilities | Focused on 3 primary surfaces: Claude Code, Gemini CLI, and Codex CLI |
+| **Workflow model** | R0/R1/R2 routing plus older design/develop semantics | ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE routed kernel |
+| **Command surface** | 15 commands including `~exec`, `~rollback`, `~rlm`, `~validatekb` | 12 focused commands such as `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, and `~wiki` |
+| **Quality model** | More distributed rules, more reliance on prose | 14 auto-activated skills + checklist gating + Ralph Loop + structured evidence |
+| **Project state** | KB felt auxiliary | `.helloagents/` is now the activation boundary; `STATE.md`, plan packages, `DESIGN.md`, and `contract.json` anchor the workflow |
+| **KB storage** | Project-local only | Project-local by default, plus `project_store_mode=repo-shared` for sharing stable KB/plan assets across git worktrees |
+| **Codex integration** | Earlier compatibility layers and legacy paths | Standby = injected rules + local links; global = native local-plugin chain with less noise and drift |
+
+In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.7` is a real orchestration kernel that unifies quality rules, plan artifacts, verification evidence, and installation lifecycle into one operating model.
+
+## ✨ Core Features
+
+HelloAGENTS enforces quality through three mechanisms working together:
 
 <table>
 <tr>
 <td width="50%" valign="top">
 <img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
 
-**RLM Sub-Agent Orchestration**
+**🎯 14 Auto-Activated Quality Skills**
 
-3 specialized roles (reviewer / writer / brainstormer) plus host CLI native sub-agents (explore / code / brainstorm) are dispatched automatically based on task complexity. Tasks are scheduled via DAG dependency analysis with topological sort and layer-by-layer parallel dispatch. Supports cross-CLI parallel scheduling and Agent Teams collaboration.
+Skills activate automatically based on what you're building — no configuration needed.
+- UI, Security, API, Architecture, Performance
+- Testing, Error Handling, Data, Code Review
+- Debugging, Subagents, Documentation, Verification, Reflection
 
-**Your gain:** complex tasks are broken down and handled by the right specialist, with parallel execution when possible.
+**Your gain:** every task gets the right quality checks without you remembering to ask.
+
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
 
-**Structured Workflow (Evaluate → Design → Develop)**
+**📋 Checklist Gate Control**
 
-Every input is scored on five dimensions and routed to R0 direct response, R1 fast flow, or R2 standard flow. R2 enters the full stage chain with explicit entry conditions, deliverables, and verification gates. Supports interactive and fully delegated modes.
+After coding, HelloAGENTS collects delivery checklists from all activated skills and verifies each item before reporting completion.
 
-**Your gain:** proportional effort — simple queries stay fast, complex tasks get full process with verification at every step.
+**Your gain:** nothing ships until it actually passes quality checks — not just "looks done."
+
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="./readme_images/04-feature-icon-safety.svg" width="48" align="left">
 
-**Three-Layer Safety Detection (EHRB)**
+**🛡️ Guard System + Ralph Loop**
 
-Keyword scan, semantic analysis, and tool-output inspection catch destructive operations before execution. Interactive and delegated modes enforce user confirmation.
+L1 blocks destructive commands (`rm -rf /`, `git push --force`, `DROP DATABASE`). L2 scans for hardcoded secrets and security patterns. Ralph Loop auto-runs verification commands after every task.
 
-**Your gain:** safer defaults with zero-config protection.
+**Your gain:** safer defaults with zero-config protection, verified output every time.
+
 </td>
 <td width="50%" valign="top">
 <img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
 
-**Project Knowledge Base**
+**⚡ Structured Workflow**
 
-L1 project knowledge base (structured docs synced from code), context survives across sessions.
+Simple tasks stay fast. Complex tasks use a routed kernel workflow: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE, with explicit command lanes for ideation, planning, implementation, and validation.
 
-**Your gain:** project context persists across sessions — no need to re-explain.
+**Your gain:** proportional effort — quick tasks stay fast, complex tasks get full process.
+
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 <img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
 
-**Extensibility & Customization**
+**🧠 Structured Plan Artifacts**
 
-Voice notifications (5 event sounds), user-defined tool orchestration (sub-agents, skills, MCP servers, plugins), and flexible configuration options. All features work across 6 CLI targets with graceful degradation.
+Complex tasks no longer rely on one paragraph of planning prose. They land as `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, `STATE.md`, and `DESIGN.md` when needed.
 
-**Your gain:** tailor the workflow to your team's needs without forking the codebase.
+**Your gain:** routing, implementation, verification, and closeout all move around the same set of facts instead of drifting across free-form summaries.
+
 </td>
 <td width="50%" valign="top">
-<img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
+<img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
 
-**Multi-CLI Support**
+**🗂️ Local / Shared Project Storage**
 
-One rule set works across Claude Code, Codex CLI, OpenCode, Gemini CLI, Qwen CLI, and Grok CLI (Experimental/Community). Automatic feature detection and graceful degradation ensure consistent experience regardless of CLI capabilities.
+By default, KB and plan packages stay in the project's local `.helloagents/`. If you work with multiple worktrees, `project_store_mode=repo-shared` moves the stable project memory to `~/.helloagents/projects/<repo-key>/`.
 
-**Your gain:** switch between CLIs without relearning workflows or reconfiguring rules.
+**Your gain:** local runtime isolation stays intact while stable KB and plan assets stop fragmenting across worktrees.
+
 </td>
 </tr>
 </table>
 
-### Sub-Agent Native Mapping
+## 🚀 Quick Start
 
-| CLI | Native Sub-Agent Mechanism | RLM Mapping |
-|-----|---------------------------|-------------|
-| Claude Code | Agent tool (explore / code / shell) | Direct mapping, supports Agent Teams |
-| Codex CLI | spawn_agent / Collab (multi-thread) | spawn_agent parallel scheduling, CSV batch orchestration |
-| OpenCode | Task tool (build / plan / general / explore) | Direct sub-agent mapping |
-| Gemini CLI | Built-in tool calls | Fallback to sequential execution |
-| Qwen CLI | Built-in tool calls | Fallback to sequential execution |
-| Grok CLI (Experimental) | Built-in tool calls | Fallback to sequential execution |
+### 1) Install once
 
-Additionally, HelloAGENTS provides: **five-dimension routing scoring** (action need, target clarity, decision scope, impact range, EHRB risk) to automatically determine processing depth for each input; **6 CLI targets** (Claude Code / Codex CLI / OpenCode / Gemini CLI / Qwen CLI / Grok CLI) with one rule set across all; **Hooks integration** (Claude Code 11 lifecycle hooks + Codex CLI notify hook + Gemini CLI 6 hooks + Grok CLI 3 hooks) with automatic graceful degradation when unavailable.
-
-### CLI Compatibility Quick Reference
-
-| CLI | Recommended Version | Key Features | Configuration Notes |
-|-----|-------------------|--------------|---------------------|
-| **Claude Code** | Latest | Agent Teams, 11 lifecycle hooks | Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for teams mode |
-| **Codex CLI** | 0.110+ | spawn_agent, CSV batch, enable_fanout | Enable sub-agents, CSV orchestration, set `project_doc_max_bytes >= 131072` |
-| **OpenCode** | Latest | Task tool, custom agents, MCP | Supports primary agents (build/plan) + subagents (general/explore) |
-| **Gemini CLI** | Latest | Built-in tool calls | Sequential execution fallback |
-| **Qwen CLI** | Latest | Built-in tool calls | Sequential execution fallback |
-| **Grok CLI** (Experimental) | Latest | Built-in tool calls | Community wrapper, hooks not fully verified |
-
-<details>
-<summary>📋 Detailed CLI-specific notes (click to expand)</summary>
-
-**Codex CLI Configuration:**
-- Enable sub-agents and CSV orchestration features
-- Set `project_doc_max_bytes = 131072` in config.toml
-- Configure `developer_instructions` for routing protocol priority
-- Enable `enable_fanout` for CSV batch orchestration (v0.110+)
-- Configure `nickname_candidates` for agent role identification
-- Configure CSV batch processing if using parallel workflows
-
-**Claude Code Setup:**
-- Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` environment variable for Agent Teams
-- 11 lifecycle hooks auto-configured during installation (SessionStart, UserPromptSubmit, SubagentStart/Stop, PostToolUse, Stop, TeammateIdle, PreCompact, PreToolUse, SessionEnd, PostToolUseFailure)
-- Auto-memory feature disabled during installation (prevents conflicts with AGENTS.md rules)
-
-**Other CLIs:**
-- OpenCode supports Task tool with primary agents (build/plan) and subagents (general/explore)
-- Gemini/Qwen/Grok use sequential execution fallback
-- All features work with graceful degradation
-- Hooks may not be available on all platforms
-
-</details>
-
-## Quick Start
-
-> 💡 **Choose your installation method:**
-> - **First-time users** → Method A (one-line script, recommended)
-> - **Node.js developers** → Method B (npx)
-> - **Python developers** → Method D (pip)
-> - **Need isolated environment** → Method C (UV)
-
-> ⚠️ **Prerequisite:** All AI CLIs (Codex CLI / Claude Code, etc.) should be upgraded to the latest version with relevant feature flags enabled (e.g., sub-agents, CSV orchestration) to access all HelloAGENTS capabilities. VSCode extensions for these CLIs update more slowly — some newer features may require waiting for the extension to catch up. See CLI-specific compatibility notes below.
-
-> ⚠️ **Windows PowerShell 5.1** does not support `&&`. Run commands on each side of `&&` separately, or upgrade to [PowerShell 7+](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
-
-### Method A: One-line install script (recommended)
-
-**macOS / Linux:**
-
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
-
-**Windows PowerShell:**
-
-    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-
-> The script auto-detects `uv` or `pip`, installs the HelloAGENTS package, and launches an interactive menu for you to select target CLIs. Re-running performs an update.
-
-**Update:** re-run the install command above.
-
-**Uninstall:** `uv tool uninstall helloagents` or `pip uninstall helloagents` (depends on what the script detected)
-
-**Switch branch:**
-
-    # macOS / Linux
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_BRANCH=beta bash
-
-    # Windows PowerShell
-    $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
-
-### Method B: npx (Node.js >= 16)
-
-    npx helloagents
-
-> Installs the Python package via pip and launches an interactive menu. You can also specify directly: `npx helloagents install codex` (or use `npx -y` to auto-download without prompting)
-
-> Requires Python >= 3.10. After first install, use the native `helloagents` command directly.
-
-> **Acknowledgment:** Thanks to @setsuna1106 for generously transferring the npm `helloagents` package ownership.
-
-**Update:** `npx helloagents@latest`
-
-**Uninstall:** `pip uninstall helloagents`
-
-**Switch branch:** `npx helloagents@beta`
-
-### Method C: UV (isolated environment)
-
-**Step 0 — Install UV first (skip if already installed):**
-
-    # Windows PowerShell
-    irm https://astral.sh/uv/install.ps1 | iex
-
-    # macOS / Linux
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-
-> After installing UV, restart your terminal to make the `uv` command available.
-
-**Install and select targets (one command):**
-
-    uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents
-
-> Installs the package and launches an interactive menu for you to select target CLIs. You can also specify directly: `helloagents install codex`
-
-**Update:** `uv tool install --from git+https://github.com/hellowind777/helloagents helloagents --force`
-
-**Uninstall:** `uv tool uninstall helloagents`
-
-**Switch branch:** `uv tool install --from git+https://github.com/hellowind777/helloagents@beta helloagents --force`
-
-### Method D: pip (Python >= 3.10)
-
-**Install and select targets (one command):**
-
-    pip install git+https://github.com/hellowind777/helloagents.git && helloagents
-
-> Installs the package and launches an interactive menu for you to select target CLIs. You can also specify directly: `helloagents install codex`
-
-**Update:** `pip install --upgrade git+https://github.com/hellowind777/helloagents.git`
-
-**Uninstall:** `pip uninstall helloagents`
-
-**Switch branch:** `pip install --upgrade git+https://github.com/hellowind777/helloagents.git@beta`
-
-### HelloAGENTS commands (after installation)
-
-> ⚠️ These commands depend on the installed package. If a remote update causes issues, use the native install/update/uninstall commands from your installation method above.
-
-    helloagents                  # interactive menu
-    helloagents install codex    # specify target directly
-    helloagents install --all    # install to all detected CLIs
-    helloagents status           # check installation status
-    helloagents version          # check version
-    helloagents update           # update + auto-sync all targets
-    helloagents update beta      # switch branch + auto-sync
-    helloagents uninstall codex  # uninstall from a CLI target
-    helloagents uninstall --all  # uninstall from all targets
-    helloagents clean            # clean caches
-
-### Codex CLI example
-
-**First install:**
-
-    # One-line script (recommended, auto-launches interactive menu after install)
-    # macOS / Linux
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
-
-    # Windows PowerShell
-    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-
-    # npx (or use npx -y to auto-download without prompting)
-    npx helloagents install codex
-
-    # UV
-    uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install codex
-
-    # pip
-    pip install git+https://github.com/hellowind777/helloagents.git && helloagents install codex
-
-**Update later (auto-syncs installed targets):**
-
-    helloagents update
-
-> ⚠️ **Codex CLI config.toml compatibility notes:** The following settings may affect HelloAGENTS:
-> - `[features]` `child_agents_md = true` — experimental, injects extra instructions that may conflict with HelloAGENTS
-> - `project_doc_max_bytes` too low — default 32KB, AGENTS.md will be truncated (auto-set to 131072 during install)
-> - `agent_max_depth = 1` — limits sub-agent nesting depth, recommend keeping default or ≥2
-> - `agent_max_threads` too low — default 6, lower values limit parallel sub-agent scheduling (CSV batch mode recommends ≥16)
-> - `[features]` `multi_agent = true` — must be enabled for sub-agent orchestration to work
-> - `[features]` `enable_fanout = true` — must be enabled for CSV batch orchestration (spawn_agents_on_csv)
-> - Collab sub-agent scheduling requires Codex CLI feature gate to be enabled
->
-> 💡 **Best practices:**
-> - Codex 0.110+ recommended for full feature set (enable_fanout, nickname_candidates)
-> - HelloAGENTS is optimized for Codex CLI — supports `high` and below reasoning effort levels. `xhigh` reasoning is **not supported** and may cause instruction-following issues
-> - Use the terminal/CLI version of Codex for the best experience. The VSCode extension updates lag behind the CLI — newer features (e.g., CSV batch orchestration, Collab multi-agent) may require waiting for the extension to catch up
-
-### Claude Code example
-
-**First install:**
-
-    # One-line script (recommended, auto-launches interactive menu after install)
-    # macOS / Linux
-    curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | bash
-
-    # Windows PowerShell
-    irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-
-    # npx (or use npx -y to auto-download without prompting)
-    npx helloagents install claude
-
-    # UV
-    uv tool install --from git+https://github.com/hellowind777/helloagents helloagents && helloagents install claude
-
-    # pip
-    pip install git+https://github.com/hellowind777/helloagents.git && helloagents install claude
-
-**Update later (auto-syncs installed targets):**
-
-    helloagents update
-
-> 💡 **Claude Code sub-agent orchestration tips:**
-> - Sub-agents (Agent tool) work out of the box, no extra configuration needed
-> - Agent Teams collaboration mode requires environment variable: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
-> - Parallel sub-agent count is managed automatically by the model, no user-side limit config needed
-
-## Configuration
-
-Customize workflow behavior via `~/.helloagents/helloagents.json` after installation. Only include keys you want to override — missing keys use defaults.
-
-**Available keys:**
-
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| `OUTPUT_LANGUAGE` | string | `zh-CN` | Language for AI output and KB files |
-| `KB_CREATE_MODE` | int | `2` | KB creation: `0`=OFF, `1`=on-demand (prompt ~init), `2`=auto on code changes, `3`=always auto |
-| `BILINGUAL_COMMIT` | int | `1` | Commit language: `0`=OUTPUT_LANGUAGE only, `1`=OUTPUT_LANGUAGE + English |
-| `EVAL_MODE` | int | `1` | Clarification mode: `1`=progressive (1 question/round, max 4), `2`=one-shot (all at once, max 2) |
-| `UPDATE_CHECK` | int | `72` | Update check cache TTL in hours: `0`=OFF |
-| `CSV_BATCH_MAX` | int | `16` | CSV batch max concurrency: `0`=OFF, cap 64 (Codex CLI only) |
-| `notify_level` | int | `0` | Notification mode: `0`=OFF, `1`=desktop, `2`=sound, `3`=desktop+sound |
-
-**Example:**
-
-```json
-{
-  "KB_CREATE_MODE": 0,
-  "EVAL_MODE": 2
-}
+```bash
+npm install -g helloagents
 ```
 
-> File missing or unparseable is silently skipped with defaults applied. Unknown keys produce a warning and are ignored.
+If your system already has another `helloagents` executable in `PATH`, use the bundled stable alias instead:
 
-### Common Configuration Scenarios
-
-<details>
-<summary>📝 English-only projects</summary>
-
-```json
-{
-  "OUTPUT_LANGUAGE": "en-US",
-  "BILINGUAL_COMMIT": 0
-}
+```bash
+helloagents-js
 ```
-All AI outputs, KB files, and commit messages will be in English only.
-</details>
 
-<details>
-<summary>🚫 Disable automatic KB creation</summary>
+`postinstall` now only installs the package and initializes `~/.helloagents/helloagents.json`. It **does not auto-deploy to any CLI target**.
 
-```json
-{
-  "KB_CREATE_MODE": 0
-}
+After the package is installed, deploy explicitly to the targets you want:
+
+```bash
+helloagents install codex --standby
+helloagents install --all --standby
 ```
-Knowledge base won't be created automatically. Use `~init` command when needed.
-</details>
 
-<details>
-<summary>⚡ High-concurrency batch processing (Codex CLI)</summary>
+> `npm install helloagents` without `-g` follows the same rule: it installs the package only and does not modify any CLI config automatically.
 
-```json
-{
-  "CSV_BATCH_MAX": 32
-}
+### 2) Choose your mode
+
+| Goal | What to run | What happens |
+|------|-------------|--------------|
+| Install the package without touching hosts yet | `npm install -g helloagents` | Installs the command and `~/.helloagents/helloagents.json` only |
+| Keep HelloAGENTS light by default | `helloagents install --all --standby` | **Standby mode** explicitly deploys lite rules to the target CLIs |
+| Enable full rules everywhere | `helloagents install --all --global` or `helloagents --global` | Switches to **global mode**; Claude/Gemini use native plugin/extension installs, Codex gets the native local-plugin chain automatically |
+| Re-sync after local branch switch / file updates | `helloagents update codex`, `helloagents install --all --standby`, or `helloagents --global` | Refreshes injected/copied files for the target or current mode |
+
+### 2.1) Manage one CLI at a time
+
+```bash
+helloagents install codex --standby
+helloagents install --all --global
+helloagents update codex
+helloagents cleanup claude --global
+helloagents uninstall gemini
 ```
-Increase parallel CSV batch processing from 16 to 32 (max 64). Requires Codex CLI with CSV orchestration enabled.
-</details>
 
-<details>
-<summary>🔕 Disable update checks</summary>
+- Supported targets: `claude`, `gemini`, `codex`, or `--all`
+- If you omit `--standby` / `--global`, HelloAGENTS reuses the tracked/detected mode for that CLI and falls back to `standby`
+- `install` / `update` affect only the selected CLI; use `--all` when you want an explicit bulk deploy
+- Claude Code / Gemini CLI still require native plugin/extension install or uninstall commands in `global` mode; Codex CLI is still handled automatically
 
-```json
-{
-  "UPDATE_CHECK": 0
-}
+If you want full rules everywhere, switch to global mode:
+
+```bash
+helloagents --global
 ```
-Skip version update checks entirely (not recommended for production use).
-</details>
 
-<details>
-<summary>💬 One-shot clarification mode</summary>
+Then install the native plugin/extension for your CLI where required:
 
-```json
-{
-  "EVAL_MODE": 2
-}
+```bash
+# Claude Code
+/plugin marketplace add hellowind777/helloagents
+
+# Gemini CLI
+gemini extensions install https://github.com/hellowind777/helloagents
 ```
-Ask all clarification questions at once (max 2 rounds) instead of progressive mode (1 question per round, max 4).
-</details>
 
-## How It Works
+Codex CLI does not need a manual plugin command. `helloagents --global` now installs the native local-plugin chain automatically by writing:
+- `~/.agents/plugins/marketplace.json`
+- `~/plugins/helloagents/`
+- `~/.codex/plugins/cache/local-plugins/helloagents/local/`
+- `helloagents@local-plugins` in `~/.codex/config.toml`
 
-**In short:** HelloAGENTS automatically selects processing depth based on task complexity — simple questions get fast responses, complex tasks go through the full evaluate→design→develop flow, with safety checks and memory retention throughout.
+### 3) Verify in chat
 
-**Detailed flow:**
+```bash
+# In your AI CLI chat, type:
+~help
+```
 
-1. **Install & Deploy** — Run `helloagents` to select target CLI, auto-deploys config files and hooks
-2. **Smart Routing** — Every input is auto-scored; simple queries get direct answers, complex tasks enter structured workflow
-3. **Stage Progression** — Complex tasks advance through "Evaluate → Design → Develop" stages, each with clear deliverables
-4. **Auto Orchestration** — System dispatches sub-agents and specialized roles based on complexity, parallelizes when possible
-5. **Safety Guard** — Each step scans for destructive operations, risky actions require user confirmation
-6. **Memory Retention** — User preferences, project knowledge, session context persist across sessions
-7. **Verified Completion** — Stage chain completes with verified output, auto-syncs knowledge base
+**Expected output:**
+```
+💡【HelloAGENTS】- Help
 
-## In-Chat Workflow Commands
+Available commands: ~idea, ~auto, ~plan, ~build, ~prd, ~loop, ~wiki, ~init, ~test, ~verify, ~commit, ~clean, ~help
 
-These commands run inside AI chat, not your system shell.
+Auto-activated skills (14): hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
+```
 
-**Common Commands:**
+### 4) First use
+
+```bash
+# Simple task — direct execution
+"Fix the typo in src/utils.ts line 42"
+
+# Complex task — use ~auto for full workflow
+~auto "Add user authentication with JWT"
+
+# Want to review the plan first?
+~plan "Refactor the payment module"
+```
+
+## 🔄 Installation Lifecycle & File Writes
+
+HelloAGENTS touches different files depending on mode. The write/cleanup rules are predictable and reversible.
+
+### Standby mode (default)
+
+| CLI | Files HelloAGENTS writes or updates | What it preserves | What uninstall / mode switch cleans |
+|-----|-------------------------------------|-------------------|-------------------------------------|
+| Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> <package-root>` | Existing non-HelloAGENTS markdown, settings, permissions, and hooks | Removes injected marker block, HelloAGENTS hooks/permissions, and symlink |
+| Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> <package-root>` | Existing markdown, hooks, and unrelated settings | Removes injected marker block, HelloAGENTS hooks, and symlink |
+| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, timestamped backups like `~/.codex/config.toml_YYYYMMDD-HHMMSS.bak`, `~/.codex/helloagents -> <package-root>` | Existing top-level TOML keys and unrelated sections via backup/restore | Removes injected marker block, HelloAGENTS config keys, symlink, and the latest HelloAGENTS-managed backup |
+
+### Global mode
+
+| CLI | How installation works | Files involved |
+|-----|------------------------|----------------|
+| Claude Code | Native plugin install (manual CLI command) | Managed by Claude's plugin system |
+| Gemini CLI | Native extension install (manual CLI command) | Managed by Gemini's extension system |
+| Codex CLI | Native local-plugin chain (automatic) | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml` |
+
+### Update / reinstall / branch-switch behavior
+
+- **Standby mode** keeps scripts, skills, templates, and hooks on `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents` symlinks, so linked package files reflect local changes immediately. The injected carrier files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) are still snapshots and must be refreshed after bootstrap or branch changes.
+- **Codex global mode** uses copied runtime files. Re-running `helloagents --global` refreshes both `~/plugins/helloagents/` and the Codex cache copy.
+- Re-running the current mode command is supported intentionally: `helloagents --standby` and `helloagents --global` both act as **switch-or-refresh** commands.
+- For deterministic manual cleanup, run `helloagents cleanup` before `npm uninstall -g helloagents`.
+- `npm uninstall -g helloagents` removes the package; `~/.helloagents/helloagents.json` is intentionally preserved.
+
+## 📖 Commands
+
+All commands run inside AI chat with the `~` prefix:
+
+**Workflow Commands:**
 
 | Command | Purpose |
-|---|---|
-| ~auto | full autonomous workflow |
-| ~plan | planning and package generation |
-| ~exec | execute existing package |
-| ~init | initialize knowledge base |
-| ~commit | generate commit message from context |
-| ~status / ~help | status and help |
+|---------|---------|
+| `~idea` | Lightweight ideation — compare directions and explore options without writing files |
+| `~auto` | Automatic orchestration — chooses the right path across ideation / planning / build / verify / PRD, and reuses an active plan package before reopening a new lane |
+| `~plan` | Structured planning — requirement gathering + solution convergence + plan package |
+| `~build` | Execution workflow — implement from the current request or an existing plan package |
+| `~prd` | Complete PRD — 13-dimension brainstorm-style exploration, generates product requirements |
+| `~loop` | Autonomous iteration — set a target + metric, AI loops until goal is met |
 
-**Quality Checks:**
-
-| Command | Purpose |
-|---|---|
-| ~test | run project tests |
-| ~review | code review |
-| ~validatekb | validate knowledge base |
-
-**Advanced Features:**
+**Quality Commands:**
 
 | Command | Purpose |
-|---|---|
-| ~upgradekb | upgrade knowledge structure |
-| ~clean / ~cleanplan | cleanup workflow artifacts |
-| ~rollback | rollback workflow state |
-| ~rlm | role orchestration (spawn / agents / resume / team) |
+|---------|---------|
+| `~test` | Write complete tests (TDD: Red → Green → Refactor) |
+| `~verify` | Unified verification entry — review, lint, typecheck, test, build, and fix loops |
 
-## Usage Guide
+**Utility Commands:**
 
-### Three Workflow Modes
+| Command | Purpose |
+|---------|---------|
+| `~wiki` | Create or sync the project knowledge base only (`.helloagents/`) |
+| `~init` | Full project bootstrap: KB + project-local carrier files |
+| `~commit` | Generate conventional commit message + KB sync |
+| `~clean` | Archive completed plans, clean temp files |
+| `~help` | Show all commands and current config |
+
+Compatibility aliases:
+- `~design` → `~plan`
+- `~do` → `~build`
+- `~review` → `~verify` (review-priority mode)
+
+## 🔧 Configuration
+
+Config file: `~/.helloagents/helloagents.json` (auto-created on install)
+
+Only include keys you want to override — missing keys use defaults.
+
+```json
+{
+  "output_language": "",
+  "output_format": true,
+  "notify_level": 0,
+  "ralph_loop_enabled": true,
+  "guard_enabled": true,
+  "kb_create_mode": 1,
+  "project_store_mode": "local",
+  "commit_attribution": "",
+  "install_mode": "standby"
+}
+```
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `output_language` | `""` | Empty = follow user language. Set `zh-CN`, `en`, etc. to override |
+| `output_format` | `true` | `true` = only the main agent's final closing reply after streaming ends may use the HelloAGENTS layout; all streaming/progress/intermediate output and all subagent replies stay natural, `false` = natural output |
+| `notify_level` | `0` | `0`=off, `1`=desktop, `2`=sound, `3`=both |
+| `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
+| `guard_enabled` | `true` | Block dangerous commands |
+| `kb_create_mode` | `1` | `0`=off, `1`=auto on coding tasks in activated projects or global mode, `2`=always in activated projects or global mode |
+| `project_store_mode` | `"local"` | `"local"` = keep KB/plan files in project-local `.helloagents/`; `"repo-shared"` = keep local `.helloagents/` only for activation/STATE/runtime artifacts and move KB/plan files to `~/.helloagents/projects/<repo-key>/` |
+| `commit_attribution` | `""` | Empty = no attribution. Set text to append to commit messages |
+| `install_mode` | `"standby"` | `"standby"` = per-project activation (lite rules), `"global"` = full rules for all projects |
+
+<details>
+<summary>📝 Common configuration scenarios</summary>
+
+**Switch to global mode (full rules everywhere):**
+```bash
+helloagents --global
+```
+
+**Switch back to standby mode (default):**
+```bash
+helloagents --standby
+```
+
+**English-only output:**
+```json
+{ "output_language": "en" }
+```
+
+**Disable KB auto-creation:**
+```json
+{ "kb_create_mode": 0 }
+```
+
+**Share KB and plan packages across multiple worktrees:**
+```json
+{ "project_store_mode": "repo-shared" }
+```
+
+**Enable desktop + sound notifications:**
+```json
+{ "notify_level": 3 }
+```
+
+**Disable guard (not recommended):**
+```json
+{ "guard_enabled": false }
+```
+
+</details>
+
+## ⚙️ How It Works
+
+**Short version:** HelloAGENTS selects execution depth based on task type, risk, and project state. In standby mode, unactivated projects keep a lightweight rule set: safety, completion constraints, a compact quality floor, and explicit `~command` lanes. Once the project is activated through `.helloagents/`, or when global mode is enabled, HelloAGENTS switches to the full routed kernel workflow with explicit ideation, planning, build, verification, and consolidation stages.
+
+**The routed 6-stage kernel:**
+
+1. **ROUTE / TIER** — Decide whether the task belongs in `~idea`, `~plan`, `~build`, `~verify`, `~prd`, or `~auto`
+2. **SPEC** — Clarify goals, constraints, and success criteria
+3. **PLAN** — Mark required quality skills and prepare artifacts such as `requirements.md`, `plan.md`, and `tasks.md`
+4. **BUILD** — Implement with TDD (test → code → refactor), verify incrementally
+5. **VERIFY** — Run Ralph Loop, review diffs when needed, and collect delivery checklists
+6. **CONSOLIDATE** — Update `STATE.md`, sync KB artifacts, and archive completed plan packages
+
+**Delivery Tier:**
+- `T0` — read-only exploration and idea comparison
+- `T1` — low-risk focused fixes or explicit verification
+- `T2` — multi-file features, new projects, or work that needs structured artifacts
+- `T3` — high-risk or irreversible chains such as auth, security, payment, database, or production release work
+
+**Routing rules:**
+- Exploration / compare options → `~idea`
+- Simple tasks (single file, clear fix) → Direct execution or `~build`
+- Complex tasks (3+ files, architecture change, new project) → `~plan`, `~auto`, or `~prd`
+- Review / validation requests → `~verify`
+
+**Quality rules and skills by task type:**
+- UI / frontend / visual interaction work always follows the active bootstrap carrier's shared UI kernel
+- In activated projects, global mode, or explicit UI workflow commands, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation
+- When a UI `contract.json` explicitly asks for heavier UI assurance, HelloAGENTS keeps the default path light and only then adds optional `.helloagents/.ralph-advisor.json` and `.helloagents/.ralph-visual.json` evidence
+- Touching API endpoints? → `hello-api` activates (REST conventions, validation, error format)
+- Any code change? → `hello-test`, `hello-verify`, `hello-review` activate
+
+### Standby vs Global Mode
+
+HelloAGENTS supports two installation modes with different installation methods:
+
+| Mode | Install Method | Rules | Skills | Best For |
+|------|---------------|-------|--------|----------|
+| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules with compact quality floor, shared UI kernel, safety, and completion constraints) | `~command` on demand; before activation, UI tasks still follow the shared UI kernel; after `.helloagents/`, the full workflow activates | Selective use, keeping other projects unaffected |
+| **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
+
+Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; Codex then keeps `developer_instructions` in `~/.codex/config.toml` as the managed fallback so the home `AGENTS.md` remains the primary baseline. During a managed Codex install, HelloAGENTS temporarily removes any existing `model_instructions_file` entry because that setting can shadow the `AGENTS.md` chain; cleanup restores the user's original value. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) plus a synced `~/.codex/AGENTS.md` home baseline, still without plugin hooks.
+
+In standby mode, `.helloagents/` is the activation boundary. Before activation, the lite carrier does **not** run the full 6-stage kernel or semantic auto-routing; it keeps the lightweight execution rules, explicit `~command` entry points, and minimum quality/completion guardrails. Once `.helloagents/` exists, the active project switches to the full project workflow and `bootstrap.md` becomes the runtime source of truth.
+
+Bulk switch via CLI: `helloagents --global` or `helloagents --standby`
+
+Re-running the same mode command is also valid. It refreshes the current mode's injected/copied files after branch switches, local development changes, or manual cleanup.
+
+## 📚 Usage Guide
+
+### Core Workflow Lanes
 
 | Mode | Description | When to use |
 |------|-------------|-------------|
-| `~auto` | Full autonomous flow from requirement to verified implementation (Evaluate → Design → Develop → Verify) | Clear requirement, want end-to-end delivery |
-| `~plan` | Planning only, generates a proposal package then stops — no code written | Want to review the plan before committing |
-| `~exec` | Skip evaluation and design, execute an existing plan package directly | After `~plan` review, ready to implement |
+| `~idea` | Lightweight ideation only, no files written | Need help choosing a direction without activating full project flow |
+| `~plan` | Interactive planning only, generates a plan package | Want to review the plan before coding |
+| `~build` | Implementation workflow from the current task or existing plan package | Requirement is clear and you want execution |
+| `~verify` | Verification / review workflow | Want audit, checks, and fix loops |
+| `~auto` | Automatic orchestration across the lanes above | Want HelloAGENTS to choose the right path end-to-end |
+| `~prd` | 13-dimension PRD generation | Need comprehensive product requirements |
+
+Typical pattern: `~idea` first to compare directions, then `~plan` to lock a solution, then `~build`, then `~verify`. Or just `~auto` for one-shot orchestration. If the project already has an active plan package, `~auto` should reuse that workflow state before reopening ideation or planning. For UI work, the decision priority is always `plan.md` / PRD UI decisions → `DESIGN.md` → generic UI rules.
+
+### Quality Verification (Ralph Loop)
+
+After every task, Ralph Loop auto-runs your project's verification commands:
+- Priority: logical `.helloagents/verify.yaml` (`project_store_mode=repo-shared` resolves it from the shared project store) → `package.json` scripts → auto-detected
+- All pass? → Collect skill checklists → Verify → Done
+- Any fail? → Reflect → Fix → Re-run (circuit breaker after 3 failures)
+- Completion is also held back if the active plan package still has open tasks, missing required artifacts, or unreplaced template placeholders
+
+### Knowledge Base (`.helloagents/`)
+
+`~wiki` creates or syncs the project knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of the local `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
+
+By default, KB and plan files live in the project's local `.helloagents/`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` directory keeps only the activation signal, `STATE.md`, and runtime artifacts such as `.ralph-*`, while `context.md`, `guidelines.md`, `DESIGN.md`, `verify.yaml`, `modules/`, `plans/`, and `archive/` move to `~/.helloagents/projects/<repo-key>/` so multiple worktrees of the same git repo can share stable project memory.
+
+`STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
+
+| File | Purpose |
+|------|---------|
+| `STATE.md` | Project-level recovery snapshot (≤70 lines, survives compression as a resumable snapshot) |
+| `DESIGN.md` | Project-level UI contract (design system, component patterns, state coverage, accessibility) |
+| `context.md` | Project architecture, tech stack, conventions |
+| `guidelines.md` | Non-obvious coding rules |
+| `verify.yaml` | Verification commands |
+| `CHANGELOG.md` | Change history |
+| `modules/*.md` | Module documentation + experience |
+| `plans/` | Active plan packages (`requirements.md`, `plan.md`, `tasks.md`, `contract.json`) |
+| `archive/` | Completed plan packages |
+
+### Smart Commit (`~commit`)
+
+- Analyzes `git diff` to generate Conventional Commits messages
+- Pre-commit quality checks (code-doc consistency, test coverage)
+- Auto-excludes sensitive files (`.env`, `*.pem`, `*.key`)
+- Respects `commit_attribution` config
+- Syncs KB per `kb_create_mode` setting
 
-Typical pattern: `~plan` first → review → `~exec` to implement. Or just `~auto` for one-shot delivery.
+### Autonomous Iteration (`~loop`)
 
-### Interactive vs Delegated Mode
+Set a target and metric, then let AI iterate:
+1. Review → Ideate → Modify → Commit → Verify → Decide → Log → Repeat
+2. Results tracked in `.helloagents/loop-results.tsv`
+3. Uses `git revert` for clean rollback on failed experiments
 
-When `~auto` or `~plan` presents its confirmation, you choose:
+## 🧪 Verification
 
-- **Interactive (default):** pauses at key decision points (plan selection, failure handling)
-- **Delegated (fully automatic):** auto-advances all stages, auto-selects recommended options, only pauses on EHRB risk
-- **Plan-only delegated:** fully automatic but stops after design, never enters development
+HelloAGENTS ships with Node's built-in test runner:
 
-Without `~` commands, plain-text input is automatically routed to R0–R2 based on complexity.
+```bash
+npm test
+```
 
-### Requirement Evaluation
+The test suite validates:
+- standby/global install, reinstall, refresh, uninstall, and cross-mode switching
+- Claude/Gemini/Codex config file merge, restore, and cleanup behavior
+- Codex local-plugin refresh after local branch or file changes
+- runtime inject/route/guard/Ralph Loop chains
+- cleanup when Codex global artifacts exist but `~/.codex/` is already gone
 
-Before R2 tasks enter execution, the system scores requirements on four dimensions (scope 0–3, deliverable spec 0–3, implementation conditions 0–2, acceptance criteria 0–2). The pass condition is based on core dimension sufficiency (scope ≥ 3, implementation conditions ≥ 1, deliverable spec ≥ 1) rather than a fixed total score threshold. Dimensions below the sufficiency line trigger clarifying questions:
+## ❓ FAQ
 
-- `EVAL_MODE=1` (default, progressive): asks 1 insufficient dimension per round, up to 4 rounds
-- `EVAL_MODE=2` (one-shot): asks all insufficient dimensions at once, up to 2 rounds
+<details>
+<summary><strong>Q: Is this a CLI tool or a prompt framework?</strong></summary>
 
-The last round of questioning is combined with confirmation (question + execution mode selection), reducing standalone confirmation steps. Context inferred from the existing codebase counts toward the score automatically. Say "skip evaluation / just do it" to bypass the questioning phase.
+**A:** Both. The CLI (`cli.mjs`) handles installation, mode switching, and CLI configuration. The actual workflow comes from `bootstrap.md` / `bootstrap-lite.md` rules, quality skills, and host-appropriate runtime helpers. On Claude/Gemini that includes hook scripts such as `notify.mjs`, `guard.mjs`, and `ralph-loop.mjs`; on Codex the default path is rules-file driven to keep TUI output quiet. Think of it as a delivery system + intelligent quality protocol.
+</details>
 
-### Parallel Design Proposals
+<details>
+<summary><strong>Q: What changed from v2.x to v3.x?</strong></summary>
 
-In the R2 standard path, the design stage dispatches 3–6 sub-agents to independently generate competing implementation proposals. The main agent evaluates all proposals across four dimensions: user value, solution soundness, risk (including EHRB), and implementation cost. Weights are dynamically adjusted based on project characteristics (e.g., performance-critical systems weight soundness higher; MVPs weight cost higher).
+**A:** Everything. The v3 line is a complete rewrite:
+- Python package → pure Node.js/Markdown architecture
+- 15 commands → 12 commands + 14 auto-activated quality skills
+- 6 CLI targets → 3 (Claude Code + Codex CLI + Gemini CLI)
+- New: checklist gate control, guard system, ~prd, ~loop, ~verify, design system generation
+- See [Version History](#-version-history) for full details.
+</details>
 
-- Interactive mode: user selects a proposal or requests re-generation (max 1 retry)
-- Delegated mode: recommended proposal is auto-selected
-- R2 standard path: complex tasks go through multi-proposal comparison; simple tasks skip it and go directly to planning
+<details>
+<summary><strong>Q: Which CLI should I use?</strong></summary>
 
-### Auto Dependency Management
+**A:** Claude Code gets the best experience (plugin system, 11 lifecycle hooks, Agent Teams support). Gemini CLI works via extension system. Codex CLI works well too. Install the package first, then deploy explicitly to the CLI you want with `helloagents install <target> --standby` or `helloagents install --all --standby`.
+</details>
 
-During development, the system auto-detects the project's package manager via lockfiles (`yarn.lock` → yarn, `uv.lock` → uv, `Gemfile.lock` → bundler, etc.) and handles dependencies:
+<details>
+<summary><strong>Q: What are the 14 quality skills?</strong></summary>
 
-- Declared but missing dependencies: auto-installed
-- New dependencies required by tasks: auto-added with declaration file updated
-- Ambiguous dependencies: user is asked before installing
+**A:** They auto-activate based on task type:
+- **hello-ui**: deep UI implementation and validation (contracts, design-system mapping, accessibility, responsive, animation)
+- **hello-api**: API design (REST, validation, error format, rate limiting)
+- **hello-security**: Security (auth, input validation, XSS/CSRF, secrets management)
+- **hello-test**: Testing (TDD workflow, boundary cases, AAA pattern)
+- **hello-verify**: Verification gate (Ralph Loop, circuit breaker)
+- **hello-errors**: Error handling (structured errors, logging, recovery)
+- **hello-perf**: Performance (N+1, caching, code splitting, virtual scroll)
+- **hello-data**: Database (migrations, transactions, indexes, integrity)
+- **hello-arch**: Architecture (SOLID, boundaries, code volume limits)
+- **hello-debug**: Debugging (4-stage process, escalation on stuck)
+- **hello-subagent**: Subagent orchestration (dispatch, coordination, review)
+- **hello-review**: Code review (logic, security, performance, maintainability)
+- **hello-write**: Documentation (pyramid principle, audience-aware)
+- **hello-reflect**: Experience capture (lessons learned → KB)
 
-### Quality Verification (Ralph Loop & Break-loop)
+Subagents may skip workflow packaging such as routing, interaction flow, and output formatting, but they still follow core rules such as coding principles, safety constraints, and failure handling.
+</details>
 
-**Ralph Loop** (Claude Code, via SubagentStop Hook): after a sub-agent completes code changes, the project's verification command runs automatically. On failure, the sub-agent is blocked from exiting and must fix the issue (max 1 retry loop). Verification command priority: `.helloagents/verify.yaml` → `package.json` scripts → auto-detected.
+<details>
+<summary><strong>Q: What is standby vs global mode?</strong></summary>
 
-**Break-loop** (deep root cause analysis): triggered when a task fails repeatedly (after Ralph Loop + at least 1 manual fix attempt), performing five-dimension root cause analysis:
+**A:** Standby mode (default) deploys lite rules to the targets you choose, typically with `helloagents install <target> --standby` or `helloagents install --all --standby`. A project enters the full project flow once it has `.helloagents/`, usually via `~wiki` (KB only) or `~init` (full bootstrap). Global mode uses each CLI's native plugin/extension system for full rules everywhere; deploy it with `helloagents install <target> --global`, `helloagents install --all --global`, or bulk-switch with `helloagents --global`.
+</details>
 
-1. Root cause classification (logic error / type mismatch / missing dependency / environment / design flaw)
-2. Why previous fixes didn't work
-3. Prevention mechanism suggestions
-4. Systemic scan — same issue in other modules?
-5. Lessons learned recorded in the acceptance report
+<details>
+<summary><strong>Q: Where does project knowledge go?</strong></summary>
 
-### Smart Commit (~commit)
+**A:** By default, in the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` keeps only the activation signal, `STATE.md`, and `.ralph-*` runtime artifacts, while KB and plan files move to `~/.helloagents/projects/<repo-key>/`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
+</details>
 
-`~commit` does more than generate a message:
+<details>
+<summary><strong>Q: What is the Guard system?</strong></summary>
 
-- Analyzes `git diff` to auto-generate Conventional Commits formatted messages
-- Pre-commit quality checks (code-doc consistency, test coverage, verification commands)
-- Auto-excludes sensitive files (`.env`, `*.pem`, `*.key`, etc.) — never runs `git add .`
-- Shows file list before staging, supports exclusion
-- Options: local commit only / commit + push / commit + push + create PR
-- Bilingual commit messages when `BILINGUAL_COMMIT=1`
+**A:** Two-layer safety:
+- **L1 Blocking**: Stops destructive commands before execution (`rm -rf /`, `git push --force`, `DROP DATABASE`, `chmod 777`, `FLUSHALL`)
+- **L2 Advisory**: Scans file writes for hardcoded secrets, API keys, .env exposure — warns but doesn't block
+</details>
 
-### Manual Sub-Agent Invocation
+<details>
+<summary><strong>Q: What does the bottom next-step bar mean when formatted output is enabled?</strong></summary>
 
-Beyond automatic dispatch, you can manually invoke specific roles:
+**A:** It always shows the most appropriate next action. If a natural follow-up exists, HelloAGENTS states it directly. If the current task is fully complete with no meaningful follow-up, it falls back to a completion/waiting status instead of empty filler.
+</details>
 
-    ~rlm spawn reviewer "review src/api/ for security issues"
-    ~rlm spawn writer "generate API reference docs"
-    ~rlm spawn reviewer,writer "analyze and document the auth module"  # parallel
+<details>
+<summary><strong>Q: Can I disable features I don't need?</strong></summary>
 
-Available roles: `reviewer` (code review), `writer` (documentation), `brainstormer` (multi-proposal comparison).
+**A:** Yes. Set `guard_enabled: false` to disable the guard, `ralph_loop_enabled: false` to skip verification, `kb_create_mode: 0` to disable KB. Quality skills auto-activate but don't add overhead for unrelated tasks.
+</details>
 
-### Multi-Terminal Collaboration
+<details>
+<summary><strong>Q: What is ~prd?</strong></summary>
 
-Multiple terminals (across different CLIs) can share a task list:
+**A:** A 13-dimension PRD generator. It walks through product overview, user stories, functional requirements, UI/UX design, technical architecture, non-functional requirements, i18n, accessibility, content strategy, testing, deployment, legal/privacy, and timeline — brainstorm-style, one dimension at a time.
+</details>
 
-    # Terminal A
-    hellotasks=my-project codex
+## 🛠️ Troubleshooting
 
-    # Terminal B
-    hellotasks=my-project claude
+### Plugin not loading (Claude Code)
 
-Commands once enabled:
+**Problem:** `~help` not recognized after plugin installation
 
-    ~rlm tasks                  # view shared task list
-    ~rlm tasks available        # see unclaimed tasks
-    ~rlm tasks claim <id>       # claim a task
-    ~rlm tasks complete <id>    # mark done
-    ~rlm tasks add "task title" # add a new task
+**Solution:** Restart Claude Code. If still not working, check `/plugin list` to verify installation.
 
-Tasks are stored in `{KB_ROOT}/tasks/` with file locking to prevent concurrent conflicts.
+---
 
-### KB Auto-Sync & CHANGELOG
+### Extension not working (Gemini CLI)
 
-The knowledge base syncs automatically at these points:
+**Problem:** `~help` not recognized after `gemini extensions install`
 
-- After every development stage, main agent syncs module docs to reflect actual code
-- After every R1/R2 task completion, CHANGELOG is auto-appended
-- On session end (Claude Code Stop Hook), KB sync flag set asynchronously
+**Solution:** Restart Gemini CLI. Verify with `gemini extensions list`. Make sure the extension is enabled.
 
-CHANGELOG uses semantic versioning (X.Y.Z). Version source priority: user-specified → project file (package.json, pyproject.toml, etc., supporting 15+ languages/frameworks) → git tag → last CHANGELOG entry → 0.1.0. R1 fast-path changes are recorded under a "Quick Modifications" category with file:line range.
+---
 
-`KB_CREATE_MODE` controls automatic behavior: `0`=off, `1`=prompt on demand, `2`=auto on code changes (default), `3`=always auto.
+### File writes blocked outside workspace
 
-### Worktree Isolation
+**Problem:** Gemini CLI or Codex CLI reports that a file path is outside the allowed workspace.
 
-When multiple sub-agents need to modify different regions of the same file simultaneously (Claude Code only), the system automatically uses `Task(isolation="worktree")` to create an independent git worktree for each sub-agent, preventing Edit tool conflicts. The main agent merges all worktree changes in the consolidation phase. Only activated when sub-agents have overlapping file writes; read-only tasks don't use it.
+**Solution:** Write files inside the current project workspace, or inside the CLI's temporary workspace directory. In headless verification, prefer paths under the current repo instead of arbitrary absolute paths.
 
-### CSV Batch Orchestration (Codex CLI)
+---
 
-When ≥6 structurally identical tasks exist in the same execution layer, the system auto-converts `tasks.md` into a task CSV and dispatches via `spawn_agents_on_csv`. Each worker receives its row data + instruction template, executes independently, and reports results.
+### Commands not found
 
-- Progress tracked in real-time via `agent_job_progress` events (pending/running/completed/failed/ETA)
-- State persisted in SQLite for crash recovery
-- Partial failures still export results with failure summary
-- Heterogeneous tasks automatically fall back to `spawn_agent` sequential dispatch
-- Configure concurrency via `CSV_BATCH_MAX` (default 16, max 64, set to 0 to disable)
-
-### Update Check
-
-On the first response of each session, the system silently checks for new versions. Results are cached at `~/.helloagents/.update_cache`, valid for the duration set by `UPDATE_CHECK` (default 72 hours, set to 0 to disable). When a new version is available, `⬆️ New version {version} available` appears in the response footer. Any errors during the check are silently skipped and never interrupt normal usage.
-
-## Repository Guide
-
-- AGENTS.md: router and workflow protocol
-- SKILL.md: skill discovery metadata for CLI targets
-- pyproject.toml: package metadata (v2.3.8)
-- helloagents/cli.py: CLI entry point
-- helloagents/_common.py: shared constants and utilities
-- helloagents/core/: CLI management modules (install, uninstall, update, status, dispatcher, hooks settings)
-- helloagents/functions: command definitions (15)
-- helloagents/stages: design, develop
-- helloagents/services: knowledge, package, memory and support services
-- helloagents/rules: state, cache, tools, scaling, sub-agent protocols
-- helloagents/rlm: role library and orchestration helpers
-- helloagents/hooks: Claude Code, Codex CLI, Gemini CLI, and Grok CLI hooks configs
-- helloagents/scripts: automation scripts (sound notify, progress snapshot, safety guard, etc.)
-- helloagents/agents: sub-agent definitions (3 RLM roles)
-- helloagents/assets: sound resources (5 event sounds)
-- helloagents/templates: KB and plan templates
-
-## FAQ
-
-**Q: Is this a Python CLI tool or prompt package?**
-
-A: Both. The CLI manages installation and updates, while the workflow behavior comes from AGENTS.md and documentation files. Think of it as a delivery system + intelligent workflow protocol.
-
-**Q: Which target should I install?**
-
-A: Choose the CLI you're actively using: `codex` (Codex CLI), `claude` (Claude Code), `gemini` (Gemini CLI), `qwen` (Qwen CLI), `grok` (Grok CLI), or `opencode` (OpenCode). You can install to multiple targets with `helloagents install --all`. See [CLI Compatibility Quick Reference](#cli-compatibility-quick-reference) for details.
-
-**Q: What if a rules file already exists?**
-
-A: HelloAGENTS automatically backs up non-HelloAGENTS files before replacement. Backups are timestamped and stored in your CLI's config directory. You can restore them anytime if needed.
-
-**Q: What is RLM?**
-
-A: Role Language Model — HelloAGENTS's sub-agent orchestration system. It includes 3 specialized roles (reviewer, writer, brainstormer) plus native CLI sub-agents. Tasks are scheduled via DAG dependency analysis with parallel execution when possible. Learn more in [Usage Guide](#usage-guide).
-
-**Q: Where does project knowledge go?**
-
-A: In the project-local `.helloagents/` directory. The knowledge base auto-syncs when code changes (controlled by `KB_CREATE_MODE` config). It includes module docs and CHANGELOG. See [KB Auto-Sync & CHANGELOG](#kb-auto-sync--changelog).
-
-**Q: Does knowledge persist across sessions?**
-
-A: Yes. The project knowledge base is stored in the project-local `.helloagents/` directory. Context survives even if you close and reopen your CLI.
-
-**Q: What are Hooks?**
-
-A: Lifecycle hooks auto-deployed during installation. Claude Code gets 11 event hooks (safety checks, dangerous command guard, progress snapshots, KB sync, sound notifications, tool failure recovery, etc.); Codex CLI gets a notify hook for update and sound notifications; Gemini CLI gets 6 hooks (context injection, progress snapshots, sound notifications, pre-compression snapshots); Grok CLI gets 3 hooks (context injection, safety guard, progress snapshots). All optional — features degrade gracefully when hooks aren't available. No manual configuration needed.
-
-**Q: What is Agent Teams?**
-
-A: An experimental Claude Code feature where multiple Claude Code instances collaborate as teammates with shared task lists and mailbox communication. Enable with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. When unavailable, HelloAGENTS falls back to standard Task sub-agents. See [Multi-Terminal Collaboration](#multi-terminal-collaboration).
-
-## Troubleshooting
-
-### Command not found
-
-**Problem:** `helloagents: command not found` after installation
-
-**Diagnosis:** Install path not in system PATH
+**Problem:** `~help` not recognized after installation
 
 **Solution:**
-- UV: Restart terminal after UV installation
-- pip: Check `pip show helloagents` for install location, add to PATH
-- Verify with `which helloagents` (Unix) or `where helloagents` (Windows)
-
-**Verification:** Run `helloagents version`
-
----
-
-### Package version unknown
-
-**Problem:** Version shows as "unknown"
-
-**Diagnosis:** Package metadata not available
-
-**Solution:** Install the package first: `pip install git+https://github.com/hellowind777/helloagents.git` or use UV/npx methods
-
-**Verification:** Run `helloagents version` — should show current version number
+- Verify installation: `npm list -g helloagents`
+- Claude Code: check `~/.claude/CLAUDE.md` contains HelloAGENTS markers
+- Gemini CLI: check `~/.gemini/GEMINI.md` contains HelloAGENTS markers
+- Codex CLI: check `~/.codex/AGENTS.md` contains HelloAGENTS markers, `~/.codex/config.toml` still has HelloAGENTS `developer_instructions` and `notify`, and no unexpected `model_instructions_file` is shadowing the managed baseline
+- Restart your CLI
 
 ---
 
-### Target not detected
+### Local branch switched but Codex global plugin still uses old files
 
-**Problem:** CLI target not found during installation
+**Problem:** You changed branches or updated a linked local checkout, but Codex global mode is still running older copied files.
 
-**Diagnosis:** Config directory doesn't exist yet
-
-**Solution:** Launch the target CLI at least once to create its config directory, then retry `helloagents install <target>`
-
-**Verification:** Check config paths:
-- Codex CLI: `~/.codex/`
-- Claude Code: `~/.claude/`
-- Others: see CLI documentation
+**Solution:** Re-run the current mode command:
+- `helloagents --global` → refreshes `~/plugins/helloagents/` and the Codex cache copy
+- `helloagents --standby` → refreshes injected files and symlinks for standby mode
 
 ---
 
-### Custom rules overwritten
+### Guard blocking legitimate commands
 
-**Problem:** Custom rules replaced by HelloAGENTS
+**Problem:** Guard blocks a command you actually want to run
 
-**Diagnosis:** Installation replaces existing files
-
-**Solution:** Restore from timestamped backup in CLI config directory (e.g., `~/.codex/AGENTS_20260304132146_bak.md`)
-
-**Verification:** Check backup files in config directory
+**Solution:** Set `guard_enabled: false` in `~/.helloagents/helloagents.json`. Or review the blocked command — the guard only blocks truly destructive operations like `rm -rf /` and `git push --force`.
 
 ---
 
-### Images not rendering
+### Ralph Loop keeps failing
 
-**Problem:** README images don't display
-
-**Diagnosis:** Missing image files or incorrect paths
+**Problem:** Verification loop won't pass
 
 **Solution:**
-- Keep relative paths in README (e.g., `./readme_images/`)
-- Ensure `readme_images/` folder is committed to repository
-- Verify image files exist locally
-
-**Verification:** Check `ls readme_images/` shows all referenced images
+- Check `.helloagents/verify.yaml` for correct commands
+- Run the verification commands manually to see actual errors
+- Circuit breaker activates after 3 consecutive failures — `hello-debug` escalation kicks in
 
 ---
 
 ### CCswitch replaces HelloAGENTS config
 
-**Problem:** After switching CCswitch profiles, HelloAGENTS stops working (workflow commands unrecognized, hooks not firing, rules missing)
+**Problem:** After switching CCswitch profiles, HelloAGENTS stops working
 
-**Diagnosis:** CCswitch replaces the entire CLI config directory (e.g., `~/.claude/`) when switching profiles, overwriting HelloAGENTS's hooks, permissions, and rule files
-
-**Solution:** After switching CCswitch profiles, run one of these commands to restore HelloAGENTS:
-
-    helloagents install claude    # reinstall to specific CLI target
-    helloagents update            # update + auto-sync all installed targets
-
-**Prevention:** Since v2.3.5, automatic configuration integrity check on session start — if HelloAGENTS config is missing or corrupted, a warning is displayed with recovery instructions
-
-**Verification:** Run `helloagents status` to confirm all targets show as installed
+**Solution:** Re-run `/plugin marketplace add hellowind777/helloagents` after switching profiles. CCswitch replaces the entire CLI config directory.
 
 ---
 
-### CCswitch configuration conflict
+### Notifications not working
 
-**Problem:** HelloAGENTS config reappears after uninstall when switching CCswitch profiles
+**Problem:** No sound or desktop notifications
 
-**Diagnosis:** CCswitch saved HelloAGENTS settings before uninstall
+**Solution:**
+- Check `notify_level` in config (0=off by default)
+- Windows: Ensure PowerShell can access `System.Media.SoundPlayer`
+- macOS: Ensure `afplay` is available
+- Linux: Ensure `aplay` or `paplay` is installed
 
-**Solution:** After uninstalling HelloAGENTS, manually clean up HelloAGENTS-related settings (hooks, permissions, rules) from all saved CCswitch profiles
+## 📈 Version History
 
-**Verification:** Check CCswitch profile directories for HelloAGENTS remnants
+### v3.0.7 (current)
 
-## Version History
+**What the current line now delivers relative to `v2.3.8`:**
+- ✨ Full rewrite from a Python package to a Node.js/Markdown orchestration kernel, including install flow, runtime injection, skill system, and verification chain
+- ✨ Replaced the older layered routing / design-develop model with one routed kernel: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
+- ✨ Re-centered the command surface around `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, and `~wiki`, plus 14 auto-activated quality skills
+- ✨ Turned project artifacts into first-class workflow facts: `STATE.md`, `DESIGN.md`, `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, and `.ralph-*` evidence
+- ✨ Rebuilt installation around standby/global dual-mode deployment; Codex now uses the native local-plugin chain while Claude/Gemini keep host-native integration
+- ✨ Added `project_store_mode=repo-shared`, so multiple worktrees of one git repo can share stable KB and plan assets while local `.helloagents/` still isolates activation and runtime state
 
-### v2.3.8 (current)
+### v3.0.4
 
-**Architecture Changes:**
-- Routing tier consolidation: removed R2 simplified flow and R3 standard flow, unified to R0/R1/R2 three-tier routing. New R2 standard flow merges use cases from both old R2 and R3
-- Evaluation now driven by dimension sufficiency (scope ≥ 3, implementation conditions ≥ 1, deliverable spec ≥ 1), replacing fixed total score threshold (previously "score ≥ 8")
-- Last-round question+confirmation combined: clarifying question + execution mode selection in the same turn, reducing standalone confirmation steps
-- DESIGN multi-proposal comparison now triggered by TASK_COMPLEXITY (complex → multi-proposal, simple/moderate → skip), replacing route-level triggering
-- Removed L0 user memory system and custom command extension (`user/` directory): simplified to single-layer project knowledge model (L1 project KB only)
-- Config system consolidation: migrated from two-tier priority config (`config.json` at project + global level) to single `~/.helloagents/helloagents.json` with auto-sync on install
-- Added code size control rules: warning threshold (file/class 300 lines, function 40 lines), mandatory split threshold (file/class 400 lines, function 60 lines)
+**Standby and runtime boundaries:**
+- 🔧 Clarified the activation boundary relative to `v3.0.3`: the full 6-stage kernel stays in `bootstrap.md`, while `bootstrap-lite.md` is treated as the standby carrier before project activation
+- ✨ Solidified standby, unactivated projects with a compact quality floor so lightweight mode still keeps modern stack, performance, and UI-quality baselines
+- 🔧 Refined bootstrap terminology and runtime wording for more precise, professional guidance without changing the existing guardrail model
+
+### v3.0.3
+
+**Workflow and KB activation:**
+- ✨ Added `~wiki` for creating or syncing `.helloagents/` without writing project-local carrier files
+- 🔧 Clarified the activation boundary: in standby mode, `.helloagents/` is the actual project activation signal; project-local carrier files remain optional and belong to `~init`
+- 🔧 Refined `kb_create_mode` wording across bootstrap, help text, and README so it only describes sync timing inside activated projects or global mode
+- 🧪 Added routing coverage for `~wiki` and kept standby `.helloagents/` activation behavior under test
+
+### v3.0.2
+
+**Fixes and verification:**
+- 🔧 Removed the Codex-only static runtime-context block that had been reintroduced into generated `AGENTS.md` carriers in standby/global installs
+- 🔧 Re-checked Claude/Gemini standby/global static carriers and confirmed they do not inject the same deprecated runtime-context rule block
+- 🔧 Updated Codex installation docs to match the current `developer_instructions` loading path and the actual no-hooks behavior
+- 🧪 Added regression assertions to ensure Codex standby/global carriers no longer contain the removed runtime-context prefix
+
+### v3.0.1
+
+**Fixes and verification:**
+- 🔧 `STATE.md` recovery rules are tightened: update on key decision changes, rewrite immediately when long-running work makes the snapshot stale, and confirm sync before host-driven compaction/recovery stages
+- 🔧 Codex cleanup now removes empty `~/.agents/plugins/marketplace.json` residue and ignores contaminated legacy `developer_instructions` backups during config restore
+- 🔧 Scoped `update` continues to reuse the detected host mode even when tracked config is stale, matching the intended `helloagents update <cli>` behavior
+- 🔧 Standby branch/bootstrap refresh semantics are now documented precisely: symlinked package files update immediately, while injected carrier files refresh on `install` / `update` / mode-refresh commands
+- 🧪 Added lifecycle coverage for standby carrier refresh, stale-mode inference, empty Codex marketplace cleanup, contaminated Codex backup recovery, and version-agnostic npm pack testing
+
+### v3.0.0 🎉
+
+**Breaking Changes:**
+- 🔴 Complete rewrite: Python package → pure Node.js/Markdown architecture. `pip`/`uv` installation no longer available
+- 🔴 Commands renamed/removed: `~design` → `~plan`, `~review` → `~verify`, `~do` → `~build`, removed `~exec`/`~rollback`/`~rlm`/`~status`/`~validatekb`/`~upgradekb`/`~cleanplan`
+- 🔴 Configuration keys changed from uppercase to lowercase. Removed: `BILINGUAL_COMMIT`, `EVAL_MODE`, `UPDATE_CHECK`, `CSV_BATCH_MAX`
 
 **New Features:**
-- Added 5 new workflow commands: `~test`, `~rollback`, `~validatekb`, `~upgradekb`, `~cleanplan`
-- Added notify_level config key (0=off, 1=desktop, 2=sound, 3=both) for notification behavior control
-- Added standalone config reader module (`scripts/_config.py`) for hook scripts
-- Brainstormer sub-agent output format enhanced: added `key_findings` field for proposal highlights
+- ✨ 14 auto-activated quality skills: hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
+- ✨ 3 supported CLIs: Claude Code (plugin/marketplace), Gemini CLI (extension), Codex CLI (npm)
+- ✨ Checklist gate control: all activated skills must pass delivery checklist before task completion
+- ✨ `~prd` command: 13-dimension brainstorm-style PRD framework
+- ✨ `~loop` command: autonomous iteration optimization with metric tracking and git-based rollback
+- ✨ `~verify` command: auto-detect and run all verification commands
+- ✨ Guard system (`guard.mjs`): L1 blocking for destructive commands + L2 advisory for security patterns
+- ✨ Standby/Global mode: `install_mode` config for per-project or global activation
+- ✨ Flow state management (`STATE.md`): recovery snapshot for compaction/resume handoff (≤70 lines)
+- ✨ Design system generation (`DESIGN.md`): auto-created for UI projects as a project-level contract
+- ✨ Plan package system: `requirements.md` + `plan.md` + `tasks.md` + `contract.json`
+- ✨ Optional advisor contract/evidence: only for T3 / UI / high-risk flows, via `contract.json` + `.helloagents/.ralph-advisor.json`
+- ✨ Optional visual validation evidence: only when the UI contract explicitly requires it, via `contract.json` + `.helloagents/.ralph-visual.json`
+
+**Architecture:**
+- 📦 Routed 6-stage kernel: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
+- 📦 Simplified configuration: 8 lowercase keys with sensible defaults
+- 📦 Dual-mode installation: standby (explicit non-plugin deploy) / global (plugin/extension)
+- 📦 Modular script architecture: `cli-utils.mjs` (shared utilities), `notify-ui.mjs` (cross-platform sound/desktop), `guard.mjs` (security), `ralph-loop.mjs` (verification)
+- 📦 Cross-platform hook compatibility: dynamic event name resolution (Claude Code / Gemini CLI / Codex CLI) via environment variables or CLI argument inference
+- 📦 Standby mode routing isolation: new project detection only triggers in global mode or activated projects, keeping unactivated projects undisturbed
+- 📦 Notification system with cross-platform sound + desktop support (Windows toast, macOS osascript, Linux notify-send)
+
+### v2.3.8
+
+**Architecture Changes:**
+- Routing tier consolidation: removed R2 simplified flow and R3 standard flow, unified to R0/R1/R2 three-tier routing
+- Evaluation driven by dimension sufficiency, replacing fixed total score threshold
+- Last-round question+confirmation combined, reducing standalone confirmation steps
+- Removed L0 user memory system and custom command extension
+- Config system consolidation: single `~/.helloagents/helloagents.json`
+- Added code size control rules: warning 300/40 lines, mandatory split 400/60 lines
+
+**New Features:**
+- ✨ 5 new workflow commands: `~test`, `~rollback`, `~validatekb`, `~upgradekb`, `~cleanplan`
+- ✨ `notify_level` config key for notification behavior control
+- ✨ Standalone config reader module for hook scripts
 
 **Security:**
-- Fixed path injection vulnerability in shared_tasks.py: `list_id` from environment variable now sanitized before use in file path construction
-- Fixed incomplete path traversal guard in validate_package.py: `relative_to()` failure now properly exits with error instead of falling through
-
-**Bug Fixes:**
-- Fixed Gemini/Grok hooks PostToolUse matcher missing NotebookEdit (now `Write|Edit|NotebookEdit`, consistent with Claude Code)
-- Fixed pre_compact.py still using deprecated LIVE_STATUS HTML comments while progress_snapshot.py had migrated to .status.json
-- Fixed pre_compact.py `_get_current_task` regex only matching numbered lists, now supports unordered lists
-- Fixed progress_snapshot.py docstring incorrectly stating Grok uses async=true (actual config is async=false)
-- Fixed dispatcher update check cache_ttl default from None to 72 hours
-- Fixed utils.py incorrectly treating Python package source directories as legacy KB directories during migration
-- Fixed cli.py error recovery passing args as branch name when dispatcher is broken
-
-**Improvements:**
-- Codex CLI feature flags updated: replaced `sqlite`+`collaboration_modes` with `enable_fanout` for CSV batch orchestration
-- Added Windows UTF-8 encoding block to codex_notify.py (all other hook scripts already had it)
-- Extended stop_sound_router.py UTF-8 encoding to cover stdout/stderr (previously only stdin)
-- Added NOTE comments across all intentionally duplicated functions for cross-file sync awareness
-- Added yearly changelog archive template (`CHANGELOG_{YYYY}.md`)
+- Fixed path injection vulnerability in `shared_tasks.py`
+- Fixed incomplete path traversal guard in `validate_package.py`
 
 ### v2.3.7
 
 **Bug Fixes:**
-- Fixed non-coding tasks incorrectly creating knowledge base when KB_CREATE_MODE=2 (added programming task check in design.md Phase1 step 1)
-- Fixed R2 standard flow redirecting to archive instead of DEVELOP after proposal selection (constrained overview type to ~exec entry only)
-- Fixed non-coding tasks incorrectly creating plan packages (added programming task precondition to package.md create() interface)
+- Fixed non-coding tasks incorrectly creating KB when `KB_CREATE_MODE=2`
+- Fixed R2 standard flow redirecting to archive instead of DEVELOP after proposal selection
+- Fixed non-coding tasks incorrectly creating plan packages
 
 **Improvements:**
-- Optimized implementation plan state recovery after context compression
-- Optimized overall design flow
+- 📦 Optimized implementation plan state recovery after context compression
+- 📦 Optimized overall design flow
 
 ### v2.3.6
 
 **New Features:**
-- Sub-agent orchestration overhaul: added brainstormer sub-agent for independent parallel proposal ideation during DESIGN multi-proposal comparison
-- Sub-agent blocking mechanism: auto-block and fallback to main agent on sub-agent failure or timeout
+- ✨ Sub-agent orchestration overhaul: brainstormer sub-agent for parallel proposal ideation
+- ✨ Sub-agent blocking mechanism: auto-block and fallback on failure/timeout
 
 **Improvements:**
-- Tool/Shell constraint optimization: allow fallback to Shell when built-in tools fail (fixes Codex CLI Windows apply_patch repeated failures)
-- Shell encoding constraint refinement: explicit UTF-8 no-BOM requirement, separate read/write encoding handling for PowerShell
-- Added batch file write rule (merge ≥3 files into a single temp script to avoid sandbox per-command blocking)
-- Removed session memory features that couldn't be fully implemented in CLI (session_summary template, SessionEnd memory sync), streamlined service layer
-- Sub-agent consolidation: removed 3 redundant sub-agents (kb-keeper, pkg-keeper, synthesizer), functionality returned to main agent and RLM roles
-- Sub-agent voice notification skip, task stability fixes
-- Uninstall script enhancements
-- Visual verification gap and UI quality fixes
+- 📦 Tool/Shell constraint optimization: allow fallback to Shell when built-in tools fail
+- 📦 Shell encoding constraint refinement: explicit UTF-8 no-BOM requirement
+- 📦 Removed 3 redundant sub-agents, functionality returned to main agent and RLM roles
 
 ### v2.3.5
 
 **New Features:**
-- Voice notification system with 5 event sounds (complete, idle, confirm, error, warning) across Windows/macOS/Linux, with smart two-layer routing (stop_reason + G3 format icon detection)
-- Claude Code hooks expanded from 9 to 11 lifecycle event types: added dangerous command guard (PreToolUse), session end cleanup (SessionEnd), and tool failure recovery suggestions (PostToolUseFailure)
-- Hooks support expanded to Gemini CLI (SessionStart, BeforeAgent/AfterAgent, PreCompress, PreToolUse, PostToolUse) and Grok CLI (UserPromptSubmit, PreToolUse, PostToolUse)
-- Codex CLI 0.110 features: `enable_fanout` for CSV batch orchestration, `nickname_candidates` for agent role identification
-- Configuration integrity check on session start (auto-detect config corruption or replacement by CCswitch etc.)
-- Context compression pre-save with automatic progress snapshot (pre_compact.py, progress_snapshot.py — actual implementations replacing placeholder hooks)
-- User-defined tool registration and orchestration — intelligent invocation of custom sub-agents, skills, MCP servers, and plugins
+- ✨ Voice notification system with 5 event sounds across Windows/macOS/Linux
+- ✨ Claude Code hooks expanded from 9 to 11 lifecycle event types
+- ✨ Hooks support expanded to Gemini CLI and Grok CLI
+- ✨ Configuration integrity check on session start
+- ✨ Recovery snapshot injection before context compaction
+- ✨ User-defined tool registration and orchestration
 
 **Improvements:**
-- Comprehensive audit fixes (21 issues: 6 HIGH + 9 MEDIUM + 6 LOW)
-  - Code quality: extracted 5 shared utility functions, eliminated circular dependencies
-  - Cross-platform: unified platform detection, consistent encoding handling
-  - Security: configuration backup before overwrite, placeholder validation
-  - Documentation: configuration rationale, compatibility verification notes
-- Core architecture: new dispatcher module, Codex roles definition, Claude rules management, hooks settings manager
-- Install/update script refactoring with persistent configuration
-- Voice notification accuracy and false positive reduction (Codex client filtering, Windows sync playback)
-- Sub-agent nickname optimization across CLIs
-- Codex CLI interactive menu, persistent memory, and context compression optimization
-- R2 flow and evaluation module re-integration
-- Context compression state persistence optimization
-- Tool/Shell usage optimization
-- CCswitch compatibility notes for configuration cleanup after uninstall
-- SKILL discovery entry optimization
+- 📦 Comprehensive audit fixes (21 issues: 6 HIGH + 9 MEDIUM + 6 LOW)
+- 📦 Core architecture: new dispatcher module, Codex roles, Claude rules management
+- 📦 Install/update script refactoring with persistent configuration
 
-### v2.3.4
+## 📜 License
 
-- Split 3 oversized files (>450 lines) into 6 independent modules
-- Consolidated 9 CLI management scripts into core/ subpackage
-- Extracted shared constants and utilities into dedicated module, eliminating circular dependencies
-- Removed redundant backward-compatible re-exports
-- Elevated Codex CLI routing protocol priority to prevent system prompt override
+This project is dual-licensed: Code under [Apache-2.0](./LICENSE.md), Documentation under CC BY 4.0.
 
-### v2.3.0
+See [LICENSE.md](./LICENSE.md) for full details.
 
-- Comprehensive cross-audit fix: unified role output format, normalized path references, code-doc consistency alignment
-- Quality verification loop (Ralph Loop): auto-verify after sub-agent completion, block and feedback on failure
-- Auto context injection for sub-agents and rule reinforcement for main agent
-- Deep 5-dimension root cause analysis on repeated failures (break-loop)
-- Auto-inject project technical guidelines before sub-agent development
-- Pre-commit quality checks (code-doc consistency, test coverage, verification commands)
-- Worktree isolation for parallel editing
-- Auto-append Git author info to CHANGELOG entries
+## 🤝 Contributing
 
-## Contributing
+- 🐛 **Bug reports**: [Create an issue](https://github.com/hellowind777/helloagents/issues)
+- 💡 **Feature requests**: [Start a discussion](https://github.com/hellowind777/helloagents/issues)
+- 📖 **Documentation**: PRs welcome
 
-See CONTRIBUTING.md for contribution rules and PR checklist.
+## Supported CLIs
 
-## License
-
-This project is dual-licensed: Code under Apache-2.0, Documentation under CC BY 4.0. See [LICENSE.md](./LICENSE.md).
-
-## Next Steps
-
-**Getting Started:**
-- Install HelloAGENTS using your preferred method: [Quick Start](#quick-start)
-- Try `~auto` with a simple task to see the full workflow in action
-- Explore `~plan` + `~exec` for more control over the process
-
-**Learn More:**
-- Read [Usage Guide](#usage-guide) for detailed workflow patterns
-- Check [Configuration](#configuration) to customize behavior
-- Review [In-Chat Workflow Commands](#in-chat-workflow-commands) reference
-
-**Community & Support:**
-- Star the repo if HelloAGENTS helps your workflow
-- Report issues or request features on [GitHub Issues](https://github.com/hellowind777/helloagents/issues)
-- Contribute improvements: see [CONTRIBUTING.md](./CONTRIBUTING.md)
+| CLI | Standby Install (default) | Global Install (plugin) | Uninstall |
+|-----|--------------------------|------------------------|-----------|
+| Claude Code | `helloagents install claude --standby` | `/plugin marketplace add hellowind777/helloagents` | `npm uninstall -g helloagents` (+ `/plugin remove helloagents` if global) |
+| Gemini CLI | `helloagents install gemini --standby` | `gemini extensions install https://github.com/hellowind777/helloagents` | `npm uninstall -g helloagents` (+ `gemini extensions uninstall helloagents` if global) |
+| Codex CLI | `helloagents install codex --standby` | `helloagents install codex --global` | `npm uninstall -g helloagents` |
 
 ---
 
@@ -916,5 +874,7 @@ This project is dual-licensed: Code under Apache-2.0, Documentation under CC BY 
 If this project helps your workflow, a star is always appreciated.
 
 Thanks to <a href="https://codexzh.com/?ref=EEABC8">codexzh.com</a> / <a href="https://ccodezh.com">ccodezh.com</a> for supporting this project
+
+[⬆ Back to top](#helloagents)
 
 </div>

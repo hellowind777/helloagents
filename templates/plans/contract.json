@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "source": "{~plan | ~prd}",
+  "originCommand": "{plan | prd}",
+  "verifyMode": "{test-first | review-first}",
+  "reviewerFocus": [
+    "{仅 review-first 必填：reviewer 需要重点检查的边界}"
+  ],
+  "testerFocus": [
+    "{tester 需要重点验证的边界}"
+  ],
+  "ui": {
+    "required": false,
+    "designContract": false,
+    "sourcePriority": [
+      "{涉及 UI 时填写：plan.md / prd/03-ui-design.md}",
+      "{涉及 UI 时填写：.helloagents/DESIGN.md}",
+      "{涉及 UI 时填写：hello-ui}"
+    ],
+    "styleAdvisor": {
+      "required": false,
+      "reason": "{仅在 UI 方向尚未稳定、需要前置审美收敛时填写：为什么需要独立 style advisor}",
+      "focus": [
+        "{仅 ui.styleAdvisor.required=true 时填写：需要独立复查的设计方向、记忆点或视觉风险}"
+      ]
+    },
+    "visualValidation": {
+      "required": false,
+      "reason": "{仅在 UI 验收、整页重做、发布前视觉收尾等场景填写：为什么需要独立视觉验收}",
+      "screens": [
+        "{仅 ui.visualValidation.required=true 时填写：需要检查的关键视口或页面}"
+      ],
+      "states": [
+        "{仅 ui.visualValidation.required=true 时填写：需要检查的关键状态}"
+      ]
+    }
+  },
+  "advisor": {
+    "required": false,
+    "reason": "{仅在 T3 / UI / 高风险链路确有收益时填写：为什么需要独立 advisor}",
+    "focus": [
+      "{仅 advisor.required=true 时填写：advisor 需要独立复查的边界}"
+    ],
+    "preferredSources": [
+      "{仅 advisor.required=true 时填写：claude | codex | gemini}"
+    ]
+  }
+}
