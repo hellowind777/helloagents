@@ -7,15 +7,13 @@ import {
 } from './cli-utils.mjs';
 import { ensureTimestampedBackup, readCodexBackup, removeCodexBackup } from './cli-codex-backup.mjs';
 import {
-  CODEX_DEVELOPER_INSTRUCTIONS,
   CODEX_MANAGED_TOML_COMMENT,
   CODEX_PLUGIN_CONFIG_HEADER,
-  installCodexDeveloperInstructions,
+  installCodexModelInstructions,
   isManagedCodexBackupInstruction,
   isManagedCodexModelInstruction,
   isManagedCodexNotify,
   removeCodexPluginConfig,
-  uninstallCodexDeveloperInstructions,
   upsertCodexPluginConfig,
 } from './cli-codex-config.mjs';
 import {
@@ -31,7 +29,7 @@ import {
 export const CODEX_MARKETPLACE_NAME = 'local-plugins';
 export const CODEX_PLUGIN_NAME = 'helloagents';
 export const CODEX_PLUGIN_KEY = `${CODEX_PLUGIN_NAME}@${CODEX_MARKETPLACE_NAME}`;
-export { CODEX_DEVELOPER_INSTRUCTIONS, CODEX_MANAGED_TOML_COMMENT, CODEX_PLUGIN_CONFIG_HEADER };
+export { CODEX_MANAGED_TOML_COMMENT, CODEX_PLUGIN_CONFIG_HEADER };
 export const CODEX_RUNTIME_CARRIER = 'AGENTS.md';
 const CODEX_CONFIG_BASENAME = 'config.toml';
 export const CODEX_RUNTIME_ENTRIES = [
@@ -131,13 +129,6 @@ function writeCodexRuntimeCarrier(filePath, bootstrapPath) {
   return true;
 }
 
-function stripCodexModelInstructions(toml = '') {
-  return removeTopLevelTomlLines(
-    toml,
-    (line) => line.startsWith('model_instructions_file ='),
-  ).text;
-}
-
 export function installCodexStandby(home, pkgRoot) {
   const codexDir = join(home, '.codex');
   if (!existsSync(codexDir)) return false;
@@ -150,9 +141,8 @@ export function installCodexStandby(home, pkgRoot) {
   let toml = safeRead(configPath) || '';
   ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
 
-  toml = stripCodexModelInstructions(toml);
+  toml = installCodexModelInstructions(toml, codexAgentsPath);
   toml = upsertTopLevelTomlKey(toml, 'notify', `["node", "${normalizePath(join(pkgRoot, 'scripts', 'notify.mjs'))}", "codex-notify"]`);
-  toml = installCodexDeveloperInstructions(configPath, toml);
   safeWrite(configPath, toml);
 
   createLink(pkgRoot, join(codexDir, 'helloagents'));
@@ -169,32 +159,29 @@ export function uninstallCodexStandby(home) {
     const configPath = join(codexDir, 'config.toml');
     const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
     let toml = safeRead(configPath) || '';
-    if (toml.includes('helloagents') || toml.includes('HelloAGENTS')) {
-      toml = removeTopLevelTomlLines(toml, (line) => {
-        if (!line) return false;
-        if (line.startsWith('model_instructions_file =') && isManagedCodexModelInstruction(line)) return true;
-        if (line.startsWith('notify =') && line.includes('codex-notify')) return true;
-        return false;
-      }).text;
-      toml = uninstallCodexDeveloperInstructions(configPath, toml);
-      toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
-      const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
-      const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
-      toml = ensureTopLevelTomlLine(
-        toml,
-        'model_instructions_file',
-        isManagedCodexBackupInstruction(backupModelInstructions) ? '' : backupModelInstructions,
-      );
-      toml = ensureTopLevelTomlLine(
-        toml,
-        'notify',
-        isManagedCodexNotify(backupNotify) ? '' : backupNotify,
-      );
-      toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
-      if (toml.trim()) safeWrite(configPath, toml);
-      else removeIfExists(configPath);
-      changed = true;
-    }
+    toml = removeTopLevelTomlLines(toml, (line) => {
+      if (!line) return false;
+      if (line.startsWith('model_instructions_file =') && isManagedCodexModelInstruction(line)) return true;
+      if (line.startsWith('notify =') && line.includes('codex-notify')) return true;
+      return false;
+    }).text;
+    toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
+    const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
+    const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
+    toml = ensureTopLevelTomlLine(
+      toml,
+      'model_instructions_file',
+      isManagedCodexBackupInstruction(backupModelInstructions) ? '' : backupModelInstructions,
+    );
+    toml = ensureTopLevelTomlLine(
+      toml,
+      'notify',
+      isManagedCodexNotify(backupNotify) ? '' : backupNotify,
+    );
+    toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
+    if (toml.trim()) safeWrite(configPath, toml);
+    else removeIfExists(configPath);
+    changed = true;
     removeCodexBackup(configPath, CODEX_CONFIG_BASENAME);
     removeIfExists(join(codexDir, 'hooks.json'));
     removeLink(join(codexDir, 'helloagents'));
@@ -241,21 +228,21 @@ export function installCodexGlobal(home, pkgRoot) {
     join(installedPluginRoot, CODEX_RUNTIME_CARRIER),
     join(installedPluginRoot, 'bootstrap.md'),
   );
-  injectCodexRuntimeCarrier(join(codexDir, CODEX_RUNTIME_CARRIER), join(pkgRoot, 'bootstrap.md'));
+  const homeCarrierPath = join(codexDir, CODEX_RUNTIME_CARRIER);
+  injectCodexRuntimeCarrier(homeCarrierPath, join(pkgRoot, 'bootstrap.md'));
 
   ensureDir(join(home, '.agents', 'plugins'));
   updateCodexMarketplace(marketplaceFile);
 
   let toml = safeRead(configPath) || '';
   ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
-  toml = stripCodexModelInstructions(toml);
+  toml = installCodexModelInstructions(toml, homeCarrierPath);
   toml = upsertTopLevelTomlKey(
     toml,
     'notify',
     `["node", "${normalizePath(join(pluginRoot, 'scripts', 'notify.mjs'))}", "codex-notify"]`,
   );
   toml = upsertCodexPluginConfig(toml);
-  toml = installCodexDeveloperInstructions(configPath, toml);
   safeWrite(configPath, toml);
 
   return true;
@@ -277,7 +264,6 @@ export function uninstallCodexGlobal(home) {
   const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
   let toml = safeRead(configPath) || '';
   toml = removeCodexPluginConfig(toml);
-  toml = uninstallCodexDeveloperInstructions(configPath, toml);
   toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
   toml = removeTopLevelTomlLines(toml, (line) =>
     line.startsWith('model_instructions_file =')

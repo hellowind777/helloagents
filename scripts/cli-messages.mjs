@@ -92,7 +92,7 @@ ${msg('单 CLI 管理', 'Scoped CLI management')}:
 ${msg('诊断', 'Diagnostics')}:
   helloagents doctor
   helloagents doctor codex --json
-  ${msg('检查 carrier、链接、hooks、配置注入、Codex 插件链路、model_instructions_file 遮蔽风险与版本漂移', 'Checks carriers, links, hooks, config injections, the Codex plugin chain, model_instructions_file shadowing risks, and version drift')}
+  ${msg('检查 carrier、链接、hooks、配置注入、Codex 插件链路、受管 model_instructions_file 指向与版本漂移', 'Checks carriers, links, hooks, config injections, the Codex plugin chain, managed model_instructions_file targeting, and version drift')}
 
 ${msg('卸载', 'Uninstall')}:
   helloagents cleanup      ${msg('（推荐先执行，显式清理所有 CLI 注入/链接）', '(recommended first, explicitly cleans CLI injections/links)')}
