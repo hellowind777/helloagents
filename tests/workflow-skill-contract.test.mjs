@@ -84,7 +84,10 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(auto, /纯审查\/纯验证请求才可先进入 `~verify`/)
   assert.match(auto, /不要在 `~auto` 内另建一套关键词路由表/)
   assert.match(auto, /不依赖关键词命中做机械分流/)
-  assert.doesNotMatch(auto, /它的职责是选路/)
+  assert.match(auto, /默认持续推进直到完成交付/)
+  assert.match(auto, /不再额外询问“是否开始执行”/)
+  assert.match(auto, /不得把“给出方案”“给出任务列表”“给出建议下一步”当作 `~auto` 的默认完成态/)
+  assert.doesNotMatch(auto, /只做选路/)
 
   const plan = readText(join(REPO_ROOT, 'skills', 'commands', 'plan', 'SKILL.md'))
   assert.match(plan, /执行 `~plan` 时，通用阶段边界按当前已加载 bootstrap 执行/)
@@ -99,6 +102,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(plan, /“主线目标”写当前规划链路真正要完成的目标/)
   assert.match(plan, /完成定义/)
   assert.match(plan, /完成标准与验证方式/)
+  assert.match(plan, /如果当前链路来自 `~auto`/)
+  assert.match(plan, /不再追加一次“是否开始执行”的询问/)
   assert.doesNotMatch(plan, /ROUTE \/ SPEC 前置/)
   assert.doesNotMatch(plan, /统一处理/)
 
@@ -162,6 +167,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(prd, /ui\.visualValidation\.required/)
   assert.match(prd, /“主线目标”写当前 PRD 链路真正要完成的产品 \/ 功能目标/)
   assert.match(prd, /完成标准、验证方式/)
+  assert.match(prd, /如果当前链路来自 `~auto`/)
+  assert.match(prd, /不再额外询问一次“是否开始执行”/)
   assert.doesNotMatch(prd, /SPEC 前置/)
   assert.doesNotMatch(prd, /本 skill 自包含/)
 

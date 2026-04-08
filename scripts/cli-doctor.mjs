@@ -218,10 +218,10 @@ function appendCodexStandbyIssues(issues, checks) {
   if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 载体缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
   if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 载体内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
   if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
-  if (checks.modelInstructionsFile) issues.push(buildDoctorIssue('standby-model-instructions-shadow', 'standby config 中仍存在 model_instructions_file，可能覆盖 HelloAGENTS 载体', 'Standby config still contains model_instructions_file, which can shadow the HelloAGENTS carrier'))
+  if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('standby-model-instructions-missing', 'standby config 缺少受管 model_instructions_file', 'Standby config is missing the managed model_instructions_file'))
+  if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('standby-model-instructions-drift', 'standby model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Standby model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
   if (!checks.codexNotify) issues.push(buildDoctorIssue('standby-notify-missing', 'standby notify 配置缺失', 'Standby notify configuration is missing'))
   if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 路径未指向当前包根目录', 'Standby notify path does not point to the current package root'))
-  if (!checks.developerInstructions) issues.push(buildDoctorIssue('standby-developer-instructions-missing', 'standby developer_instructions 缺失', 'Standby developer_instructions block is missing'))
   if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled || checks.globalNotifyPath) {
     issues.push(buildDoctorIssue('standby-global-residue', 'standby 模式下仍残留 global 插件链路', 'Global plugin artifacts still remain while Codex is in standby mode'))
   }
@@ -236,10 +236,10 @@ function appendCodexGlobalIssues(issues, checks, pluginVersion, cacheVersion) {
   if (checks.pluginCache && !checks.pluginCacheCarrierMatch) issues.push(buildDoctorIssue('global-plugin-cache-carrier-drift', 'global 插件缓存中的 AGENTS.md 与当前 bootstrap.md 不一致', 'Global plugin cache AGENTS.md differs from the current bootstrap.md'))
   if (!checks.marketplaceEntry) issues.push(buildDoctorIssue('global-marketplace-missing', 'global marketplace 条目缺失', 'Global marketplace entry is missing'))
   if (!checks.pluginEnabled) issues.push(buildDoctorIssue('global-plugin-disabled', 'global config 中缺少插件启用段', 'Global plugin enablement block is missing from config'))
-  if (checks.modelInstructionsFile) issues.push(buildDoctorIssue('global-model-instructions-shadow', 'global config 中仍存在 model_instructions_file，可能覆盖 HelloAGENTS 载体', 'Global config still contains model_instructions_file, which can shadow the HelloAGENTS carrier'))
+  if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('global-model-instructions-missing', 'global config 缺少受管 model_instructions_file', 'Global config is missing the managed model_instructions_file'))
+  if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('global-model-instructions-drift', 'global model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Global model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
   if (!checks.globalNotifyPath) issues.push(buildDoctorIssue('global-notify-missing', 'global notify 路径缺失', 'Global notify path is missing'))
   if (checks.globalNotifyPath && !checks.globalNotifyPathMatch) issues.push(buildDoctorIssue('global-notify-drift', 'global notify 路径未指向当前插件根目录', 'Global notify path does not point to the current plugin root'))
-  if (!checks.developerInstructions) issues.push(buildDoctorIssue('global-developer-instructions-missing', 'global developer_instructions 缺失', 'Global developer_instructions block is missing'))
   if (pluginVersion && !checks.pluginVersionMatch) issues.push(buildDoctorIssue('global-plugin-version-drift', 'global 插件根目录版本与当前包版本不一致', 'Global plugin root version does not match the current package version'))
   if (cacheVersion && !checks.pluginCacheVersionMatch) issues.push(buildDoctorIssue('global-plugin-cache-version-drift', 'global 插件缓存版本与当前包版本不一致', 'Global plugin cache version does not match the current package version'))
   if (checks.homeLink) {
@@ -260,6 +260,8 @@ function inspectCodexDoctor(settings) {
   const cacheVersion = safeJson(join(pluginCacheRoot, 'package.json'))?.version || ''
   const standbyNotifyPath = normalizePath(join(runtime.pkgRoot, 'scripts', 'notify.mjs'))
   const globalNotifyPath = normalizePath(join(pluginRoot, 'scripts', 'notify.mjs'))
+  const managedHomeCarrierPath = normalizePath(join(codexDir, 'AGENTS.md'))
+  const modelInstructionsLine = readTopLevelTomlLine(codexConfig, 'model_instructions_file')
   const expectedHomeCarrier = (detectedMode === 'global' || (detectedMode === 'none' && trackedMode === 'global'))
     ? 'bootstrap.md'
     : 'bootstrap-lite.md'
@@ -267,10 +269,11 @@ function inspectCodexDoctor(settings) {
     carrierMarker: (safeRead(join(codexDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
     carrierContentMatch: extractManagedCarrierContent(join(codexDir, 'AGENTS.md')) === readBootstrapContent(expectedHomeCarrier),
     homeLink: safeRealTarget(join(codexDir, 'helloagents')) === runtime.pkgRoot,
-    modelInstructionsFile: !!readTopLevelTomlLine(codexConfig, 'model_instructions_file'),
+    modelInstructionsFile: !!modelInstructionsLine,
+    modelInstructionsPathMatch: !!modelInstructionsLine
+      && normalizePath(modelInstructionsLine).includes(`"${managedHomeCarrierPath}"`),
     codexNotify: codexConfig.includes('codex-notify'),
     notifyPathMatch: codexConfig.includes(standbyNotifyPath),
-    developerInstructions: codexConfig.includes('HelloAGENTS'),
     pluginRoot: existsSync(pluginRoot),
     pluginCache: existsSync(pluginCacheRoot),
     pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '') === readBootstrapContent('bootstrap.md'),

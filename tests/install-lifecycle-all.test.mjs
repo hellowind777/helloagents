@@ -3,7 +3,6 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CODEX_DEVELOPER_INSTRUCTIONS } from '../scripts/cli-codex.mjs'
 import { createHomeFixture, createPackageFixture, readJson, readText, realTarget, writeText } from './helpers/test-env.mjs'
 import { hasTimestampedBackup, runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
@@ -32,11 +31,11 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(geminiMd, /# Gemini custom/)
 
   const codexConfigPath = join(home, '.codex', 'config.toml')
+  const codexAgentsPath = join(home, '.codex', 'AGENTS.md').replace(/\\/g, '/')
   const codexConfig = readText(codexConfigPath)
-  assert.doesNotMatch(codexConfig, /model_instructions_file\s*=/)
-  assert.match(codexConfig, /^developer_instructions = """/)
+  assert.match(codexConfig, new RegExp(`model_instructions_file = "${codexAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
+  assert.doesNotMatch(codexConfig, /developer_instructions\s*=/)
   assert.match(codexConfig, /codex-notify/)
-  assert.match(codexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.ok(hasTimestampedBackup(home, 'config.toml'))
   assert.equal(realTarget(join(home, '.claude', 'helloagents')), pkgRoot)
   assert.equal(realTarget(join(home, '.gemini', 'helloagents')), pkgRoot)
@@ -59,10 +58,10 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
 
   const globalCodexConfig = readText(codexConfigPath)
-  assert.doesNotMatch(globalCodexConfig, /model_instructions_file\s*=/)
+  assert.match(globalCodexConfig, new RegExp(`model_instructions_file = "${codexAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
   assert.match(globalCodexConfig, /plugins\/helloagents\/scripts\/notify\.mjs/)
   assert.match(globalCodexConfig, /\[plugins\."helloagents@local-plugins"\]\s+enabled = true/)
-  assert.match(globalCodexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.doesNotMatch(globalCodexConfig, /developer_instructions\s*=/)
 
   writeText(join(pkgRoot, 'bootstrap.md'), '# global updated\n')
   runCli(pkgRoot, home, ['--global'])

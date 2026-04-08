@@ -323,7 +323,7 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 | 命令 | 说明 |
 |------|------|
 | `~idea` | 轻量点子探索 — 比较方向与方案，不写文件 |
-| `~auto` | 自动选路 — 在脑暴 / 规划 / 实现 / 验证 / PRD 间选择合适路径，并优先复用现有活跃方案包 |
+| `~auto` | 自动编排 — 自动选择主路径并持续衔接到实现 / 验证 / 收尾，并优先复用现有活跃方案包 |
 | `~plan` | 结构化规划 — 需求澄清 + 方案收敛 + 计划包 |
 | `~build` | 执行实现 — 基于当前需求或现有计划包完成实现 |
 | `~prd` | 完整 PRD — 13 维度头脑风暴式探索，生成产品需求文档 |
@@ -464,7 +464,7 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 | **标准模式** (默认) | `helloagents install <target> --standby` 或 `helloagents install --all --standby` | `bootstrap-lite.md`（含压缩版质量下限、共享 UI 内核、安全规则与完成约束的精简规则） | `~command` 按需使用；激活前 UI 任务仍受共享 UI 内核约束，出现 `.helloagents/` 后切换到完整流程 | 按需使用，不影响其他项目 |
 | **全局模式** | Claude/Gemini 手动装插件；Codex 自动装原生本地插件 | `bootstrap.md`（完整规则） | 14 个技能自动激活 | 全面使用 HelloAGENTS |
 
-标准模式会把规则注入到 `~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/AGENTS.md`；其中 Codex 在 `~/.codex/config.toml` 中保留 `developer_instructions` 作为受管兜底，使 home `AGENTS.md` 继续作为主基线。HelloAGENTS 在受管安装 Codex 时会临时移除已有的 `model_instructions_file`，因为该配置会遮蔽 `AGENTS.md` 链路；执行清理时会恢复用户原值。每个 CLI 还会创建 `helloagents` 包根目录符号链接。Claude Code 和 Gemini 仍使用 hooks，因为宿主可以较安静地承载这类注入；Codex 默认**不启用** HelloAGENTS hooks：最新 pre 源码里 hook 生命周期会在 TUI 中可见显示，且 `suppressOutput` 不能作为真正的静默注入通道，所以 Codex 改为依赖注入后的规则文件，以及本地符号链接 / 原生本地插件目录结构。全局模式下，Claude Code 通过 `.claude-plugin/plugin.json` 中声明的 hooks 工作，Gemini 通过 `contextFileName=bootstrap.md` 和扩展 hooks 工作；Codex 仍使用原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段），并同步维护 `~/.codex/AGENTS.md` 这层 home 基线，但不启用插件 hooks。
+标准模式会把规则注入到 `~/.claude/CLAUDE.md`、`~/.gemini/GEMINI.md`、`~/.codex/AGENTS.md`；对于 Codex，HelloAGENTS 还会在 `~/.codex/config.toml` 中写入一条受管的 `model_instructions_file`，指向同步后的 `~/.codex/AGENTS.md`，让同一份 home carrier 同时成为 Codex 的 base instructions override。执行清理时会恢复用户原来的 `model_instructions_file`。每个 CLI 还会创建 `helloagents` 包根目录符号链接。Claude Code 和 Gemini 仍使用 hooks，因为宿主可以较安静地承载这类注入；Codex 默认**不启用** HelloAGENTS hooks：最新 pre 源码里 hook 生命周期会在 TUI 中可见显示，且 `suppressOutput` 不能作为真正的静默注入通道，所以 Codex 改为依赖注入后的规则文件，以及本地符号链接 / 原生本地插件目录结构。全局模式下，Claude Code 通过 `.claude-plugin/plugin.json` 中声明的 hooks 工作，Gemini 通过 `contextFileName=bootstrap.md` 和扩展 hooks 工作；Codex 仍使用原生本地插件安装链路（marketplace + 本地插件目录 + cache + `config.toml` 插件启用段），并继续使用同一份 `~/.codex/AGENTS.md` home 基线，但不启用插件 hooks。
 
 在标准模式下，`.helloagents/` 就是项目激活边界。激活前，lite 载体**不会**运行完整六阶段内核，也不会启用语义自动选路；它只保留轻量执行规则、显式 `~command` 入口，以及最低质量/完成门槛。项目一旦存在 `.helloagents/`，当前项目就切换到完整项目流程，并以 `bootstrap.md` 作为运行时事实源。
 
@@ -482,7 +482,7 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 | `~plan` | 仅做交互式规划，生成计划包 | 想先审查方案再编码 |
 | `~build` | 从当前需求或现有计划包执行实现 | 需求已明确，想直接开始做 |
 | `~verify` | 审查与验证工作流 | 想先看审查结果、跑检查并修复 |
-| `~auto` | 在以上模式之间自动选路 | 需求明确，想要端到端交付 |
+| `~auto` | 在以上模式之间自动编排并一路推进 | 需求明确，想要端到端交付 |
 | `~prd` | 13 维度 PRD 生成 | 需要完整的产品需求文档 |
 
 典型模式：先 `~idea` 比较方向，再 `~plan` 收敛方案，然后 `~build` 实现，最后 `~verify` 验证。或者直接 `~auto` 一步到位。如果项目里已经有活跃方案包，`~auto` 应先复用这条现有链路，而不是无故重新脑暴或重新规划。涉及 UI 时，决策优先级固定为：`plan.md` / PRD 中的 UI 决策 → `DESIGN.md` → 通用 UI 规则。
@@ -664,7 +664,7 @@ npm test
 - 验证安装：`npm list -g helloagents`
 - Claude Code：检查 `~/.claude/CLAUDE.md` 是否包含 HelloAGENTS 标记
 - Gemini CLI：检查 `~/.gemini/GEMINI.md` 是否包含 HelloAGENTS 标记
-- Codex CLI：检查 `~/.codex/AGENTS.md` 是否包含 HelloAGENTS 标记，`~/.codex/config.toml` 是否仍保留 HelloAGENTS 的 `developer_instructions` 与 `notify`，并确认不存在意外重新出现的 `model_instructions_file` 遮蔽受管基线
+- Codex CLI：检查 `~/.codex/AGENTS.md` 是否包含 HelloAGENTS 标记，`~/.codex/config.toml` 是否保留指向 `~/.codex/AGENTS.md` 的 `model_instructions_file` 与 `notify`
 - 重启你的 CLI
 
 ---
@@ -748,17 +748,17 @@ npm test
 **修复与验证：**
 - 🔧 移除误回流到 Codex 标准/全局安装产物 `AGENTS.md` 中的静态运行时上下文前缀
 - 🔧 复查 Claude / Gemini 标准模式与全局模式静态载体，确认本来就不存在同类已废弃运行时规则块
-- 🔧 同步修正文档中关于 Codex `developer_instructions` 加载路径和无 hooks 运行方式的表述
+- 🔧 同步修正文档中关于 Codex `model_instructions_file -> ~/.codex/AGENTS.md` 和无 hooks 运行方式的表述
 - 🧪 新增回归断言，确保 Codex 标准/全局载体中不再出现被移除的运行时上下文前缀
 
 ### v3.0.1
 
 **修复与验证：**
 - 🔧 收敛并加强 `STATE.md` 恢复规则：关键决策变更即更新，长流程一旦失真立即重写，宿主明确进入压缩/恢复前置阶段前必须先确认已同步
-- 🔧 修复 Codex 本地插件链路清理后的空 `~/.agents/plugins/marketplace.json` 残留，并在配置恢复时忽略被污染的旧 `developer_instructions` 备份
+- 🔧 修复 Codex 本地插件链路清理后的空 `~/.agents/plugins/marketplace.json` 残留
 - 🔧 修复并验证单 CLI `update` 在记录模式过期时仍会优先复用本地已检测模式，符合 `helloagents update <cli>` 的预期行为
 - 🔧 明确标准模式下“链接文件立即同步、注入载体需显式刷新”的分支/ bootstrap 刷新语义
-- 🧪 新增标准模式载体刷新、模式自动复用、Codex 空 marketplace 清理、Codex 污染备份恢复，以及与版本号无关的 npm pack 生命周期测试
+- 🧪 新增标准模式载体刷新、模式自动复用、Codex 空 marketplace 清理，以及与版本号无关的 npm pack 生命周期测试
 
 ### v3.0.0 🎉
 

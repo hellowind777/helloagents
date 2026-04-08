@@ -99,6 +99,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]auto[\\/]SKILL\.md/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前建议主路径：~build -> ~verify/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /除非触发阻塞判定，否则不要在方案\/PRD 阶段额外停下/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,

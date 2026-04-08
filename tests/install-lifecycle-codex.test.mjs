@@ -3,10 +3,9 @@ import assert from 'node:assert/strict'
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CODEX_DEVELOPER_INSTRUCTIONS } from '../scripts/cli-codex.mjs'
+import { isManagedCodexModelInstruction } from '../scripts/cli-codex-config.mjs'
 import { createHomeFixture, createPackageFixture, readText, writeText } from './helpers/test-env.mjs'
 import {
-  hasTimestampedBackup,
   runCli,
   seedHostConfigs,
   writeTimestampedBackup,
@@ -31,13 +30,12 @@ test('Codex global cleanup still removes marketplace and plugin roots when .code
 test('Codex cleanup ignores contaminated backups and strips managed config lines', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
+  const codexAgentsPath = join(home, '.codex', 'AGENTS.md').replace(/\\/g, '/')
 
   writeText(
     join(home, '.codex', 'config.toml'),
     [
-      'developer_instructions = """',
-      CODEX_DEVELOPER_INSTRUCTIONS,
-      '"""',
+      `model_instructions_file = "${codexAgentsPath}" # helloagents-managed`,
       'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
       '',
       '[features]',
@@ -50,9 +48,7 @@ test('Codex cleanup ignores contaminated backups and strips managed config lines
     home,
     'config.toml',
     [
-      'developer_instructions = """',
-      CODEX_DEVELOPER_INSTRUCTIONS,
-      '"""',
+      `model_instructions_file = "${codexAgentsPath}" # helloagents-managed`,
       'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
       '',
       '[features]',
@@ -64,13 +60,13 @@ test('Codex cleanup ignores contaminated backups and strips managed config lines
   runCli(pkgRoot, home, ['cleanup'])
 
   const cleaned = readText(join(home, '.codex', 'config.toml'))
-  assert.doesNotMatch(cleaned, /developer_instructions\s*=/)
+  assert.doesNotMatch(cleaned, /model_instructions_file\s*=/)
   assert.doesNotMatch(cleaned, /codex-notify/)
   assert.doesNotMatch(cleaned, /codex_hooks = true/)
   assert.match(cleaned, /unified_exec = true/)
 })
 
-test('Codex standby temporarily suspends a user-owned model_instructions_file and restores it on cleanup', () => {
+test('Codex standby replaces a user-owned model_instructions_file with the managed home AGENTS carrier and restores it on cleanup', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const userAgentsPath = join(home, '.codex', 'AGENTS.md').replace(/\\/g, '/')
@@ -82,9 +78,9 @@ test('Codex standby temporarily suspends a user-owned model_instructions_file an
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const installedConfig = readText(join(home, '.codex', 'config.toml'))
-  assert.doesNotMatch(installedConfig, /model_instructions_file\s*=/)
-  assert.match(installedConfig, /developer_instructions\s*=\s*"""/)
-  assert.ok(installedConfig.indexOf('developer_instructions = """') < installedConfig.indexOf('notify = ['))
+  assert.match(installedConfig, new RegExp(`model_instructions_file = "${userAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
+  assert.ok(isManagedCodexModelInstruction(installedConfig.split('\n').find((line) => line.startsWith('model_instructions_file ='))))
+  assert.match(installedConfig, /notify = \["node", ".*\/scripts\/notify\.mjs", "codex-notify"\]/)
 
   runCli(pkgRoot, home, ['cleanup'])
 
@@ -92,7 +88,7 @@ test('Codex standby temporarily suspends a user-owned model_instructions_file an
   assert.equal(readText(join(home, '.codex', 'AGENTS.md')), '# Codex custom\n')
 })
 
-test('Codex standby preserves a user-owned developer_instructions block and restores it on cleanup', () => {
+test('Codex standby leaves a user-owned developer_instructions block untouched', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
 
@@ -112,45 +108,11 @@ test('Codex standby preserves a user-owned developer_instructions block and rest
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const installedConfig = readText(join(home, '.codex', 'config.toml'))
-  assert.match(installedConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
-  assert.ok(hasTimestampedBackup(home, 'developer_instructions'))
+  assert.match(installedConfig, /developer_instructions = """\nuser custom instructions\n"""/)
+  assert.match(installedConfig, /model_instructions_file = ".*\/\.codex\/AGENTS\.md" # helloagents-managed/)
 
   runCli(pkgRoot, home, ['cleanup'])
 
   const restoredConfig = readText(join(home, '.codex', 'config.toml'))
   assert.match(restoredConfig, /^developer_instructions = """\nuser custom instructions\n"""/)
-  assert.ok(!hasTimestampedBackup(home, 'developer_instructions'))
-})
-
-test('Codex cleanup ignores contaminated developer_instructions backups', () => {
-  const { root: pkgRoot } = createPackageFixture()
-  const home = createHomeFixture()
-
-  writeText(
-    join(home, '.codex', 'config.toml'),
-    [
-      'developer_instructions = """',
-      CODEX_DEVELOPER_INSTRUCTIONS,
-      '"""',
-      'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
-      '',
-      '[features]',
-      'unified_exec = true',
-      '',
-    ].join('\n'),
-  )
-  writeTimestampedBackup(
-    home,
-    'developer_instructions',
-    'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]\n',
-  )
-
-  runCli(pkgRoot, home, ['cleanup', 'codex'])
-
-  const cleaned = readText(join(home, '.codex', 'config.toml'))
-  assert.doesNotMatch(cleaned, /^developer_instructions = \["node"/)
-  assert.doesNotMatch(cleaned, /developer_instructions\s*=/)
-  assert.doesNotMatch(cleaned, /codex-notify/)
-  assert.match(cleaned, /unified_exec = true/)
-  assert.ok(!hasTimestampedBackup(home, 'developer_instructions'))
 })

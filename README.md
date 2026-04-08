@@ -323,7 +323,7 @@ All commands run inside AI chat with the `~` prefix:
 | Command | Purpose |
 |---------|---------|
 | `~idea` | Lightweight ideation — compare directions and explore options without writing files |
-| `~auto` | Automatic orchestration — chooses the right path across ideation / planning / build / verify / PRD, and reuses an active plan package before reopening a new lane |
+| `~auto` | Automatic orchestration — picks the main lane, keeps chaining into build / verify / closeout, and reuses an active plan package before reopening a new lane |
 | `~plan` | Structured planning — requirement gathering + solution convergence + plan package |
 | `~build` | Execution workflow — implement from the current request or an existing plan package |
 | `~prd` | Complete PRD — 13-dimension brainstorm-style exploration, generates product requirements |
@@ -464,7 +464,7 @@ HelloAGENTS supports two installation modes with different installation methods:
 | **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules with compact quality floor, shared UI kernel, safety, and completion constraints) | `~command` on demand; before activation, UI tasks still follow the shared UI kernel; after `.helloagents/`, the full workflow activates | Selective use, keeping other projects unaffected |
 | **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
 
-Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; Codex then keeps `developer_instructions` in `~/.codex/config.toml` as the managed fallback so the home `AGENTS.md` remains the primary baseline. During a managed Codex install, HelloAGENTS temporarily removes any existing `model_instructions_file` entry because that setting can shadow the `AGENTS.md` chain; cleanup restores the user's original value. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) plus a synced `~/.codex/AGENTS.md` home baseline, still without plugin hooks.
+Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; for Codex, HelloAGENTS also writes a managed `model_instructions_file` in `~/.codex/config.toml` that points to the synced `~/.codex/AGENTS.md`, so the same home carrier becomes Codex's base instructions override. Cleanup restores the user's original `model_instructions_file` value. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) plus the same `~/.codex/AGENTS.md` home baseline, still without plugin hooks.
 
 In standby mode, `.helloagents/` is the activation boundary. Before activation, the lite carrier does **not** run the full 6-stage kernel or semantic auto-routing; it keeps the lightweight execution rules, explicit `~command` entry points, and minimum quality/completion guardrails. Once `.helloagents/` exists, the active project switches to the full project workflow and `bootstrap.md` becomes the runtime source of truth.
 
@@ -482,7 +482,7 @@ Re-running the same mode command is also valid. It refreshes the current mode's 
 | `~plan` | Interactive planning only, generates a plan package | Want to review the plan before coding |
 | `~build` | Implementation workflow from the current task or existing plan package | Requirement is clear and you want execution |
 | `~verify` | Verification / review workflow | Want audit, checks, and fix loops |
-| `~auto` | Automatic orchestration across the lanes above | Want HelloAGENTS to choose the right path end-to-end |
+| `~auto` | Automatic orchestration across the lanes above, continuing until delivery unless blocked | Want HelloAGENTS to choose the right path end-to-end |
 | `~prd` | 13-dimension PRD generation | Need comprehensive product requirements |
 
 Typical pattern: `~idea` first to compare directions, then `~plan` to lock a solution, then `~build`, then `~verify`. Or just `~auto` for one-shot orchestration. If the project already has an active plan package, `~auto` should reuse that workflow state before reopening ideation or planning. For UI work, the decision priority is always `plan.md` / PRD UI decisions → `DESIGN.md` → generic UI rules.
@@ -664,7 +664,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - Verify installation: `npm list -g helloagents`
 - Claude Code: check `~/.claude/CLAUDE.md` contains HelloAGENTS markers
 - Gemini CLI: check `~/.gemini/GEMINI.md` contains HelloAGENTS markers
-- Codex CLI: check `~/.codex/AGENTS.md` contains HelloAGENTS markers, `~/.codex/config.toml` still has HelloAGENTS `developer_instructions` and `notify`, and no unexpected `model_instructions_file` is shadowing the managed baseline
+- Codex CLI: check `~/.codex/AGENTS.md` contains HelloAGENTS markers and `~/.codex/config.toml` keeps `model_instructions_file` pointing to `~/.codex/AGENTS.md` plus `notify`
 - Restart your CLI
 
 ---
@@ -748,17 +748,17 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 **Fixes and verification:**
 - 🔧 Removed the Codex-only static runtime-context block that had been reintroduced into generated `AGENTS.md` carriers in standby/global installs
 - 🔧 Re-checked Claude/Gemini standby/global static carriers and confirmed they do not inject the same deprecated runtime-context rule block
-- 🔧 Updated Codex installation docs to match the current `developer_instructions` loading path and the actual no-hooks behavior
+- 🔧 Updated Codex installation docs to match the current `model_instructions_file -> ~/.codex/AGENTS.md` path and the actual no-hooks behavior
 - 🧪 Added regression assertions to ensure Codex standby/global carriers no longer contain the removed runtime-context prefix
 
 ### v3.0.1
 
 **Fixes and verification:**
 - 🔧 `STATE.md` recovery rules are tightened: update on key decision changes, rewrite immediately when long-running work makes the snapshot stale, and confirm sync before host-driven compaction/recovery stages
-- 🔧 Codex cleanup now removes empty `~/.agents/plugins/marketplace.json` residue and ignores contaminated legacy `developer_instructions` backups during config restore
+- 🔧 Codex cleanup now removes empty `~/.agents/plugins/marketplace.json` residue during config restore
 - 🔧 Scoped `update` continues to reuse the detected host mode even when tracked config is stale, matching the intended `helloagents update <cli>` behavior
 - 🔧 Standby branch/bootstrap refresh semantics are now documented precisely: symlinked package files update immediately, while injected carrier files refresh on `install` / `update` / mode-refresh commands
-- 🧪 Added lifecycle coverage for standby carrier refresh, stale-mode inference, empty Codex marketplace cleanup, contaminated Codex backup recovery, and version-agnostic npm pack testing
+- 🧪 Added lifecycle coverage for standby carrier refresh, stale-mode inference, empty Codex marketplace cleanup, and version-agnostic npm pack testing
 
 ### v3.0.0 🎉
 

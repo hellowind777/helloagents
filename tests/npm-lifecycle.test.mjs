@@ -15,10 +15,6 @@ import {
   writeText,
 } from './helpers/test-env.mjs';
 
-import {
-  CODEX_DEVELOPER_INSTRUCTIONS,
-} from '../scripts/cli-codex.mjs';
-
 const npmCli = process.env.npm_execpath;
 
 function runNpm(args, cwd, env) {
@@ -60,9 +56,8 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.ok(existsSync(join(home, '.codex', 'helloagents')));
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
   const installedCodexConfig = readText(join(home, '.codex', 'config.toml'));
-  assert.doesNotMatch(installedCodexConfig, /model_instructions_file\s*=/);
-  assert.match(installedCodexConfig, /^developer_instructions = """/);
-  assert.match(installedCodexConfig, new RegExp(CODEX_DEVELOPER_INSTRUCTIONS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(installedCodexConfig, /model_instructions_file = ".*\/\.codex\/AGENTS\.md"/);
+  assert.doesNotMatch(installedCodexConfig, /developer_instructions\s*=/);
 
   const cleanup = runCommand(process.execPath, [join(pkgRoot, 'cli.mjs'), 'cleanup'], {
     cwd: pkgRoot,

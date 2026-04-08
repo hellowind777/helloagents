@@ -42,9 +42,10 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   assert.equal(codex.checks.carrierMarker, true)
   assert.equal(codex.checks.carrierContentMatch, true)
   assert.equal(codex.checks.homeLink, true)
+  assert.equal(codex.checks.modelInstructionsFile, true)
+  assert.equal(codex.checks.modelInstructionsPathMatch, true)
   assert.equal(codex.checks.codexNotify, true)
   assert.equal(codex.checks.notifyPathMatch, true)
-  assert.equal(codex.checks.developerInstructions, true)
 
   rmSync(join(home, '.codex', 'helloagents'), { recursive: true, force: true })
 
@@ -120,7 +121,8 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   assert.equal(codex.checks.carrierMarker, true)
   assert.equal(codex.checks.carrierContentMatch, true)
   assert.equal(codex.checks.homeLink, false)
-  assert.equal(codex.checks.modelInstructionsFile, false)
+  assert.equal(codex.checks.modelInstructionsFile, true)
+  assert.equal(codex.checks.modelInstructionsPathMatch, true)
   assert.equal(codex.checks.pluginRoot, true)
   assert.equal(codex.checks.pluginCache, true)
 })
