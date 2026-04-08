@@ -173,6 +173,10 @@
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
+说明：
+- `.helloagents/` 是逻辑项目空间，也是 standby 模式的激活信号
+- `STATE.md`、`.ralph-*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前会话注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定它们一定物理位于工作树内
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
 1. {CWD}/skills/helloagents/templates/
 2. 当前已加载 HelloAGENTS 包根目录下的 templates/
@@ -225,6 +229,9 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
+说明：
+- Tier 1 的 `STATE.md` 始终读取项目本地 `.helloagents/STATE.md`
+- Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认是逻辑别名；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 
 Tier 1 — 恢复当前链路时优先读取：
 - .helloagents/STATE.md → 恢复快照（先确认当前消息仍是同一任务，再用它找回最近进度）

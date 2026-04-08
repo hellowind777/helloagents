@@ -8,7 +8,7 @@
 
 **Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
 
-[![Version](https://img.shields.io/badge/version-3.0.6-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.7-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -33,6 +33,7 @@
 <summary><strong>Click to expand</strong></summary>
 
 - [🎯 Why HelloAGENTS?](#-why-helloagents)
+- [🆚 Compared with v2.3.8](#-compared-with-v238)
 - [✨ Core Features](#-core-features)
 - [🚀 Quick Start](#-quick-start)
 - [🔄 Installation Lifecycle & File Writes](#-installation-lifecycle--file-writes)
@@ -90,6 +91,25 @@ HelloAGENTS fixes that. It's an orchestration layer that sits on top of your AI 
 - ❌ Simple one-off questions (HelloAGENTS adds process overhead)
 - ❌ Non-coding tasks (optimized for software engineering)
 
+## 🆚 Compared with v2.3.8
+
+If the last version you used seriously was `v2.3.8`, this is not a minor update. The current line is a full product-line reset.
+
+| Dimension | v2.3.8 | Local `v3.0.7` |
+|-----------|--------|----------------|
+| **Implementation base** | Python package plus mixed scripts/rules | Pure Node.js + Markdown runtime built around `cli.mjs`, `bootstrap*.md`, `skills/`, and `scripts/` |
+| **Product shape** | More like a multi-CLI management tool plus prompt protocol bundle | More like a quality orchestration kernel for AI CLIs, centered on routing, gating, verification, and resumable execution |
+| **Installation model** | pip / uv / npx / shell installers in parallel | npm-first; install the package, then deploy explicitly to Claude / Gemini / Codex |
+| **CLI strategy** | 6 targets with uneven capabilities | Focused on 3 primary surfaces: Claude Code, Gemini CLI, and Codex CLI |
+| **Workflow model** | R0/R1/R2 routing plus older design/develop semantics | ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE routed kernel |
+| **Command surface** | 15 commands including `~exec`, `~rollback`, `~rlm`, `~validatekb` | 12 focused commands such as `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, and `~wiki` |
+| **Quality model** | More distributed rules, more reliance on prose | 14 auto-activated skills + checklist gating + Ralph Loop + structured evidence |
+| **Project state** | KB felt auxiliary | `.helloagents/` is now the activation boundary; `STATE.md`, plan packages, `DESIGN.md`, and `contract.json` anchor the workflow |
+| **KB storage** | Project-local only | Project-local by default, plus `project_store_mode=repo-shared` for sharing stable KB/plan assets across git worktrees |
+| **Codex integration** | Earlier compatibility layers and legacy paths | Standby = injected rules + local links; global = native local-plugin chain with less noise and drift |
+
+In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.7` is a real orchestration kernel that unifies quality rules, plan artifacts, verification evidence, and installation lifecycle into one operating model.
+
 ## ✨ Core Features
 
 HelloAGENTS enforces quality through three mechanisms working together:
@@ -139,6 +159,28 @@ L1 blocks destructive commands (`rm -rf /`, `git push --force`, `DROP DATABASE`)
 Simple tasks stay fast. Complex tasks use a routed kernel workflow: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE, with explicit command lanes for ideation, planning, implementation, and validation.
 
 **Your gain:** proportional effort — quick tasks stay fast, complex tasks get full process.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
+
+**🧠 Structured Plan Artifacts**
+
+Complex tasks no longer rely on one paragraph of planning prose. They land as `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, `STATE.md`, and `DESIGN.md` when needed.
+
+**Your gain:** routing, implementation, verification, and closeout all move around the same set of facts instead of drifting across free-form summaries.
+
+</td>
+<td width="50%" valign="top">
+<img src="./readme_images/05-feature-icon-compat.svg" width="48" align="left">
+
+**🗂️ Local / Shared Project Storage**
+
+By default, KB and plan packages stay in the project's local `.helloagents/`. If you work with multiple worktrees, `project_store_mode=repo-shared` moves the stable project memory to `~/.helloagents/projects/<repo-key>/`.
+
+**Your gain:** local runtime isolation stays intact while stable KB and plan assets stop fragmenting across worktrees.
 
 </td>
 </tr>
@@ -323,6 +365,7 @@ Only include keys you want to override — missing keys use defaults.
   "ralph_loop_enabled": true,
   "guard_enabled": true,
   "kb_create_mode": 1,
+  "project_store_mode": "local",
   "commit_attribution": "",
   "install_mode": "standby"
 }
@@ -336,6 +379,7 @@ Only include keys you want to override — missing keys use defaults.
 | `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
 | `guard_enabled` | `true` | Block dangerous commands |
 | `kb_create_mode` | `1` | `0`=off, `1`=auto on coding tasks in activated projects or global mode, `2`=always in activated projects or global mode |
+| `project_store_mode` | `"local"` | `"local"` = keep KB/plan files in project-local `.helloagents/`; `"repo-shared"` = keep local `.helloagents/` only for activation/STATE/runtime artifacts and move KB/plan files to `~/.helloagents/projects/<repo-key>/` |
 | `commit_attribution` | `""` | Empty = no attribution. Set text to append to commit messages |
 | `install_mode` | `"standby"` | `"standby"` = per-project activation (lite rules), `"global"` = full rules for all projects |
 
@@ -360,6 +404,11 @@ helloagents --standby
 **Disable KB auto-creation:**
 ```json
 { "kb_create_mode": 0 }
+```
+
+**Share KB and plan packages across multiple worktrees:**
+```json
+{ "project_store_mode": "repo-shared" }
 ```
 
 **Enable desktop + sound notifications:**
@@ -441,14 +490,16 @@ Typical pattern: `~idea` first to compare directions, then `~plan` to lock a sol
 ### Quality Verification (Ralph Loop)
 
 After every task, Ralph Loop auto-runs your project's verification commands:
-- Priority: `.helloagents/verify.yaml` → `package.json` scripts → auto-detected
+- Priority: logical `.helloagents/verify.yaml` (`project_store_mode=repo-shared` resolves it from the shared project store) → `package.json` scripts → auto-detected
 - All pass? → Collect skill checklists → Verify → Done
 - Any fail? → Reflect → Fix → Re-run (circuit breaker after 3 failures)
 - Completion is also held back if the active plan package still has open tasks, missing required artifacts, or unreplaced template placeholders
 
 ### Knowledge Base (`.helloagents/`)
 
-`~wiki` creates or syncs the project-local knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
+`~wiki` creates or syncs the project knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of the local `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
+
+By default, KB and plan files live in the project's local `.helloagents/`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` directory keeps only the activation signal, `STATE.md`, and runtime artifacts such as `.ralph-*`, while `context.md`, `guidelines.md`, `DESIGN.md`, `verify.yaml`, `modules/`, `plans/`, and `archive/` move to `~/.helloagents/projects/<repo-key>/` so multiple worktrees of the same git repo can share stable project memory.
 
 `STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
 
@@ -550,7 +601,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 <details>
 <summary><strong>Q: Where does project knowledge go?</strong></summary>
 
-**A:** In the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
+**A:** By default, in the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` keeps only the activation signal, `STATE.md`, and `.ralph-*` runtime artifacts, while KB and plan files move to `~/.helloagents/projects/<repo-key>/`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
 </details>
 
 <details>
@@ -667,12 +718,15 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.6 (current)
+### v3.0.7 (current)
 
-**Workflow recovery and finish-state clarity:**
-- ✨ Recovery guidance now treats `STATE.md` as a recovery snapshot, so resume / compaction flows re-check the current user request before continuing prior work
-- ✨ `~idea` is now framed as read-only exploration with clearer semantic routing and explicit UI decision priority before implementation starts
-- ✨ The HelloAGENTS formatted wrapper is now reserved for the final close-out reply, while waiting states stay explicit instead of looking completed
+**What the current line now delivers relative to `v2.3.8`:**
+- ✨ Full rewrite from a Python package to a Node.js/Markdown orchestration kernel, including install flow, runtime injection, skill system, and verification chain
+- ✨ Replaced the older layered routing / design-develop model with one routed kernel: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
+- ✨ Re-centered the command surface around `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, and `~wiki`, plus 14 auto-activated quality skills
+- ✨ Turned project artifacts into first-class workflow facts: `STATE.md`, `DESIGN.md`, `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, and `.ralph-*` evidence
+- ✨ Rebuilt installation around standby/global dual-mode deployment; Codex now uses the native local-plugin chain while Claude/Gemini keep host-native integration
+- ✨ Added `project_store_mode=repo-shared`, so multiple worktrees of one git repo can share stable KB and plan assets while local `.helloagents/` still isolates activation and runtime state
 
 ### v3.0.4
 

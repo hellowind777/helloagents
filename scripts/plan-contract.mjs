@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { isAbsolute, join, normalize } from 'node:path'
+import { join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { resolveProjectPlanDir } from './project-storage.mjs'
 
 export const PLAN_CONTRACT_FILE_NAME = 'contract.json'
 const VALID_VERIFY_MODES = new Set(['test-first', 'review-first'])
@@ -70,33 +71,7 @@ function normalizeAdvisorContract(input = {}) {
 function resolvePlanDir(cwd, input = {}) {
   const rawPlanDir = typeof input.planDir === 'string' ? input.planDir.trim() : ''
   if (!rawPlanDir) return ''
-
-  if (isAbsolute(rawPlanDir)) {
-    return normalize(rawPlanDir)
-  }
-
-  if (rawPlanDir.startsWith('.helloagents/')) {
-    return normalize(join(cwd, rawPlanDir))
-  }
-
-  if (rawPlanDir.startsWith('.helloagents\\')) {
-    return normalize(join(cwd, rawPlanDir))
-  }
-
-  if (rawPlanDir.startsWith('plans/')) {
-    return normalize(join(cwd, '.helloagents', rawPlanDir))
-  }
-
-  if (rawPlanDir.startsWith('plans\\')) {
-    return normalize(join(cwd, '.helloagents', rawPlanDir))
-  }
-
-  const fromCwd = normalize(join(cwd, rawPlanDir))
-  if (existsSync(fromCwd)) {
-    return fromCwd
-  }
-
-  return normalize(join(cwd, '.helloagents', 'plans', rawPlanDir))
+  return resolveProjectPlanDir(cwd, rawPlanDir)
 }
 
 export function getPlanContractPath(planDir) {

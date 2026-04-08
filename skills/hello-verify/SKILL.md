@@ -4,6 +4,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 ---
 
 声称完成之前，必须有验证证据。
+`.helloagents/` 在本 skill 中表示逻辑项目空间：`.ralph-review.json`、`.ralph-visual.json`、`.ralph-closeout.json` 等交付证据保持项目本地；若 `project_store_mode=repo-shared`，`verify.yaml`、方案包与 `DESIGN.md` 按当前会话注入的项目知识/方案目录解析。
 
 ## 铁律
 
@@ -60,7 +61,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 - 已有测试是底线，不能为了新功能而降低底线
 
 ## 验证命令来源
-- .helloagents/verify.yaml 中的 commands（优先）
+- 逻辑 `.helloagents/verify.yaml` 中的 commands（优先；`project_store_mode=repo-shared` 时按共享知识目录解析）
 - package.json 中的 lint/test/typecheck 脚本
 - pyproject.toml 中的 ruff/mypy/pytest
 

@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 
 import { getAdvisorRequirement, getVisualValidationRequirement } from './plan-contract.mjs'
+import { describeProjectStoreFile, getProjectDesignContractPath } from './project-storage.mjs'
 import { getWorkflowRecommendation, getWorkflowSnapshot } from './workflow-state.mjs'
 
 function getPrimaryPlan(snapshot) {
@@ -36,10 +36,10 @@ export function selectCapabilities({ cwd, skillName = '' }) {
       description: '审查优先：当前验证主路径是 review-first，先做 hello-review，再做 hello-verify。',
     })
   }
-  if (plan?.contract?.ui?.required || existsSync(join(cwd, '.helloagents', 'DESIGN.md'))) {
+  if (plan?.contract?.ui?.required || existsSync(getProjectDesignContractPath(cwd))) {
     capabilities.push({
       id: 'design-contract',
-      description: 'UI 契约：仅在 UI 场景按需读取当前 plan.md / prd/03-ui-design.md、`.helloagents/DESIGN.md` 与 hello-ui，不全局常驻。',
+      description: `UI 契约：仅在 UI 场景按需读取当前 plan.md / prd/03-ui-design.md、${describeProjectStoreFile(cwd, 'DESIGN.md')} 与 hello-ui，不全局常驻。`,
     })
   }
   if (visualRequirement.required) {

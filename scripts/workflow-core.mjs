@@ -8,6 +8,7 @@ import {
   readStateSnapshot,
 } from './workflow-plan-files.mjs'
 import { getAdvisorRequirement, getVisualValidationRequirement } from './plan-contract.mjs'
+import { describeProjectStoreFile, getProjectDesignContractPath } from './project-storage.mjs'
 
 export function getTargetPlans(snapshot) {
   return snapshot.activePlans.length > 0 ? snapshot.activePlans : snapshot.plans
@@ -141,7 +142,7 @@ export function buildStateRoleHintFromSnapshot(snapshot) {
 
 export function buildUiContractHint(cwd, snapshot) {
   const targetPlans = getTargetPlans(snapshot)
-  const hasDesignContract = existsSync(join(cwd, '.helloagents', 'DESIGN.md'))
+  const hasDesignContract = existsSync(getProjectDesignContractPath(cwd))
   const hasPrdUiArtifact = targetPlans.some((plan) => existsSync(join(plan.dirPath, 'prd', '03-ui-design.md')))
   const hasUiContract = targetPlans.some((plan) => plan.contract?.ui?.required)
   const styleAdvisorRequired = targetPlans.some((plan) => getAdvisorRequirement(plan.contract).styleRequired)
@@ -158,7 +159,7 @@ export function buildUiContractHint(cwd, snapshot) {
   if (visualValidationRequired) {
     extraHints.push('若当前 UI contract 要求视觉验收，收尾前需写 `.helloagents/.ralph-visual.json` 记录关键视口、状态与结论')
   }
-  return `UI 约束提示：如本次属于视觉/交互链路，设计决策优先级固定为：当前活跃 plan.md / prd/03-ui-design.md → .helloagents/DESIGN.md → hello-ui。${extraHints.length > 0 ? ` ${extraHints.join('；')}。` : ''}`
+  return `UI 约束提示：如本次属于视觉/交互链路，设计决策优先级固定为：当前活跃 plan.md / prd/03-ui-design.md → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → hello-ui。${extraHints.length > 0 ? ` ${extraHints.join('；')}。` : ''}`
 }
 
 export { normalizeTaskFile, readStateSnapshot, listPlanPackages, getWorkflowSnapshot }

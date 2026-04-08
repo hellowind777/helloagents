@@ -3,6 +3,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { buildCommandRouteHint, buildStateSyncHint, buildWorkflowRouteHint } from './workflow-state.mjs';
 import { buildCapabilityHint } from './capability-registry.mjs';
+import {
+  buildProjectStorageBlock,
+  buildProjectStorageHint,
+  describeProjectStoreFile,
+} from './project-storage.mjs';
 
 const COMMAND_ALIASES = {
   do: 'build',
@@ -103,6 +108,12 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
     summaryParts.push(readRootBlock);
   }
 
+  const projectStorageBlock = buildProjectStorageBlock(cwd);
+  if (projectStorageBlock) {
+    summaryParts.push('');
+    summaryParts.push(projectStorageBlock);
+  }
+
   if (stateSyncHint) {
     summaryParts.push('');
     summaryParts.push('## STATE.md 提醒');
@@ -122,6 +133,7 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
   const readRootBlock = buildReadRootBlock(resolveReadRoot({ cwd, pkgRoot, host, settings }));
   const workflowHint = buildWorkflowRouteHint(cwd);
   const capabilityHint = buildCapabilityHint({ cwd });
+  const projectStorageBlock = buildProjectStorageBlock(cwd);
   const stateSyncHint = buildStateSyncHint(cwd);
   const settingsBlock = Object.keys(settings).length
     ? `\n\n## 当前用户设置\n\`\`\`json\n${JSON.stringify(settings, null, 2)}\n\`\`\``
@@ -130,6 +142,7 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
   let context = bootstrap;
   if (packageRootBlock) context += `\n\n${packageRootBlock}`;
   if (readRootBlock) context += `\n\n${readRootBlock}`;
+  if (projectStorageBlock) context += `\n\n${projectStorageBlock}`;
   if (workflowHint) context += `\n\n## 当前工作流提示\n${workflowHint}`;
   if (capabilityHint) context += `\n\n## 当前按需能力\n${capabilityHint}`;
   if (stateSyncHint) context += `\n\n## STATE.md 提醒\n${stateSyncHint}`;
@@ -147,19 +160,22 @@ export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot
   const aliasNote = buildAliasRouteNote(skillName);
   const commandHint = buildCommandRouteHint(canonicalSkillName, cwd);
   const capabilityHint = buildCapabilityHint({ cwd, skillName: canonicalSkillName });
-  return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；不要再探测其他 helloagents 路径。${aliasNote ? ` ${aliasNote}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
+  const projectStorageHint = buildProjectStorageHint(cwd);
+  return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；不要再探测其他 helloagents 路径。${aliasNote ? ` ${aliasNote}` : ''}${projectStorageHint ? ` ${projectStorageHint}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
 }
 
 export function buildSemanticRouteInstruction(cwd) {
   const workflowHint = buildWorkflowRouteHint(cwd);
   const capabilityHint = buildCapabilityHint({ cwd });
+  const projectStorageHint = buildProjectStorageHint(cwd);
   return [
     '当前消息未使用 ~command。',
     '请根据用户请求的真实意图选路，不依赖关键词表。',
     'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆链路。',
     '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动选路。',
     '若判定为 T3，默认先走 ~plan / ~prd；纯审查/验证请求才优先 ~verify。',
-    '涉及 UI 任务时，设计决策优先级：当前活跃 plan / PRD → `.helloagents/DESIGN.md` → 通用 UI 规则。',
+    `涉及 UI 任务时，设计决策优先级：当前活跃 plan / PRD → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → 通用 UI 规则。`,
+    projectStorageHint,
     workflowHint ? `项目状态：${workflowHint}` : '',
     capabilityHint,
     '意图明确时直接按对应路径推进，不要把选路过程暴露给用户。',

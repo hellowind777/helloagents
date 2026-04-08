@@ -8,6 +8,7 @@ Trigger: ~init
 
 ~init 是用户显式命令，创建完整知识库，不受 kb_create_mode 限制。
 执行 `~init` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 规则按当前已加载 bootstrap 执行；本命令额外负责项目根载体和项目级 `skills/helloagents` 链接。
+`.helloagents/` 在本 skill 中表示逻辑项目空间：项目本地 `.helloagents/` 继续承担激活目录与 `STATE.md`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与方案包按当前会话注入的项目知识/方案目录写入。
 
 ## 流程
 
@@ -36,7 +37,7 @@ Trigger: ~init
 - 有代码文件 → 执行完整知识库创建（下方流程）
 - 空项目 → 跳过，告知用户"项目为空，知识库将在后续开发中创建"
 
-知识库创建流程（与原 ~init 一致）：
+知识库创建流程（与原 ~init 一致；逻辑写入 `.helloagents/`，`project_store_mode=repo-shared` 时实际落在共享知识目录）：
 1. 按 templates/ 目录的模板格式，分析项目代码库后生成：
    - context.md — 按 templates/context.md 格式，填入项目概述、技术栈、架构、目录结构、模块链接
    - guidelines.md — 按 templates/guidelines.md 格式，从现有代码推断编码约定

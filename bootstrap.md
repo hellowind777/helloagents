@@ -191,7 +191,7 @@ hello-* 技能查找路径（按优先级，找到即停）：
 - `~prd` 生成 PRD 维度文档、`tasks.md`、`decisions.md`
 - `~build` 读取现有方案包并做定位，不重复发明方案
 - `contract.json` 是方案包的机器契约，至少明确 `verifyMode`、`reviewerFocus`、`testerFocus`；只有在 T3 / UI / 高风险链路确有收益时，才额外声明 `advisor`；进入验证或最终交付前，优先消费它而不是从自然语言描述里回推验证路径
-- 涉及 UI 时，设计约束优先级固定为：当前 `plan.md` / PRD UI 决策 → `.helloagents/DESIGN.md` → 通用 UI 规则
+- 涉及 UI 时，设计约束优先级固定为：当前 `plan.md` / PRD UI 决策 → 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析） → 通用 UI 规则
 - `~idea` 在输出比较与推荐后结束，不进入实现，也不创建 `.helloagents/`、`STATE.md` 或方案包
 
 ### 4. BUILD — 实现
@@ -243,6 +243,10 @@ hello-* 技能查找路径（按优先级，找到即停）：
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
+说明：
+- `.helloagents/` 是逻辑项目空间，也是 standby 模式的激活信号
+- `STATE.md`、`.ralph-*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前会话注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定它们一定物理位于工作树内
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
 1. {CWD}/skills/helloagents/templates/
 2. 当前已加载 HelloAGENTS 包根目录下的 templates/
@@ -295,6 +299,9 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
+说明：
+- Tier 1 的 `STATE.md` 始终读取项目本地 `.helloagents/STATE.md`
+- Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认是逻辑别名；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 
 Tier 1 — 恢复当前链路时优先读取：
 - .helloagents/STATE.md → 恢复快照（先确认当前消息仍是同一任务，再用它找回最近进度）

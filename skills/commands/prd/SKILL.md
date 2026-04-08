@@ -8,13 +8,14 @@ Trigger: ~prd [description]
 
 执行 `~prd` 时，不读取 `~plan` 的 command skill；只有当前流程明确需要时，才继续读取对应的 hello-* 技能。
 执行 `~prd` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充规格探索、PRD 落盘与执行衔接要求。
+`.helloagents/` 在本 skill 中表示逻辑项目空间：`STATE.md` 与 `.ralph-*.json` 保持项目本地；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前会话注入的项目知识/方案目录解析。
 
 ## 铁律
 - 在用户确认方案之前，禁止编写任何实现代码、创建任何文件、或执行任何实现操作。
 - 每个维度的选项必须体现当前前沿水准。若当前已加载 bootstrap 含审美/体验规则则遵循其要求；否则至少给出具体、可执行、非泛化的视觉特征，不确定时主动搜索查阅。
 - 用户说"跳过"某维度 → 跳过，不生成该文件。不强迫用户讨论不关心的维度。
 - 大项目检测：涉及多个独立子系统时，先帮用户分解为子项目，每个子项目走独立的 ~prd 循环。
-- 涉及 UI 时，`prd/03-ui-design.md` 负责沉淀本次产品/功能的 UI 决策；项目级稳定设计契约同步写入 `.helloagents/DESIGN.md`
+- 涉及 UI 时，`prd/03-ui-design.md` 负责沉淀本次产品/功能的 UI 决策；项目级稳定设计契约同步写入逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析）
 
 ## PRD 维度清单
 
@@ -96,13 +97,13 @@ c. AI 总结该维度的决策结果，进入下一个维度
 
 将讨论结果写入本地项目：
 - 按当前已加载 bootstrap 的 `.helloagents/` 与流程状态规则，确保最小项目状态已建立；这是方案包写入的前置操作，不受 kb_create_mode 开关控制
-- 创建 .helloagents/plans/YYYYMMDDHHMM_{feature}/prd/
+- 创建逻辑 `.helloagents/plans/YYYYMMDDHHMM_{feature}/prd/`
 - 按 templates/plans/prd/ 的模板格式，仅写入用户未跳过的维度文件
 - 生成 tasks.md（每个任务包含具体文件路径、预期变更、完成标准、验证方式；任务独立可验证；依赖顺序明确）
 - 生成 decisions.md（贯穿全程的决策日志）
 - 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需前置审美收敛时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要只把验证路径留在 prose 里
-- 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`；若原文件不存在，先按模板建立最小设计契约，再同步已确认的稳定 UI 决策
+- 涉及 UI 的项目：生成或更新逻辑 `.helloagents/DESIGN.md`；若原文件不存在，先按模板建立最小设计契约，再同步已确认的稳定 UI 决策
 - 重写 `.helloagents/STATE.md`，其中“主线目标”写当前 PRD 链路真正要完成的产品 / 功能目标，不延续无关旧主线
 
 输出 PRD 完整度摘要：已覆盖 N/13 个维度，建议后续补充的维度（如有）。
