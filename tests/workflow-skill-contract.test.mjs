@@ -27,6 +27,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(helloagents, /ROUTE \/ TIER \/ SPEC 阶段/)
   assert.match(helloagents, /BUILD 开始时读取/)
   assert.match(helloagents, /所有 UI 任务先受当前 bootstrap 的 UI 质量内核约束/)
+  assert.match(helloagents, /project_store_mode=repo-shared/)
   assert.match(helloagents, /style advisor \/ visual validation/)
   assert.match(helloagents, /遵循当前 bootstrap 的等待输入规则/)
   assert.match(helloagents, /不得把等待输入包装成完成态/)
@@ -135,6 +136,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   const help = readText(join(REPO_ROOT, 'skills', 'commands', 'help', 'SKILL.md'))
   assert.match(help, /纯标准模式未激活项目不会自动触发这些深层技能/)
   assert.match(help, /UI 质量内核约束/)
+  assert.match(help, /project_store_mode/)
 
   const readme = readText(join(REPO_ROOT, 'README.md'))
   assert.match(readme, /shared UI kernel/)
@@ -165,6 +167,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
 
   const wiki = readText(join(REPO_ROOT, 'skills', 'commands', 'wiki', 'SKILL.md'))
   assert.match(wiki, /目录结构、模板格式和 `STATE\.md` 重写规则按当前已加载 bootstrap 执行/)
+  assert.match(wiki, /project_store_mode=repo-shared/)
   assert.match(wiki, /初始“主线目标”只写当前知识库初始化 \/ 同步目标/)
   assert.match(wiki, /只记录当前知识库链路的恢复快照/)
 

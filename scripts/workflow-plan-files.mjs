@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { isAbsolute, join, normalize } from 'node:path'
 
 import { getPlanContractIssues, readPlanContract } from './plan-contract.mjs'
+import { getProjectPlansDir, getProjectStatePath, resolveProjectPlanDir } from './project-storage.mjs'
 
 const PLAN_TEMPLATE_MARKERS = {
   'requirements.md': [
@@ -74,15 +75,7 @@ function resolvePlanDir(cwd, rawValue) {
 
   const match = value.match(/(?:\.helloagents[\\/])?plans[\\/][^\s/\\]+/)
   if (!match) return ''
-
-  const relativePath = match[0].replace(/[\\/]+$/, '')
-  if (relativePath.startsWith('.helloagents/')) {
-    return normalize(join(cwd, relativePath))
-  }
-  if (relativePath.startsWith('.helloagents\\')) {
-    return normalize(join(cwd, relativePath))
-  }
-  return normalize(join(cwd, '.helloagents', relativePath))
+  return resolveProjectPlanDir(cwd, match[0])
 }
 
 function splitTaskMetaValues(rawValue = '') {
@@ -178,7 +171,7 @@ function comparePlanEntries(a, b) {
 }
 
 export function readStateSnapshot(cwd) {
-  const statePath = join(cwd, '.helloagents', 'STATE.md')
+  const statePath = getProjectStatePath(cwd)
   const content = readText(statePath)
   const sections = parseMarkdownSections(content)
   const referencedPlanDir = resolvePlanDir(cwd, sections['方案'])
@@ -193,7 +186,7 @@ export function readStateSnapshot(cwd) {
 }
 
 export function listPlanPackages(cwd) {
-  const plansDir = join(cwd, '.helloagents', 'plans')
+  const plansDir = getProjectPlansDir(cwd)
   if (!existsSync(plansDir)) return []
 
   return readdirSync(plansDir, { withFileTypes: true })

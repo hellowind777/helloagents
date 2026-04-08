@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 import { appendReplayEvent } from './replay-state.mjs'
+import { getProjectVerifyYamlPath } from './project-storage.mjs'
 
 export const VERIFY_EVIDENCE_FILE_NAME = '.ralph-verify.json'
 const VERIFY_EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
@@ -24,7 +25,7 @@ export function clearVerifyEvidence(cwd) {
 }
 
 function loadVerifyYaml(cwd) {
-  const f = join(cwd, '.helloagents', 'verify.yaml')
+  const f = getProjectVerifyYamlPath(cwd)
   if (!existsSync(f)) return null
   try {
     const content = readFileSync(f, 'utf-8')

@@ -16,6 +16,7 @@ export function writeSettings(home, overrides = {}) {
     ralph_loop_enabled: true,
     guard_enabled: true,
     kb_create_mode: 1,
+    project_store_mode: 'local',
     commit_attribution: '',
     install_mode: 'standby',
     ...overrides,

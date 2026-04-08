@@ -4,6 +4,7 @@ description: 已进入显式 UI 工作流、已激活项目的视觉变更、设
 ---
 
 本 skill 不是 UI 质量的唯一来源。当前已加载 bootstrap 中的 UI 质量内核负责所有 UI 任务的基础水准；本 skill 在显式 UI 工作流和深度 UI 任务中，补充更强的契约执行、实现映射与视觉验收。
+`.helloagents/` 在本 skill 中表示逻辑项目空间：`.ralph-*.json` 等运行态证据保持项目本地；若 `project_store_mode=repo-shared`，`DESIGN.md` 与方案包按当前会话注入的项目知识/方案目录解析。
 
 ## 适用边界
 已进入显式 UI 规划/实现/验证路径，或当前项目已激活且任务涉及整页新建、跨多个组件的视觉重做、设计系统改造、需要截图验收的界面任务时，读取本 skill。
@@ -12,7 +13,7 @@ description: 已进入显式 UI 工作流、已激活项目的视觉变更、设
 ## 设计契约优先级
 进入 UI 相关的规划、实现、验证时，按以下顺序做设计决策：
 1. 当前活跃方案包 `plan.md` 或 PRD 中已确认的 UI 决策
-2. `.helloagents/DESIGN.md`
+2. 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析）
 3. 本 skill 的通用规则
 缺少上层 artifact 时，才直接依赖下层规则；不得用通用审美覆盖已确认的项目契约。
 
@@ -21,7 +22,7 @@ description: 已进入显式 UI 工作流、已激活项目的视觉变更、设
 - 消费可选 UI contract：若 `contract.json` 启用 `ui.styleAdvisor`，复用 `.helloagents/.ralph-advisor.json` 留下设计方向复查证据；若启用 `ui.visualValidation`，用 `.helloagents/.ralph-visual.json` 留下视觉验收证据
 - 映射到代码结构：明确 token 放在哪里、组件边界如何划分、状态组件如何组织、动效与主题如何落地
 - 做视觉验收闭环：优先使用截图/浏览器工具做桌面与移动端检查；没有工具时也要完成结构化视觉自检
-- 回写稳定决策：只把跨 feature 稳定成立的设计系统规则同步回 `.helloagents/DESIGN.md`，不要把一次性页面细节全部写成项目级契约
+- 回写稳定决策：只把跨 feature 稳定成立的设计系统规则同步回逻辑 `.helloagents/DESIGN.md`，不要把一次性页面细节全部写成项目级契约
 
 ## 深层设计 brief（编码前必须落定）
 
@@ -36,9 +37,9 @@ description: 已进入显式 UI 工作流、已激活项目的视觉变更、设
 7. 真实内容：使用真实文案、产品信息、项目上下文，不使用 Lorem ipsum 或泛化占位符。真实内容帮助做出更贴合上下文的设计决策。
 
 执行顺序要求：
-- 已激活项目且存在 `.helloagents/DESIGN.md` 时，进入真实 UI 任务先读取它，再展开方案或实现
+- 已激活项目且存在逻辑 `.helloagents/DESIGN.md` 时，进入真实 UI 任务先读取它，再展开方案或实现
 - 已通过方案包或 PRD 确认设计方向的，按确认方向执行，并以 `plan.md` / PRD 中的 UI 决策为最高优先级
-- 已激活项目且当前任务属于整页新建、设计系统改造、或跨多个组件的视觉重做，但 `.helloagents/DESIGN.md` 不存在时，先按 `templates/DESIGN.md` 创建最小设计契约（至少覆盖产品表面、设计 token、组件与模式、状态覆盖、无障碍要求、禁止事项），再继续大规模实现
+- 已激活项目且当前任务属于整页新建、设计系统改造、或跨多个组件的视觉重做，但逻辑 `.helloagents/DESIGN.md` 不存在时，先按 `templates/DESIGN.md` 创建最小设计契约（至少覆盖产品表面、设计 token、组件与模式、状态覆盖、无障碍要求、禁止事项），再继续大规模实现
 - 未经方案包且无 `DESIGN.md` 的任务，基于以上规则，结合任务需求和项目上下文做出设计决策并执行
 
 ## 实现映射（进入编码前必须明确）
