@@ -31,11 +31,6 @@ function resolveStandbyHostRoot(host) {
 }
 
 function resolveReadRoot({ cwd, pkgRoot, host, settings }) {
-  const projectRoot = join(cwd, 'skills', 'helloagents');
-  if (existsSync(projectRoot)) {
-    return { source: 'project', root: projectRoot };
-  }
-
   if (settings.install_mode === 'standby') {
     const standbyRoot = resolveStandbyHostRoot(host);
     if (standbyRoot && existsSync(standbyRoot)) {
@@ -48,7 +43,7 @@ function resolveReadRoot({ cwd, pkgRoot, host, settings }) {
 
 function buildReadRootBlock(readRoot) {
   if (!readRoot?.root) return '';
-  return `## 当前 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(readRoot, null, 2)}\n\`\`\``;
+  return `## 本轮 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(readRoot, null, 2)}\n\`\`\``;
 }
 
 export function resolveCanonicalCommandSkill(skillName) {

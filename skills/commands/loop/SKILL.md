@@ -77,7 +77,7 @@ iteration	commit	metric	delta	guard	status	description
 ### Phase 7: Log
 - 追加一行到 results log
 - status: baseline / keep / discard / crash / no-op
-- 重写 `.helloagents/STATE.md`：保持主线目标=当前优化目标，并记录当前轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
+- 重写 `.helloagents/STATE.md`：保持主线目标=当前优化目标，并记录当前迭代轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
 
 ### Phase 8: Repeat
 - 如果 iterations > 0 且 current_iteration >= max_iterations → 输出总结并停止

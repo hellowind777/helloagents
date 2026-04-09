@@ -1,28 +1,28 @@
 ---
 name: hello-ui
-description: 已进入显式 UI 工作流、已激活项目的视觉变更、设计系统改造或需要视觉验收时使用；在通用 UI 内核之上补充项目契约消费、设计系统映射与视觉验证。
+description: 已进入显式 UI 工作流、已激活项目的视觉变更、设计系统改造或需要视觉验收时使用；在通用 UI 基线之上补充项目契约消费、设计系统映射与视觉验证。
 ---
 
-本 skill 不是 UI 质量的唯一来源。当前已加载 bootstrap 中的 UI 质量内核负责所有 UI 任务的基础水准；本 skill 在显式 UI 工作流和深度 UI 任务中，补充更强的契约执行、实现映射与视觉验收。
-`.helloagents/` 在本 skill 中表示逻辑项目空间：`.ralph-*.json` 等运行态证据保持项目本地；若 `project_store_mode=repo-shared`，`DESIGN.md` 与方案包按当前会话注入的项目知识/方案目录解析。
+本 skill 不是 UI 质量的唯一来源。当前已加载 bootstrap 中的 UI 质量基线负责所有 UI 任务的基础水准；本 skill 在显式 UI 工作流和深度 UI 任务中，补充更强的契约执行、实现映射与视觉验收。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`.ralph-*.json` 等运行态证据保持项目本地；若 `project_store_mode=repo-shared`，`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 适用边界
 已进入显式 UI 规划/实现/验证路径，或当前项目已激活且任务涉及整页新建、跨多个组件的视觉重做、设计系统改造、需要截图验收的界面任务时，读取本 skill。
-标准模式未激活项目中的普通 UI 请求，仍只受当前 bootstrap 的 UI 内核约束；修复 bug、调整文案、改业务逻辑等不涉及视觉变更的任务，不读取本 skill。在已有设计系统中工作时，保留已建立的模式、结构和视觉语言。
+标准模式未激活项目中的普通 UI 请求，仍只受当前 bootstrap 的 UI 质量基线约束；修复 bug、调整文案、改业务逻辑等不涉及视觉变更的任务，不读取本 skill。在已有设计系统中工作时，保留已建立的模式、结构和视觉语言。
 
 ## 设计契约优先级
 进入 UI 相关的规划、实现、验证时，按以下顺序做设计决策：
 1. 当前活跃方案包 `plan.md` 或 PRD 中已确认的 UI 决策
-2. 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析）
+2. `.helloagents/DESIGN.md`（按当前项目存储模式解析）
 3. 本 skill 的通用规则
-缺少上层 artifact 时，才直接依赖下层规则；不得用通用审美覆盖已确认的项目契约。
+缺少上层产物时，才直接依赖下层规则；不得用通用审美覆盖已确认的项目契约。
 
 ## 深层职责
 - 消费上游契约：把 `plan.md` / PRD / `DESIGN.md` 中已确认的 UI 决策视为强约束，而不是建议
-- 消费可选 UI contract：若 `contract.json` 启用 `ui.styleAdvisor`，复用 `.helloagents/.ralph-advisor.json` 留下设计方向复查证据；若启用 `ui.visualValidation`，用 `.helloagents/.ralph-visual.json` 留下视觉验收证据
+- 消费可选 UI 契约：若 `contract.json` 启用 `ui.styleAdvisor`，复用 `.helloagents/.ralph-advisor.json` 留下设计方向复查证据；若启用 `ui.visualValidation`，用 `.helloagents/.ralph-visual.json` 留下视觉验收证据
 - 映射到代码结构：明确 token 放在哪里、组件边界如何划分、状态组件如何组织、动效与主题如何落地
 - 做视觉验收闭环：优先使用截图/浏览器工具做桌面与移动端检查；没有工具时也要完成结构化视觉自检
-- 回写稳定决策：只把跨 feature 稳定成立的设计系统规则同步回逻辑 `.helloagents/DESIGN.md`，不要把一次性页面细节全部写成项目级契约
+- 回写稳定决策：只把跨 feature 稳定成立的设计系统规则同步回 `.helloagents/DESIGN.md`（按当前项目存储模式解析），不要把一次性页面细节全部写成项目级契约
 
 ## 深层设计 brief（编码前必须落定）
 
@@ -37,9 +37,9 @@ description: 已进入显式 UI 工作流、已激活项目的视觉变更、设
 7. 真实内容：使用真实文案、产品信息、项目上下文，不使用 Lorem ipsum 或泛化占位符。真实内容帮助做出更贴合上下文的设计决策。
 
 执行顺序要求：
-- 已激活项目且存在逻辑 `.helloagents/DESIGN.md` 时，进入真实 UI 任务先读取它，再展开方案或实现
+- 已激活项目且存在 `.helloagents/DESIGN.md`（按当前项目存储模式解析）时，进入真实 UI 任务先读取它，再展开方案或实现
 - 已通过方案包或 PRD 确认设计方向的，按确认方向执行，并以 `plan.md` / PRD 中的 UI 决策为最高优先级
-- 已激活项目且当前任务属于整页新建、设计系统改造、或跨多个组件的视觉重做，但逻辑 `.helloagents/DESIGN.md` 不存在时，先按 `templates/DESIGN.md` 创建最小设计契约（至少覆盖产品表面、设计 token、组件与模式、状态覆盖、无障碍要求、禁止事项），再继续大规模实现
+- 已激活项目且当前任务属于整页新建、设计系统改造、或跨多个组件的视觉重做，但 `.helloagents/DESIGN.md`（按当前项目存储模式解析）不存在时，先按 `templates/DESIGN.md` 创建最小设计契约（至少覆盖产品表面、设计 token、组件与模式、状态覆盖、无障碍要求、禁止事项），再继续大规模实现
 - 未经方案包且无 `DESIGN.md` 的任务，基于以上规则，结合任务需求和项目上下文做出设计决策并执行
 
 ## 实现映射（进入编码前必须明确）
@@ -218,8 +218,8 @@ Hero 区域：
 1. 截图渲染结果（桌面 + 移动端视口）
 2. 对照设计原则审查截图：构图是否完整？品牌感是否到位？配色是否一致？
 3. 发现问题 → 修复 → 再截图验证
-4. 若当前 contract 要求 `ui.visualValidation.required=true`，调用 `scripts/visual-state.mjs write` 写 `.helloagents/.ralph-visual.json`，记录 `reason`、`tooling`、`screensChecked`、`statesChecked`、`status` 与 `summary`
+4. 若当前契约要求 `ui.visualValidation.required=true`，调用 `scripts/visual-state.mjs write` 写 `.helloagents/.ralph-visual.json`，记录 `reason`、`tooling`、`screensChecked`、`statesChecked`、`status` 与 `summary`
 5. 确认截图与设计意图一致后才能报告完成
 
 无浏览器工具时，仔细审查生成的代码，确认样式、布局、动效的实现与设计意图一致。
-若当前 contract 要求 `ui.visualValidation.required=true`，仍需用结构化结论调用 `scripts/visual-state.mjs write` 写 `.helloagents/.ralph-visual.json`，并明确标记所用 tooling 与已检查的 screens / states。
+若当前契约要求 `ui.visualValidation.required=true`，仍需用结构化结论调用 `scripts/visual-state.mjs write` 写 `.helloagents/.ralph-visual.json`，并明确标记所用 tooling 与已检查的 screens / states。

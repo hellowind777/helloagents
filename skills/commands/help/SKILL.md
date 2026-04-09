@@ -18,7 +18,7 @@ Trigger: ~help
 | ~prd | 完整 PRD：头脑风暴式逐维度挖掘，生成现代产品需求文档 |
 | ~loop | 自主迭代优化：设定目标和指标，循环修改-验证-保留/回滚 |
 | ~wiki | 仅创建/同步项目知识库（`.helloagents/`） |
-| ~init | 完整初始化项目：知识库 + 项目级载体配置 |
+| ~init | 完整初始化项目：知识库 + 项目级规则文件配置 |
 | ~test | 为指定模块或最近变更编写完整测试 |
 | ~verify | 验证总入口：审查 + 运行验证命令 + 修复循环 |
 | ~commit | 规范化提交 + 知识库同步 |
@@ -32,7 +32,7 @@ Trigger: ~help
 
 ### 自动激活技能
 以下技能仅在全局模式或已激活项目中自动激活（例如执行过 `~wiki`、`~init`，或已处于项目级连续流程）。
-纯标准模式未激活项目不会自动触发这些深层技能；但涉及 UI 的任务仍受 UI 质量内核约束。
+纯标准模式未激活项目不会自动触发这些深层技能；但涉及 UI 的任务仍受 UI 质量基线约束。
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
 特定场景：hello-debug, hello-subagent, hello-write, hello-review

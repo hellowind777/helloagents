@@ -59,7 +59,7 @@ function buildConsolidateAction(recommendation) {
       phase: 'consolidate',
       mode: recommendation.mode,
       routeHint: recommendation.guidance,
-      gateHint: '交付门控：审查与验证证据已满足；先写 `.helloagents/.ralph-closeout.json` 记录需求覆盖与交付清单，再完成 STATE.md / 归档后才可交付。',
+      gateHint: '交付把关：审查与验证证据已满足；先写 `.helloagents/.ralph-closeout.json` 记录需求覆盖与交付清单，再完成 STATE.md / 归档后才可交付。',
     }
   }
 
@@ -67,7 +67,7 @@ function buildConsolidateAction(recommendation) {
     phase: 'consolidate',
     mode: recommendation.mode || 'ready',
     routeHint: recommendation.guidance,
-    gateHint: '交付门控：当前已具备 closeout evidence；完成 STATE.md、知识沉淀与归档后即可交付。',
+    gateHint: '交付把关：当前已具备收尾证据；完成 STATE.md、知识沉淀与归档后即可交付。',
   }
 }
 
@@ -88,7 +88,7 @@ function buildVerifyAction(plan, verifyMode) {
       phase: 'verify',
       mode: verifyMode.mode,
       routeHint: verifyMode.guidance,
-      gateHint: `交付门控：进入 CONSOLIDATE 前，必须先完成 reviewer / hello-review 范围审查，再完成 tester / hello-verify 全量验证，并留下最新验证证据；两步都通过后才可交付。${gateSuffix}`.trim(),
+      gateHint: `交付把关：进入 CONSOLIDATE 前，必须先完成 reviewer / hello-review 范围审查，再完成 tester / hello-verify 全量验证，并留下最新验证证据；两步都通过后才可交付。${gateSuffix}`.trim(),
     }
   }
   if (verifyMode.mode === 'metadata-first') {
@@ -97,8 +97,8 @@ function buildVerifyAction(plan, verifyMode) {
       mode: verifyMode.mode,
       routeHint: verifyMode.guidance,
       gateHint: plan.contractIssues.length > 0
-        ? '交付门控：当前还不能进入 CONSOLIDATE；先补齐 `contract.json` 中的 `verifyMode`、`reviewerFocus`、`testerFocus`，再进入 reviewer / tester。'
-        : '交付门控：当前还不能进入 CONSOLIDATE；先补齐 tasks.md 中每个任务的“涉及文件”“完成标准”和“验证方式”，再进入 reviewer / tester。',
+        ? '交付把关：当前还不能进入 CONSOLIDATE；先补齐 `contract.json` 中的 `verifyMode`、`reviewerFocus`、`testerFocus`，再进入 reviewer / tester。'
+        : '交付把关：当前还不能进入 CONSOLIDATE；先补齐 tasks.md 中每个任务的“涉及文件”“完成标准”和“验证方式”，再进入 reviewer / tester。',
     }
   }
 
@@ -106,7 +106,7 @@ function buildVerifyAction(plan, verifyMode) {
     phase: 'verify',
     mode: verifyMode.mode,
     routeHint: verifyMode.guidance,
-    gateHint: `交付门控：进入 CONSOLIDATE 前，先完成 tester / hello-verify 全量验证并留下最新验证证据，再针对失败点或关键边界补充 hello-review；确认通过后才可交付。${gateSuffix}`.trim(),
+    gateHint: `交付把关：进入 CONSOLIDATE 前，先完成 tester / hello-verify 全量验证并留下最新验证证据，再针对失败点或关键边界补充 hello-review；确认通过后才可交付。${gateSuffix}`.trim(),
   }
 }
 
@@ -124,13 +124,13 @@ export function buildDeliveryActionFromSnapshot(snapshot, cwd, recommendation = 
   if (recommendation.nextCommand === 'build') {
     return {
       phase: 'build',
-      gateHint: '交付门控：当前还不能报告完成；先回到 ~build 完成剩余任务，再进入 ~verify。',
+      gateHint: '交付把关：当前还不能报告完成；先回到 ~build 完成剩余任务，再进入 ~verify。',
     }
   }
   if (recommendation.nextCommand === 'plan') {
     return {
       phase: 'plan',
-      gateHint: '交付门控：当前还不能报告完成；先回到 ~plan 修复或补齐当前方案包，再进入 ~build / ~verify。',
+      gateHint: '交付把关：当前还不能报告完成；先回到 ~plan 修复或补齐当前方案包，再进入 ~build / ~verify。',
     }
   }
 
@@ -153,7 +153,7 @@ function buildPlanRecommendation(scopeLabel, plan, classification) {
       ? `${scopeLabel} "${plan.planName}" 仍不完整（${classification.details.join('；')}）。`
       : `${scopeLabel} "${plan.planName}" 尚未形成可执行任务清单。`,
     guidance: classification.status === 'incomplete'
-      ? '优先先走 ~plan 修复或补全当前方案包，再进入实现或验证；不要把不完整 artifact 直接当成可交付依据。'
+      ? '优先先走 ~plan 修复或补全当前方案包，再进入实现或验证；不要把不完整的结构化产物直接当成可交付依据。'
       : '先回到 ~plan 补齐 tasks.md 的原子任务，再进入实现、验证或收尾。',
   }
 }
@@ -180,7 +180,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd) {
       status: 'closed',
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
-      summary: `${scopeLabel} "${plan.planName}" 的任务已全部闭合，但验证 contract 仍未结构化。`,
+      summary: `${scopeLabel} "${plan.planName}" 的任务已全部闭合，但验证契约仍未结构化。`,
       guidance: closedPlanEvidence.verifyMode.guidance,
     }
   }
@@ -197,7 +197,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd) {
       status: 'closed',
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
-      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI contract 仍要求独立 advisor 复查与视觉验收。`,
+      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI 契约仍要求独立 advisor 复查与视觉验收。`,
       guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入 `.helloagents/.ralph-advisor.json`；再完成视觉验收并写入 `.helloagents/.ralph-visual.json`，记录 reason、tooling、screensChecked、statesChecked、status 与 summary；两项都通过后再进入 CONSOLIDATE。',
     }
   }
@@ -209,7 +209,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd) {
       status: 'closed',
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
-      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 contract 仍要求独立 advisor 复查。`,
+      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前契约仍要求独立 advisor 复查。`,
       guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入 `.helloagents/.ralph-advisor.json` 记录复查原因、focus、来源与结论；advisor 通过后再进入 CONSOLIDATE。',
     }
   }
@@ -221,7 +221,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd) {
       status: 'closed',
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
-      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI contract 仍要求视觉验收。`,
+      summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI 契约仍要求视觉验收。`,
       guidance: '先在 ~verify 阶段完成视觉验收，并写入 `.helloagents/.ralph-visual.json` 记录 reason、tooling、screensChecked、statesChecked、status 与 summary；视觉验收通过后再进入 CONSOLIDATE。',
     }
   }
@@ -307,7 +307,7 @@ function buildBuildOrchestrationHint(plan) {
     return `编排提示：检测到可并行的开放任务；如需提速，可先读取 hello-subagent 再按 tasks.md 分派。任务A：${describeTask(pair[0])}；任务B：${describeTask(pair[1])}。`
   }
   if (openTasks.every((item) => item.files.length === 0)) {
-    return '编排提示：当前有多个开放任务，但 tasks.md 尚未写清 contract 元数据；考虑子代理并行前先补足文件路径、完成标准与验证方式。'
+    return '编排提示：当前有多个开放任务，但 tasks.md 尚未写清契约元数据；考虑子代理并行前先补足文件路径、完成标准与验证方式。'
   }
   return '编排提示：当前仍有多个开放任务，但文件范围存在重叠；暂不建议并行子代理，优先串行推进。'
 }

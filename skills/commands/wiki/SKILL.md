@@ -1,16 +1,16 @@
 ---
 name: ~wiki
-description: 初始化或同步项目知识库（仅 `.helloagents/`，不写项目根载体）
+description: 初始化或同步项目知识库（仅 `.helloagents/`）
 policy:
   allow_implicit_invocation: false
 ---
 Trigger: ~wiki
 
-`~wiki` 是用户显式命令，用于只创建、补全或同步项目知识库，不创建项目根 `AGENTS.md` / `CLAUDE.md` / `.gemini/GEMINI.md`，也不创建项目级 `skills/helloagents` symlink。适用于标准模式下希望保留项目目录为“非载体项目”，但仍希望当前项目拥有 `.helloagents/` 激活目录、`STATE.md` 和知识沉淀文件的场景。
+`~wiki` 是用户显式命令，仅创建、补全或同步项目知识库。
 
 `~wiki` 是显式知识库命令，不受 `kb_create_mode` 限制。
-执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 重写规则按当前已加载 bootstrap 执行；本命令只补充“只写知识库、不写项目根载体”的边界。
-`.helloagents/` 在本 skill 中表示逻辑项目空间：`STATE.md` 保持项目本地；若 `project_store_mode=repo-shared`，`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`DESIGN.md`、`modules/` 改按当前会话注入的项目知识目录写入。
+执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 重写规则按当前已加载 bootstrap 执行；不写入项目级规则文件，也不创建项目级原生 skills 链接。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 保持项目本地；若 `project_store_mode=repo-shared`，`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`DESIGN.md`、`modules/` 改按当前上下文中已注入的项目知识目录写入。
 
 ## 流程
 
@@ -22,10 +22,8 @@ Trigger: ~wiki
    .helloagents/
    ```
 3. 明确不执行以下操作：
-   - 不创建或更新项目根 `AGENTS.md`
-   - 不创建或更新项目根 `CLAUDE.md`
-   - 不创建或更新 `.gemini/GEMINI.md`
-   - 不创建项目级 `skills/helloagents` symlink
+   - 不创建或更新项目级规则文件（`AGENTS.md`、`CLAUDE.md`、`.gemini/GEMINI.md`）
+   - 不创建项目级原生 skills 链接
 
 ### 阶段 2：知识库创建或补全（条件性）
 
@@ -33,7 +31,7 @@ Trigger: ~wiki
 - 有代码文件 → 执行完整知识库创建/补全（下方流程）
 - 空项目 → 保留 `.helloagents/` 和 `STATE.md`，告知用户“项目为空，其余知识文件将在后续开发或首次编码任务中补全”
 
-知识库创建/补全流程（逻辑写入 `.helloagents/`；`project_store_mode=repo-shared` 时实际落在共享知识目录）：
+知识库创建/补全流程（统一写入 `.helloagents/` 对应的项目级存储路径；`project_store_mode=repo-shared` 时实际落在共享知识目录）：
 1. 按 templates/ 目录的模板格式，分析项目代码库后创建或补全：
    - context.md — 按 templates/context.md 格式，填入项目概述、技术栈、架构、目录结构、模块链接
    - guidelines.md — 按 templates/guidelines.md 格式，从现有代码推断编码约定
@@ -56,4 +54,4 @@ commands:
 - `STATE.md` 按当前任务状态重写，不追加历史；它只记录当前知识库链路的恢复快照，不承担项目主线的唯一记忆
 - 知识库文件缺失时补全，已存在时按模板增量更新
 - `.gitignore` 只追加缺失行
-- 永不写入项目根载体文件，也不创建项目级 `skills/helloagents` symlink
+- 永不写入项目级规则文件，也不创建任何项目级原生 skills 链接

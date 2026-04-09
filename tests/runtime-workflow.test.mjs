@@ -252,5 +252,5 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前建议下一阶段：CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /任务与交付证据已闭合/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /closeout evidence/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /收尾证据/)
 })
