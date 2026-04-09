@@ -23,7 +23,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const claudeMd = readText(join(home, '.claude', 'CLAUDE.md'))
   assert.match(claudeMd, /HELLOAGENTS_START/)
-  assert.match(claudeMd, /skills\/helloagents\/skills\/commands/)
+  assert.match(claudeMd, /当前宿主 home 目录下的 `helloagents\/` 链接作为 `{HELLOAGENTS_READ_ROOT}`/)
   assert.match(claudeMd, /# Claude custom/)
 
   const geminiMd = readText(join(home, '.gemini', 'GEMINI.md'))

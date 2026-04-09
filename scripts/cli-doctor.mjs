@@ -140,8 +140,8 @@ function inspectClaudeDoctor(settings) {
     issues.push(buildDoctorIssue('tracked-mode-mismatch', '记录模式与检测模式不一致', 'Tracked mode does not match detected mode'))
   }
   if (detectedMode === 'standby') {
-    if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 载体缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
-    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 载体内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
+    if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
+    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
     if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
@@ -160,7 +160,7 @@ function inspectClaudeDoctor(settings) {
     issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
   }
   if (trackedMode !== 'none' && detectedMode === 'none' && trackedMode !== 'global') {
-    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应受管痕迹', 'Config says this CLI is installed, but no managed artifacts were detected'))
+    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应的受管文件或配置', 'Config says this CLI is installed, but no managed artifacts were detected'))
   }
 
   const status = summarizeDoctorStatus(issues, { host, trackedMode, detectedMode })
@@ -188,8 +188,8 @@ function inspectGeminiDoctor(settings) {
     issues.push(buildDoctorIssue('tracked-mode-mismatch', '记录模式与检测模式不一致', 'Tracked mode does not match detected mode'))
   }
   if (detectedMode === 'standby') {
-    if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 载体缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
-    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 载体内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
+    if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
+    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
     if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
@@ -207,7 +207,7 @@ function inspectGeminiDoctor(settings) {
     issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
   }
   if (trackedMode !== 'none' && detectedMode === 'none' && trackedMode !== 'global') {
-    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应受管痕迹', 'Config says this CLI is installed, but no managed artifacts were detected'))
+    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应的受管文件或配置', 'Config says this CLI is installed, but no managed artifacts were detected'))
   }
 
   const status = summarizeDoctorStatus(issues, { host, trackedMode, detectedMode })
@@ -215,20 +215,20 @@ function inspectGeminiDoctor(settings) {
 }
 
 function appendCodexStandbyIssues(issues, checks) {
-  if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 载体缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
-  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 载体内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
+  if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
+  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
   if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
   if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('standby-model-instructions-missing', 'standby config 缺少受管 model_instructions_file', 'Standby config is missing the managed model_instructions_file'))
   if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('standby-model-instructions-drift', 'standby model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Standby model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
   if (!checks.codexNotify) issues.push(buildDoctorIssue('standby-notify-missing', 'standby notify 配置缺失', 'Standby notify configuration is missing'))
   if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 路径未指向当前包根目录', 'Standby notify path does not point to the current package root'))
   if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled || checks.globalNotifyPath) {
-    issues.push(buildDoctorIssue('standby-global-residue', 'standby 模式下仍残留 global 插件链路', 'Global plugin artifacts still remain while Codex is in standby mode'))
+    issues.push(buildDoctorIssue('standby-global-residue', 'standby 模式下仍残留 global 插件文件或配置', 'Global plugin artifacts still remain while Codex is in standby mode'))
   }
 }
 
 function appendCodexGlobalIssues(issues, checks, pluginVersion, cacheVersion) {
-  if (!checks.carrierMarker) issues.push(buildDoctorIssue('global-home-carrier-missing', 'global `~/.codex/AGENTS.md` 缺少 HelloAGENTS 载体', 'Global `~/.codex/AGENTS.md` is missing the HelloAGENTS carrier'))
+  if (!checks.carrierMarker) issues.push(buildDoctorIssue('global-home-carrier-missing', 'global `~/.codex/AGENTS.md` 缺少 HelloAGENTS 规则内容', 'Global `~/.codex/AGENTS.md` is missing the HelloAGENTS carrier'))
   if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('global-home-carrier-drift', 'global `~/.codex/AGENTS.md` 与当前 bootstrap.md 不一致', 'Global `~/.codex/AGENTS.md` differs from the current bootstrap.md'))
   if (!checks.pluginRoot) issues.push(buildDoctorIssue('global-plugin-root-missing', 'global 插件根目录缺失', 'Global plugin root is missing'))
   if (!checks.pluginCache) issues.push(buildDoctorIssue('global-plugin-cache-missing', 'global 插件缓存目录缺失', 'Global plugin cache directory is missing'))
@@ -301,7 +301,7 @@ function inspectCodexDoctor(settings) {
     issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
   }
   if (trackedMode !== 'none' && detectedMode === 'none') {
-    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应受管痕迹', 'Config says this CLI is installed, but no managed artifacts were detected'))
+    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应的受管文件或配置', 'Config says this CLI is installed, but no managed artifacts were detected'))
   }
   if (!checks.pluginVersionMatch && !pluginVersion && detectedMode === 'global') {
     notes.push(runtime.msg('未读到 global 插件根目录版本信息', 'Global plugin root version was not readable'))

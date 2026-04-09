@@ -6,7 +6,7 @@
 
 <div align="center">
 
-**Quality-driven orchestration kernel for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist gating.**
+**Quality-driven workflow framework for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist-based quality checks.**
 
 [![Version](https://img.shields.io/badge/version-3.0.7-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
@@ -53,7 +53,7 @@
 
 Ever had an AI coding assistant that stops at "here's what you should do" instead of actually doing it? Or one that writes code but skips tests, ignores edge cases, and calls it done?
 
-HelloAGENTS fixes that. It's an orchestration layer that sits on top of your AI CLI and enforces quality at every step.
+HelloAGENTS fixes that. It's a workflow layer that sits on top of your AI CLI and enforces quality at every step.
 
 <table>
 <tr>
@@ -98,17 +98,17 @@ If the last version you used seriously was `v2.3.8`, this is not a minor update.
 | Dimension | v2.3.8 | Local `v3.0.7` |
 |-----------|--------|----------------|
 | **Implementation base** | Python package plus mixed scripts/rules | Pure Node.js + Markdown runtime built around `cli.mjs`, `bootstrap*.md`, `skills/`, and `scripts/` |
-| **Product shape** | More like a multi-CLI management tool plus prompt protocol bundle | More like a quality orchestration kernel for AI CLIs, centered on routing, gating, verification, and resumable execution |
+| **Product shape** | More like a multi-CLI management tool plus prompt protocol bundle | More like a quality workflow framework for AI CLIs, centered on routing, checks, verification, and resumable execution |
 | **Installation model** | pip / uv / npx / shell installers in parallel | npm-first; install the package, then deploy explicitly to Claude / Gemini / Codex |
 | **CLI strategy** | 6 targets with uneven capabilities | Focused on 3 primary surfaces: Claude Code, Gemini CLI, and Codex CLI |
-| **Workflow model** | R0/R1/R2 routing plus older design/develop semantics | ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE routed kernel |
+| **Workflow model** | R0/R1/R2 routing plus older design/develop semantics | ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE 6-stage workflow |
 | **Command surface** | 15 commands including `~exec`, `~rollback`, `~rlm`, `~validatekb` | 12 focused commands such as `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, and `~wiki` |
-| **Quality model** | More distributed rules, more reliance on prose | 14 auto-activated skills + checklist gating + Ralph Loop + structured evidence |
+| **Quality model** | More distributed rules, more reliance on prose | 14 auto-activated skills + checklist-based quality checks + Ralph Loop + verification records |
 | **Project state** | KB felt auxiliary | `.helloagents/` is now the activation boundary; `STATE.md`, plan packages, `DESIGN.md`, and `contract.json` anchor the workflow |
 | **KB storage** | Project-local only | Project-local by default, plus `project_store_mode=repo-shared` for sharing stable KB/plan assets across git worktrees |
 | **Codex integration** | Earlier compatibility layers and legacy paths | Standby = injected rules + local links; global = native local-plugin chain with less noise and drift |
 
-In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.7` is a real orchestration kernel that unifies quality rules, plan artifacts, verification evidence, and installation lifecycle into one operating model.
+In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.7` is a workflow framework that unifies quality rules, plan files, verification records, and installation lifecycle into one operating model.
 
 ## ✨ Core Features
 
@@ -132,7 +132,7 @@ Skills activate automatically based on what you're building — no configuration
 <td width="50%" valign="top">
 <img src="./readme_images/03-feature-icon-workflow.svg" width="48" align="left">
 
-**📋 Checklist Gate Control**
+**📋 Checklist-Based Delivery Checks**
 
 After coding, HelloAGENTS collects delivery checklists from all activated skills and verifies each item before reporting completion.
 
@@ -156,7 +156,7 @@ L1 blocks destructive commands (`rm -rf /`, `git push --force`, `DROP DATABASE`)
 
 **⚡ Structured Workflow**
 
-Simple tasks stay fast. Complex tasks use a routed kernel workflow: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE, with explicit command lanes for ideation, planning, implementation, and validation.
+Simple tasks stay fast. Complex tasks use a 6-stage workflow: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE, with explicit command lanes for ideation, planning, implementation, and validation.
 
 **Your gain:** proportional effort — quick tasks stay fast, complex tasks get full process.
 
@@ -166,11 +166,11 @@ Simple tasks stay fast. Complex tasks use a routed kernel workflow: ROUTE/TIER �
 <td width="50%" valign="top">
 <img src="./readme_images/02-feature-icon-installer.svg" width="48" align="left">
 
-**🧠 Structured Plan Artifacts**
+**🧠 Structured Plan Files**
 
 Complex tasks no longer rely on one paragraph of planning prose. They land as `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, `STATE.md`, and `DESIGN.md` when needed.
 
-**Your gain:** routing, implementation, verification, and closeout all move around the same set of facts instead of drifting across free-form summaries.
+**Your gain:** routing, implementation, verification, and closeout all work from the same plan files instead of drifting across free-form summaries.
 
 </td>
 <td width="50%" valign="top">
@@ -180,7 +180,7 @@ Complex tasks no longer rely on one paragraph of planning prose. They land as `r
 
 By default, KB and plan packages stay in the project's local `.helloagents/`. If you work with multiple worktrees, `project_store_mode=repo-shared` moves the stable project memory to `~/.helloagents/projects/<repo-key>/`.
 
-**Your gain:** local runtime isolation stays intact while stable KB and plan assets stop fragmenting across worktrees.
+**Your gain:** local runtime isolation stays intact while stable KB and plan files stop fragmenting across worktrees.
 
 </td>
 </tr>
@@ -308,7 +308,7 @@ HelloAGENTS touches different files depending on mode. The write/cleanup rules a
 
 ### Update / reinstall / branch-switch behavior
 
-- **Standby mode** keeps scripts, skills, templates, and hooks on `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents` symlinks, so linked package files reflect local changes immediately. The injected carrier files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) are still snapshots and must be refreshed after bootstrap or branch changes.
+- **Standby mode** keeps scripts, skills, templates, and hooks on `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents` symlinks, so linked package files reflect local changes immediately. The injected rules files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) are still snapshots and must be refreshed after bootstrap or branch changes.
 - **Codex global mode** uses copied runtime files. Re-running `helloagents --global` refreshes both `~/plugins/helloagents/` and the Codex cache copy.
 - Re-running the current mode command is supported intentionally: `helloagents --standby` and `helloagents --global` both act as **switch-or-refresh** commands.
 - For deterministic manual cleanup, run `helloagents cleanup` before `npm uninstall -g helloagents`.
@@ -323,7 +323,7 @@ All commands run inside AI chat with the `~` prefix:
 | Command | Purpose |
 |---------|---------|
 | `~idea` | Lightweight ideation — compare directions and explore options without writing files |
-| `~auto` | Automatic orchestration — picks the main lane, keeps chaining into build / verify / closeout, and reuses an active plan package before reopening a new lane |
+| `~auto` | End-to-end execution — picks the main lane, keeps chaining into build / verify / closeout, and reuses an active plan package before reopening a new lane |
 | `~plan` | Structured planning — requirement gathering + solution convergence + plan package |
 | `~build` | Execution workflow — implement from the current request or an existing plan package |
 | `~prd` | Complete PRD — 13-dimension brainstorm-style exploration, generates product requirements |
@@ -341,7 +341,7 @@ All commands run inside AI chat with the `~` prefix:
 | Command | Purpose |
 |---------|---------|
 | `~wiki` | Create or sync the project knowledge base only (`.helloagents/`) |
-| `~init` | Full project bootstrap: KB + project-local carrier files |
+| `~init` | Full project bootstrap: KB + project-level rule files |
 | `~commit` | Generate conventional commit message + KB sync |
 | `~clean` | Archive completed plans, clean temp files |
 | `~help` | Show all commands and current config |
@@ -379,7 +379,7 @@ Only include keys you want to override — missing keys use defaults.
 | `ralph_loop_enabled` | `true` | Auto-run verification after task completion |
 | `guard_enabled` | `true` | Block dangerous commands |
 | `kb_create_mode` | `1` | `0`=off, `1`=auto on coding tasks in activated projects or global mode, `2`=always in activated projects or global mode |
-| `project_store_mode` | `"local"` | `"local"` = keep KB/plan files in project-local `.helloagents/`; `"repo-shared"` = keep local `.helloagents/` only for activation/STATE/runtime artifacts and move KB/plan files to `~/.helloagents/projects/<repo-key>/` |
+| `project_store_mode` | `"local"` | `"local"` = keep KB/plan files in project-local `.helloagents/`; `"repo-shared"` = keep local `.helloagents/` only for activation/STATE/runtime files and move KB/plan files to `~/.helloagents/projects/<repo-key>/` |
 | `commit_attribution` | `""` | Empty = no attribution. Set text to append to commit messages |
 | `install_mode` | `"standby"` | `"standby"` = per-project activation (lite rules), `"global"` = full rules for all projects |
 
@@ -425,21 +425,21 @@ helloagents --standby
 
 ## ⚙️ How It Works
 
-**Short version:** HelloAGENTS selects execution depth based on task type, risk, and project state. In standby mode, unactivated projects keep a lightweight rule set: safety, completion constraints, a compact quality floor, and explicit `~command` lanes. Once the project is activated through `.helloagents/`, or when global mode is enabled, HelloAGENTS switches to the full routed kernel workflow with explicit ideation, planning, build, verification, and consolidation stages.
+**Short version:** HelloAGENTS selects execution depth based on task type, risk, and project state. In standby mode, unactivated projects keep a lightweight rule set: safety, completion constraints, a compact quality floor, and explicit `~command` lanes. Once the project is activated through `.helloagents/`, or when global mode is enabled, HelloAGENTS switches to the full 6-stage workflow with explicit ideation, planning, build, verification, and consolidation stages.
 
-**The routed 6-stage kernel:**
+**The 6-stage workflow:**
 
 1. **ROUTE / TIER** — Decide whether the task belongs in `~idea`, `~plan`, `~build`, `~verify`, `~prd`, or `~auto`
 2. **SPEC** — Clarify goals, constraints, and success criteria
-3. **PLAN** — Mark required quality skills and prepare artifacts such as `requirements.md`, `plan.md`, and `tasks.md`
+3. **PLAN** — Mark required quality skills and prepare plan files such as `requirements.md`, `plan.md`, and `tasks.md`
 4. **BUILD** — Implement with TDD (test → code → refactor), verify incrementally
 5. **VERIFY** — Run Ralph Loop, review diffs when needed, and collect delivery checklists
-6. **CONSOLIDATE** — Update `STATE.md`, sync KB artifacts, and archive completed plan packages
+6. **CONSOLIDATE** — Update `STATE.md`, sync KB files, and archive completed plan packages
 
 **Delivery Tier:**
 - `T0` — read-only exploration and idea comparison
 - `T1` — low-risk focused fixes or explicit verification
-- `T2` — multi-file features, new projects, or work that needs structured artifacts
+- `T2` — multi-file features, new projects, or work that needs structured files
 - `T3` — high-risk or irreversible chains such as auth, security, payment, database, or production release work
 
 **Routing rules:**
@@ -449,9 +449,9 @@ helloagents --standby
 - Review / validation requests → `~verify`
 
 **Quality rules and skills by task type:**
-- UI / frontend / visual interaction work always follows the active bootstrap carrier's shared UI kernel
+- UI / frontend / visual interaction work always follows the active bootstrap's UI quality baseline
 - In activated projects, global mode, or explicit UI workflow commands, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation
-- When a UI `contract.json` explicitly asks for heavier UI assurance, HelloAGENTS keeps the default path light and only then adds optional `.helloagents/.ralph-advisor.json` and `.helloagents/.ralph-visual.json` evidence
+- When a UI `contract.json` explicitly asks for heavier UI assurance, HelloAGENTS keeps the default path light and only then adds optional `.helloagents/.ralph-advisor.json` and `.helloagents/.ralph-visual.json` records
 - Touching API endpoints? → `hello-api` activates (REST conventions, validation, error format)
 - Any code change? → `hello-test`, `hello-verify`, `hello-review` activate
 
@@ -461,12 +461,12 @@ HelloAGENTS supports two installation modes with different installation methods:
 
 | Mode | Install Method | Rules | Skills | Best For |
 |------|---------------|-------|--------|----------|
-| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules with compact quality floor, shared UI kernel, safety, and completion constraints) | `~command` on demand; before activation, UI tasks still follow the shared UI kernel; after `.helloagents/`, the full workflow activates | Selective use, keeping other projects unaffected |
+| **Standby** (default) | `helloagents install <target> --standby` or `helloagents install --all --standby` | `bootstrap-lite.md` (lite rules with compact quality floor, UI quality baseline, safety, and completion constraints) | `~command` on demand; before activation, UI tasks still follow the UI quality baseline; after `.helloagents/`, the full workflow activates | Selective use, keeping other projects unaffected |
 | **Global** | Manual plugins for Claude/Gemini; native local-plugin auto-install for Codex | `bootstrap.md` (full rules) | 14 skills auto-activate | All-in on HelloAGENTS across every project |
 
-Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; for Codex, HelloAGENTS also writes a managed `model_instructions_file` in `~/.codex/config.toml` that points to the synced `~/.codex/AGENTS.md`, so the same home carrier becomes Codex's base instructions override. Cleanup restores the user's original `model_instructions_file` value. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) plus the same `~/.codex/AGENTS.md` home baseline, still without plugin hooks.
+Standby mode injects rules into `~/.claude/CLAUDE.md`, `~/.gemini/GEMINI.md`, and `~/.codex/AGENTS.md`; for Codex, HelloAGENTS also writes a managed `model_instructions_file` in `~/.codex/config.toml` that points to the synced `~/.codex/AGENTS.md`, so the same home rules file becomes Codex's base instructions override. Cleanup restores the user's original `model_instructions_file` value. Each CLI also gets a `helloagents` package-root symlink. Claude Code and Gemini still use hooks where their host surfaces support quiet injection well. Codex deliberately does **not** enable HelloAGENTS hooks by default: the latest pre-source shows hook lifecycle output in TUI and does not honor `suppressOutput` as a true silent injection path, so Codex relies on the injected rules file plus the local symlink/native plugin layout instead. In global mode, Claude Code uses plugin hooks from `.claude-plugin/plugin.json`, Gemini loads `bootstrap.md` via `contextFileName` plus extension hooks, and Codex uses the native local-plugin chain (marketplace + local plugin root + cache + plugin enablement in `config.toml`) plus the same `~/.codex/AGENTS.md` home baseline, still without plugin hooks.
 
-In standby mode, `.helloagents/` is the activation boundary. Before activation, the lite carrier does **not** run the full 6-stage kernel or semantic auto-routing; it keeps the lightweight execution rules, explicit `~command` entry points, and minimum quality/completion guardrails. Once `.helloagents/` exists, the active project switches to the full project workflow and `bootstrap.md` becomes the runtime source of truth.
+In standby mode, `.helloagents/` is the activation boundary. Before activation, the lite rules file does **not** run the full 6-stage workflow or semantic auto-routing; it keeps the lightweight execution rules, explicit `~command` entry points, and minimum quality/completion guardrails. Once `.helloagents/` exists, the active project switches to the full project workflow and `bootstrap.md` becomes the runtime rules source.
 
 Bulk switch via CLI: `helloagents --global` or `helloagents --standby`
 
@@ -482,10 +482,10 @@ Re-running the same mode command is also valid. It refreshes the current mode's 
 | `~plan` | Interactive planning only, generates a plan package | Want to review the plan before coding |
 | `~build` | Implementation workflow from the current task or existing plan package | Requirement is clear and you want execution |
 | `~verify` | Verification / review workflow | Want audit, checks, and fix loops |
-| `~auto` | Automatic orchestration across the lanes above, continuing until delivery unless blocked | Want HelloAGENTS to choose the right path end-to-end |
+| `~auto` | End-to-end execution across the lanes above, continuing until delivery unless blocked | Want HelloAGENTS to choose the right path end-to-end |
 | `~prd` | 13-dimension PRD generation | Need comprehensive product requirements |
 
-Typical pattern: `~idea` first to compare directions, then `~plan` to lock a solution, then `~build`, then `~verify`. Or just `~auto` for one-shot orchestration. If the project already has an active plan package, `~auto` should reuse that workflow state before reopening ideation or planning. For UI work, the decision priority is always `plan.md` / PRD UI decisions → `DESIGN.md` → generic UI rules.
+Typical pattern: `~idea` first to compare directions, then `~plan` to lock a solution, then `~build`, then `~verify`. Or just `~auto` for one-shot end-to-end execution. If the project already has an active plan package, `~auto` should reuse that workflow state before reopening ideation or planning. For UI work, the decision priority is always `plan.md` / PRD UI decisions → `DESIGN.md` → generic UI rules.
 
 ### Quality Verification (Ralph Loop)
 
@@ -493,13 +493,13 @@ After every task, Ralph Loop auto-runs your project's verification commands:
 - Priority: logical `.helloagents/verify.yaml` (`project_store_mode=repo-shared` resolves it from the shared project store) → `package.json` scripts → auto-detected
 - All pass? → Collect skill checklists → Verify → Done
 - Any fail? → Reflect → Fix → Re-run (circuit breaker after 3 failures)
-- Completion is also held back if the active plan package still has open tasks, missing required artifacts, or unreplaced template placeholders
+- Completion is also held back if the active plan package still has open tasks, missing required plan files, or unreplaced template placeholders
 
 ### Knowledge Base (`.helloagents/`)
 
-`~wiki` creates or syncs the project knowledge base only. `~init` is the fuller bootstrap: it also writes project-local carrier files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes the project `skills/helloagents` link, and appends the related ignore rules. In standby mode, the presence of the local `.helloagents/` is what promotes the current project into the full project workflow; project-local carrier files are optional.
+`~wiki` creates or syncs the project knowledge base only. `~init` is the fuller bootstrap: it also writes project-level rule files (`AGENTS.md`, `CLAUDE.md`, `.gemini/GEMINI.md`), refreshes host-native project skill links, and appends the related ignore rules. In standby mode, the presence of the local `.helloagents/` is what promotes the current project into the full project workflow; project-level rule files are optional.
 
-By default, KB and plan files live in the project's local `.helloagents/`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` directory keeps only the activation signal, `STATE.md`, and runtime artifacts such as `.ralph-*`, while `context.md`, `guidelines.md`, `DESIGN.md`, `verify.yaml`, `modules/`, `plans/`, and `archive/` move to `~/.helloagents/projects/<repo-key>/` so multiple worktrees of the same git repo can share stable project memory.
+By default, KB and plan files live in the project's local `.helloagents/`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` directory keeps only the activation signal, `STATE.md`, and runtime files such as `.ralph-*`, while `context.md`, `guidelines.md`, `DESIGN.md`, `verify.yaml`, `modules/`, `plans/`, and `archive/` move to `~/.helloagents/projects/<repo-key>/` so multiple worktrees of the same git repo can share stable project memory.
 
 `STATE.md` is a project-level recovery snapshot, not a universal memory file for every interaction. It is created and continuously updated for long-running project workflows such as `~wiki`, `~init`, `~plan`, `~build`, `~auto`, `~prd`, and `~loop`; updated when already present for verification/review style tasks; and intentionally not created for one-off read-only interactions such as `~help`.
 
@@ -543,7 +543,7 @@ The test suite validates:
 - Claude/Gemini/Codex config file merge, restore, and cleanup behavior
 - Codex local-plugin refresh after local branch or file changes
 - runtime inject/route/guard/Ralph Loop chains
-- cleanup when Codex global artifacts exist but `~/.codex/` is already gone
+- cleanup when Codex global files exist but `~/.codex/` is already gone
 
 ## ❓ FAQ
 
@@ -601,7 +601,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 <details>
 <summary><strong>Q: Where does project knowledge go?</strong></summary>
 
-**A:** By default, in the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` keeps only the activation signal, `STATE.md`, and `.ralph-*` runtime artifacts, while KB and plan files move to `~/.helloagents/projects/<repo-key>/`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
+**A:** By default, in the project-local `.helloagents/` directory. It can be created by `~wiki` (KB only) or `~init` (full project bootstrap), then auto-synced on code changes according to `kb_create_mode`. If `project_store_mode = "repo-shared"`, the local `.helloagents/` keeps only the activation signal, `STATE.md`, and `.ralph-*` runtime files, while KB and plan files move to `~/.helloagents/projects/<repo-key>/`. `STATE.md` is used as a concise recovery snapshot for long-running workflows, not as a catch-all memory file for every interaction.
 </details>
 
 <details>
@@ -721,35 +721,35 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 ### v3.0.7 (current)
 
 **What the current line now delivers relative to `v2.3.8`:**
-- ✨ Full rewrite from a Python package to a Node.js/Markdown orchestration kernel, including install flow, runtime injection, skill system, and verification chain
-- ✨ Replaced the older layered routing / design-develop model with one routed kernel: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
+- ✨ Full rewrite from a Python package to a Node.js/Markdown workflow framework, including install flow, runtime injection, skill system, and verification chain
+- ✨ Replaced the older layered routing / design-develop model with one 6-stage workflow: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
 - ✨ Re-centered the command surface around `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, and `~wiki`, plus 14 auto-activated quality skills
-- ✨ Turned project artifacts into first-class workflow facts: `STATE.md`, `DESIGN.md`, `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, and `.ralph-*` evidence
+- ✨ Turned project files into first-class workflow records: `STATE.md`, `DESIGN.md`, `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, and `.ralph-*` records
 - ✨ Rebuilt installation around standby/global dual-mode deployment; Codex now uses the native local-plugin chain while Claude/Gemini keep host-native integration
-- ✨ Added `project_store_mode=repo-shared`, so multiple worktrees of one git repo can share stable KB and plan assets while local `.helloagents/` still isolates activation and runtime state
+- ✨ Added `project_store_mode=repo-shared`, so multiple worktrees of one git repo can share stable KB and plan files while local `.helloagents/` still isolates activation and runtime state
 
 ### v3.0.4
 
 **Standby and runtime boundaries:**
-- 🔧 Clarified the activation boundary relative to `v3.0.3`: the full 6-stage kernel stays in `bootstrap.md`, while `bootstrap-lite.md` is treated as the standby carrier before project activation
+- 🔧 Clarified the activation boundary relative to `v3.0.3`: the full 6-stage workflow stays in `bootstrap.md`, while `bootstrap-lite.md` is treated as the standby rules file before project activation
 - ✨ Solidified standby, unactivated projects with a compact quality floor so lightweight mode still keeps modern stack, performance, and UI-quality baselines
 - 🔧 Refined bootstrap terminology and runtime wording for more precise, professional guidance without changing the existing guardrail model
 
 ### v3.0.3
 
 **Workflow and KB activation:**
-- ✨ Added `~wiki` for creating or syncing `.helloagents/` without writing project-local carrier files
-- 🔧 Clarified the activation boundary: in standby mode, `.helloagents/` is the actual project activation signal; project-local carrier files remain optional and belong to `~init`
+- ✨ Added `~wiki` for creating or syncing `.helloagents/` without writing project-level rule files
+- 🔧 Clarified the activation boundary: in standby mode, `.helloagents/` is the actual project activation signal; project-level rule files remain optional and belong to `~init`
 - 🔧 Refined `kb_create_mode` wording across bootstrap, help text, and README so it only describes sync timing inside activated projects or global mode
 - 🧪 Added routing coverage for `~wiki` and kept standby `.helloagents/` activation behavior under test
 
 ### v3.0.2
 
 **Fixes and verification:**
-- 🔧 Removed the Codex-only static runtime-context block that had been reintroduced into generated `AGENTS.md` carriers in standby/global installs
-- 🔧 Re-checked Claude/Gemini standby/global static carriers and confirmed they do not inject the same deprecated runtime-context rule block
+- 🔧 Removed the Codex-only static runtime-context block that had been reintroduced into generated `AGENTS.md` rules files in standby/global installs
+- 🔧 Re-checked Claude/Gemini standby/global static rules files and confirmed they do not inject the same deprecated runtime-context rule block
 - 🔧 Updated Codex installation docs to match the current `model_instructions_file -> ~/.codex/AGENTS.md` path and the actual no-hooks behavior
-- 🧪 Added regression assertions to ensure Codex standby/global carriers no longer contain the removed runtime-context prefix
+- 🧪 Added regression assertions to ensure Codex standby/global rules files no longer contain the removed runtime-context prefix
 
 ### v3.0.1
 
@@ -757,8 +757,8 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - 🔧 `STATE.md` recovery rules are tightened: update on key decision changes, rewrite immediately when long-running work makes the snapshot stale, and confirm sync before host-driven compaction/recovery stages
 - 🔧 Codex cleanup now removes empty `~/.agents/plugins/marketplace.json` residue during config restore
 - 🔧 Scoped `update` continues to reuse the detected host mode even when tracked config is stale, matching the intended `helloagents update <cli>` behavior
-- 🔧 Standby branch/bootstrap refresh semantics are now documented precisely: symlinked package files update immediately, while injected carrier files refresh on `install` / `update` / mode-refresh commands
-- 🧪 Added lifecycle coverage for standby carrier refresh, stale-mode inference, empty Codex marketplace cleanup, and version-agnostic npm pack testing
+- 🔧 Standby branch/bootstrap refresh semantics are now documented precisely: symlinked package files update immediately, while injected rules files refresh on `install` / `update` / mode-refresh commands
+- 🧪 Added lifecycle coverage for standby rules-file refresh, stale-mode inference, empty Codex marketplace cleanup, and version-agnostic npm pack testing
 
 ### v3.0.0 🎉
 
@@ -770,7 +770,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 **New Features:**
 - ✨ 14 auto-activated quality skills: hello-ui, hello-api, hello-security, hello-test, hello-verify, hello-errors, hello-perf, hello-data, hello-arch, hello-debug, hello-subagent, hello-review, hello-write, hello-reflect
 - ✨ 3 supported CLIs: Claude Code (plugin/marketplace), Gemini CLI (extension), Codex CLI (npm)
-- ✨ Checklist gate control: all activated skills must pass delivery checklist before task completion
+- ✨ Checklist-based delivery checks: all activated skills must pass the delivery checklist before task completion
 - ✨ `~prd` command: 13-dimension brainstorm-style PRD framework
 - ✨ `~loop` command: autonomous iteration optimization with metric tracking and git-based rollback
 - ✨ `~verify` command: auto-detect and run all verification commands
@@ -779,11 +779,11 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 - ✨ Flow state management (`STATE.md`): recovery snapshot for compaction/resume handoff (≤70 lines)
 - ✨ Design system generation (`DESIGN.md`): auto-created for UI projects as a project-level contract
 - ✨ Plan package system: `requirements.md` + `plan.md` + `tasks.md` + `contract.json`
-- ✨ Optional advisor contract/evidence: only for T3 / UI / high-risk flows, via `contract.json` + `.helloagents/.ralph-advisor.json`
-- ✨ Optional visual validation evidence: only when the UI contract explicitly requires it, via `contract.json` + `.helloagents/.ralph-visual.json`
+- ✨ Optional advisor contract/records: only for T3 / UI / high-risk flows, via `contract.json` + `.helloagents/.ralph-advisor.json`
+- ✨ Optional visual validation records: only when the UI contract explicitly requires it, via `contract.json` + `.helloagents/.ralph-visual.json`
 
 **Architecture:**
-- 📦 Routed 6-stage kernel: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
+- 📦 6-stage workflow: ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
 - 📦 Simplified configuration: 8 lowercase keys with sensible defaults
 - 📦 Dual-mode installation: standby (explicit non-plugin deploy) / global (plugin/extension)
 - 📦 Modular script architecture: `cli-utils.mjs` (shared utilities), `notify-ui.mjs` (cross-platform sound/desktop), `guard.mjs` (security), `ralph-loop.mjs` (verification)

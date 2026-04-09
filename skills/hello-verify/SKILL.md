@@ -4,7 +4,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 ---
 
 声称完成之前，必须有验证证据。
-`.helloagents/` 在本 skill 中表示逻辑项目空间：`.ralph-review.json`、`.ralph-visual.json`、`.ralph-closeout.json` 等交付证据保持项目本地；若 `project_store_mode=repo-shared`，`verify.yaml`、方案包与 `DESIGN.md` 按当前会话注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`.ralph-review.json`、`.ralph-visual.json`、`.ralph-closeout.json` 等交付证据保持项目本地；若 `project_store_mode=repo-shared`，`verify.yaml`、方案包与 `DESIGN.md` 按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
 
@@ -65,7 +65,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 - package.json 中的 lint/test/typecheck 脚本
 - pyproject.toml 中的 ruff/mypy/pytest
 
-## 交付检查清单门控
+## 交付检查清单把关
 
 验证命令全部通过后，还需要：
 这些标记只用于交付检查清单、验收记录和验证结果，不用于普通说明、方案解释或进度汇报。
@@ -75,7 +75,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 4. 有未通过项 → 修复 → 重新运行验证循环
 5. 若当前存在方案包并准备最终收尾，优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录 `requirementsCoverage` 与 `deliveryChecklist` 两项结论；两项都必须包含 `status`（`PASS` / `BLOCKED`）和 `summary`
 6. 若当前方案包要求 `review-first`，必须先确认 `.helloagents/.ralph-review.json` 已通过 `scripts/review-state.mjs write` 写成最新结构化证据；不要把审查自然语言消息直接当成交付证据
-7. 若 `contract.json` 中 `ui.visualValidation.required=true`，必须确认 `.helloagents/.ralph-visual.json` 已通过 `scripts/visual-state.mjs write` 写成最新结构化证据；若没有视觉 evidence，不得把本轮视为 UI 可交付
+7. 若 `contract.json` 中 `ui.visualValidation.required=true`，必须确认 `.helloagents/.ralph-visual.json` 已通过 `scripts/visual-state.mjs write` 写成最新结构化证据；若没有视觉验收证据，不得把本轮视为 UI 可交付
 
 ## 需求追踪验证
 
@@ -85,8 +85,8 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 3. 确认非目标章节列出的内容确实没有被实现（防止范围蔓延）
 4. 若 tasks.md 中定义了“完成标准”，逐项确认每个任务的完成标准确实成立，不能只因为代码存在或命令通过就视为完成
 5. 若存在 `contract.json`，逐项确认其中的 `verifyMode`、reviewer / tester 关注边界都已被本轮验证覆盖
-6. 若 `contract.json` 中 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，额外确认 `.helloagents/.ralph-advisor.json` 已存在且结论为 clean；若没有 advisor artifact，不得把本轮视为可交付
-7. 若 `contract.json` 中 `ui.visualValidation.required=true`，额外确认 `.helloagents/.ralph-visual.json` 已存在、覆盖要求的关键 screens / states，且结论为 `PASS`；若没有 visual artifact，不得把本轮视为 UI 可交付
+6. 若 `contract.json` 中 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，额外确认 `.helloagents/.ralph-advisor.json` 已存在且结论为 clean；若没有 advisor 证据，不得把本轮视为可交付
+7. 若 `contract.json` 中 `ui.visualValidation.required=true`，额外确认 `.helloagents/.ralph-visual.json` 已存在、覆盖要求的关键 screens / states，且结论为 `PASS`；若没有视觉验收证据，不得把本轮视为 UI 可交付
 8. 发现遗漏 → 补充实现 → 重新验证
 
 ## 反代理目标漂移 (APGD)

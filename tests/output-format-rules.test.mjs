@@ -18,7 +18,7 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /使用约束：/);
     assert.match(content, /主代理仅可在本轮最后一条/);
     assert.match(content, /使用输出格式/);
-    assert.match(content, /(某个|任何) skill 在当前轮(?:如)?明确要求输出停顿、确认或总结/);
+    assert.match(content, /(某个|任何) skill 在本轮(?:如)?明确要求输出停顿、确认或总结/);
     assert.match(content, /不再继续调用工具.*不再继续执行/);
     assert.match(content, /收尾消息/);
     assert.match(content, /以下内容一律视为中间输出/);
