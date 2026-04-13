@@ -1,6 +1,6 @@
 import {
-  upsertTopLevelTomlKey,
-  removeTopLevelTomlLines,
+  prependTopLevelTomlBlocks,
+  removeTopLevelTomlBlock,
   stripTomlSection,
 } from './cli-toml.mjs'
 
@@ -38,14 +38,53 @@ function formatManagedCodexModelInstructionsValue(filePath) {
   return `"${normalizePath(filePath)}" ${CODEX_MANAGED_TOML_COMMENT}`
 }
 
-export function installCodexModelInstructions(toml, filePath) {
-  const next = removeTopLevelTomlLines(
-    toml,
-    (line) => line.startsWith('model_instructions_file ='),
-  ).text
-  return upsertTopLevelTomlKey(
-    next,
-    'model_instructions_file',
-    formatManagedCodexModelInstructionsValue(filePath),
+function formatManagedCodexModelInstructionsLine(filePath) {
+  return `model_instructions_file = ${formatManagedCodexModelInstructionsValue(filePath)}`
+}
+
+function formatManagedCodexNotifyValue(notifyScriptPath) {
+  return `["node", "${normalizePath(notifyScriptPath)}", "codex-notify"]`
+}
+
+function formatManagedCodexNotifyLine(notifyScriptPath) {
+  return `notify = ${formatManagedCodexNotifyValue(notifyScriptPath)}`
+}
+
+function removeTopLevelLinesBeingReplaced(toml, lines) {
+  let next = toml
+
+  for (const line of lines.map((value) => String(value || '').trim()).filter(Boolean)) {
+    const key = line.slice(0, line.indexOf('=')).trim()
+    if (!key) continue
+    next = removeTopLevelTomlBlock(next, key)
+  }
+
+  return next
+}
+
+function upsertOrderedCodexTopLevelLines(toml, lines) {
+  return prependTopLevelTomlBlocks(
+    removeTopLevelLinesBeingReplaced(toml, lines),
+    lines,
   )
+}
+
+export function installCodexModelInstructions(toml, filePath) {
+  return upsertOrderedCodexTopLevelLines(toml, [
+    formatManagedCodexModelInstructionsLine(filePath),
+  ])
+}
+
+export function installCodexManagedTopLevelConfig(toml, { modelInstructionsPath, notifyScriptPath }) {
+  return upsertOrderedCodexTopLevelLines(toml, [
+    formatManagedCodexModelInstructionsLine(modelInstructionsPath),
+    formatManagedCodexNotifyLine(notifyScriptPath),
+  ])
+}
+
+export function restoreCodexTopLevelConfig(toml, { modelInstructionsLine = '', notifyLine = '' }) {
+  return upsertOrderedCodexTopLevelLines(toml, [
+    modelInstructionsLine,
+    notifyLine,
+  ])
 }

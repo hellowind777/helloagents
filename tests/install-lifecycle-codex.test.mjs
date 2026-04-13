@@ -88,6 +88,32 @@ test('Codex standby replaces a user-owned model_instructions_file with the manag
   assert.equal(readText(join(home, '.codex', 'AGENTS.md')), '# Codex custom\n')
 })
 
+test('Codex standby keeps model_instructions_file before notify and separates managed lines from later fields', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'approval_policy = "never"',
+      'sandbox_mode = "danger-full-access"',
+      '',
+      '[features]',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  const installedConfig = readText(join(home, '.codex', 'config.toml'))
+  assert.match(
+    installedConfig,
+    /^model_instructions_file = ".*\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["node", ".*\/scripts\/notify\.mjs", "codex-notify"\]\n\napproval_policy = "never"\nsandbox_mode = "danger-full-access"\n\n\[features\]\nexperimental = true\n/,
+  )
+})
+
 test('Codex standby leaves a user-owned developer_instructions block untouched', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

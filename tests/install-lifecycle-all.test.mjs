@@ -36,6 +36,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(codexConfig, new RegExp(`model_instructions_file = "${codexAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
   assert.doesNotMatch(codexConfig, /developer_instructions\s*=/)
   assert.match(codexConfig, /codex-notify/)
+  assert.match(codexConfig, /^model_instructions_file = ".*\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["node", ".*\/scripts\/notify\.mjs", "codex-notify"\]\n\n\[features\]\nexperimental = true\n/m)
   assert.ok(hasTimestampedBackup(home, 'config.toml'))
   assert.equal(realTarget(join(home, '.claude', 'helloagents')), pkgRoot)
   assert.equal(realTarget(join(home, '.gemini', 'helloagents')), pkgRoot)
@@ -60,6 +61,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   const globalCodexConfig = readText(codexConfigPath)
   assert.match(globalCodexConfig, new RegExp(`model_instructions_file = "${codexAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
   assert.match(globalCodexConfig, /plugins\/helloagents\/scripts\/notify\.mjs/)
+  assert.match(globalCodexConfig, /^model_instructions_file = ".*\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["node", ".*\/plugins\/helloagents\/scripts\/notify\.mjs", "codex-notify"\]\n\n\[features\]\nexperimental = true\n/m)
   assert.match(globalCodexConfig, /\[plugins\."helloagents@local-plugins"\]\s+enabled = true/)
   assert.doesNotMatch(globalCodexConfig, /developer_instructions\s*=/)
 
