@@ -33,6 +33,15 @@ function findFirstTomlSectionIndex(text) {
   return normalized.length;
 }
 
+function splitTopLevelToml(text) {
+  const normalized = String(text || '').replace(/\r\n/g, '\n');
+  const topLevelEnd = findFirstTomlSectionIndex(normalized);
+  return {
+    topLevel: normalized.slice(0, topLevelEnd),
+    sections: normalized.slice(topLevelEnd),
+  };
+}
+
 function findTopLevelTomlBlock(text, key) {
   const normalized = String(text || '').replace(/\r\n/g, '\n');
   const topLevelEnd = findFirstTomlSectionIndex(normalized);
@@ -91,6 +100,27 @@ export function removeTopLevelTomlBlock(text, key) {
   const existing = findTopLevelTomlBlock(normalized, key);
   if (!existing) return normalizeToml(text);
   return normalizeToml(`${normalized.slice(0, existing.start)}${normalized.slice(existing.end)}`);
+}
+
+export function prependTopLevelTomlBlocks(text, blocks) {
+  const normalizedBlocks = blocks
+    .map((block) => String(block || '').trim())
+    .filter(Boolean);
+
+  const { topLevel, sections } = splitTopLevelToml(text);
+  const normalizedTopLevel = topLevel.replace(/^\n+/, '').trimEnd();
+  const normalizedSections = sections.replace(/^\n+/, '').trimEnd();
+  const remainder = normalizedTopLevel && normalizedSections
+    ? `${normalizedTopLevel}\n\n${normalizedSections}`
+    : normalizedTopLevel || normalizedSections;
+  if (!normalizedBlocks.length) return normalizeToml(remainder);
+  const managedPrelude = normalizedBlocks.join('\n');
+
+  return normalizeToml(
+    remainder
+      ? `${managedPrelude}\n\n${remainder}`
+      : managedPrelude,
+  );
 }
 
 export function upsertTopLevelTomlKey(text, key, value) {
