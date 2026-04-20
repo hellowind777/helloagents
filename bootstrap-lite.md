@@ -172,7 +172,7 @@
 - `T0` — 只读分析、创意探索、方案比较 → 自然响应或 `~idea`
 - `T1` — 低风险小改动、明确实现、显式验证 → 直接执行或 `~build` / `~verify`
 - `T2` — 多文件功能、新项目、需要结构化产物 → `~plan` 或 `~auto`
-- `T3` — 高风险或不可逆链路（权限、安全、支付、数据库、生产发布等）→ 先 `~plan` / `~prd`，再 `~build` / `~verify`
+- `T3` — 高风险或不可逆操作（权限、安全、支付、数据库、生产发布等）→ 先 `~plan` / `~prd`，再 `~build` / `~verify`
 
 ## 完成约束
 - 未激活项目且未进入方案包 / `contract.json` / 证据链路时，声称完成前必须完成与任务类型匹配的必要检查；无法执行的检查必须明确说明，不得直接宣称完成
@@ -193,14 +193,14 @@
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
 - `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
-- `STATE.md`、`.ralph-*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
-- 当前 `STATE.md` 只认当前项目存储中的 `state_path`；支持会话标识时，它会落在 `.helloagents/sessions/{branch}/{session}/STATE.md`，未提供稳定会话标识时则落到 `.helloagents/sessions/{branch}/default/STATE.md`
+- `state_path` 指向的状态文件、`.ralph-*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
 按上文 `~command` 路由中的相同技能根目录规则确定；确定根目录后读取其中的 `templates/`。
 
 ### 流程状态（不受 kb_create_mode 控制，始终可写）
-- STATE.md — ≤70 行，项目级恢复快照。它只用于恢复“上次做到哪里”，不是主线任务的唯一判断依据；当前用户消息、显式命令、活跃方案包 / PRD、代码与验证证据优先于 STATE.md
+- 状态文件（`state_path`）— ≤70 行，用来记录“上次做到哪里”。判断当前任务时，当前用户消息、显式命令、活跃方案包 / PRD、代码与验证证据优先于状态文件
   内容：主线目标、正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
   适用边界：
   - 强制创建并持续更新：`~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop`，以及进入统一执行流程/已激活项目的连续任务
@@ -208,14 +208,14 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
   - 已有则更新：`~verify`、`~review`（兼容别名）、`~test`、`~commit`
   - 不创建：`~help`、`~idea`、普通问答、一次性只读任务、子代理自身执行过程、压缩/恢复钩子
   更新规则：
-  - 属于“强制创建并持续更新”范围且文件不存在时，按 templates/STATE.md 创建
-  - 每次更新是重写，不是追加。STATE.md 永远反映“此刻”的状态，不是历史
+  - 属于“强制创建并持续更新”范围且状态文件不存在时，按 templates/STATE.md 创建
+  - 每次更新是重写，不是追加。状态文件只记录当前状态，不记录历史
   - 更新时机：任务开始、关键决策落定、子任务完成、遇到/解除阻塞、任务完成
-  - 长流程中 STATE.md 过时就立即重写，不等任务结束
-  - 恢复时先看当前用户消息，确认仍是同一任务再按 STATE.md 接续；否则按当前消息、活跃方案包与代码事实重建主线，并立即重写 STATE.md
-  - `.helloagents/` 里只有 `STATE.md` 时，它只是恢复锚点，不是项目规则或自动授权
-  - 若宿主进入压缩/恢复前置阶段，且当前任务属于 STATE.md 适用范围，必须先确认 STATE.md 已同步到最新
-  - 自检：如果现在上下文被压缩，下一轮能否凭 STATE.md 找回进度？不能 → 该更新了
+  - 长流程中状态文件过时就立即重写，不等任务结束
+  - 恢复时先看当前用户消息；如果仍是同一任务，再参考状态文件；否则按当前消息、活跃方案包与代码事实重新判断任务，并立即重写状态文件
+  - 当前项目只有状态文件时，它只是恢复参考，不是项目规则或自动授权
+  - 若宿主进入压缩/恢复前置阶段，且当前任务属于状态文件适用范围，必须先确认状态文件已同步到最新
+  - 自检：如果现在上下文被压缩，下一轮能否凭状态文件找回进度？不能 → 该更新了
   - “关键上下文”只保留恢复所需的信息，已不再相关的决策和变更移除
 - DESIGN.md — 项目级稳定 UI 契约（仅 UI 项目），`~plan` / `~auto` / `~prd` 创建或更新；不存在且当前任务涉及 UI → 按 templates/DESIGN.md 创建；不替代单次需求的 `plan.md`
 - plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md` + `contract.json`
@@ -242,17 +242,17 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 主线判断依据优先级：
 1. 当前用户最新消息、显式 `~command`、本轮已确认的范围与结论
 2. 当前活跃方案包 / PRD、代码与验证证据
-3. 当前 `STATE.md`（始终取当前项目存储中的 `state_path`；恢复快照，只用于补齐最近进度）
+3. 当前状态文件（`state_path`，只用于补齐最近进度）
 4. 其他知识沉淀与历史归档
 
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
 说明：
-- Tier 1 的 `STATE.md` 始终读取当前项目存储中的 `state_path`
+- Tier 1 始终读取当前 `state_path`
 - Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认按项目级存储路径解析；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 
-Tier 1 — 恢复当前链路时优先读取：
-- 当前 `STATE.md` → 恢复快照（始终取当前项目存储中的 `state_path`；先确认当前消息仍是同一任务，再用它找回最近进度）
+Tier 1 — 恢复当前任务时优先读取：
+- 当前状态文件（`state_path`）→ 先确认当前消息仍是同一任务，再用它找回最近进度
 
 Tier 2 — 理解项目时读取：
 - .helloagents/context.md → 项目架构、技术栈、目录结构、模块索引

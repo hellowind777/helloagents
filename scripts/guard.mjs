@@ -124,7 +124,7 @@ function buildPostWriteWarnings(data) {
   const filePath = data.tool_input?.file_path || ''
   return [
     ...(detectIdeaBoundaryContext(data)?.zeroSideEffect
-      ? ['~idea 本轮要求只读探索；检测到写入工具落地，请回退到探索输出或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
+      ? ['~idea 本轮要求只读探索；检测到写入文件的工具调用，请回到探索输出，或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
       : []),
     ...scanUnrequestedFiles(filePath, data.tool_name),
     ...(content ? [...scanForSecrets(content), ...scanDangerousPackages(content, filePath)] : []),

@@ -58,7 +58,7 @@ function buildCommandRouteMessage(skillName, recommendation, verifyModeHint) {
   if (skillName === 'auto') {
     return recommendation.stage === 'consolidate'
       ? `当前工作流约束：${recommendation.summary} 当前建议下一阶段：CONSOLIDATE。${recommendation.guidance} 若本次明确使用 ~auto，则在未命中阻塞判定时直接完成当前收尾，不再额外停下询问。`
-      : `当前工作流约束：${recommendation.summary} 当前建议主路径：${recommendation.nextPath}。${recommendation.guidance} 若本次明确使用 ~auto，则命中主路径后继续衔接后续阶段，除非触发阻塞判定，否则不要在方案/PRD 阶段额外停下。`
+      : `当前工作流约束：${recommendation.summary} 当前建议主路径：${recommendation.nextPath}。${recommendation.guidance} 若本次明确使用 ~auto，则命中主路径后继续执行后续阶段，除非触发阻塞判定，否则不要在方案/PRD 阶段额外停下。`
   }
   if (skillName === 'plan') {
     if (recommendation.stage === 'consolidate') {

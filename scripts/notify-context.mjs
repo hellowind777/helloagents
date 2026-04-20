@@ -74,8 +74,8 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   const stateSyncHint = buildStateSyncHint(cwd, workflowOptions);
   if (stateSnapshot.exists && stateSnapshot.content) {
     summaryParts.push('');
-    summaryParts.push(`## 恢复快照（从 ${stateSnapshot.statePath.replace(/\\/g, '/')} 读取，只用于找回上次停在哪）`);
-    summaryParts.push('恢复时先看当前用户消息，确认仍是同一任务再按 STATE.md 接续。');
+    summaryParts.push(`## 状态文件（从 ${stateSnapshot.statePath.replace(/\\/g, '/')} 读取，只用于找回上次停在哪）`);
+    summaryParts.push('恢复时先看当前用户消息；如果仍是同一任务，再参考状态文件。');
     summaryParts.push(stateSnapshot.content);
   }
 
@@ -109,7 +109,7 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
 
   if (stateSyncHint) {
     summaryParts.push('');
-    summaryParts.push('## STATE.md 提醒');
+    summaryParts.push('## 状态文件提醒');
     summaryParts.push(stateSyncHint);
   }
 
@@ -140,10 +140,10 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
   if (projectStorageBlock) context += `\n\n${projectStorageBlock}`;
   if (workflowHint) context += `\n\n## 当前工作流提示\n${workflowHint}`;
   if (capabilityHint) context += `\n\n## 当前按需能力\n${capabilityHint}`;
-  if (stateSyncHint) context += `\n\n## STATE.md 提醒\n${stateSyncHint}`;
+  if (stateSyncHint) context += `\n\n## 状态文件提醒\n${stateSyncHint}`;
   context += settingsBlock;
   if (source === 'resume' || source === 'compact') {
-    context += `\n\n> ⚠️ 会话已恢复/压缩，请先读取当前 \`state_path\` 指向的 \`${stateSnapshot.statePath.replace(/\\/g, '/')}\` 恢复工作状态；先看当前用户消息确认仍是同一任务，再按 STATE.md 接续。`;
+    context += `\n\n> ⚠️ 会话已恢复/压缩，请先读取 \`state_path\` 指向的 \`${stateSnapshot.statePath.replace(/\\/g, '/')}\`；先看当前用户消息，如果仍是同一任务，再参考状态文件。`;
   }
   return context;
 }
@@ -168,8 +168,8 @@ export function buildSemanticRouteInstruction(cwd, payload = {}) {
   return [
     '当前消息未使用 ~command。',
     '请根据用户请求的真实意图选路，不依赖关键词表。',
-    'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆链路。',
-    '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动编排并自动衔接后续阶段。',
+    'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆操作。',
+    '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动选择并继续执行后续阶段。',
     '若判定为 T3，默认先走 ~plan / ~prd；纯审查/验证请求才优先 ~verify。',
     `涉及 UI 任务时，设计决策优先级：当前活跃 plan / PRD → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → 通用 UI 规则。`,
     projectStorageHint,
