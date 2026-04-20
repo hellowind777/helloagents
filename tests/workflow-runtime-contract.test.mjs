@@ -51,6 +51,11 @@ test('workflow runtime contract keeps route and state scripts aligned', () => {
   assert.match(notify, /readTurnState/)
   assert.match(notify, /clearTurnState/)
   assert.match(notify, /turnState\.kind === 'complete'/)
+  assert.match(notify, /function notifyByLevel/)
+  assert.match(notify, /notifyByLevel\('confirm'/)
+  assert.match(notify, /notifyByLevel\('warning'/)
+  assert.doesNotMatch(notify, /playSound\('warning'\)/)
+  assert.doesNotMatch(notify, /desktopNotify\('warning'/)
 
   const deliveryGate = readText(join(REPO_ROOT, 'scripts', 'delivery-gate.mjs'))
   assert.match(deliveryGate, /workflow-aware completion gate/)
