@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.10-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.11-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -79,8 +79,12 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 
 ## What Changed Since v3.0.7
 
-These are the main user-visible runtime and install changes in `v3.0.10`, compared with `v3.0.7`:
+These are the main user-visible runtime and install changes in `v3.0.11`, compared with `v3.0.7`:
 
+- Workflow runtime hints now use execution wording instead of staged “next command / next stage” suggestions, so active work is less likely to stop at phase boundaries.
+- Explicit `~auto` now treats the chosen path as a direct execution path and tells the agent to keep going until delivery or a real blocker, instead of turning phase results into “next-step” hand-offs.
+- Explicit `~loop` now follows its own loop rules directly; existing plan or verify recommendations stay as context only and no longer try to reroute the loop itself.
+- The final closeout fallback wording no longer sounds like it is waiting for another manual approval after the task is already complete.
 - Main-agent delivery now uses structured `turn-state` values such as `complete`, `waiting`, and `blocked`; stop, notify, and closeout no longer infer completion from natural-language text.
 - Workflow recovery now uses the current `state_path`, with session-scoped state files under `.helloagents/sessions/<branch>/<session-or-default>/STATE.md`.
 - The old project-root state fallback has been removed, so recovery follows one current state path.
