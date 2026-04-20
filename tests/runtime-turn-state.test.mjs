@@ -7,6 +7,7 @@ import {
   createHomeFixture,
   createPackageFixture,
   createTempDir,
+  writeJson,
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
@@ -123,12 +124,64 @@ test('codex notify gates only main complete turns from turn-state', () => {
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /unfinished tasks|missing a trustworthy structured contract/)
 
-  result = runNode(notifyScript, ['route', '--codex'], {
+  result = runNode(turnStateScript, ['read'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~help' }),
+    input: JSON.stringify({ cwd: project }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.state, null)
+
+  result = runNode(notifyScript, ['codex-notify', JSON.stringify({
+    type: 'agent-turn-complete',
+    client: 'codex-tui',
+    cwd: project,
+    'last-assistant-message': '等待后台终端完成',
+  })], {
+    cwd: project,
+    env,
+  })
+  assert.equal(result.stdout, '')
+})
+
+test('stop ignores completion gates when structured turn-state is waiting', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-waiting-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeSettings(home)
+  writeJson(join(project, 'package.json'), {
+    name: 'turn-state-waiting-project',
+    scripts: {
+      build: 'node -e "process.exit(1)"',
+    },
+  })
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'waiting',
+      phase: 'clarify',
+    }),
   })
   parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['stop'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '当前任务已完成，等待您的下一步指示。',
+    }),
+  })
+  let payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
 
   result = runNode(turnStateScript, ['read'], {
     cwd: project,
