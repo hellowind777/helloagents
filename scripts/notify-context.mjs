@@ -69,8 +69,9 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   summaryParts.push('以下信息在上下文压缩前保存，确保压缩后不丢失关键状态。');
 
   const cwd = payload.cwd || process.cwd();
-  const stateSnapshot = readStateSnapshot(cwd);
-  const stateSyncHint = buildStateSyncHint(cwd);
+  const workflowOptions = { payload };
+  const stateSnapshot = readStateSnapshot(cwd, workflowOptions);
+  const stateSyncHint = buildStateSyncHint(cwd, workflowOptions);
   if (stateSnapshot.exists && stateSnapshot.content) {
     summaryParts.push('');
     summaryParts.push(`## 恢复快照（从 ${stateSnapshot.statePath.replace(/\\/g, '/')} 读取，只用于找回上次停在哪）`);
@@ -100,7 +101,7 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
     summaryParts.push(readRootBlock);
   }
 
-  const projectStorageBlock = buildProjectStorageBlock(cwd);
+  const projectStorageBlock = buildProjectStorageBlock(cwd, workflowOptions);
   if (projectStorageBlock) {
     summaryParts.push('');
     summaryParts.push(projectStorageBlock);
@@ -120,13 +121,15 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   return summaryParts.join('\n');
 }
 
-export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host, cwd }) {
+export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host, cwd, payload = {} }) {
+  const workflowOptions = { payload };
   const packageRootBlock = buildPackageRootBlock(pkgRoot);
   const readRootBlock = buildReadRootBlock(resolveReadRoot({ cwd, pkgRoot, host, settings }));
-  const workflowHint = buildWorkflowRouteHint(cwd);
-  const capabilityHint = buildCapabilityHint({ cwd });
-  const projectStorageBlock = buildProjectStorageBlock(cwd);
-  const stateSyncHint = buildStateSyncHint(cwd);
+  const workflowHint = buildWorkflowRouteHint(cwd, workflowOptions);
+  const capabilityHint = buildCapabilityHint({ cwd, options: workflowOptions });
+  const projectStorageBlock = buildProjectStorageBlock(cwd, workflowOptions);
+  const stateSnapshot = readStateSnapshot(cwd, workflowOptions);
+  const stateSyncHint = buildStateSyncHint(cwd, workflowOptions);
   const settingsBlock = Object.keys(settings).length
     ? `\n\n## 当前用户设置\n\`\`\`json\n${JSON.stringify(settings, null, 2)}\n\`\`\``
     : '';
@@ -140,26 +143,28 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
   if (stateSyncHint) context += `\n\n## STATE.md 提醒\n${stateSyncHint}`;
   context += settingsBlock;
   if (source === 'resume' || source === 'compact') {
-    context += '\n\n> ⚠️ 会话已恢复/压缩，请先读取 `.helloagents/STATE.md` 恢复工作状态；先看当前用户消息确认仍是同一任务，再按 STATE.md 接续。';
+    context += `\n\n> ⚠️ 会话已恢复/压缩，请先读取当前 \`state_path\` 指向的 \`${stateSnapshot.statePath.replace(/\\/g, '/')}\` 恢复工作状态；先看当前用户消息确认仍是同一任务，再按 STATE.md 接续。`;
   }
   return context;
 }
 
-export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot, host, settings }) {
+export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot, host, settings, payload = {} }) {
+  const workflowOptions = { payload };
   const readRoot = resolveReadRoot({ cwd, pkgRoot, host, settings });
   const canonicalSkillName = resolveCanonicalCommandSkill(skillName);
   const skillPath = join(readRoot.root, 'skills', 'commands', canonicalSkillName, 'SKILL.md');
   const aliasNote = buildAliasRouteNote(skillName);
-  const commandHint = buildCommandRouteHint(canonicalSkillName, cwd);
-  const capabilityHint = buildCapabilityHint({ cwd, skillName: canonicalSkillName });
-  const projectStorageHint = buildProjectStorageHint(cwd);
+  const commandHint = buildCommandRouteHint(canonicalSkillName, cwd, workflowOptions);
+  const capabilityHint = buildCapabilityHint({ cwd, skillName: canonicalSkillName, options: workflowOptions });
+  const projectStorageHint = buildProjectStorageHint(cwd, workflowOptions);
   return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；不要再探测其他 helloagents 路径。${aliasNote ? ` ${aliasNote}` : ''}${projectStorageHint ? ` ${projectStorageHint}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
 }
 
-export function buildSemanticRouteInstruction(cwd) {
-  const workflowHint = buildWorkflowRouteHint(cwd);
-  const capabilityHint = buildCapabilityHint({ cwd });
-  const projectStorageHint = buildProjectStorageHint(cwd);
+export function buildSemanticRouteInstruction(cwd, payload = {}) {
+  const workflowOptions = { payload };
+  const workflowHint = buildWorkflowRouteHint(cwd, workflowOptions);
+  const capabilityHint = buildCapabilityHint({ cwd, options: workflowOptions });
+  const projectStorageHint = buildProjectStorageHint(cwd, workflowOptions);
   return [
     '当前消息未使用 ~command。',
     '请根据用户请求的真实意图选路，不依赖关键词表。',

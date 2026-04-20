@@ -16,27 +16,27 @@ import {
   buildRecommendation,
 } from './workflow-recommendation.mjs'
 
-export function getDeliveryAction(cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function getDeliveryAction(cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   const recommendation = buildRecommendation(snapshot, cwd)
   return buildDeliveryActionFromSnapshot(snapshot, cwd, recommendation)
 }
 
-export function getWorkflowRecommendation(cwd) {
-  return buildRecommendation(getWorkflowSnapshot(cwd), cwd)
+export function getWorkflowRecommendation(cwd, options = {}) {
+  return buildRecommendation(getWorkflowSnapshot(cwd, options), cwd)
 }
 
-export function buildStateSyncHint(cwd) {
-  return buildStateSyncHintFromSnapshot(getWorkflowSnapshot(cwd))
+export function buildStateSyncHint(cwd, options = {}) {
+  return buildStateSyncHintFromSnapshot(getWorkflowSnapshot(cwd, options))
 }
 
-export function buildDeliveryGateHint(cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function buildDeliveryGateHint(cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   return buildDeliveryGateHintFromSnapshot(snapshot, cwd, buildRecommendation(snapshot, cwd))
 }
 
-export function buildWorkflowRouteHint(cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function buildWorkflowRouteHint(cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   const recommendation = buildRecommendation(snapshot, cwd)
   const stateSyncHint = buildStateSyncHintFromSnapshot(snapshot)
   const stateRoleHint = buildStateRoleHintFromSnapshot(snapshot)
@@ -87,8 +87,8 @@ function buildCommandRouteMessage(skillName, recommendation, verifyModeHint) {
   return `当前工作流约束：${recommendation.summary} 当前建议下一命令：~${recommendation.nextCommand}。${recommendation.guidance}`
 }
 
-export function buildCommandRouteHint(skillName, cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function buildCommandRouteHint(skillName, cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   const recommendation = buildRecommendation(snapshot, cwd)
   const contextHints = [
     buildStateRoleHintFromSnapshot(snapshot),

@@ -205,10 +205,11 @@ function main() {
     data = JSON.parse(readFileSync(0, 'utf-8'))
   } catch {}
   const cwd = data.cwd || process.cwd()
-  const snapshot = getWorkflowSnapshot(cwd)
-  const recommendation = getWorkflowRecommendation(cwd)
+  const workflowOptions = { payload: data }
+  const snapshot = getWorkflowSnapshot(cwd, workflowOptions)
+  const recommendation = getWorkflowRecommendation(cwd, workflowOptions)
   const verificationStatus = getVerifyEvidenceStatus(cwd)
-  const deliveryAction = getDeliveryAction(cwd)
+  const deliveryAction = getDeliveryAction(cwd, workflowOptions)
   const gatePlans = selectGatePlans(snapshot)
   const reviewStatus = getReviewEvidenceStatus(cwd, {
     required: deliveryAction?.phase === 'verify' && deliveryAction?.mode === 'review-first',
@@ -248,7 +249,7 @@ function main() {
 
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: buildBlockReason(issues, recommendation, buildDeliveryGateHint(cwd)),
+    reason: buildBlockReason(issues, recommendation, buildDeliveryGateHint(cwd, workflowOptions)),
     suppressOutput: true,
   }))
 }

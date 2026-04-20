@@ -10,7 +10,7 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('codex notify gates only main complete turns from turn-state', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -22,7 +22,7 @@ test('codex notify gates only main complete turns from turn-state', () => {
 
   writeSettings(home, { output_format: true })
   writeText(
-    join(project, '.helloagents', 'STATE.md'),
+    getSessionStatePath(project),
     [
       '# 恢复快照',
       '',

@@ -10,7 +10,7 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('notify inject and semantic route cover standby and recovery hints', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -60,7 +60,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.equal(payload.suppressOutput, true)
   assert.equal(payload.hookSpecificOutput, undefined)
 
-  writeText(join(project, '.helloagents', 'STATE.md'), '# activated\n')
+  writeText(getSessionStatePath(project), '# activated\n')
   result = runNode(notifyScript, ['inject'], {
     cwd: project,
     env,
@@ -107,7 +107,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     '# missing state tasks\n\n- [ ] repair snapshot\n',
   )
   writeText(
-    join(project, '.helloagents', 'STATE.md'),
+    getSessionStatePath(project),
     [
       '# 恢复快照',
       '',

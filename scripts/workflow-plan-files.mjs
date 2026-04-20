@@ -5,7 +5,6 @@ import { getPlanContractIssues, readPlanContract } from './plan-contract.mjs'
 import {
   getProjectPlansDir,
   getProjectSessionStateScope,
-  getProjectStateCandidates,
   resolveProjectPlanDir,
 } from './project-storage.mjs'
 
@@ -177,22 +176,20 @@ function comparePlanEntries(a, b) {
 
 export function readStateSnapshot(cwd, options = {}) {
   const stateScope = getProjectSessionStateScope(cwd, options)
-  const candidates = getProjectStateCandidates(cwd, options)
-  const existingStatePath = candidates.find((candidate) => existsSync(candidate)) || ''
-  const statePath = existingStatePath || stateScope.statePath
+  const statePath = stateScope.statePath
+  const exists = existsSync(statePath)
   const content = readText(statePath)
   const sections = parseMarkdownSections(content)
   const referencedPlanDir = resolvePlanDir(cwd, sections['方案'])
 
   return {
     statePath,
-    preferredStatePath: stateScope.statePath,
-    legacyStatePath: stateScope.legacyStatePath,
     stateScope: stateScope.stateScope,
     stateSessionToken: stateScope.stateSessionToken,
+    stateSessionMode: stateScope.stateSessionMode,
     stateBranch: stateScope.stateBranch,
     sessionScoped: stateScope.stateScope === 'session',
-    exists: !!existingStatePath,
+    exists,
     content,
     sections,
     referencedPlanDir,
@@ -244,8 +241,8 @@ export function listPlanPackages(cwd) {
     .sort(comparePlanEntries)
 }
 
-export function getWorkflowSnapshot(cwd) {
-  const state = readStateSnapshot(cwd)
+export function getWorkflowSnapshot(cwd, options = {}) {
+  const state = readStateSnapshot(cwd, options)
   const plans = listPlanPackages(cwd).map((entry) => ({
     ...entry,
     referencedByState: state.referencedPlanDir ? normalize(entry.dirPath) === normalize(state.referencedPlanDir) : false,

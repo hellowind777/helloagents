@@ -14,7 +14,7 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 const PROJECT_STORAGE_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'project-storage.mjs')).href
 const VERIFY_STATE_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'verify-state.mjs')).href
@@ -90,7 +90,7 @@ test('repo-shared mode resolves shared verify.yaml and plan packages from local 
   })
 
   writeText(
-    join(project, '.helloagents', 'STATE.md'),
+    getSessionStatePath(project),
     ['# 恢复快照', '', '## 主线目标', '验证共享知识库路径', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
   )
   writeText(join(summary.storeDir, 'verify.yaml'), 'commands:\n  - "npm run shared-test"\n')
@@ -121,7 +121,7 @@ test('repo-shared mode resolves shared verify.yaml and plan packages from local 
   })
 
   assert.deepEqual(payload.commands, ['npm run shared-test'])
-  assert.equal(payload.statePath, join(project, '.helloagents', 'STATE.md'))
+  assert.equal(payload.statePath, getSessionStatePath(project))
   assert.equal(payload.planDir, join(summary.storeDir, 'plans', feature))
   assert.equal(payload.referencedPlanDir, join(summary.storeDir, 'plans', feature))
   assert.equal(payload.relativePath, `.helloagents/plans/${feature}`)
@@ -191,7 +191,7 @@ test('notify inject exposes session-scoped state path when session identifiers e
   assert.match(payload.hookSpecificOutput.additionalContext, /sessions[\\/].*STATE\.md/)
 })
 
-test('session-scoped state path isolates branch and terminal session while keeping legacy fallback', () => {
+test('session-scoped state path isolates branch and terminal session in session-only storage', () => {
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
@@ -216,15 +216,15 @@ test('session-scoped state path isolates branch and terminal session while keepi
 
   assert.equal(payload.stateScope, 'session')
   assert.equal(payload.stateSessionToken, 'abcdef12')
+  assert.equal(payload.stateSessionMode, 'host-session')
   assert.equal(payload.stateBranch, 'feature-state-scope')
   assert.equal(
     normalizePathForAssert(payload.statePath),
     normalizePathForAssert(join(repo, '.helloagents', 'sessions', 'feature-state-scope', 'abcdef12', 'STATE.md')),
   )
-  assert.equal(payload.legacyStatePath, join(repo, '.helloagents', 'STATE.md'))
 })
 
-test('workflow snapshot prefers current session STATE and falls back to legacy STATE', () => {
+test('workflow snapshot reads the current session STATE or branch default slot only', () => {
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
@@ -239,10 +239,6 @@ test('workflow snapshot prefers current session STATE and falls back to legacy S
   assertCommandOk(runCommand('git', ['config', 'user.email', 'helloagents@example.com'], { cwd: repo, env }))
   assertCommandOk(runCommand('git', ['checkout', '-b', 'feature/session-fallback'], { cwd: repo, env }))
 
-  writeText(
-    join(repo, '.helloagents', 'STATE.md'),
-    ['# 恢复快照', '', '## 主线目标', '旧项目级恢复快照', '', '## 方案', '.helloagents/plans/legacy-plan', ''].join('\n'),
-  )
   writeText(join(repo, '.helloagents', 'plans', feature, 'requirements.md'), '# scoped requirements\n')
   writeText(join(repo, '.helloagents', 'plans', feature, 'plan.md'), '# scoped plan\n')
   writeText(
@@ -252,6 +248,10 @@ test('workflow snapshot prefers current session STATE and falls back to legacy S
   writeText(
     join(repo, '.helloagents', 'sessions', 'feature-session-fallback', 'abcdef12', 'STATE.md'),
     ['# 恢复快照', '', '## 主线目标', '当前会话恢复快照', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
+  )
+  writeText(
+    getSessionStatePath(repo, { branch: 'feature-session-fallback', session: 'default' }),
+    ['# 恢复快照', '', '## 主线目标', '当前分支默认会话恢复快照', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
   )
 
   let payload = runModuleEval({
@@ -265,6 +265,7 @@ test('workflow snapshot prefers current session STATE and falls back to legacy S
 
   assert.equal(payload.sessionScoped, true)
   assert.equal(payload.stateScope, 'session')
+  assert.equal(payload.stateSessionMode, 'host-session')
   assert.equal(
     normalizePathForAssert(payload.statePath),
     normalizePathForAssert(join(repo, '.helloagents', 'sessions', 'feature-session-fallback', 'abcdef12', 'STATE.md')),
@@ -291,8 +292,9 @@ test('workflow snapshot prefers current session STATE and falls back to legacy S
     `,
   })
 
-  assert.equal(payload.sessionScoped, false)
-  assert.equal(payload.stateScope, 'project')
-  assert.equal(payload.statePath, join(repo, '.helloagents', 'STATE.md'))
-  assert.equal(payload.referencedPlanDir, join(repo, '.helloagents', 'plans', 'legacy-plan'))
+  assert.equal(payload.sessionScoped, true)
+  assert.equal(payload.stateScope, 'session')
+  assert.equal(payload.stateSessionMode, 'default')
+  assert.equal(payload.statePath, getSessionStatePath(repo, { branch: 'feature-session-fallback', session: 'default' }))
+  assert.equal(payload.referencedPlanDir, join(repo, '.helloagents', 'plans', feature))
 })

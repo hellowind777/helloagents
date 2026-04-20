@@ -11,7 +11,7 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('delivery gate blocks completion when plan packages stay open or malformed', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -55,7 +55,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /unfinished tasks/)
 
-  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604050101_feature', ''].join('\n'))
+  writeText(getSessionStatePath(project), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604050101_feature', ''].join('\n'))
   writeText(
     join(project, '.helloagents', 'plans', '202604050101_feature', 'tasks.md'),
     ['# {项目/功能名称} — 任务分解', '', '## 任务列表', '[按执行顺序排列，每个任务独立可验证]', ''].join('\n'),
