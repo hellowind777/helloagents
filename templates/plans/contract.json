@@ -37,7 +37,7 @@
   },
   "advisor": {
     "required": false,
-    "reason": "{仅在 T3 / UI / 高风险链路确有收益时填写：为什么需要独立 advisor}",
+    "reason": "{仅在 T3 / UI / 高风险流程确有收益时填写：为什么需要独立 advisor}",
     "focus": [
       "{仅 advisor.required=true 时填写：advisor 需要独立复查的边界}"
     ],

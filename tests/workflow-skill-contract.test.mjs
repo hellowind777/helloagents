@@ -39,6 +39,11 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.equal(existsSync(join(REPO_ROOT, 'skills', 'commands', 'do', 'SKILL.md')), false)
   assert.equal(existsSync(join(REPO_ROOT, 'skills', 'commands', 'design', 'SKILL.md')), false)
   assert.equal(existsSync(join(REPO_ROOT, 'skills', 'commands', 'review', 'SKILL.md')), false)
+  for (const commandName of readdirSync(join(REPO_ROOT, 'skills', 'commands'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)) {
+    assert.match(helloagents, new RegExp(`\`~${commandName}\``), `helloagents command index should include ~${commandName}`)
+  }
 
   const helloUi = readText(join(REPO_ROOT, 'skills', 'hello-ui', 'SKILL.md'))
   assert.match(helloUi, /不是 UI 质量的唯一来源/)

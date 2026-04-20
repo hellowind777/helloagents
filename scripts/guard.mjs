@@ -195,7 +195,7 @@ function handleHighRiskCommand(data, command) {
 function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings) {
   const sections = []
   if (highRiskWarnings.length > 0) {
-    sections.push(`⚠️ [HelloAGENTS 高风险链路提醒] 检测到高风险命令:\n${highRiskWarnings.map((warning) => `  - ${warning}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`)
+    sections.push(`⚠️ [HelloAGENTS 高风险操作提醒] 检测到高风险命令:\n${highRiskWarnings.map((warning) => `  - ${warning}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`)
   }
   if (shellSafetyWarnings.length > 0) {
     sections.push(`⚠️ [HelloAGENTS Shell 安全提醒] 检测到建议调整的命令写法:\n${shellSafetyWarnings.map((warning) => `  - ${warning}`).join('\n')}\n当前仅提示，不中断执行。`)

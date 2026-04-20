@@ -96,6 +96,7 @@ export function buildHomeEnv(home) {
     WINDOWID: '',
     WEZTERM_PANE: '',
     TAB_ID: '',
+    HELLOAGENTS_DISABLE_OS_NOTIFICATIONS: '1',
   };
 }
 

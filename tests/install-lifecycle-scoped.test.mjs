@@ -80,6 +80,29 @@ test('single-host update infers the detected codex mode when tracked config is s
   assert.equal(readJson(configFile).host_install_modes.codex, 'global')
 })
 
+test('all-host update preserves each CLI tracked mode when no mode flag is passed', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const pluginRoot = join(home, 'plugins', 'helloagents')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'codex', '--global'])
+  runCli(pkgRoot, home, ['install', 'claude', '--standby'])
+  writeText(join(pkgRoot, 'bootstrap.md'), '# refreshed global mode\n')
+  writeText(join(pkgRoot, 'bootstrap-lite.md'), '# refreshed standby mode\n')
+
+  runCli(pkgRoot, home, ['update', '--all'])
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.codex, 'global')
+  assert.equal(settings.host_install_modes.claude, 'standby')
+  assert.equal(settings.host_install_modes.gemini, 'standby')
+  assert.ok(existsSync(pluginRoot))
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# refreshed global mode/)
+  assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /# refreshed standby mode/)
+})
+
 test('standby refresh updates injected carrier files for every CLI after bootstrap changes', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

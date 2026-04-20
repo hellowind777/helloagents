@@ -67,7 +67,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
     }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /高风险链路提醒/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /高风险操作提醒/)
   assert.match(payload.hookSpecificOutput.additionalContext, /Package publish command/)
 
   result = runNode(guardScript, [], {

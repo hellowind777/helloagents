@@ -98,7 +98,8 @@ function removeCodexMarketplaceEntry(marketplaceFile) {
   }
   if (!removedHelloagents) return false;
   if (!nextPlugins.length) {
-    removeIfExists(marketplaceFile);
+    marketplace.plugins = [];
+    safeWrite(marketplaceFile, JSON.stringify(marketplace, null, 2) + '\n');
     return true;
   }
   marketplace.plugins = nextPlugins;

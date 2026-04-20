@@ -192,6 +192,38 @@ test('stop ignores completion gates when structured turn-state is waiting', () =
   assert.equal(payload.state, null)
 })
 
+test('stop ignores completion-looking text when turn-state is missing', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-missing-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { ralph_loop_enabled: false })
+  writeText(
+    join(project, '.helloagents', 'plans', '202604200101_feature', 'tasks.md'),
+    [
+      '# feature',
+      '',
+      '## 任务列表',
+      '- [ ] 收尾验证',
+      '',
+    ].join('\n'),
+  )
+
+  const result = runNode(notifyScript, ['stop'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '当前任务已完成，等待您的下一步指示。',
+    }),
+  })
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.decision, undefined)
+})
+
 test('stop delivery gate prefers structured turn-state over completion text', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
