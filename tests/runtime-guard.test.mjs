@@ -36,6 +36,28 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   assert.match(payload.hookSpecificOutput.permissionDecisionReason, /Force push/)
 
   result = runNode(guardScript, [], {
+    env,
+    input: JSON.stringify({
+      tool_name: 'Bash',
+      tool_input: { command: 'TRUNCATE users' },
+    }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /Table truncation/)
+
+  result = runNode(guardScript, [], {
+    env,
+    input: JSON.stringify({
+      tool_name: 'Bash',
+      tool_input: { command: 'cmd /c dir' },
+    }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /Nested cmd invocation/)
+
+  result = runNode(guardScript, [], {
     cwd: warnProject,
     env,
     input: JSON.stringify({
@@ -47,6 +69,20 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /高风险链路提醒/)
   assert.match(payload.hookSpecificOutput.additionalContext, /Package publish command/)
+
+  result = runNode(guardScript, [], {
+    cwd: warnProject,
+    env,
+    input: JSON.stringify({
+      cwd: warnProject,
+      tool_name: 'Bash',
+      tool_input: { command: 'powershell -Command "Write-Host 1; Write-Host 2; Write-Host 3; Write-Host 4"' },
+    }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.hookSpecificOutput.permissionDecision, undefined)
+  assert.match(payload.hookSpecificOutput.additionalContext, /Shell 安全提醒/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /PowerShell inline script exceeds 3 logical lines/)
 
   writeText(
     join(gateProject, '.helloagents', 'STATE.md'),

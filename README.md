@@ -8,7 +8,7 @@
 
 **Quality-driven workflow framework for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist-based quality checks.**
 
-[![Version](https://img.shields.io/badge/version-3.0.7-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.8-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -95,20 +95,20 @@ HelloAGENTS fixes that. It's a workflow layer that sits on top of your AI CLI an
 
 If the last version you used seriously was `v2.3.8`, this is not a minor update. The current line is a full product-line reset.
 
-| Dimension | v2.3.8 | Local `v3.0.7` |
+| Dimension | v2.3.8 | Local `v3.0.8` |
 |-----------|--------|----------------|
 | **Implementation base** | Python package plus mixed scripts/rules | Pure Node.js + Markdown runtime built around `cli.mjs`, `bootstrap*.md`, `skills/`, and `scripts/` |
 | **Product shape** | More like a multi-CLI management tool plus prompt protocol bundle | More like a quality workflow framework for AI CLIs, centered on routing, checks, verification, and resumable execution |
 | **Installation model** | pip / uv / npx / shell installers in parallel | npm-first; install the package, then deploy explicitly to Claude / Gemini / Codex |
 | **CLI strategy** | 6 targets with uneven capabilities | Focused on 3 primary surfaces: Claude Code, Gemini CLI, and Codex CLI |
 | **Workflow model** | R0/R1/R2 routing plus older design/develop semantics | ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE 6-stage workflow |
-| **Command surface** | 15 commands including `~exec`, `~rollback`, `~rlm`, `~validatekb` | 12 focused commands such as `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, and `~wiki` |
+| **Command surface** | 15 commands including `~exec`, `~rollback`, `~rlm`, `~validatekb` | 13 focused commands such as `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, `~wiki`, and `~help` |
 | **Quality model** | More distributed rules, more reliance on prose | 14 auto-activated skills + checklist-based quality checks + Ralph Loop + verification records |
 | **Project state** | KB felt auxiliary | `.helloagents/` is now the activation boundary; `STATE.md`, plan packages, `DESIGN.md`, and `contract.json` anchor the workflow |
 | **KB storage** | Project-local only | Project-local by default, plus `project_store_mode=repo-shared` for sharing stable KB/plan assets across git worktrees |
 | **Codex integration** | Earlier compatibility layers and legacy paths | Standby = injected rules + local links; global = native local-plugin chain with less noise and drift |
 
-In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.7` is a workflow framework that unifies quality rules, plan files, verification records, and installation lifecycle into one operating model.
+In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.8` is a workflow framework that unifies quality rules, plan files, verification records, and installation lifecycle into one operating model.
 
 ## ✨ Core Features
 
@@ -718,7 +718,14 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.7 (current)
+### v3.0.8 (current)
+
+**Fixes and verification:**
+- 🔧 Claude Code / Gemini CLI `stop` delivery gating now prioritizes structured `turn-state` instead of inferring completion from natural-language text, so ordinary waiting turns no longer get misclassified as finished delivery
+- 🔧 Codex cleanup now preserves user-owned post-install replacements for `model_instructions_file`, `notify`, and non-managed `codex_hooks` instead of restoring stale pre-install values over them
+- 🧪 Added lifecycle/runtime regressions for structured `stop` gating and Codex config preservation after post-install user edits
+
+### v3.0.7
 
 **What the current line now delivers relative to `v2.3.8`:**
 - ✨ Full rewrite from a Python package to a Node.js/Markdown workflow framework, including install flow, runtime injection, skill system, and verification chain
