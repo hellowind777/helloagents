@@ -104,7 +104,7 @@ If the last version you used seriously was `v2.3.8`, this is not a minor update.
 | **Workflow model** | R0/R1/R2 routing plus older design/develop semantics | ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE 6-stage workflow |
 | **Command surface** | 15 commands including `~exec`, `~rollback`, `~rlm`, `~validatekb` | 13 focused commands such as `~idea`, `~plan`, `~build`, `~verify`, `~prd`, `~loop`, `~wiki`, and `~help` |
 | **Quality model** | More distributed rules, more reliance on prose | 14 auto-activated skills + checklist-based quality checks + Ralph Loop + verification records |
-| **Project state** | KB felt auxiliary | `.helloagents/` is now the activation boundary; `STATE.md`, plan packages, `DESIGN.md`, and `contract.json` anchor the workflow |
+| **Project state** | KB felt auxiliary | `.helloagents/` is now the activation boundary; the session-scoped `STATE.md` resolved from `state_path`, plan packages, `DESIGN.md`, and `contract.json` anchor the workflow |
 | **KB storage** | Project-local only | Project-local by default, plus `project_store_mode=repo-shared` for sharing stable KB/plan assets across git worktrees |
 | **Codex integration** | Earlier compatibility layers and legacy paths | Standby = injected rules + local links; global = native local-plugin chain with less noise and drift |
 
@@ -135,6 +135,7 @@ Skills activate automatically based on what you're building — no configuration
 **📋 Checklist-Based Delivery Checks**
 
 After coding, HelloAGENTS collects delivery checklists from all activated skills and verifies each item before reporting completion.
+When the runtime requires it, completion also depends on structured `turn-state` and plan evidence instead of guessing from natural-language output.
 
 **Your gain:** nothing ships until it actually passes quality checks — not just "looks done."
 
@@ -168,7 +169,7 @@ Simple tasks stay fast. Complex tasks use a 6-stage workflow: ROUTE/TIER → SPE
 
 **🧠 Structured Plan Files**
 
-Complex tasks no longer rely on one paragraph of planning prose. They land as `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, `STATE.md`, and `DESIGN.md` when needed.
+Complex tasks no longer rely on one paragraph of planning prose. They land as `requirements.md`, `plan.md`, `tasks.md`, `contract.json`, the session-scoped `STATE.md`, and `DESIGN.md` when needed.
 
 **Your gain:** routing, implementation, verification, and closeout all work from the same plan files instead of drifting across free-form summaries.
 
@@ -543,6 +544,7 @@ The test suite validates:
 - Claude/Gemini/Codex config file merge, restore, and cleanup behavior
 - Codex local-plugin refresh after local branch or file changes
 - runtime inject/route/guard/Ralph Loop chains
+- structured `turn-state` delivery gating, session-scoped `state_path`, and repo-shared project storage
 - cleanup when Codex global files exist but `~/.codex/` is already gone
 
 ## ❓ FAQ
@@ -558,7 +560,7 @@ The test suite validates:
 
 **A:** Everything. The v3 line is a complete rewrite:
 - Python package → pure Node.js/Markdown architecture
-- 15 commands → 12 commands + 14 auto-activated quality skills
+- 15 commands → 13 commands + 14 auto-activated quality skills
 - 6 CLI targets → 3 (Claude Code + Codex CLI + Gemini CLI)
 - New: checklist gate control, guard system, ~prd, ~loop, ~verify, design system generation
 - See [Version History](#-version-history) for full details.
@@ -720,12 +722,13 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ### v3.0.10 (current)
 
-**Fixes and verification since `v3.0.9beta`:**
-- 🔧 Codex managed `notify` entries now carry an explicit marker, so cleanup can distinguish HelloAGENTS config from user-owned `notify` commands that also use `codex-notify`
-- 🔧 Codex cleanup now preserves multiline user `notify` arrays and restores them without corrupting surrounding TOML sections
-- 🔧 `notify_level=0` now suppresses warning and confirmation notifications as well as completion notifications, keeping the documented "off" behavior consistent
-- 🔧 Restored `hello-ui` guidance after confirming OpenAI's public skill guidance recommends keeping `SKILL.md` under about 500 lines rather than enforcing a 200-line limit
-- 🧪 Added regressions for Codex `notify` preservation, multiline TOML handling, and notification-level gating
+**Key changes relative to `v3.0.7`:**
+- 🔧 Added structured `turn-state` gating for `complete` / `waiting` / `blocked`, so stop/notify/closeout paths no longer infer completion from natural-language text
+- 🔧 Moved workflow recovery to the session-scoped `state_path` layout (`.helloagents/sessions/<branch>/<session-or-default>/STATE.md`) and removed the old project-root fallback behavior
+- 🔧 Hardened Codex install/cleanup flows: managed `notify` entries are marked, multiline `notify` arrays are preserved, and user-owned `model_instructions_file` / `notify` / non-managed `codex_hooks` are no longer overwritten during restore
+- 🔧 Re-aligned Codex standby/global read-root refresh, plugin cache refresh, and runtime docs with the current local behavior; Codex remains rules-file driven by default and does not enable HelloAGENTS hooks
+- 🔧 Refreshed `hello-ui`, workflow wording, and README guidance to match the current runtime, OpenAI skill guidance, and the session-scoped state model
+- 🧪 Added or expanded lifecycle/runtime regressions for `turn-state`, notify gating, Codex config preservation, session-scoped state isolation, and repo-shared project storage
 
 ### v3.0.9
 
