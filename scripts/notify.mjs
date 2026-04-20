@@ -4,13 +4,13 @@
 
 import { join, dirname } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
 import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
-import { claimsTaskComplete, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
+import { shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
+import { runGateScript } from './notify-gates.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
 import { clearRouteContext, writeRouteContext } from './runtime-context.mjs';
@@ -56,63 +56,30 @@ function getSettings() {
 function runRalphLoop(payload) {
   const settings = getSettings();
   if (settings.ralph_loop_enabled === false) return false;
-  try {
-    const rlPath = join(__dirname, 'ralph-loop.mjs');
-    if (!existsSync(rlPath)) return false;
-    const hostFlag = IS_GEMINI ? ['--gemini'] : HOST === 'codex' ? ['--codex'] : [];
-    const result = spawnSync(process.execPath, [rlPath, ...hostFlag], {
-      input: JSON.stringify(payload),
-      encoding: 'utf-8',
-      timeout: 120_000,
-    });
-    if (result.stdout) {
-      const rlOut = JSON.parse(result.stdout);
-      if (rlOut.decision === 'block') {
-        appendReplayEvent(payload.cwd || process.cwd(), {
-          host: HOST,
-          event: 'verify_gate_blocked',
-          source: 'ralph-loop',
-          reason: rlOut.reason || '',
-        });
-        output(rlOut);
-        return true;
-      }
-    }
-  } catch {}
-  return false;
+  return runGateScript({
+    payload,
+    host: HOST,
+    scriptPath: join(__dirname, 'ralph-loop.mjs'),
+    args: IS_GEMINI ? ['--gemini'] : HOST === 'codex' ? ['--codex'] : [],
+    source: 'ralph-loop',
+    blockEvent: 'verify_gate_blocked',
+    timeout: 120_000,
+    appendReplayEvent,
+    output,
+  });
 }
 
 function runDeliveryGate(payload) {
-  try {
-    const gatePath = join(__dirname, 'delivery-gate.mjs');
-    if (!existsSync(gatePath)) return false;
-    const result = spawnSync(process.execPath, [gatePath], {
-      input: JSON.stringify(payload),
-      encoding: 'utf-8',
-      timeout: 30_000,
-    });
-    if (result.stdout) {
-      const gateOut = JSON.parse(result.stdout);
-      if (gateOut.decision === 'block') {
-        appendReplayEvent(payload.cwd || process.cwd(), {
-          host: HOST,
-          event: 'delivery_gate_blocked',
-          source: 'delivery-gate',
-          reason: gateOut.reason || '',
-        });
-        output(gateOut);
-        return true;
-      }
-    }
-  } catch {}
-  return false;
-}
-
-function readCompletionText(payload = {}) {
-  return payload['last-assistant-message']
-    || payload.last_assistant_message
-    || payload.lastAssistantMessage
-    || '';
+  return runGateScript({
+    payload,
+    host: HOST,
+    scriptPath: join(__dirname, 'delivery-gate.mjs'),
+    source: 'delivery-gate',
+    blockEvent: 'delivery_gate_blocked',
+    timeout: 30_000,
+    appendReplayEvent,
+    output,
+  });
 }
 
 function readMainTurnState(cwd) {
@@ -124,9 +91,9 @@ function consumeMainTurnState(cwd, turnState) {
   if (turnState?.role === 'main') clearTurnState(cwd);
 }
 
-function shouldProcessCloseout(turnState, lastMsg) {
+function shouldProcessCloseout(turnState) {
   if (turnState) return turnState.kind === 'complete';
-  return claimsTaskComplete(lastMsg);
+  return false;
 }
 
 function cmdPreCompact() {
@@ -217,10 +184,9 @@ function cmdInject() {
 
 function cmdStop() {
   const payload = readStdinJson();
-  const lastMsg = readCompletionText(payload);
   const cwd = payload.cwd || process.cwd();
   const turnState = readMainTurnState(cwd);
-  const shouldProcess = shouldProcessCloseout(turnState, lastMsg);
+  const shouldProcess = shouldProcessCloseout(turnState);
   clearRouteContext();
   if (shouldProcess && runRalphLoop(payload)) {
     consumeMainTurnState(cwd, turnState);

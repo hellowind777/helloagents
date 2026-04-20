@@ -18,6 +18,7 @@ const NOTIFY_MESSAGES = {
 };
 
 const WIN_APPID = 'HelloAgents.Notification';
+const DISABLE_OS_NOTIFICATIONS = process.env.HELLOAGENTS_DISABLE_OS_NOTIFICATIONS === '1';
 
 function escapeToastText(value = '') {
   return String(value)
@@ -55,6 +56,7 @@ function resolveWav(pkgRoot, event) {
 }
 
 export function playSound(pkgRoot, event) {
+  if (DISABLE_OS_NOTIFICATIONS) return;
   const wav = resolveWav(pkgRoot, event);
   if (!wav) { process.stderr.write('\x07'); return; }
   try {
@@ -83,6 +85,7 @@ function ensureWinAppId(pkgRoot) {
 }
 
 export function desktopNotify(pkgRoot, event, extra) {
+  if (DISABLE_OS_NOTIFICATIONS) return;
   const notification = buildDesktopNotificationContent(event, extra);
   try {
     if (PLAT === 'win32') {

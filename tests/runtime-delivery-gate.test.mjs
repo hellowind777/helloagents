@@ -21,6 +21,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   const gateScript = join(pkgRoot, 'scripts', 'delivery-gate.mjs')
   const closeoutScript = join(pkgRoot, 'scripts', 'closeout-state.mjs')
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
 
   writeSettings(home, { ralph_loop_enabled: false })
   writeText(
@@ -45,6 +46,18 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   assert.match(payload.reason, /unfinished tasks/)
   assert.match(payload.reason, /under-specified task metadata/)
   assert.match(payload.reason, /Recommended path: ~plan -> ~build \/ ~verify/)
+
+  result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'consolidate',
+    }),
+  })
+  parseStdoutJson(result)
 
   result = runNode(notifyScript, ['stop'], {
     cwd: project,

@@ -44,8 +44,8 @@ function renderInstallMessage(context, mode, state) {
     }
     return msg(
       refresh
-        ? '  global 模式已刷新。\n  Claude Code / Gemini 请保持插件已安装；Codex 原生本地插件链路已重装并同步最新文件。'
-        : '  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 请手动安装插件；Codex 已自动走原生本地插件链路。',
+        ? '  global 模式已刷新。\n  Claude Code / Gemini 请保持插件已安装；Codex 原生本地插件已重装并同步最新文件。'
+        : '  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 请手动安装插件；Codex 已自动安装原生本地插件。',
       refresh
         ? '  Global mode refreshed.\n  Keep Claude Code / Gemini plugins installed; Codex native local-plugin files were reinstalled and synced.'
         : '  All projects will use full HelloAGENTS rules.\n  Install Claude Code / Gemini plugins manually; Codex now uses the native local-plugin path automatically.',
@@ -92,7 +92,7 @@ ${msg('单 CLI 管理', 'Scoped CLI management')}:
 ${msg('诊断', 'Diagnostics')}:
   helloagents doctor
   helloagents doctor codex --json
-  ${msg('检查 carrier、链接、hooks、配置注入、Codex 插件链路、受管 model_instructions_file 指向与版本漂移', 'Checks carriers, links, hooks, config injections, the Codex plugin chain, managed model_instructions_file targeting, and version drift')}
+  ${msg('检查 carrier、链接、hooks、配置注入、Codex 插件安装、受管 model_instructions_file 指向与版本漂移', 'Checks carriers, links, hooks, config injections, Codex plugin installation, managed model_instructions_file targeting, and version drift')}
 
 ${msg('卸载', 'Uninstall')}:
   helloagents cleanup      ${msg('（推荐先执行，显式清理所有 CLI 注入/链接）', '(recommended first, explicitly cleans CLI injections/links)')}

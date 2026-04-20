@@ -721,7 +721,7 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 ### v3.0.9 (current)
 
 **Fixes and verification:**
-- 🔧 Claude Code / Gemini CLI `stop` delivery gating now prioritizes structured `turn-state` instead of inferring completion from natural-language text, so ordinary waiting turns no longer get misclassified as finished delivery
+- 🔧 Claude Code / Gemini CLI `stop` delivery gating now only accepts structured `turn-state` for completion, so ordinary waiting turns no longer get misclassified as finished delivery
 - 🔧 Codex cleanup now preserves user-owned post-install replacements for `model_instructions_file`, `notify`, and non-managed `codex_hooks` instead of restoring stale pre-install values over them
 - 🧪 Added lifecycle/runtime regressions for structured `stop` gating and Codex config preservation after post-install user edits
 

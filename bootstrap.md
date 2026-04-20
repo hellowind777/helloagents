@@ -209,7 +209,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - `~plan` 生成 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`
 - `~prd` 生成 PRD 维度文档、`tasks.md`、`decisions.md`
 - `~build` 读取现有方案包并做定位，不重复发明方案
-- `contract.json` 是方案包的机器契约，至少明确 `verifyMode`、`reviewerFocus`、`testerFocus`；只有在 T3 / UI / 高风险链路确有收益时，才额外声明 `advisor`；进入验证或最终交付前，优先消费它而不是从自然语言描述里回推验证路径
+- `contract.json` 是方案包的机器契约，至少明确 `verifyMode`、`reviewerFocus`、`testerFocus`；只有在 T3 / UI / 高风险流程确有收益时，才额外声明 `advisor`；进入验证或最终交付前，优先消费它而不是从自然语言描述里回推验证路径
 - 涉及 UI 时，设计约束优先级固定为：当前 `plan.md` / PRD UI 决策 → 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析） → 通用 UI 规则
 - `~idea` 在输出比较与推荐后结束，不进入实现，也不创建 `.helloagents/`、状态文件或方案包
 
@@ -233,7 +233,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 非编码任务（文档 / 方案 / 审查等）：
 - 收集已激活技能的交付检查清单，逐项确认通过
 
-### 6. CONSOLIDATE — 状态、沉淀与归档
+### 6. CONSOLIDATE — 状态、资料与归档
 所有任务：
 - 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
@@ -292,7 +292,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - archive/YYYY-MM/ — 已归档的方案包（整个 plans/{feature}/ 目录移入）
 - archive/_index.md — 归档索引
 
-### 知识沉淀（受 kb_create_mode 控制，0=关闭/1=已激活项目或全局模式中编码自动/2=已激活项目或全局模式中始终）
+### 知识记录（受 kb_create_mode 控制，0=关闭/1=已激活项目或全局模式中编码自动/2=已激活项目或全局模式中始终）
 - context.md — 项目架构、技术栈、目录结构、模块索引
 - guidelines.md — 编码约定（仅含非显而易见的约定）
 - CHANGELOG.md — 变更历史
@@ -312,7 +312,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 1. 当前用户最新消息、显式 `~command`、本轮已确认的范围与结论
 2. 当前活跃方案包 / PRD、代码与验证证据
 3. 当前状态文件（`state_path`，只用于补齐最近进度）
-4. 其他知识沉淀与历史归档
+4. 其他知识记录与历史归档
 
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：

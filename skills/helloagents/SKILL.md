@@ -108,6 +108,7 @@ Layer 3 — 资源文件（技能内引用时读取）：
 - `~build`
 - `~prd`
 - `~loop`
+- `~wiki`
 - `~init`
 - `~test`
 - `~verify`

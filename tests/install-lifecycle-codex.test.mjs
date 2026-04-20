@@ -187,3 +187,36 @@ test('Codex cleanup preserves user-owned config replacements written after insta
   assert.doesNotMatch(cleaned, /C:\/original\/bootstrap\.md/)
   assert.doesNotMatch(cleaned, /\[plugins\."helloagents@local-plugins"\]/)
 })
+
+test('Codex cleanup preserves a user-owned marketplace file after removing helloagents', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--global'])
+  writeText(
+    join(home, '.agents', 'plugins', 'marketplace.json'),
+    JSON.stringify({
+      name: 'my-local-marketplace',
+      interface: {
+        displayName: 'My Local Marketplace',
+      },
+      plugins: [
+        {
+          name: 'helloagents',
+          source: {
+            source: 'local',
+            path: './plugins/helloagents',
+          },
+        },
+      ],
+    }, null, 2) + '\n',
+  )
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  const marketplace = JSON.parse(readText(join(home, '.agents', 'plugins', 'marketplace.json')))
+  assert.equal(marketplace.name, 'my-local-marketplace')
+  assert.deepEqual(marketplace.plugins, [])
+})

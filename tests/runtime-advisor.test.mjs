@@ -28,7 +28,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   writeText(join(project, '.helloagents', 'plans', '202604050501_release', 'plan.md'), '# release plan\n')
   writeText(
     join(project, '.helloagents', 'plans', '202604050501_release', 'tasks.md'),
-    ['# release', '', '## 任务列表', '- [√] 发布校验（涉及文件：release.md；完成标准：发布链路确认；验证方式：npm run test）', ''].join('\n'),
+    ['# release', '', '## 任务列表', '- [√] 发布校验（涉及文件：release.md；完成标准：发布流程确认；验证方式：npm run test）', ''].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604050501_release', 'contract.json'), {
     version: 1,
@@ -36,7 +36,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     originCommand: 'plan',
     verifyMode: 'test-first',
     reviewerFocus: [],
-    testerFocus: ['发布链路确认'],
+    testerFocus: ['发布流程确认'],
     ui: {
       required: false,
       designContract: false,
@@ -44,7 +44,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     },
     advisor: {
       required: true,
-      reason: '发布链路需要独立复查',
+      reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
     },
@@ -94,7 +94,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
       cwd: project,
       source: 'manual',
       originCommand: 'verify',
-      reason: '发布链路需要独立复查',
+      reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
       consultedSources: ['codex'],
@@ -121,7 +121,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
       cwd: project,
       source: 'manual',
       originCommand: 'verify',
-      reason: '发布链路需要独立复查',
+      reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
       consultedSources: ['codex'],
