@@ -6,10 +6,12 @@ export const DANGEROUS_PATTERNS = [
   { pattern: /(sudo\s+)?rm\s+(-[a-zA-Z]*r[a-zA-Z]*\s+)?(-[a-zA-Z]*f[a-zA-Z]*\s+)?(\/|~|\*)/, reason: 'Recursive delete of critical path' },
   { pattern: /(sudo\s+)?rm\s+--recursive/, reason: 'Recursive delete (long option)' },
   { pattern: /(sudo\s+)?rm\s+-[a-zA-Z]*r[a-zA-Z]*\s+\.\.?(\s|$)/, reason: 'Recursive delete of current/parent directory' },
+  { pattern: /\bcmd(?:\.exe)?\s*\/c\b/i, reason: 'Nested cmd invocation bypasses PowerShell safety rules' },
+  { pattern: /\bStart-Process\s+cmd(?:\.exe)?\b/i, reason: 'Nested cmd invocation bypasses PowerShell safety rules' },
   { pattern: /git\s+push\s+(-f|--force)/, reason: 'Force push (specify branch explicitly)' },
   { pattern: /git\s+reset\s+--hard/, reason: 'Hard reset (destructive operation)' },
   { pattern: /DROP\s+(DATABASE|TABLE|SCHEMA)/i, reason: 'Database destruction command' },
-  { pattern: /TRUNCATE\s+TABLE/i, reason: 'Table truncation' },
+  { pattern: /\bTRUNCATE(?:\s+TABLE)?\b/i, reason: 'Table truncation' },
   { pattern: /chmod\s+777/, reason: 'World-writable permissions' },
   { pattern: /mkfs\b/, reason: 'Filesystem format command' },
   { pattern: /dd\s+.*of=\/dev\//, reason: 'Direct device write' },
@@ -65,6 +67,29 @@ export function scanHighRiskCommands(command) {
       warnings.push({ ...entry })
     }
   }
+  return warnings
+}
+
+export function scanShellSafetyWarnings(command = '') {
+  const warnings = []
+  const normalized = String(command || '')
+
+  if (/\bpowershell(?:\.exe)?\b/i.test(normalized) && /\s-Command\b/i.test(normalized)) {
+    const inlineScript = normalized.split(/\s-Command\b/i).slice(1).join(' ').trim()
+    const logicalLines = inlineScript
+      .split(/[;\r\n]+/)
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+    if (logicalLines.length > 3) {
+      warnings.push('PowerShell inline script exceeds 3 logical lines; prefer a temporary .ps1 file')
+    }
+  }
+
+  const fileOps = normalized.match(/\b(remove-item|move-item|copy-item|new-item|set-content|add-content|out-file|mkdir|md|touch|cp|copy|mv|move|ren|rename|del|erase|rm|rmdir)\b/ig) || []
+  if (fileOps.length > 1 && /[;\r\n]/.test(normalized)) {
+    warnings.push('Multiple file operations are chained in one shell command; split them into separate commands')
+  }
+
   return warnings
 }
 

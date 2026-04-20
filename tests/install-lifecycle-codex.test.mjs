@@ -142,3 +142,48 @@ test('Codex standby leaves a user-owned developer_instructions block untouched',
   const restoredConfig = readText(join(home, '.codex', 'config.toml'))
   assert.match(restoredConfig, /^developer_instructions = """\nuser custom instructions\n"""/)
 })
+
+test('Codex cleanup preserves user-owned config replacements written after install', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'model_instructions_file = "C:/original/bootstrap.md"',
+      'notify = ["node", "C:/original/notify.mjs", "codex-notify"]',
+      '',
+      '[features]',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--global'])
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'model_instructions_file = "D:/custom/AGENTS.md"',
+      'notify = ["node", "D:/custom/notify.mjs", "custom-notify"]',
+      '',
+      '[features]',
+      'codex_hooks = false',
+      'experimental = true',
+      '',
+      '[plugins."helloagents@local-plugins"]',
+      'enabled = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  const cleaned = readText(join(home, '.codex', 'config.toml'))
+  assert.match(cleaned, /model_instructions_file = "D:\/custom\/AGENTS\.md"/)
+  assert.match(cleaned, /notify = \["node", "D:\/custom\/notify\.mjs", "custom-notify"\]/)
+  assert.match(cleaned, /codex_hooks = false/)
+  assert.doesNotMatch(cleaned, /C:\/original\/bootstrap\.md/)
+  assert.doesNotMatch(cleaned, /\[plugins\."helloagents@local-plugins"\]/)
+})

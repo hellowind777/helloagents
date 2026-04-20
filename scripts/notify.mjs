@@ -10,11 +10,12 @@ import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
 import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
-import { claimsTaskComplete, shouldIgnoreCodexNotifyClient, shouldIgnoreFormattedSubagent } from './notify-events.mjs';
+import { claimsTaskComplete, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
 import { clearRouteContext, writeRouteContext } from './runtime-context.mjs';
 import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
+import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -114,6 +115,14 @@ function readCompletionText(payload = {}) {
     || '';
 }
 
+function shouldRunDeliveryGate(cwd, lastMsg) {
+  const turnState = readTurnState(cwd);
+  if (turnState?.role === 'main') {
+    return turnState.kind === 'complete';
+  }
+  return claimsTaskComplete(lastMsg);
+}
+
 function cmdPreCompact() {
   const payload = readStdinJson();
   const cwd = payload.cwd || process.cwd();
@@ -140,6 +149,7 @@ function cmdPreCompact() {
 
 function cmdRoute() {
   const payload = readStdinJson();
+  clearTurnState(payload.cwd || process.cwd());
   handleRouteCommand({
     payload,
     host: HOST,
@@ -194,6 +204,7 @@ function cmdInject() {
     cwd,
   });
   clearRouteContext();
+  clearTurnState(cwd);
   suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
 }
 
@@ -207,7 +218,7 @@ function cmdStop() {
     desktopNotify('warning', buildNotifyExtra(payload));
     return;
   }
-  if (claimsTaskComplete(lastMsg) && runDeliveryGate(payload)) {
+  if (shouldRunDeliveryGate(cwd, lastMsg) && runDeliveryGate(payload)) {
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(payload));
     return;
@@ -243,17 +254,17 @@ function cmdCodexNotify() {
   }
   if (type !== 'agent-turn-complete') return;
 
-  const lastMsg = data['last-assistant-message'] || '';
-  const settings = getSettings();
-  if (shouldIgnoreFormattedSubagent(lastMsg, settings.output_format !== false)) return;
-
   const cwd = data.cwd || process.cwd();
-  if (claimsTaskComplete(lastMsg) && runRalphLoop({ cwd })) {
+  const turnState = readTurnState(cwd);
+  if (!turnState || turnState.role !== 'main') return;
+
+  const settings = getSettings();
+  if (turnState.kind === 'complete' && runRalphLoop({ cwd })) {
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(data));
     return;
   }
-  if (claimsTaskComplete(lastMsg) && runDeliveryGate({ cwd })) {
+  if (turnState.kind === 'complete' && runDeliveryGate({ cwd })) {
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(data));
     return;

@@ -18,6 +18,7 @@ import {
   scanEnvCoverage,
   scanForSecrets,
   scanHighRiskCommands,
+  scanShellSafetyWarnings,
   scanUnrequestedFiles,
 } from './guard-rules.mjs'
 
@@ -168,7 +169,7 @@ function handleDangerousCommand(data, command) {
 
 function handleHighRiskCommand(data, command) {
   const warnings = scanHighRiskCommands(command)
-  if (warnings.length === 0) return
+  if (warnings.length === 0) return []
 
   const cwd = data.cwd || process.cwd()
   const gate = buildHighRiskGate(warnings, cwd)
@@ -185,20 +186,43 @@ function handleHighRiskCommand(data, command) {
       guardType: 'high-risk-gate',
       matches: warnings.map((warning) => warning.reason),
     })
-    return
+    return null
   }
+  return warnings.map((warning) => warning.reason)
+}
+
+function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings) {
+  const sections = []
+  if (highRiskWarnings.length > 0) {
+    sections.push(`⚠️ [HelloAGENTS 高风险链路提醒] 检测到高风险命令:\n${highRiskWarnings.map((warning) => `  - ${warning}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`)
+  }
+  if (shellSafetyWarnings.length > 0) {
+    sections.push(`⚠️ [HelloAGENTS Shell 安全提醒] 检测到建议调整的命令写法:\n${shellSafetyWarnings.map((warning) => `  - ${warning}`).join('\n')}\n当前仅提示，不中断执行。`)
+  }
+  if (sections.length === 0) return
 
   emitHookPayload({
     hookSpecificOutput: {
       hookEventName: HOOK_EVENT,
-      additionalContext: `⚠️ [HelloAGENTS 高风险链路提醒] 检测到高风险命令:\n${warnings.map((warning) => `  - ${warning.reason}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`,
+      additionalContext: sections.join('\n\n'),
     },
   })
-  emitGuardEvent(cwd, 'guard_warning', 'command', '', {
-    guardType: 'high-risk-warning',
-    command: command.slice(0, 200),
-    warnings: warnings.map((warning) => warning.reason),
-  })
+
+  const cwd = data.cwd || process.cwd()
+  if (highRiskWarnings.length > 0) {
+    emitGuardEvent(cwd, 'guard_warning', 'command', '', {
+      guardType: 'high-risk-warning',
+      command: command.slice(0, 200),
+      warnings: highRiskWarnings,
+    })
+  }
+  if (shellSafetyWarnings.length > 0) {
+    emitGuardEvent(cwd, 'guard_warning', 'command', '', {
+      guardType: 'shell-safety-warning',
+      command: command.slice(0, 200),
+      warnings: shellSafetyWarnings,
+    })
+  }
 }
 
 function handleShellCommand(data) {
@@ -217,7 +241,11 @@ function handleShellCommand(data) {
   }
 
   if (handleDangerousCommand(data, command)) return
-  handleHighRiskCommand(data, command)
+  const highRiskWarnings = handleHighRiskCommand(data, command)
+  if (highRiskWarnings === null) return
+
+  const shellSafetyWarnings = scanShellSafetyWarnings(command)
+  emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings)
 }
 
 async function main() {
