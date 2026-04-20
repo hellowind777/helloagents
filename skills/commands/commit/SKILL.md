@@ -20,7 +20,7 @@ Trigger: ~commit [message]
    - ""（空，默认）→ 不添加归属
    - 有内容（如 "Co-Authored-By: HelloAGENTS"）→ 添加该内容到 commit message
 6. 执行 git commit
-7. 若项目已有 `.helloagents/STATE.md`，按 bootstrap 的“已有则更新”规则同步当前已提交状态
+7. 若当前 `STATE.md` 已存在（优先取当前项目存储中的 `state_path`，未注入时回退 `.helloagents/STATE.md`），按 bootstrap 的“已有则更新”规则同步当前已提交状态
 
 ## 知识库同步
 提交后，继续复用上方已解析的同一份设置获取 `kb_create_mode`，不要再次读取 `~/.helloagents/helloagents.json`：

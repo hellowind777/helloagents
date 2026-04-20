@@ -8,7 +8,7 @@ Trigger: ~prd [description]
 
 执行 `~prd` 时，不读取 `~plan` 的 command skill；只有当前流程明确需要时，才继续读取对应的 hello-* 技能。
 执行 `~prd` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充规格探索、PRD 落盘与执行衔接要求。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 与 `.ralph-*.json` 保持项目本地；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 与 `.ralph-*.json` 保持项目本地；若当前上下文中的“当前项目存储”给出 `state_path`，本轮恢复快照统一读写该路径；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
 - 在用户确认方案之前，禁止编写任何实现代码、创建任何文件、或执行任何实现操作。
@@ -58,7 +58,7 @@ Trigger: ~prd [description]
 ### 1. 上下文收集
 
 已有项目：
-- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先把 `.helloagents/STATE.md` 当恢复快照使用，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实校正主线
+- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先把 `.helloagents/STATE.md` 当恢复快照使用（若当前项目存储给出 `state_path`，则优先读取该当前会话的 `STATE.md`），再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实校正主线
 - 在进入维度探索前，至少确认 `.helloagents/context.md`、`.helloagents/guidelines.md`，并只扫描与当前产品范围直接相关的代码和配置
 
 全新项目（无 .helloagents/ 目录）：
@@ -105,7 +105,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需前置审美收敛时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要只把验证路径留在自然语言说明里
 - 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`（按当前项目存储模式解析）；若原文件不存在，先按模板建立最小设计契约，再同步已确认的稳定 UI 决策
-- 重写 `.helloagents/STATE.md`，其中“主线目标”写当前 PRD 链路真正要完成的产品 / 功能目标，不延续无关旧主线
+- 重写当前会话的 `STATE.md`（优先取当前项目存储中的 `state_path`，未注入时回退 `.helloagents/STATE.md`），其中“主线目标”写当前 PRD 链路真正要完成的产品 / 功能目标，不延续无关旧主线
 
 输出 PRD 完整度摘要：已覆盖 N/13 个维度，建议后续补充的维度（如有）。
 

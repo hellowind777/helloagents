@@ -11,7 +11,7 @@ Trigger: ~idea [description]
 ## 铁律
 - 只讨论，不编写实现代码，不创建项目文件，不执行实现操作
 - 不创建 `.helloagents/`
-- 不创建或更新 `.helloagents/STATE.md`、知识库文件、方案包或项目级规则文件
+- 不创建或更新 `.helloagents/STATE.md`；若当前项目存储给出 `state_path`，同样禁止更新该当前 `STATE.md`、知识库文件、方案包或项目级规则文件
 - 不生成方案包
 - 不执行会改变工作区或外部状态的命令
 - 不默认使用子代理
