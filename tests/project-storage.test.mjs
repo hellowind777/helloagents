@@ -14,7 +14,7 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 const PROJECT_STORAGE_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'project-storage.mjs')).href
 const VERIFY_STATE_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'verify-state.mjs')).href
@@ -31,6 +31,10 @@ function runModuleEval({ cwd, env, source }) {
   })
   assertCommandOk(result)
   return result.stdout ? JSON.parse(result.stdout) : null
+}
+
+function normalizePathForAssert(filePath = '') {
+  return String(filePath).replace(/\\/g, '/')
 }
 
 test('repo-shared storage uses one shared knowledge dir across git worktrees while keeping local state dirs', () => {
@@ -86,7 +90,7 @@ test('repo-shared mode resolves shared verify.yaml and plan packages from local 
   })
 
   writeText(
-    join(project, '.helloagents', 'STATE.md'),
+    getSessionStatePath(project),
     ['# 恢复快照', '', '## 主线目标', '验证共享知识库路径', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
   )
   writeText(join(summary.storeDir, 'verify.yaml'), 'commands:\n  - "npm run shared-test"\n')
@@ -117,7 +121,7 @@ test('repo-shared mode resolves shared verify.yaml and plan packages from local 
   })
 
   assert.deepEqual(payload.commands, ['npm run shared-test'])
-  assert.equal(payload.statePath, join(project, '.helloagents', 'STATE.md'))
+  assert.equal(payload.statePath, getSessionStatePath(project))
   assert.equal(payload.planDir, join(summary.storeDir, 'plans', feature))
   assert.equal(payload.referencedPlanDir, join(summary.storeDir, 'plans', feature))
   assert.equal(payload.relativePath, `.helloagents/plans/${feature}`)
@@ -155,4 +159,142 @@ test('notify inject and command routing expose repo-shared project storage hints
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /project_store_mode=repo-shared/)
   assert.match(payload.hookSpecificOutput.additionalContext, /知识库\/方案目录改为/)
+})
+
+test('notify inject exposes session-scoped state path when session identifiers exist', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'wt-session-abcdef123456',
+  }
+  const project = createTempDir('helloagents-storage-session-inject-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { install_mode: 'standby' })
+  writeText(join(project, 'README.md'), '# session inject repo\n')
+  assertCommandOk(runCommand('git', ['init'], { cwd: project, env }))
+  assertCommandOk(runCommand('git', ['config', 'user.name', 'HelloAGENTS Test'], { cwd: project, env }))
+  assertCommandOk(runCommand('git', ['config', 'user.email', 'helloagents@example.com'], { cwd: project, env }))
+  assertCommandOk(runCommand('git', ['checkout', '-b', 'feature/session-inject'], { cwd: project, env }))
+  mkdirSync(join(project, '.helloagents'), { recursive: true })
+
+  const result = runNode(notifyScript, ['inject'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, source: 'startup' }),
+  })
+  const payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /"state_scope": "session"/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /feature-session-inject/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /abcdef12/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /sessions[\\/].*STATE\.md/)
+})
+
+test('session-scoped state path isolates branch and terminal session in session-only storage', () => {
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'wt-session-abcdef123456',
+  }
+  const repo = createTempDir('helloagents-storage-session-')
+
+  writeText(join(repo, 'README.md'), '# session storage repo\n')
+  assertCommandOk(runCommand('git', ['init'], { cwd: repo, env }))
+  assertCommandOk(runCommand('git', ['config', 'user.name', 'HelloAGENTS Test'], { cwd: repo, env }))
+  assertCommandOk(runCommand('git', ['config', 'user.email', 'helloagents@example.com'], { cwd: repo, env }))
+  assertCommandOk(runCommand('git', ['checkout', '-b', 'feature/state-scope'], { cwd: repo, env }))
+
+  const payload = runModuleEval({
+    cwd: repo,
+    env,
+    source: `
+      const { getProjectStoreSummary } = await import(${JSON.stringify(PROJECT_STORAGE_MODULE_URL)})
+      process.stdout.write(JSON.stringify(getProjectStoreSummary(${JSON.stringify(repo)})))
+    `,
+  })
+
+  assert.equal(payload.stateScope, 'session')
+  assert.equal(payload.stateSessionToken, 'abcdef12')
+  assert.equal(payload.stateSessionMode, 'host-session')
+  assert.equal(payload.stateBranch, 'feature-state-scope')
+  assert.equal(
+    normalizePathForAssert(payload.statePath),
+    normalizePathForAssert(join(repo, '.helloagents', 'sessions', 'feature-state-scope', 'abcdef12', 'STATE.md')),
+  )
+})
+
+test('workflow snapshot reads the current session STATE or branch default slot only', () => {
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'wt-session-abcdef123456',
+  }
+  const repo = createTempDir('helloagents-storage-session-fallback-')
+  const feature = '202604080101_session-plan'
+
+  writeText(join(repo, 'README.md'), '# session fallback repo\n')
+  assertCommandOk(runCommand('git', ['init'], { cwd: repo, env }))
+  assertCommandOk(runCommand('git', ['config', 'user.name', 'HelloAGENTS Test'], { cwd: repo, env }))
+  assertCommandOk(runCommand('git', ['config', 'user.email', 'helloagents@example.com'], { cwd: repo, env }))
+  assertCommandOk(runCommand('git', ['checkout', '-b', 'feature/session-fallback'], { cwd: repo, env }))
+
+  writeText(join(repo, '.helloagents', 'plans', feature, 'requirements.md'), '# scoped requirements\n')
+  writeText(join(repo, '.helloagents', 'plans', feature, 'plan.md'), '# scoped plan\n')
+  writeText(
+    join(repo, '.helloagents', 'plans', feature, 'tasks.md'),
+    ['# scoped', '', '## 任务列表', '- [ ] 读取会话级 STATE（涉及文件：src/demo.ts；完成标准：会话快照优先；验证方式：npm test）', ''].join('\n'),
+  )
+  writeText(
+    join(repo, '.helloagents', 'sessions', 'feature-session-fallback', 'abcdef12', 'STATE.md'),
+    ['# 恢复快照', '', '## 主线目标', '当前会话恢复快照', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
+  )
+  writeText(
+    getSessionStatePath(repo, { branch: 'feature-session-fallback', session: 'default' }),
+    ['# 恢复快照', '', '## 主线目标', '当前分支默认会话恢复快照', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
+  )
+
+  let payload = runModuleEval({
+    cwd: repo,
+    env,
+    source: `
+      const { getWorkflowSnapshot } = await import(${JSON.stringify(WORKFLOW_PLAN_FILES_MODULE_URL)})
+      process.stdout.write(JSON.stringify(getWorkflowSnapshot(${JSON.stringify(repo)}).state))
+    `,
+  })
+
+  assert.equal(payload.sessionScoped, true)
+  assert.equal(payload.stateScope, 'session')
+  assert.equal(payload.stateSessionMode, 'host-session')
+  assert.equal(
+    normalizePathForAssert(payload.statePath),
+    normalizePathForAssert(join(repo, '.helloagents', 'sessions', 'feature-session-fallback', 'abcdef12', 'STATE.md')),
+  )
+  assert.equal(payload.referencedPlanDir, join(repo, '.helloagents', 'plans', feature))
+
+  const envWithoutSession = {
+    ...buildHomeEnv(home),
+    HELLOAGENTS_NOTIFY_SESSION_ID: '',
+    WT_SESSION: '',
+    TERM_SESSION_ID: '',
+    KITTY_WINDOW_ID: '',
+    ALACRITTY_WINDOW_ID: '',
+    WINDOWID: '',
+    WEZTERM_PANE: '',
+    TAB_ID: '',
+  }
+  payload = runModuleEval({
+    cwd: repo,
+    env: envWithoutSession,
+    source: `
+      const { getWorkflowSnapshot } = await import(${JSON.stringify(WORKFLOW_PLAN_FILES_MODULE_URL)})
+      process.stdout.write(JSON.stringify(getWorkflowSnapshot(${JSON.stringify(repo)}).state))
+    `,
+  })
+
+  assert.equal(payload.sessionScoped, true)
+  assert.equal(payload.stateScope, 'session')
+  assert.equal(payload.stateSessionMode, 'default')
+  assert.equal(payload.statePath, getSessionStatePath(repo, { branch: 'feature-session-fallback', session: 'default' }))
+  assert.equal(payload.referencedPlanDir, join(repo, '.helloagents', 'plans', feature))
 })

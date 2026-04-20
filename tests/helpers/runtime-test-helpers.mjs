@@ -8,6 +8,10 @@ export function parseStdoutJson(result) {
   return result.stdout ? JSON.parse(result.stdout) : null
 }
 
+export function getSessionStatePath(project, { branch = 'detached', session = 'default' } = {}) {
+  return join(project, '.helloagents', 'sessions', branch, session, 'STATE.md')
+}
+
 export function writeSettings(home, overrides = {}) {
   writeJson(join(home, '.helloagents', 'helloagents.json'), {
     output_language: '',

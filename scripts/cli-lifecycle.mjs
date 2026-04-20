@@ -181,6 +181,17 @@ function runAllHostsLifecycle(action, explicitMode) {
   }
 
   const settings = readSettings(true)
+  if (action === 'update' && !explicitMode) {
+    for (const host of HOSTS) {
+      const mode = resolveHostMode(host, '', settings)
+      const result = runHostLifecycle(runtime, action, host, mode)
+      if (!result.skipped) setTrackedHostMode(settings, host, mode)
+    }
+    writeSettings(settings)
+    runtime.printInstallMsg(settings.install_mode || DEFAULTS.install_mode, 'refresh')
+    return
+  }
+
   const mode = resolveInstallMode(explicitMode, settings)
   if (explicitMode) settings.install_mode = explicitMode
   installAllHosts(runtime, mode)

@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { buildCommandRouteHint, buildStateSyncHint, buildWorkflowRouteHint } from './workflow-state.mjs';
+import { buildCommandRouteHint, buildStateSyncHint, buildWorkflowRouteHint, readStateSnapshot } from './workflow-state.mjs';
 import { buildCapabilityHint } from './capability-registry.mjs';
 import {
   buildProjectStorageBlock,
@@ -69,16 +69,14 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   summaryParts.push('以下信息在上下文压缩前保存，确保压缩后不丢失关键状态。');
 
   const cwd = payload.cwd || process.cwd();
-  const statePath = join(cwd, '.helloagents', 'STATE.md');
-  const stateSyncHint = buildStateSyncHint(cwd);
-  if (existsSync(statePath)) {
-    try {
-      const stateContent = readFileSync(statePath, 'utf-8');
-      summaryParts.push('');
-      summaryParts.push('## 恢复快照（从 STATE.md 读取，只用于找回上次停在哪）');
-      summaryParts.push('恢复时先看当前用户消息，确认仍是同一任务再按 STATE.md 接续。');
-      summaryParts.push(stateContent);
-    } catch {}
+  const workflowOptions = { payload };
+  const stateSnapshot = readStateSnapshot(cwd, workflowOptions);
+  const stateSyncHint = buildStateSyncHint(cwd, workflowOptions);
+  if (stateSnapshot.exists && stateSnapshot.content) {
+    summaryParts.push('');
+    summaryParts.push(`## 状态文件（从 ${stateSnapshot.statePath.replace(/\\/g, '/')} 读取，只用于找回上次停在哪）`);
+    summaryParts.push('恢复时先看当前用户消息；如果仍是同一任务，再参考状态文件。');
+    summaryParts.push(stateSnapshot.content);
   }
 
   let bootstrap = '';
@@ -103,7 +101,7 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
     summaryParts.push(readRootBlock);
   }
 
-  const projectStorageBlock = buildProjectStorageBlock(cwd);
+  const projectStorageBlock = buildProjectStorageBlock(cwd, workflowOptions);
   if (projectStorageBlock) {
     summaryParts.push('');
     summaryParts.push(projectStorageBlock);
@@ -111,7 +109,7 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
 
   if (stateSyncHint) {
     summaryParts.push('');
-    summaryParts.push('## STATE.md 提醒');
+    summaryParts.push('## 状态文件提醒');
     summaryParts.push(stateSyncHint);
   }
 
@@ -123,13 +121,15 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   return summaryParts.join('\n');
 }
 
-export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host, cwd }) {
+export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host, cwd, payload = {} }) {
+  const workflowOptions = { payload };
   const packageRootBlock = buildPackageRootBlock(pkgRoot);
   const readRootBlock = buildReadRootBlock(resolveReadRoot({ cwd, pkgRoot, host, settings }));
-  const workflowHint = buildWorkflowRouteHint(cwd);
-  const capabilityHint = buildCapabilityHint({ cwd });
-  const projectStorageBlock = buildProjectStorageBlock(cwd);
-  const stateSyncHint = buildStateSyncHint(cwd);
+  const workflowHint = buildWorkflowRouteHint(cwd, workflowOptions);
+  const capabilityHint = buildCapabilityHint({ cwd, options: workflowOptions });
+  const projectStorageBlock = buildProjectStorageBlock(cwd, workflowOptions);
+  const stateSnapshot = readStateSnapshot(cwd, workflowOptions);
+  const stateSyncHint = buildStateSyncHint(cwd, workflowOptions);
   const settingsBlock = Object.keys(settings).length
     ? `\n\n## 当前用户设置\n\`\`\`json\n${JSON.stringify(settings, null, 2)}\n\`\`\``
     : '';
@@ -140,34 +140,36 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
   if (projectStorageBlock) context += `\n\n${projectStorageBlock}`;
   if (workflowHint) context += `\n\n## 当前工作流提示\n${workflowHint}`;
   if (capabilityHint) context += `\n\n## 当前按需能力\n${capabilityHint}`;
-  if (stateSyncHint) context += `\n\n## STATE.md 提醒\n${stateSyncHint}`;
+  if (stateSyncHint) context += `\n\n## 状态文件提醒\n${stateSyncHint}`;
   context += settingsBlock;
   if (source === 'resume' || source === 'compact') {
-    context += '\n\n> ⚠️ 会话已恢复/压缩，请先读取 `.helloagents/STATE.md` 恢复工作状态；先看当前用户消息确认仍是同一任务，再按 STATE.md 接续。';
+    context += `\n\n> ⚠️ 会话已恢复/压缩，请先读取 \`state_path\` 指向的 \`${stateSnapshot.statePath.replace(/\\/g, '/')}\`；先看当前用户消息，如果仍是同一任务，再参考状态文件。`;
   }
   return context;
 }
 
-export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot, host, settings }) {
+export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot, host, settings, payload = {} }) {
+  const workflowOptions = { payload };
   const readRoot = resolveReadRoot({ cwd, pkgRoot, host, settings });
   const canonicalSkillName = resolveCanonicalCommandSkill(skillName);
   const skillPath = join(readRoot.root, 'skills', 'commands', canonicalSkillName, 'SKILL.md');
   const aliasNote = buildAliasRouteNote(skillName);
-  const commandHint = buildCommandRouteHint(canonicalSkillName, cwd);
-  const capabilityHint = buildCapabilityHint({ cwd, skillName: canonicalSkillName });
-  const projectStorageHint = buildProjectStorageHint(cwd);
+  const commandHint = buildCommandRouteHint(canonicalSkillName, cwd, workflowOptions);
+  const capabilityHint = buildCapabilityHint({ cwd, skillName: canonicalSkillName, options: workflowOptions });
+  const projectStorageHint = buildProjectStorageHint(cwd, workflowOptions);
   return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；不要再探测其他 helloagents 路径。${aliasNote ? ` ${aliasNote}` : ''}${projectStorageHint ? ` ${projectStorageHint}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
 }
 
-export function buildSemanticRouteInstruction(cwd) {
-  const workflowHint = buildWorkflowRouteHint(cwd);
-  const capabilityHint = buildCapabilityHint({ cwd });
-  const projectStorageHint = buildProjectStorageHint(cwd);
+export function buildSemanticRouteInstruction(cwd, payload = {}) {
+  const workflowOptions = { payload };
+  const workflowHint = buildWorkflowRouteHint(cwd, workflowOptions);
+  const capabilityHint = buildCapabilityHint({ cwd, options: workflowOptions });
+  const projectStorageHint = buildProjectStorageHint(cwd, workflowOptions);
   return [
     '当前消息未使用 ~command。',
     '请根据用户请求的真实意图选路，不依赖关键词表。',
-    'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆链路。',
-    '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动编排并自动衔接后续阶段。',
+    'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆操作。',
+    '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动选择并继续执行后续阶段。',
     '若判定为 T3，默认先走 ~plan / ~prd；纯审查/验证请求才优先 ~verify。',
     `涉及 UI 任务时，设计决策优先级：当前活跃 plan / PRD → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → 通用 UI 规则。`,
     projectStorageHint,

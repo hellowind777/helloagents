@@ -11,7 +11,7 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('advisor contract stays optional but blocks closeout when explicitly required', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -23,12 +23,12 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   const advisorScript = join(pkgRoot, 'scripts', 'advisor-state.mjs')
 
   writeSettings(home)
-  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604050501_release', ''].join('\n'))
+  writeText(getSessionStatePath(project), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604050501_release', ''].join('\n'))
   writeText(join(project, '.helloagents', 'plans', '202604050501_release', 'requirements.md'), '# release requirements\n')
   writeText(join(project, '.helloagents', 'plans', '202604050501_release', 'plan.md'), '# release plan\n')
   writeText(
     join(project, '.helloagents', 'plans', '202604050501_release', 'tasks.md'),
-    ['# release', '', '## 任务列表', '- [√] 发布校验（涉及文件：release.md；完成标准：发布链路确认；验证方式：npm run test）', ''].join('\n'),
+    ['# release', '', '## 任务列表', '- [√] 发布校验（涉及文件：release.md；完成标准：发布流程确认；验证方式：npm run test）', ''].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604050501_release', 'contract.json'), {
     version: 1,
@@ -36,7 +36,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     originCommand: 'plan',
     verifyMode: 'test-first',
     reviewerFocus: [],
-    testerFocus: ['发布链路确认'],
+    testerFocus: ['发布流程确认'],
     ui: {
       required: false,
       designContract: false,
@@ -44,7 +44,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     },
     advisor: {
       required: true,
-      reason: '发布链路需要独立复查',
+      reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
     },
@@ -94,7 +94,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
       cwd: project,
       source: 'manual',
       originCommand: 'verify',
-      reason: '发布链路需要独立复查',
+      reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
       consultedSources: ['codex'],
@@ -121,7 +121,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
       cwd: project,
       source: 'manual',
       originCommand: 'verify',
-      reason: '发布链路需要独立复查',
+      reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
       consultedSources: ['codex'],
@@ -152,7 +152,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   const advisorScript = join(pkgRoot, 'scripts', 'advisor-state.mjs')
 
   writeSettings(home)
-  writeText(join(project, '.helloagents', 'STATE.md'), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604060101_dashboard', ''].join('\n'))
+  writeText(getSessionStatePath(project), ['# 恢复快照', '', '## 方案', '.helloagents/plans/202604060101_dashboard', ''].join('\n'))
   writeText(join(project, '.helloagents', 'plans', '202604060101_dashboard', 'requirements.md'), '# dashboard requirements\n')
   writeText(join(project, '.helloagents', 'plans', '202604060101_dashboard', 'plan.md'), '# dashboard plan\n')
   writeText(

@@ -18,6 +18,7 @@ import {
   scanEnvCoverage,
   scanForSecrets,
   scanHighRiskCommands,
+  scanShellSafetyWarnings,
   scanUnrequestedFiles,
 } from './guard-rules.mjs'
 
@@ -61,15 +62,16 @@ function emitGuardEvent(cwd, event, source, reason, details = {}) {
   })
 }
 
-function buildHighRiskGate(matches, cwd) {
-  const stateSyncHint = buildStateSyncHint(cwd)
+function buildHighRiskGate(matches, cwd, payload = {}) {
+  const workflowOptions = { payload }
+  const stateSyncHint = buildStateSyncHint(cwd, workflowOptions)
   if (stateSyncHint) {
     return {
       reason: `[HelloAGENTS Guard] Blocked T3 command until project recovery state is synced.\n${stateSyncHint}`,
     }
   }
 
-  const recommendation = getWorkflowRecommendation(cwd)
+  const recommendation = getWorkflowRecommendation(cwd, workflowOptions)
   if (!recommendation) return null
   if (matches.some((match) => match.gate === 'post-verify')) {
     return {
@@ -122,7 +124,7 @@ function buildPostWriteWarnings(data) {
   const filePath = data.tool_input?.file_path || ''
   return [
     ...(detectIdeaBoundaryContext(data)?.zeroSideEffect
-      ? ['~idea 本轮要求只读探索；检测到写入工具落地，请回退到探索输出或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
+      ? ['~idea 本轮要求只读探索；检测到写入文件的工具调用，请回到探索输出，或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
       : []),
     ...scanUnrequestedFiles(filePath, data.tool_name),
     ...(content ? [...scanForSecrets(content), ...scanDangerousPackages(content, filePath)] : []),
@@ -168,10 +170,10 @@ function handleDangerousCommand(data, command) {
 
 function handleHighRiskCommand(data, command) {
   const warnings = scanHighRiskCommands(command)
-  if (warnings.length === 0) return
+  if (warnings.length === 0) return []
 
   const cwd = data.cwd || process.cwd()
-  const gate = buildHighRiskGate(warnings, cwd)
+  const gate = buildHighRiskGate(warnings, cwd, data)
   if (gate) {
     emitHookPayload({
       hookSpecificOutput: {
@@ -185,20 +187,43 @@ function handleHighRiskCommand(data, command) {
       guardType: 'high-risk-gate',
       matches: warnings.map((warning) => warning.reason),
     })
-    return
+    return null
   }
+  return warnings.map((warning) => warning.reason)
+}
+
+function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings) {
+  const sections = []
+  if (highRiskWarnings.length > 0) {
+    sections.push(`⚠️ [HelloAGENTS 高风险操作提醒] 检测到高风险命令:\n${highRiskWarnings.map((warning) => `  - ${warning}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`)
+  }
+  if (shellSafetyWarnings.length > 0) {
+    sections.push(`⚠️ [HelloAGENTS Shell 安全提醒] 检测到建议调整的命令写法:\n${shellSafetyWarnings.map((warning) => `  - ${warning}`).join('\n')}\n当前仅提示，不中断执行。`)
+  }
+  if (sections.length === 0) return
 
   emitHookPayload({
     hookSpecificOutput: {
       hookEventName: HOOK_EVENT,
-      additionalContext: `⚠️ [HelloAGENTS 高风险链路提醒] 检测到高风险命令:\n${warnings.map((warning) => `  - ${warning.reason}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`,
+      additionalContext: sections.join('\n\n'),
     },
   })
-  emitGuardEvent(cwd, 'guard_warning', 'command', '', {
-    guardType: 'high-risk-warning',
-    command: command.slice(0, 200),
-    warnings: warnings.map((warning) => warning.reason),
-  })
+
+  const cwd = data.cwd || process.cwd()
+  if (highRiskWarnings.length > 0) {
+    emitGuardEvent(cwd, 'guard_warning', 'command', '', {
+      guardType: 'high-risk-warning',
+      command: command.slice(0, 200),
+      warnings: highRiskWarnings,
+    })
+  }
+  if (shellSafetyWarnings.length > 0) {
+    emitGuardEvent(cwd, 'guard_warning', 'command', '', {
+      guardType: 'shell-safety-warning',
+      command: command.slice(0, 200),
+      warnings: shellSafetyWarnings,
+    })
+  }
 }
 
 function handleShellCommand(data) {
@@ -217,7 +242,11 @@ function handleShellCommand(data) {
   }
 
   if (handleDangerousCommand(data, command)) return
-  handleHighRiskCommand(data, command)
+  const highRiskWarnings = handleHighRiskCommand(data, command)
+  if (highRiskWarnings === null) return
+
+  const shellSafetyWarnings = scanShellSafetyWarnings(command)
+  emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings)
 }
 
 async function main() {

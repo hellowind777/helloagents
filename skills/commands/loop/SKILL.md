@@ -19,12 +19,12 @@ Trigger: ~loop <目标描述> [--iterations N] [--metric "命令"] [--direction 
 ## 初始化
 
 1. 确认 git 工作区干净（有未提交变更则先提醒用户处理）
-2. 确保 `.helloagents/` 目录和 `.helloagents/STATE.md` 存在；目录不存在时先创建，`STATE.md` 不存在时按 `templates/STATE.md` 创建。这是 `~loop` 的强制恢复快照，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免被旧任务主线污染
+2. 确保 `.helloagents/` 目录和 `state_path` 存在；文件不存在时按 `templates/STATE.md` 创建。`~loop` 必须维护这个状态文件，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免混入其他任务
 3. 运行指标命令获取基线值，记录到 results log
 4. 如有守卫命令，运行确认基线通过
 5. 创建 `.helloagents/loop-results.tsv`，并确保 .gitignore 包含该文件
 6. 根据优化目标标记可能需要的 hello-* 质量技能（如性能优化标记 hello-perf，UI 优化标记 hello-ui）
-7. 重写 `.helloagents/STATE.md`：记录主线目标=当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
+7. 重写 `state_path`：记录主线目标=当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
 
 results log 格式：
 ```
@@ -35,51 +35,51 @@ iteration	commit	metric	delta	guard	status	description
 
 ## 八阶段循环
 
-`~loop` 的八阶段循环是统一执行流程（ROUTE/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE）在迭代优化场景下的特化形式。每轮迭代的 Modify 阶段遵循已标记的 hello-* 质量技能规范，Verify 阶段遵循 hello-verify 的验证规范。
+`~loop` 的八阶段循环是统一执行流程（ROUTE/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE）在迭代优化场景下的特化形式。每轮迭代的“修改”阶段遵循已标记的 hello-* 质量技能规范，“验证”阶段遵循 hello-verify 的验证规范。
 执行 `~loop` 时，涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载 bootstrap 执行；本 skill 负责补充 loop 场景的迭代顺序与回滚规则。
 
-不要停止。不要询问是否继续。
+除非达到迭代上限或命中阻塞判定，否则继续执行，不额外询问是否继续。
 每轮迭代必须完整走完以下八个阶段：
 
-### Phase 1: Review
+### 第 1 阶段：回顾
 - 读取 results log 最近 10-20 条记录
 - 运行 `git log --oneline -20` 查看最近变更
 - 运行 `git diff HEAD~1` 查看上一次变更
 - 如果 git log 有 results log 中未记录的 experiment commit → 上轮可能中断，先运行指标命令补录结果
 - 识别：什么有效、什么无效、什么还没试过
 
-### Phase 2: Ideate
+### 第 2 阶段：构思
 - 基于 review 结果，选择下一个改进方向
 - 优先尝试未探索的方向
 - 避免重复已失败的方向（git history 是记忆）
 - 连续 5 次 discard → 升级策略：组合近似成功的尝试、尝试相反方向、考虑架构级变更
 
-### Phase 3: Modify
+### 第 3 阶段：修改
 - 做一个原子修改（单一关注点）
 - 只修改作用范围内的文件
 - 不修改测试文件和守卫命令涉及的文件
 
-### Phase 4: Commit
+### 第 4 阶段：提交
 - 在验证之前提交（便于干净回滚）
 - commit message 格式：`experiment(<scope>): <description>`
 
-### Phase 5: Verify
+### 第 5 阶段：验证
 - 运行指标命令，获取新值
 - 计算 delta（新值 - 基线或上一次保留值）
 - 如有守卫命令，运行守卫检查
 
-### Phase 6: Decide
+### 第 6 阶段：决策
 - IMPROVED（指标改善 + 守卫通过）→ keep
 - SAME/WORSE（指标未改善）→ `git revert HEAD`（保留历史）
 - GUARD FAILED（指标改善但守卫失败）→ 尝试修复（最多 2 次），仍失败则 revert
 - CRASHED（命令执行失败）→ revert + 记录
 
-### Phase 7: Log
+### 第 7 阶段：记录
 - 追加一行到 results log
 - status: baseline / keep / discard / crash / no-op
-- 重写 `.helloagents/STATE.md`：保持主线目标=当前优化目标，并记录当前迭代轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
+- 重写 `state_path`：保持主线目标=当前优化目标，并记录当前迭代轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
 
-### Phase 8: Repeat
+### 第 8 阶段：继续
 - 如果 iterations > 0 且 current_iteration >= max_iterations → 输出总结并停止
 - 否则 → 回到 Phase 1
 
@@ -90,7 +90,7 @@ iteration	commit	metric	delta	guard	status	description
 - 总迭代次数 / 保留次数 / 丢弃次数
 - 最有效的 3 个改进
 - results log 路径
-- 重写 `.helloagents/STATE.md`：将“主线目标”保留为本次优化目标，“正在做什么”更新为已完成，保留最终结论摘要，清空阻塞项，并给出可立即执行的下一步（如继续优化、停止、切换目标）
+- 重写 `state_path`：将“主线目标”保留为本次优化目标，“正在做什么”更新为已完成，保留最终结论摘要，清空阻塞项，并给出可立即执行的下一步（如继续优化、停止、切换目标）
 
 ## 安全规则
 - 使用 `git revert`（保留历史）而非 `git reset --hard`（丢失历史）

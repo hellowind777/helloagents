@@ -16,27 +16,27 @@ import {
   buildRecommendation,
 } from './workflow-recommendation.mjs'
 
-export function getDeliveryAction(cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function getDeliveryAction(cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   const recommendation = buildRecommendation(snapshot, cwd)
   return buildDeliveryActionFromSnapshot(snapshot, cwd, recommendation)
 }
 
-export function getWorkflowRecommendation(cwd) {
-  return buildRecommendation(getWorkflowSnapshot(cwd), cwd)
+export function getWorkflowRecommendation(cwd, options = {}) {
+  return buildRecommendation(getWorkflowSnapshot(cwd, options), cwd)
 }
 
-export function buildStateSyncHint(cwd) {
-  return buildStateSyncHintFromSnapshot(getWorkflowSnapshot(cwd))
+export function buildStateSyncHint(cwd, options = {}) {
+  return buildStateSyncHintFromSnapshot(getWorkflowSnapshot(cwd, options))
 }
 
-export function buildDeliveryGateHint(cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function buildDeliveryGateHint(cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   return buildDeliveryGateHintFromSnapshot(snapshot, cwd, buildRecommendation(snapshot, cwd))
 }
 
-export function buildWorkflowRouteHint(cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function buildWorkflowRouteHint(cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   const recommendation = buildRecommendation(snapshot, cwd)
   const stateSyncHint = buildStateSyncHintFromSnapshot(snapshot)
   const stateRoleHint = buildStateRoleHintFromSnapshot(snapshot)
@@ -58,7 +58,7 @@ function buildCommandRouteMessage(skillName, recommendation, verifyModeHint) {
   if (skillName === 'auto') {
     return recommendation.stage === 'consolidate'
       ? `当前工作流约束：${recommendation.summary} 当前建议下一阶段：CONSOLIDATE。${recommendation.guidance} 若本次明确使用 ~auto，则在未命中阻塞判定时直接完成当前收尾，不再额外停下询问。`
-      : `当前工作流约束：${recommendation.summary} 当前建议主路径：${recommendation.nextPath}。${recommendation.guidance} 若本次明确使用 ~auto，则命中主路径后继续衔接后续阶段，除非触发阻塞判定，否则不要在方案/PRD 阶段额外停下。`
+      : `当前工作流约束：${recommendation.summary} 当前建议主路径：${recommendation.nextPath}。${recommendation.guidance} 若本次明确使用 ~auto，则命中主路径后继续执行后续阶段，除非触发阻塞判定，否则不要在方案/PRD 阶段额外停下。`
   }
   if (skillName === 'plan') {
     if (recommendation.stage === 'consolidate') {
@@ -87,8 +87,8 @@ function buildCommandRouteMessage(skillName, recommendation, verifyModeHint) {
   return `当前工作流约束：${recommendation.summary} 当前建议下一命令：~${recommendation.nextCommand}。${recommendation.guidance}`
 }
 
-export function buildCommandRouteHint(skillName, cwd) {
-  const snapshot = getWorkflowSnapshot(cwd)
+export function buildCommandRouteHint(skillName, cwd, options = {}) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
   const recommendation = buildRecommendation(snapshot, cwd)
   const contextHints = [
     buildStateRoleHintFromSnapshot(snapshot),

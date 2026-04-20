@@ -11,7 +11,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 没有运行验证命令 = 不能说"完成"、"通过"、"已修复"。
 没有看到验证输出 = 不能声称结果。
 
-## 验证循环（Ralph Loop）
+## 验证循环
 
 验证不是一次性操作，而是循环直到通过：
 
@@ -76,6 +76,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 5. 若当前存在方案包并准备最终收尾，优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录 `requirementsCoverage` 与 `deliveryChecklist` 两项结论；两项都必须包含 `status`（`PASS` / `BLOCKED`）和 `summary`
 6. 若当前方案包要求 `review-first`，必须先确认 `.helloagents/.ralph-review.json` 已通过 `scripts/review-state.mjs write` 写成最新结构化证据；不要把审查自然语言消息直接当成交付证据
 7. 若 `contract.json` 中 `ui.visualValidation.required=true`，必须确认 `.helloagents/.ralph-visual.json` 已通过 `scripts/visual-state.mjs write` 写成最新结构化证据；若没有视觉验收证据，不得把本轮视为 UI 可交付
+8. 准备以本轮最终收尾消息报告完成时，先调用 `scripts/turn-state.mjs write` 写 `kind=complete`、`role=main`；若因阻塞判定等待输入或因前置条件缺失而停下，写 `kind=waiting` 或 `kind=blocked`，不要让运行时从自然语言消息里猜状态
 
 ## 需求追踪验证
 
@@ -89,7 +90,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 7. 若 `contract.json` 中 `ui.visualValidation.required=true`，额外确认 `.helloagents/.ralph-visual.json` 已存在、覆盖要求的关键 screens / states，且结论为 `PASS`；若没有视觉验收证据，不得把本轮视为 UI 可交付
 8. 发现遗漏 → 补充实现 → 重新验证
 
-## 反代理目标漂移 (APGD)
+## 目标偏移检查
 
 验证时必须区分真正目标和代理指标：
 - 真正目标：用户实际要解决的问题（功能正确、体验达标、需求满足）

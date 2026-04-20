@@ -10,7 +10,7 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('notify inject and semantic route cover standby and recovery hints', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -60,7 +60,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.equal(payload.suppressOutput, true)
   assert.equal(payload.hookSpecificOutput, undefined)
 
-  writeText(join(project, '.helloagents', 'STATE.md'), '# activated\n')
+  writeText(getSessionStatePath(project), '# activated\n')
   result = runNode(notifyScript, ['inject'], {
     cwd: project,
     env,
@@ -69,7 +69,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
   assert.match(payload.hookSpecificOutput.additionalContext, /会话已恢复\/压缩/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /先看当前用户消息确认仍是同一任务/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /先看当前用户消息，如果仍是同一任务/)
 
   result = runNode(notifyScript, ['pre-compact'], {
     cwd: project,
@@ -77,7 +77,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /恢复快照/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /状态文件/)
   assert.match(payload.hookSpecificOutput.additionalContext, /只用于找回上次停在哪/)
   assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /读完即可接上工作/)
 
@@ -92,7 +92,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /Delivery Tier: T0=探索\/比较/)
   assert.match(payload.hookSpecificOutput.additionalContext, /默认先走 ~plan \/ ~prd/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前活跃 plan \/ PRD/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /STATE\.md 只用于找回上次停在哪/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /状态文件只用于找回上次停在哪/)
 
   writeText(
     join(project, '.helloagents', 'plans', '202604040101_missing-state', 'requirements.md'),
@@ -107,7 +107,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     '# missing state tasks\n\n- [ ] repair snapshot\n',
   )
   writeText(
-    join(project, '.helloagents', 'STATE.md'),
+    getSessionStatePath(project),
     [
       '# 恢复快照',
       '',
@@ -123,7 +123,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, prompt: 'continue the existing feature flow' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /STATE\.md 提醒/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /状态文件提醒/)
   assert.match(payload.hookSpecificOutput.additionalContext, /未记录活跃方案路径/)
   assert.match(payload.hookSpecificOutput.additionalContext, /缺少“主线目标”/)
   assert.match(payload.hookSpecificOutput.additionalContext, /缺少“下一步”/)

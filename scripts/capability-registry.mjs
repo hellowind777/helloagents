@@ -8,9 +8,9 @@ function getPrimaryPlan(snapshot) {
   return snapshot.activePlans[0] || snapshot.plans[0] || null
 }
 
-export function selectCapabilities({ cwd, skillName = '' }) {
-  const snapshot = getWorkflowSnapshot(cwd)
-  const recommendation = getWorkflowRecommendation(cwd)
+export function selectCapabilities({ cwd, skillName = '', options = {} }) {
+  const snapshot = getWorkflowSnapshot(cwd, options)
+  const recommendation = getWorkflowRecommendation(cwd, options)
   const plan = getPrimaryPlan(snapshot)
   const advisorRequirement = getAdvisorRequirement(plan?.contract)
   const visualRequirement = getVisualValidationRequirement(plan?.contract)
@@ -52,8 +52,8 @@ export function selectCapabilities({ cwd, skillName = '' }) {
   return capabilities
 }
 
-export function buildCapabilityHint({ cwd, skillName = '' }) {
-  const capabilities = selectCapabilities({ cwd, skillName })
+export function buildCapabilityHint({ cwd, skillName = '', options = {} }) {
+  const capabilities = selectCapabilities({ cwd, skillName, options })
   if (capabilities.length === 0) return ''
   return `按需能力：${capabilities.map((entry) => `${entry.id}=${entry.description}`).join(' ')}`
 }

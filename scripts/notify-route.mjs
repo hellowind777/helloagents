@@ -17,6 +17,7 @@ function buildHelpExtraRules(skillName) {
 
 function routeExplicitCommand({
   prompt,
+  payload,
   cwd,
   host,
   pkgRoot,
@@ -51,6 +52,7 @@ function routeExplicitCommand({
     pkgRoot,
     host,
     settings,
+    payload,
   }))
   return true
 }
@@ -80,6 +82,7 @@ export function handleRouteCommand({
 
   if (routeExplicitCommand({
     prompt,
+    payload,
     cwd,
     host,
     pkgRoot,
@@ -100,9 +103,9 @@ export function handleRouteCommand({
       host,
       event: 'semantic_route_prompted',
       source: 'route',
-      recommendation: getWorkflowRecommendation(cwd),
+      recommendation: getWorkflowRecommendation(cwd, { payload }),
     })
-    suppress(buildSemanticRouteInstruction(cwd))
+    suppress(buildSemanticRouteInstruction(cwd, payload))
     return
   }
 

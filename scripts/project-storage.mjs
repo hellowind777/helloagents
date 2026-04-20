@@ -5,10 +5,13 @@ import { homedir } from 'node:os'
 import { basename, dirname, isAbsolute, join, normalize, resolve } from 'node:path'
 
 import { DEFAULTS } from './cli-config.mjs'
+import { resolveSessionToken } from './session-token.mjs'
 
 export const PROJECT_DIR_NAME = '.helloagents'
 const PROJECTS_DIR_NAME = 'projects'
+const PROJECT_SESSIONS_DIR_NAME = 'sessions'
 const PROJECT_STORE_MODES = new Set(['local', 'repo-shared'])
+const DEFAULT_STATE_SESSION_TOKEN = 'default'
 
 function safeJson(filePath) {
   try {
@@ -21,6 +24,19 @@ function safeJson(filePath) {
 function runGitRevParse(cwd, args = []) {
   try {
     return execFileSync('git', ['rev-parse', ...args], {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 5_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return ''
+  }
+}
+
+function runGitCommand(cwd, args = []) {
+  try {
+    return execFileSync('git', args, {
       cwd,
       encoding: 'utf-8',
       timeout: 5_000,
@@ -52,6 +68,16 @@ function resolveGitCommonDir(cwd, repoRoot = '') {
 function sanitizeRepoName(value = '') {
   const normalized = String(value).trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
   return normalized || 'project'
+}
+
+function sanitizeStateScopeSegment(value = '', fallback = '') {
+  const normalized = String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48)
+  return normalized || fallback
 }
 
 function buildProjectKey(cwd) {
@@ -87,6 +113,15 @@ function formatPromptPath(pathValue = '') {
   return pathValue ? normalize(pathValue).replace(/\\/g, '/') : ''
 }
 
+function resolveGitBranchName(cwd) {
+  const branchName = runGitRevParse(cwd, ['--abbrev-ref', 'HEAD'])
+  if (branchName && branchName !== 'HEAD') return branchName
+
+  const symbolicBranchName = runGitCommand(cwd, ['symbolic-ref', '--quiet', '--short', 'HEAD'])
+  if (symbolicBranchName && symbolicBranchName !== 'HEAD') return symbolicBranchName
+  return ''
+}
+
 export function normalizeProjectStoreMode(value) {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
   return PROJECT_STORE_MODES.has(normalized) ? normalized : DEFAULTS.project_store_mode
@@ -105,8 +140,38 @@ export function getProjectActivationDir(cwd) {
   return join(cwd, PROJECT_DIR_NAME)
 }
 
-export function getProjectStatePath(cwd) {
-  return join(getProjectActivationDir(cwd), 'STATE.md')
+export function getProjectSessionStateScope(cwd, {
+  payload = {},
+  env = process.env,
+  ppid = process.ppid,
+} = {}) {
+  const rawSessionToken = resolveSessionToken({
+    payload,
+    env,
+    ppid,
+    allowPpidFallback: false,
+  })
+  const branchName = sanitizeStateScopeSegment(resolveGitBranchName(cwd), 'detached')
+  const sessionToken = sanitizeStateScopeSegment(rawSessionToken, DEFAULT_STATE_SESSION_TOKEN)
+  const sessionDir = join(
+    getProjectActivationDir(cwd),
+    PROJECT_SESSIONS_DIR_NAME,
+    branchName,
+    sessionToken,
+  )
+
+  return {
+    stateScope: 'session',
+    stateSessionToken: sessionToken,
+    stateSessionMode: rawSessionToken ? 'host-session' : 'default',
+    stateBranch: branchName,
+    sessionDir,
+    statePath: join(sessionDir, 'STATE.md'),
+  }
+}
+
+export function getProjectStatePath(cwd, options = {}) {
+  return getProjectSessionStateScope(cwd, options).statePath
 }
 
 export function isRepoSharedProjectStore(cwd) {
@@ -122,10 +187,10 @@ export function getProjectStoreDir(cwd) {
   return join(homedir(), PROJECT_DIR_NAME, PROJECTS_DIR_NAME, projectKey.key)
 }
 
-export function getProjectStoreSummary(cwd) {
+export function getProjectStoreSummary(cwd, options = {}) {
   const activationDir = getProjectActivationDir(cwd)
   const storeDir = getProjectStoreDir(cwd)
-  const statePath = getProjectStatePath(cwd)
+  const stateScope = getProjectSessionStateScope(cwd, options)
   const projectKey = buildProjectKey(cwd)
   const projectStoreMode = getProjectStoreMode(cwd)
 
@@ -133,14 +198,20 @@ export function getProjectStoreSummary(cwd) {
     projectStoreMode,
     activationDir,
     storeDir,
-    statePath,
+    statePath: stateScope.statePath,
+    stateScope: stateScope.stateScope,
+    stateSessionToken: stateScope.stateSessionToken,
+    stateSessionMode: stateScope.stateSessionMode,
+    stateBranch: stateScope.stateBranch,
+    sessionStateDir: stateScope.sessionDir,
     usesSharedStore: projectStoreMode === 'repo-shared',
     projectKey: projectKey.key,
     repoRoot: projectKey.repoRoot,
     commonDir: projectKey.commonDir,
     promptActivationDir: formatPromptPath(activationDir),
     promptStoreDir: formatPromptPath(storeDir),
-    promptStatePath: formatPromptPath(statePath),
+    promptStatePath: formatPromptPath(stateScope.statePath),
+    promptSessionStateDir: formatPromptPath(stateScope.sessionDir),
   }
 }
 
@@ -203,14 +274,21 @@ export function describeProjectStoreFile(cwd, relativePath = '') {
   return `逻辑路径 \`${logicalPath}\`（实际存储：\`${actualPath}\`）`
 }
 
-export function buildProjectStorageHint(cwd) {
-  const summary = getProjectStoreSummary(cwd)
-  if (!summary.usesSharedStore) return ''
-  return `项目存储：\`project_store_mode=repo-shared\`；本地激活/运行态目录仍是 \`${summary.promptActivationDir}\`，知识库/方案目录改为 \`${summary.promptStoreDir}\`。`
+export function buildProjectStorageHint(cwd, options = {}) {
+  const summary = getProjectStoreSummary(cwd, options)
+  const hints = []
+  hints.push(`当前状态文件写入 \`${summary.promptStatePath}\``)
+  if (summary.stateSessionMode === 'default') {
+    hints.push(`当前宿主未提供稳定会话标识，因此使用分支默认位置 \`${summary.stateSessionToken}\``)
+  }
+  if (summary.usesSharedStore) {
+    hints.push(`项目存储：\`project_store_mode=repo-shared\`；本地激活/运行态目录仍是 \`${summary.promptActivationDir}\`，知识库/方案目录改为 \`${summary.promptStoreDir}\``)
+  }
+  return hints.join('。') + (hints.length > 0 ? '。' : '')
 }
 
-export function buildProjectStorageBlock(cwd) {
-  const summary = getProjectStoreSummary(cwd)
+export function buildProjectStorageBlock(cwd, options = {}) {
+  const summary = getProjectStoreSummary(cwd, options)
   if (!summary.usesSharedStore && !existsSync(summary.activationDir)) {
     return ''
   }
@@ -218,9 +296,25 @@ export function buildProjectStorageBlock(cwd) {
   const details = {
     project_store_mode: summary.projectStoreMode,
     activation_dir: summary.promptActivationDir,
+    state_scope: summary.stateScope,
     state_path: summary.promptStatePath,
+    state_branch: summary.stateBranch,
+    state_session_token: summary.stateSessionToken,
+    state_session_mode: summary.stateSessionMode,
+    session_state_dir: summary.promptSessionStateDir,
     knowledge_base_dir: summary.promptStoreDir,
     uses_shared_store: summary.usesSharedStore,
+  }
+
+  const explanations = []
+  explanations.push('说明：状态文件只使用 `state_path`。')
+  if (summary.stateSessionMode === 'default') {
+    explanations.push('说明：当前宿主未提供稳定会话标识，因此使用分支默认位置。')
+  }
+  if (summary.usesSharedStore) {
+    explanations.push('说明：状态文件与 `.ralph-*.json` 写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
+  } else {
+    explanations.push('说明：当前使用项目本地 `.helloagents/` 作为激活目录、知识库目录和方案目录。')
   }
 
   return [
@@ -228,8 +322,6 @@ export function buildProjectStorageBlock(cwd) {
     '```json',
     JSON.stringify(details, null, 2),
     '```',
-    summary.usesSharedStore
-      ? '说明：`STATE.md` 与 `.ralph-*.json` 继续写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。'
-      : '说明：当前使用项目本地 `.helloagents/` 作为激活目录、知识库目录和方案目录。',
+    ...explanations,
   ].join('\n')
 }
