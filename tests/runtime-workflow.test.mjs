@@ -84,8 +84,8 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     input: JSON.stringify({ cwd: project, prompt: 'continue the current feature and finish it' }),
   })
   let payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前建议下一命令：~build/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /推荐路径：~build -> ~verify/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前应执行 ~build/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /执行路径：~build -> ~verify/)
   assert.match(payload.hookSpecificOutput.additionalContext, /编排提示：检测到可并行的开放任务/)
   assert.match(payload.hookSpecificOutput.additionalContext, /hello-subagent/)
   assert.match(payload.hookSpecificOutput.additionalContext, /按需能力：/)
@@ -98,8 +98,20 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]auto[\\/]SKILL\.md/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前建议主路径：~build -> ~verify/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /除非触发阻塞判定，否则不要在方案\/PRD 阶段额外停下/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /本次 ~auto 的执行主路径：~build -> ~verify/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /未触发阻塞判定前不要停下/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /不要把阶段结果写成“下一步建议”/)
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '~loop keep optimizing the current feature' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]loop[\\/]SKILL\.md/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /用户已显式使用 ~loop/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /按 ~loop 的循环规则直接执行/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /不要把单轮结果写成“下一步建议”/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -107,7 +119,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     input: JSON.stringify({ cwd: project, prompt: '~verify check whether everything is done' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前更推荐的下一命令其实是 ~build/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前不该把 ~verify 当成越级入口；先按 ~build 处理/)
   assert.match(payload.hookSpecificOutput.additionalContext, /即使执行 ~verify，也不能越过当前工作流边界/)
   assert.match(payload.hookSpecificOutput.additionalContext, /验证分流：当前更适合审查优先/)
   assert.match(payload.hookSpecificOutput.additionalContext, /review-evaluator=/)
@@ -173,8 +185,8 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     input: JSON.stringify({ cwd: project, prompt: '~build implement one more thing' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前更推荐的下一阶段其实是 CONSOLIDATE/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /只有在用户明确提出新增实现范围时，才继续 ~build/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前不该继续 ~build/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /除非用户明确提出新增实现范围，否则直接进入 CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前已进入 CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-closeout\.json/)
   assert.match(payload.hookSpecificOutput.additionalContext, /UI 约束提示/)
@@ -250,7 +262,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     input: JSON.stringify({ cwd: project, prompt: 'finish delivery closeout for the current feature' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前建议下一阶段：CONSOLIDATE/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前应直接进入 CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /任务与交付证据已闭合/)
   assert.match(payload.hookSpecificOutput.additionalContext, /收尾证据/)
 })
