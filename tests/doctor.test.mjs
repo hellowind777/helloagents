@@ -121,6 +121,7 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   assert.equal(codex.checks.carrierMarker, true)
   assert.equal(codex.checks.carrierContentMatch, true)
   assert.equal(codex.checks.homeLink, false)
+  assert.equal(codex.checks.globalHomeLink, true)
   assert.equal(codex.checks.modelInstructionsFile, true)
   assert.equal(codex.checks.modelInstructionsPathMatch, true)
   assert.equal(codex.checks.pluginRoot, true)

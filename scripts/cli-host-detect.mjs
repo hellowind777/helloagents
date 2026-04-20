@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -27,6 +27,18 @@ function hasHelloagentsSettings(filePath) {
   return JSON.stringify(safeJson(filePath) || {}).includes('helloagents')
 }
 
+function normalizePath(value = '') {
+  return String(value || '').replace(/\\/g, '/').toLowerCase()
+}
+
+function safeRealTarget(linkPath) {
+  try {
+    return normalizePath(realpathSync(linkPath))
+  } catch {
+    return ''
+  }
+}
+
 function detectClaudeMode(home) {
   const claudeDir = join(home, '.claude')
   if (
@@ -53,19 +65,23 @@ function detectGeminiMode(home) {
 
 function detectCodexMode(home) {
   const codexDir = join(home, '.codex')
+  const codexHomeLink = join(codexDir, 'helloagents')
   const codexConfig = safeRead(join(codexDir, 'config.toml')) || ''
   const marketplace = safeRead(join(home, '.agents', 'plugins', 'marketplace.json')) || ''
+  const globalPluginRoot = normalizePath(join(home, 'plugins', CODEX_PLUGIN_NAME))
+  const codexHomeLinkTarget = safeRealTarget(codexHomeLink)
   if (
     existsSync(join(home, 'plugins', CODEX_PLUGIN_NAME))
     || existsSync(join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME))
     || marketplace.includes(`"name": "${CODEX_PLUGIN_NAME}"`)
     || codexConfig.includes(CODEX_PLUGIN_KEY)
     || codexConfig.includes(`/plugins/${CODEX_PLUGIN_NAME}/scripts/notify.mjs`)
+    || codexHomeLinkTarget === globalPluginRoot
   ) {
     return 'global'
   }
   if (
-    existsSync(join(codexDir, 'helloagents'))
+    (existsSync(codexHomeLink) && codexHomeLinkTarget !== globalPluginRoot)
     || hasHelloagentsMarker(join(codexDir, 'AGENTS.md'))
     || codexConfig.includes('codex-notify')
     || codexConfig.includes('HelloAGENTS')

@@ -2,7 +2,10 @@
   "name": "helloagents",
   "version": "3.0.8",
   "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, quality verification (Ralph Loop), safety guards, and notifications.",
-  "author": "HelloWind",
+  "author": {
+    "name": "HelloWind",
+    "email": "hellowind777@gmail.com"
+  },
   "license": "Apache-2.0",
   "keywords": [
     "orchestration",
@@ -12,10 +15,7 @@
     "notification",
     "safety"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hellowind777/helloagents.git"
-  },
+  "repository": "https://github.com/hellowind777/helloagents",
   "skills": "./skills",
   "hooks": "./hooks/hooks-claude.json"
 }

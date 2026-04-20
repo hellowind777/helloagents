@@ -55,6 +55,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   const pluginCacheRoot = join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local')
   assert.ok(existsSync(pluginRoot))
   assert.ok(existsSync(pluginCacheRoot))
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pluginRoot)
   assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
 
@@ -75,6 +76,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.ok(!existsSync(pluginRoot))
   assert.ok(!existsSync(pluginCacheRoot))
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pkgRoot)
 
   runCli(pkgRoot, home, ['preuninstall'])
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))

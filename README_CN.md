@@ -304,12 +304,12 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 |-----|---------|----------|
 | Claude Code | 原生插件安装（手动命令） | 由 Claude 插件系统管理 |
 | Gemini CLI | 原生扩展安装（手动命令） | 由 Gemini 扩展系统管理 |
-| Codex CLI | 原生本地插件链路（自动） | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/`、`~/.codex/plugins/cache/local-plugins/helloagents/local/`、`~/.codex/config.toml` |
+| Codex CLI | 原生本地插件链路（自动） | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/`、`~/.codex/plugins/cache/local-plugins/helloagents/local/`、`~/.codex/config.toml`、`~/.codex/helloagents -> ~/plugins/helloagents` |
 
 ### 更新 / 重装 / 切分支行为
 
 - **标准模式** 通过 `~/.claude/helloagents`、`~/.gemini/helloagents`、`~/.codex/helloagents` 这三个符号链接保持脚本、技能、模板和 hooks 与包根目录同步，相关链接文件会立即反映本地变化；但 `CLAUDE.md`、`GEMINI.md`、`AGENTS.md` 这类注入后的规则文件仍是快照，bootstrap 或分支变化后需要显式刷新。
-- **Codex 全局模式** 使用复制后的运行时文件。重新执行 `helloagents --global` 会刷新 `~/plugins/helloagents/` 和 Codex cache 中的副本。
+- **Codex 全局模式** 使用复制后的运行时文件，并维护 `~/.codex/helloagents -> ~/plugins/helloagents` 作为 bootstrap 路由期望的稳定读取根目录。重新执行 `helloagents --global` 会刷新 `~/plugins/helloagents/` 和 Codex cache 中的副本。
 - 重新执行当前模式命令是被支持的：`helloagents --standby` 和 `helloagents --global` 都是 **切换或刷新** 命令。
 - 如需确定性的手动清理，先执行 `helloagents cleanup`，再执行 `npm uninstall -g helloagents`。
 - `npm uninstall -g helloagents` 会移除包本身；`~/.helloagents/helloagents.json` 会被有意保留。

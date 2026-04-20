@@ -304,12 +304,12 @@ HelloAGENTS touches different files depending on mode. The write/cleanup rules a
 |-----|------------------------|----------------|
 | Claude Code | Native plugin install (manual CLI command) | Managed by Claude's plugin system |
 | Gemini CLI | Native extension install (manual CLI command) | Managed by Gemini's extension system |
-| Codex CLI | Native local-plugin chain (automatic) | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml` |
+| Codex CLI | Native local-plugin chain (automatic) | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml`, `~/.codex/helloagents -> ~/plugins/helloagents` |
 
 ### Update / reinstall / branch-switch behavior
 
 - **Standby mode** keeps scripts, skills, templates, and hooks on `~/.claude/helloagents`, `~/.gemini/helloagents`, and `~/.codex/helloagents` symlinks, so linked package files reflect local changes immediately. The injected rules files (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) are still snapshots and must be refreshed after bootstrap or branch changes.
-- **Codex global mode** uses copied runtime files. Re-running `helloagents --global` refreshes both `~/plugins/helloagents/` and the Codex cache copy.
+- **Codex global mode** uses copied runtime files and keeps `~/.codex/helloagents -> ~/plugins/helloagents` as the stable read-root fallback expected by bootstrap routing. Re-running `helloagents --global` refreshes both `~/plugins/helloagents/` and the Codex cache copy.
 - Re-running the current mode command is supported intentionally: `helloagents --standby` and `helloagents --global` both act as **switch-or-refresh** commands.
 - For deterministic manual cleanup, run `helloagents cleanup` before `npm uninstall -g helloagents`.
 - `npm uninstall -g helloagents` removes the package; `~/.helloagents/helloagents.json` is intentionally preserved.
