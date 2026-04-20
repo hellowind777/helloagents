@@ -12,7 +12,7 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('notify workflow hints cover active plans, aliases, and consolidate transitions', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -25,7 +25,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
 
   writeSettings(home, { install_mode: 'standby' })
   writeText(
-    join(project, '.helloagents', 'STATE.md'),
+    getSessionStatePath(project),
     [
       '# 恢复快照',
       '',

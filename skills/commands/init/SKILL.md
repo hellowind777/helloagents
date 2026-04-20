@@ -7,14 +7,14 @@ policy:
 Trigger: ~init
 
 ~init 是用户显式命令，创建完整知识库，不受 kb_create_mode 限制。
-执行 `~init` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 规则按当前已加载 bootstrap 执行；本命令额外负责项目级规则文件和各宿主项目级原生 skills 链接。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：项目本地 `.helloagents/` 继续承担激活目录与 `STATE.md`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录写入。
+执行 `~init` 时，`.helloagents/` 目录结构、模板格式和状态文件规则按当前已加载 bootstrap 执行；本命令额外负责项目级规则文件和各宿主项目级原生 skills 链接。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：项目本地 `.helloagents/` 继续承担激活目录；状态文件只使用 `state_path`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录写入。
 
 ## 流程
 
 ### 阶段 1：环境搭建（必做）
 
-1. 创建 `.helloagents/` 目录 + `STATE.md`（按 templates/STATE.md 格式，初始“主线目标”写当前初始化链路，初始状态为空闲）
+1. 创建 `.helloagents/` 目录 + `state_path`（按 templates/STATE.md 格式，初始“主线目标”写当前初始化任务，初始状态为空闲）
 2. 定位插件根目录：优先读取当前上下文中已注入的“当前 HelloAGENTS 包根目录”；若上下文未提供，再根据当前已加载的规则文件反推，禁止猜测其他目录
 3. 刷新各宿主项目级原生 skills 链接（删除旧的重建）：
    - `.claude/skills/helloagents` symlink → `{插件根目录}/`
@@ -62,7 +62,7 @@ commands:
 ## 幂等性
 重复执行 ~init 是安全的：
 - 已存在的 .helloagents/ 文件不覆盖
-- `STATE.md` 只作为当前初始化链路的恢复快照；后续进入其他主线任务时必须按新主线重写
+- `state_path` 只记录当前初始化任务；后续进入其他任务时必须按新任务重写
 - 各宿主项目级原生 skills 链接会刷新（删除旧的重建）
 - AGENTS.md/CLAUDE.md/GEMINI.md 中标记内容替换更新
 - .gitignore 只追加缺失行

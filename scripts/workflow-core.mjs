@@ -13,6 +13,13 @@ import { describeProjectStoreFile, getProjectDesignContractPath } from './projec
 export function getTargetPlans(snapshot) {
   return snapshot.activePlans.length > 0 ? snapshot.activePlans : snapshot.plans
 }
+
+function describeStateLabel(state) {
+  if (state.stateSessionMode === 'default') {
+    return '当前分支默认位置的状态文件'
+  }
+  return '当前会话的状态文件'
+}
 export function classifyPlan(plan) {
   if (!plan) {
     return {
@@ -97,27 +104,28 @@ function collectStateSyncIssues(snapshot) {
   const issues = []
   const hasPlans = snapshot.plans.length > 0
   const state = snapshot.state
+  const stateLabel = describeStateLabel(state)
 
   if (!hasPlans) {
     return issues
   }
 
   if (!state.exists) {
-    issues.push('当前已存在方案包，但 `.helloagents/STATE.md` 缺失')
+    issues.push(`当前已存在方案包，但${stateLabel} 缺失`)
     return issues
   }
 
   if (!state.referencedPlanDir) {
-    issues.push('当前已存在方案包，但 `STATE.md` 未记录活跃方案路径')
+    issues.push(`${stateLabel} 未记录活跃方案路径`)
   }
   if (!state.sections['主线目标']) {
-    issues.push('`STATE.md` 缺少“主线目标”')
+    issues.push(`${stateLabel} 缺少“主线目标”`)
   }
   if (!state.sections['正在做什么']) {
-    issues.push('`STATE.md` 缺少“正在做什么”')
+    issues.push(`${stateLabel} 缺少“正在做什么”`)
   }
   if (!state.sections['下一步']) {
-    issues.push('`STATE.md` 缺少“下一步”')
+    issues.push(`${stateLabel} 缺少“下一步”`)
   }
 
   return issues
@@ -132,12 +140,12 @@ export function buildVerifyModeHintFromSnapshot(snapshot) {
 export function buildStateSyncHintFromSnapshot(snapshot) {
   const issues = collectStateSyncIssues(snapshot)
   if (issues.length === 0) return ''
-  return `STATE.md 提醒：${issues.join('；')}；继续项目级流程、收尾或进入压缩前先同步恢复快照。`
+  return `状态文件提醒：${issues.join('；')}；继续项目级流程、收尾或进入压缩前先同步状态文件。`
 }
 
 export function buildStateRoleHintFromSnapshot(snapshot) {
   if (!snapshot.state.exists || snapshot.plans.length > 0) return ''
-  return '恢复约束：当前仅检测到 `.helloagents/STATE.md`；先以当前用户消息、显式命令和代码事实确认主线，STATE.md 只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。'
+  return `恢复约束：当前仅检测到${describeStateLabel(snapshot.state)}；先以当前用户消息、显式命令和代码事实确认当前任务。状态文件只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。`
 }
 
 export function buildUiContractHint(cwd, snapshot) {
@@ -159,7 +167,7 @@ export function buildUiContractHint(cwd, snapshot) {
   if (visualValidationRequired) {
     extraHints.push('若当前 UI 契约要求视觉验收，收尾前需写 `.helloagents/.ralph-visual.json` 记录关键视口、状态与结论')
   }
-  return `UI 约束提示：如本次属于视觉/交互链路，设计决策优先级固定为：当前活跃 plan.md / prd/03-ui-design.md → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → hello-ui。${extraHints.length > 0 ? ` ${extraHints.join('；')}。` : ''}`
+  return `UI 约束提示：如本次属于视觉/交互任务，设计决策优先级固定为：当前活跃 plan.md / prd/03-ui-design.md → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → hello-ui。${extraHints.length > 0 ? ` ${extraHints.join('；')}。` : ''}`
 }
 
 export { normalizeTaskFile, readStateSnapshot, listPlanPackages, getWorkflowSnapshot }

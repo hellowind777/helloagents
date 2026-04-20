@@ -230,6 +230,7 @@ function appendCodexStandbyIssues(issues, checks) {
 function appendCodexGlobalIssues(issues, checks, pluginVersion, cacheVersion) {
   if (!checks.carrierMarker) issues.push(buildDoctorIssue('global-home-carrier-missing', 'global `~/.codex/AGENTS.md` 缺少 HelloAGENTS 规则内容', 'Global `~/.codex/AGENTS.md` is missing the HelloAGENTS carrier'))
   if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('global-home-carrier-drift', 'global `~/.codex/AGENTS.md` 与当前 bootstrap.md 不一致', 'Global `~/.codex/AGENTS.md` differs from the current bootstrap.md'))
+  if (!checks.globalHomeLink) issues.push(buildDoctorIssue('global-read-root-link-missing', 'global `~/.codex/helloagents` 链接缺失或未指向当前插件根目录', 'Global `~/.codex/helloagents` link is missing or does not point to the current plugin root'))
   if (!checks.pluginRoot) issues.push(buildDoctorIssue('global-plugin-root-missing', 'global 插件根目录缺失', 'Global plugin root is missing'))
   if (!checks.pluginCache) issues.push(buildDoctorIssue('global-plugin-cache-missing', 'global 插件缓存目录缺失', 'Global plugin cache directory is missing'))
   if (checks.pluginRoot && !checks.pluginCarrierMatch) issues.push(buildDoctorIssue('global-plugin-carrier-drift', 'global 插件根目录中的 AGENTS.md 与当前 bootstrap.md 不一致', 'Global plugin AGENTS.md differs from the current bootstrap.md'))
@@ -258,6 +259,9 @@ function inspectCodexDoctor(settings) {
   const marketplace = safeJson(join(runtime.home, '.agents', 'plugins', 'marketplace.json')) || {}
   const pluginVersion = safeJson(join(pluginRoot, 'package.json'))?.version || ''
   const cacheVersion = safeJson(join(pluginCacheRoot, 'package.json'))?.version || ''
+  const homeLinkTarget = safeRealTarget(join(codexDir, 'helloagents'))
+  const pkgRootTarget = safeRealTarget(runtime.pkgRoot) || normalizePath(runtime.pkgRoot)
+  const pluginRootTarget = safeRealTarget(pluginRoot) || normalizePath(pluginRoot)
   const standbyNotifyPath = normalizePath(join(runtime.pkgRoot, 'scripts', 'notify.mjs'))
   const globalNotifyPath = normalizePath(join(pluginRoot, 'scripts', 'notify.mjs'))
   const managedHomeCarrierPath = normalizePath(join(codexDir, 'AGENTS.md'))
@@ -268,7 +272,8 @@ function inspectCodexDoctor(settings) {
   const checks = {
     carrierMarker: (safeRead(join(codexDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
     carrierContentMatch: extractManagedCarrierContent(join(codexDir, 'AGENTS.md')) === readBootstrapContent(expectedHomeCarrier),
-    homeLink: safeRealTarget(join(codexDir, 'helloagents')) === runtime.pkgRoot,
+    homeLink: homeLinkTarget === pkgRootTarget,
+    globalHomeLink: homeLinkTarget === pluginRootTarget,
     modelInstructionsFile: !!modelInstructionsLine,
     modelInstructionsPathMatch: !!modelInstructionsLine
       && normalizePath(modelInstructionsLine).includes(`"${managedHomeCarrierPath}"`),

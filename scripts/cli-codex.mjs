@@ -9,6 +9,7 @@ import { ensureTimestampedBackup, readCodexBackup, removeCodexBackup } from './c
 import {
   CODEX_MANAGED_TOML_COMMENT,
   CODEX_PLUGIN_CONFIG_HEADER,
+  isManagedCodexHooks,
   installCodexManagedTopLevelConfig,
   isManagedCodexBackupInstruction,
   isManagedCodexModelInstruction,
@@ -19,6 +20,7 @@ import {
 } from './cli-codex-config.mjs';
 import {
   readTopLevelTomlLine,
+  readTopLevelTomlBlock,
   readTomlKeyInSection,
   removeTomlKeyInSection,
   ensureTomlKeyInSection,
@@ -97,7 +99,8 @@ function removeCodexMarketplaceEntry(marketplaceFile) {
   }
   if (!removedHelloagents) return false;
   if (!nextPlugins.length) {
-    removeIfExists(marketplaceFile);
+    marketplace.plugins = [];
+    safeWrite(marketplaceFile, JSON.stringify(marketplace, null, 2) + '\n');
     return true;
   }
   marketplace.plugins = nextPlugins;
@@ -122,6 +125,57 @@ function writeCodexRuntimeCarrier(filePath, bootstrapPath) {
   if (!bootstrapContent) return false;
   safeWrite(filePath, buildCodexRuntimeCarrier(bootstrapContent));
   return true;
+}
+
+function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = {}) {
+  const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
+  let toml = safeRead(configPath) || '';
+
+  const currentModelInstructions = readTopLevelTomlLine(toml, 'model_instructions_file');
+  const currentNotify = readTopLevelTomlBlock(toml, 'notify');
+  const currentCodexHooks = readTomlKeyInSection(toml, '[features]', 'codex_hooks');
+
+  const shouldRestoreModelInstructions = isManagedCodexModelInstruction(currentModelInstructions);
+  const shouldRestoreNotify = isManagedCodexNotify(currentNotify);
+  const shouldRestoreCodexHooks = isManagedCodexHooks(currentCodexHooks);
+
+  if (removePluginConfig) {
+    toml = removeCodexPluginConfig(toml);
+  }
+  if (shouldRestoreModelInstructions) {
+    toml = removeTopLevelTomlLines(toml, (line) =>
+      line.startsWith('model_instructions_file =') && isManagedCodexModelInstruction(line)).text;
+  }
+  if (shouldRestoreNotify) {
+    toml = removeTopLevelTomlLines(toml, (line) =>
+      line.startsWith('notify =') && isManagedCodexNotify(line)).text;
+  }
+  if (shouldRestoreCodexHooks) {
+    toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
+  }
+
+  const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
+  const backupNotify = readTopLevelTomlBlock(backupToml, 'notify');
+  const backupCodexHooks = readTomlKeyInSection(backupToml, '[features]', 'codex_hooks');
+
+  toml = restoreCodexTopLevelConfig(toml, {
+    modelInstructionsLine: shouldRestoreModelInstructions && !isManagedCodexBackupInstruction(backupModelInstructions)
+      ? backupModelInstructions
+      : '',
+    notifyLine: shouldRestoreNotify && !isManagedCodexNotify(backupNotify)
+      ? backupNotify
+      : '',
+  });
+  toml = ensureTomlKeyInSection(
+    toml,
+    '[features]',
+    'codex_hooks',
+    shouldRestoreCodexHooks && !isManagedCodexHooks(backupCodexHooks)
+      ? backupCodexHooks
+      : '',
+  );
+
+  return toml;
 }
 
 export function installCodexStandby(home, pkgRoot) {
@@ -154,22 +208,7 @@ export function uninstallCodexStandby(home) {
     removeMarkedContent(join(codexDir, 'AGENTS.md'));
 
     const configPath = join(codexDir, 'config.toml');
-    const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
-    let toml = safeRead(configPath) || '';
-    toml = removeTopLevelTomlLines(toml, (line) => {
-      if (!line) return false;
-      if (line.startsWith('model_instructions_file =') && isManagedCodexModelInstruction(line)) return true;
-      if (line.startsWith('notify =') && line.includes('codex-notify')) return true;
-      return false;
-    }).text;
-    toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
-    const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
-    const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
-    toml = restoreCodexTopLevelConfig(toml, {
-      modelInstructionsLine: isManagedCodexBackupInstruction(backupModelInstructions) ? '' : backupModelInstructions,
-      notifyLine: isManagedCodexNotify(backupNotify) ? '' : backupNotify,
-    });
-    toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
+    const toml = cleanupCodexManagedConfig(configPath);
     if (toml.trim()) safeWrite(configPath, toml);
     else removeIfExists(configPath);
     changed = true;
@@ -211,6 +250,7 @@ export function installCodexGlobal(home, pkgRoot) {
 
   copyEntries(pkgRoot, pluginRoot, CODEX_RUNTIME_ENTRIES);
   copyEntries(pkgRoot, installedPluginRoot, CODEX_RUNTIME_ENTRIES);
+  createLink(pluginRoot, join(codexDir, 'helloagents'));
   writeCodexRuntimeCarrier(
     join(pluginRoot, CODEX_RUNTIME_CARRIER),
     join(pluginRoot, 'bootstrap.md'),
@@ -249,24 +289,9 @@ export function uninstallCodexGlobal(home) {
   removeIfExists(pluginCacheRoot);
   removeCodexMarketplaceEntry(marketplaceFile);
   removeMarkedContent(join(codexDir, 'AGENTS.md'));
+  removeLink(join(codexDir, 'helloagents'));
 
-  const backupToml = readCodexBackup(configPath, CODEX_CONFIG_BASENAME);
-  let toml = safeRead(configPath) || '';
-  toml = removeCodexPluginConfig(toml);
-  toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
-  toml = removeTopLevelTomlLines(toml, (line) =>
-    line.startsWith('model_instructions_file =')
-    && isManagedCodexModelInstruction(line)).text;
-  toml = removeTopLevelTomlLines(toml, (line) =>
-    line.startsWith('notify =')
-    && line.includes('/plugins/helloagents/scripts/notify.mjs')).text;
-  const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
-  const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
-  toml = restoreCodexTopLevelConfig(toml, {
-    modelInstructionsLine: isManagedCodexBackupInstruction(backupModelInstructions) ? '' : backupModelInstructions,
-    notifyLine: isManagedCodexNotify(backupNotify) ? '' : backupNotify,
-  });
-  toml = ensureTomlKeyInSection(toml, '[features]', 'codex_hooks', readTomlKeyInSection(backupToml, '[features]', 'codex_hooks'));
+  const toml = cleanupCodexManagedConfig(configPath, { removePluginConfig: true });
   if (toml.trim()) safeWrite(configPath, toml);
   else removeIfExists(configPath);
   removeCodexBackup(configPath, CODEX_CONFIG_BASENAME);

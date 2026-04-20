@@ -9,14 +9,14 @@ Trigger: ~wiki
 `~wiki` 是用户显式命令，仅创建、补全或同步项目知识库。
 
 `~wiki` 是显式知识库命令，不受 `kb_create_mode` 限制。
-执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 重写规则按当前已加载 bootstrap 执行；不写入项目级规则文件，也不创建项目级原生 skills 链接。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 保持项目本地；若 `project_store_mode=repo-shared`，`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`DESIGN.md`、`modules/` 改按当前上下文中已注入的项目知识目录写入。
+执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和状态文件重写规则按当前已加载 bootstrap 执行；不写入项目级规则文件，也不创建项目级原生 skills 链接。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；若 `project_store_mode=repo-shared`，`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`DESIGN.md`、`modules/` 改按当前上下文中已注入的项目知识目录写入。
 
 ## 流程
 
 ### 阶段 1：基础准备（必做）
 
-1. 创建 `.helloagents/` 目录 + `STATE.md`（按 templates/STATE.md 格式）；初始“主线目标”只写当前知识库初始化 / 同步目标，不把它写成长期项目总目标
+1. 创建 `.helloagents/` 目录 + `state_path`（按 templates/STATE.md 格式）；初始“主线目标”只写当前知识库初始化 / 同步目标，不把它写成长期项目总目标
 2. 追加 `.gitignore`（如果对应行不存在）：
    ```
    .helloagents/
@@ -29,7 +29,7 @@ Trigger: ~wiki
 
 检查项目是否有实际代码文件（非空项目）：
 - 有代码文件 → 执行完整知识库创建/补全（下方流程）
-- 空项目 → 保留 `.helloagents/` 和 `STATE.md`，告知用户“项目为空，其余知识文件将在后续开发或首次编码任务中补全”
+- 空项目 → 保留 `.helloagents/` 和 `state_path`，告知用户“项目为空，其余知识文件将在后续开发或首次编码任务中补全”
 
 知识库创建/补全流程（统一写入 `.helloagents/` 对应的项目级存储路径；`project_store_mode=repo-shared` 时实际落在共享知识目录）：
 1. 按 templates/ 目录的模板格式，分析项目代码库后创建或补全：
@@ -51,7 +51,7 @@ commands:
 ## 幂等性
 重复执行 `~wiki` 是安全的：
 - `.helloagents/` 缺失时创建，已存在时复用
-- `STATE.md` 按当前任务状态重写，不追加历史；它只记录当前知识库链路的恢复快照，不承担项目主线的唯一记忆
+- `state_path` 按当前任务状态重写，不追加历史；它只记录当前知识库任务，不承担项目的长期记忆
 - 知识库文件缺失时补全，已存在时按模板增量更新
 - `.gitignore` 只追加缺失行
 - 永不写入项目级规则文件，也不创建任何项目级原生 skills 链接

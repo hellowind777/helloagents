@@ -4,17 +4,18 @@
 
 import { join, dirname } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
 import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
-import { claimsTaskComplete, shouldIgnoreCodexNotifyClient, shouldIgnoreFormattedSubagent } from './notify-events.mjs';
+import { shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
+import { runGateScript } from './notify-gates.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
 import { clearRouteContext, writeRouteContext } from './runtime-context.mjs';
 import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
+import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,6 +37,17 @@ const EVENT_NAME = {
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
 
+function normalizeNotifyLevel(value) {
+  const level = Number(value);
+  return [0, 1, 2, 3].includes(level) ? level : 0;
+}
+
+function notifyByLevel(event, extra, settings = getSettings()) {
+  const level = normalizeNotifyLevel(settings.notify_level ?? 0);
+  if (level === 2 || level === 3) playSound(event);
+  if (level === 1 || level === 3) desktopNotify(event, extra);
+}
+
 function buildNotifyExtra(payload = {}, options = {}) {
   const source = resolveNotificationSource({
     host: HOST,
@@ -55,63 +67,44 @@ function getSettings() {
 function runRalphLoop(payload) {
   const settings = getSettings();
   if (settings.ralph_loop_enabled === false) return false;
-  try {
-    const rlPath = join(__dirname, 'ralph-loop.mjs');
-    if (!existsSync(rlPath)) return false;
-    const hostFlag = IS_GEMINI ? ['--gemini'] : HOST === 'codex' ? ['--codex'] : [];
-    const result = spawnSync(process.execPath, [rlPath, ...hostFlag], {
-      input: JSON.stringify(payload),
-      encoding: 'utf-8',
-      timeout: 120_000,
-    });
-    if (result.stdout) {
-      const rlOut = JSON.parse(result.stdout);
-      if (rlOut.decision === 'block') {
-        appendReplayEvent(payload.cwd || process.cwd(), {
-          host: HOST,
-          event: 'verify_gate_blocked',
-          source: 'ralph-loop',
-          reason: rlOut.reason || '',
-        });
-        output(rlOut);
-        return true;
-      }
-    }
-  } catch {}
-  return false;
+  return runGateScript({
+    payload,
+    host: HOST,
+    scriptPath: join(__dirname, 'ralph-loop.mjs'),
+    args: IS_GEMINI ? ['--gemini'] : HOST === 'codex' ? ['--codex'] : [],
+    source: 'ralph-loop',
+    blockEvent: 'verify_gate_blocked',
+    timeout: 120_000,
+    appendReplayEvent,
+    output,
+  });
 }
 
 function runDeliveryGate(payload) {
-  try {
-    const gatePath = join(__dirname, 'delivery-gate.mjs');
-    if (!existsSync(gatePath)) return false;
-    const result = spawnSync(process.execPath, [gatePath], {
-      input: JSON.stringify(payload),
-      encoding: 'utf-8',
-      timeout: 30_000,
-    });
-    if (result.stdout) {
-      const gateOut = JSON.parse(result.stdout);
-      if (gateOut.decision === 'block') {
-        appendReplayEvent(payload.cwd || process.cwd(), {
-          host: HOST,
-          event: 'delivery_gate_blocked',
-          source: 'delivery-gate',
-          reason: gateOut.reason || '',
-        });
-        output(gateOut);
-        return true;
-      }
-    }
-  } catch {}
-  return false;
+  return runGateScript({
+    payload,
+    host: HOST,
+    scriptPath: join(__dirname, 'delivery-gate.mjs'),
+    source: 'delivery-gate',
+    blockEvent: 'delivery_gate_blocked',
+    timeout: 30_000,
+    appendReplayEvent,
+    output,
+  });
 }
 
-function readCompletionText(payload = {}) {
-  return payload['last-assistant-message']
-    || payload.last_assistant_message
-    || payload.lastAssistantMessage
-    || '';
+function readMainTurnState(cwd) {
+  const turnState = readTurnState(cwd);
+  return turnState?.role === 'main' ? turnState : null;
+}
+
+function consumeMainTurnState(cwd, turnState) {
+  if (turnState?.role === 'main') clearTurnState(cwd);
+}
+
+function shouldProcessCloseout(turnState) {
+  if (turnState) return turnState.kind === 'complete';
+  return false;
 }
 
 function cmdPreCompact() {
@@ -140,6 +133,7 @@ function cmdPreCompact() {
 
 function cmdRoute() {
   const payload = readStdinJson();
+  clearTurnState(payload.cwd || process.cwd());
   handleRouteCommand({
     payload,
     host: HOST,
@@ -192,31 +186,35 @@ function cmdInject() {
     pkgRoot: PKG_ROOT,
     host: HOST,
     cwd,
+    payload,
   });
   clearRouteContext();
+  clearTurnState(cwd);
   suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
 }
 
 function cmdStop() {
   const payload = readStdinJson();
-  const lastMsg = readCompletionText(payload);
   const cwd = payload.cwd || process.cwd();
+  const turnState = readMainTurnState(cwd);
+  const shouldProcess = shouldProcessCloseout(turnState);
   clearRouteContext();
-  if (runRalphLoop(payload)) {
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(payload));
+  if (shouldProcess && runRalphLoop(payload)) {
+    consumeMainTurnState(cwd, turnState);
+    notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
-  if (claimsTaskComplete(lastMsg) && runDeliveryGate(payload)) {
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(payload));
+  if (shouldProcess && runDeliveryGate(payload)) {
+    consumeMainTurnState(cwd, turnState);
+    notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
 
   const settings = getSettings();
-  const level = settings.notify_level ?? 0;
-  if (level === 2 || level === 3) playSound('complete');
-  if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(payload));
+  if (shouldProcess) {
+    notifyByLevel('complete', buildNotifyExtra(payload), settings);
+  }
+  consumeMainTurnState(cwd, turnState);
   emptySuppress();
 }
 
@@ -237,31 +235,33 @@ function cmdCodexNotify() {
   if (shouldIgnoreCodexNotifyClient(client)) return;
 
   if (type === 'approval-requested') {
-    playSound('confirm');
-    desktopNotify('confirm', buildNotifyExtra(data));
+    notifyByLevel('confirm', buildNotifyExtra(data));
     return;
   }
   if (type !== 'agent-turn-complete') return;
 
-  const lastMsg = data['last-assistant-message'] || '';
-  const settings = getSettings();
-  if (shouldIgnoreFormattedSubagent(lastMsg, settings.output_format !== false)) return;
-
   const cwd = data.cwd || process.cwd();
-  if (claimsTaskComplete(lastMsg) && runRalphLoop({ cwd })) {
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(data));
-    return;
-  }
-  if (claimsTaskComplete(lastMsg) && runDeliveryGate({ cwd })) {
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(data));
+  const turnState = readMainTurnState(cwd);
+  if (!turnState) return;
+  if (turnState.kind !== 'complete') {
+    consumeMainTurnState(cwd, turnState);
     return;
   }
 
-  const level = settings.notify_level ?? 0;
-  if (level === 2 || level === 3) playSound('complete');
-  if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(data));
+  const settings = getSettings();
+  if (runRalphLoop(data)) {
+    consumeMainTurnState(cwd, turnState);
+    notifyByLevel('warning', buildNotifyExtra(data), settings);
+    return;
+  }
+  if (runDeliveryGate(data)) {
+    consumeMainTurnState(cwd, turnState);
+    notifyByLevel('warning', buildNotifyExtra(data), settings);
+    return;
+  }
+
+  notifyByLevel('complete', buildNotifyExtra(data), settings);
+  consumeMainTurnState(cwd, turnState);
 }
 
 const cmd = process.argv[2] || '';

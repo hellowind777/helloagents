@@ -19,7 +19,7 @@
     ],
     "styleAdvisor": {
       "required": false,
-      "reason": "{仅在 UI 方向尚未稳定、需要前置审美收敛时填写：为什么需要独立 style advisor}",
+      "reason": "{仅在 UI 方向尚未稳定、需要先明确审美方向时填写：为什么需要独立 style advisor}",
       "focus": [
         "{仅 ui.styleAdvisor.required=true 时填写：需要独立复查的设计方向、记忆点或视觉风险}"
       ]
@@ -37,7 +37,7 @@
   },
   "advisor": {
     "required": false,
-    "reason": "{仅在 T3 / UI / 高风险链路确有收益时填写：为什么需要独立 advisor}",
+    "reason": "{仅在 T3 / UI / 高风险流程确有收益时填写：为什么需要独立 advisor}",
     "focus": [
       "{仅 advisor.required=true 时填写：advisor 需要独立复查的边界}"
     ],

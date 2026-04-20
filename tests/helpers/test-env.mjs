@@ -88,6 +88,15 @@ export function buildHomeEnv(home) {
     USERPROFILE: home,
     HOMEDRIVE: parsed.root.replace(/[\\/]+$/, ''),
     HOMEPATH: home.slice(parsed.root.length - 1),
+    HELLOAGENTS_NOTIFY_SESSION_ID: '',
+    WT_SESSION: '',
+    TERM_SESSION_ID: '',
+    KITTY_WINDOW_ID: '',
+    ALACRITTY_WINDOW_ID: '',
+    WINDOWID: '',
+    WEZTERM_PANE: '',
+    TAB_ID: '',
+    HELLOAGENTS_DISABLE_OS_NOTIFICATIONS: '1',
   };
 }
 

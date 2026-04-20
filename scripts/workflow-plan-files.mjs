@@ -2,7 +2,11 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { isAbsolute, join, normalize } from 'node:path'
 
 import { getPlanContractIssues, readPlanContract } from './plan-contract.mjs'
-import { getProjectPlansDir, getProjectStatePath, resolveProjectPlanDir } from './project-storage.mjs'
+import {
+  getProjectPlansDir,
+  getProjectSessionStateScope,
+  resolveProjectPlanDir,
+} from './project-storage.mjs'
 
 const PLAN_TEMPLATE_MARKERS = {
   'requirements.md': [
@@ -170,15 +174,22 @@ function comparePlanEntries(a, b) {
   return a.planName.localeCompare(b.planName)
 }
 
-export function readStateSnapshot(cwd) {
-  const statePath = getProjectStatePath(cwd)
+export function readStateSnapshot(cwd, options = {}) {
+  const stateScope = getProjectSessionStateScope(cwd, options)
+  const statePath = stateScope.statePath
+  const exists = existsSync(statePath)
   const content = readText(statePath)
   const sections = parseMarkdownSections(content)
   const referencedPlanDir = resolvePlanDir(cwd, sections['方案'])
 
   return {
     statePath,
-    exists: existsSync(statePath),
+    stateScope: stateScope.stateScope,
+    stateSessionToken: stateScope.stateSessionToken,
+    stateSessionMode: stateScope.stateSessionMode,
+    stateBranch: stateScope.stateBranch,
+    sessionScoped: stateScope.stateScope === 'session',
+    exists,
     content,
     sections,
     referencedPlanDir,
@@ -230,8 +241,8 @@ export function listPlanPackages(cwd) {
     .sort(comparePlanEntries)
 }
 
-export function getWorkflowSnapshot(cwd) {
-  const state = readStateSnapshot(cwd)
+export function getWorkflowSnapshot(cwd, options = {}) {
+  const state = readStateSnapshot(cwd, options)
   const plans = listPlanPackages(cwd).map((entry) => ({
     ...entry,
     referencedByState: state.referencedPlanDir ? normalize(entry.dirPath) === normalize(state.referencedPlanDir) : false,

@@ -11,6 +11,9 @@ function read(relativePath) {
 
 test('plugin manifests and host hook files match their target CLIs', () => {
   const claudePlugin = JSON.parse(read('.claude-plugin/plugin.json'));
+  assert.equal(claudePlugin.author?.name, 'HelloWind');
+  assert.equal(claudePlugin.author?.email, 'hellowind777@gmail.com');
+  assert.equal(claudePlugin.repository, 'https://github.com/hellowind777/helloagents');
   assert.equal(claudePlugin.skills, './skills');
   assert.equal(claudePlugin.hooks, './hooks/hooks-claude.json');
 

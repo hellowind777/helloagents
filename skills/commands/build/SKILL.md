@@ -6,9 +6,9 @@ policy:
 ---
 Trigger: ~build [description]
 
-`~build` 是执行实现命令。它负责读取现有需求、方案包与项目上下文，完成实现、局部验证、修复循环，并把结果衔接到后续验证与收尾。
+`~build` 是执行实现命令。它负责读取现有需求、方案包与项目上下文，完成实现、局部验证、修复循环，并把结果交给后续验证与收尾。
 执行 `~build` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充实现前定位、实现约束，以及进入 `~verify` / 收尾前的实现边界。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 与 `.ralph-*.json` 保持项目本地；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md`、`verify.yaml` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`，`.ralph-*.json` 保持项目本地；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md`、`verify.yaml` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
 - 默认先定位上下文与范围，再修改代码
@@ -20,7 +20,7 @@ Trigger: ~build [description]
 
 ### 1. 恢复与定位
 
-- 优先按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”恢复当前链路；若当前消息显式继续既有链路，或会话刚经历恢复 / 压缩，先读取 `.helloagents/STATE.md` 作为恢复快照，再用当前用户消息、活跃方案包 / PRD 与代码事实校正主线
+- 优先按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”恢复当前任务；若当前消息明确要继续上次任务，或会话刚经历恢复 / 压缩，先读取 `state_path`，再用当前用户消息、活跃方案包 / PRD 与代码事实确认当前任务
 - 若存在最近的活跃方案包，读取对应的：
   - `requirements.md`
   - `plan.md`
@@ -46,7 +46,7 @@ Trigger: ~build [description]
 ### 3. 执行实现
 
 - 根据任务拆解逐步修改
-- 读取 PLAN 阶段所需的 hello-* 技能并遵循其规范
+- 按当前实现需要读取对应的 hello-* 技能，并遵循其规范
 - 编码任务遵循：
   - 先补测试或最小验证手段，再写实现
   - 每次编辑后主动跑确定性检查
@@ -59,9 +59,9 @@ Trigger: ~build [description]
 - 若失败，修复后重跑
 - 若涉及 review 场景，可按需读取 `hello-review`
 
-### 5. 交付衔接
+### 5. 交付前处理
 
 - 有方案包时，只同步本次实现直接影响的任务状态；未完成项保持打开
 - 当前实现已闭合、且需要进入交付或收尾时，转入 `~verify`
-- `STATE.md`、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载 bootstrap 的 VERIFY / CONSOLIDATE 规则执行
+- 状态文件、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载 bootstrap 的 VERIFY / CONSOLIDATE 规则执行
 - 不在 `~build` 内把仍未闭合的方案包整体报告为已完成
