@@ -115,11 +115,17 @@ function readCompletionText(payload = {}) {
     || '';
 }
 
-function shouldRunDeliveryGate(cwd, lastMsg) {
+function readMainTurnState(cwd) {
   const turnState = readTurnState(cwd);
-  if (turnState?.role === 'main') {
-    return turnState.kind === 'complete';
-  }
+  return turnState?.role === 'main' ? turnState : null;
+}
+
+function consumeMainTurnState(cwd, turnState) {
+  if (turnState?.role === 'main') clearTurnState(cwd);
+}
+
+function shouldProcessCloseout(turnState, lastMsg) {
+  if (turnState) return turnState.kind === 'complete';
   return claimsTaskComplete(lastMsg);
 }
 
@@ -213,13 +219,17 @@ function cmdStop() {
   const payload = readStdinJson();
   const lastMsg = readCompletionText(payload);
   const cwd = payload.cwd || process.cwd();
+  const turnState = readMainTurnState(cwd);
+  const shouldProcess = shouldProcessCloseout(turnState, lastMsg);
   clearRouteContext();
-  if (runRalphLoop(payload)) {
+  if (shouldProcess && runRalphLoop(payload)) {
+    consumeMainTurnState(cwd, turnState);
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(payload));
     return;
   }
-  if (shouldRunDeliveryGate(cwd, lastMsg) && runDeliveryGate(payload)) {
+  if (shouldProcess && runDeliveryGate(payload)) {
+    consumeMainTurnState(cwd, turnState);
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(payload));
     return;
@@ -227,8 +237,11 @@ function cmdStop() {
 
   const settings = getSettings();
   const level = settings.notify_level ?? 0;
-  if (level === 2 || level === 3) playSound('complete');
-  if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(payload));
+  if (shouldProcess) {
+    if (level === 2 || level === 3) playSound('complete');
+    if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(payload));
+  }
+  consumeMainTurnState(cwd, turnState);
   emptySuppress();
 }
 
@@ -256,16 +269,22 @@ function cmdCodexNotify() {
   if (type !== 'agent-turn-complete') return;
 
   const cwd = data.cwd || process.cwd();
-  const turnState = readTurnState(cwd);
-  if (!turnState || turnState.role !== 'main') return;
+  const turnState = readMainTurnState(cwd);
+  if (!turnState) return;
+  if (turnState.kind !== 'complete') {
+    consumeMainTurnState(cwd, turnState);
+    return;
+  }
 
   const settings = getSettings();
-  if (turnState.kind === 'complete' && runRalphLoop(data)) {
+  if (runRalphLoop(data)) {
+    consumeMainTurnState(cwd, turnState);
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(data));
     return;
   }
-  if (turnState.kind === 'complete' && runDeliveryGate(data)) {
+  if (runDeliveryGate(data)) {
+    consumeMainTurnState(cwd, turnState);
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(data));
     return;
@@ -274,6 +293,7 @@ function cmdCodexNotify() {
   const level = settings.notify_level ?? 0;
   if (level === 2 || level === 3) playSound('complete');
   if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(data));
+  consumeMainTurnState(cwd, turnState);
 }
 
 const cmd = process.argv[2] || '';
