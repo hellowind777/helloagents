@@ -248,6 +248,7 @@ export function installCodexGlobal(home, pkgRoot) {
 
   copyEntries(pkgRoot, pluginRoot, CODEX_RUNTIME_ENTRIES);
   copyEntries(pkgRoot, installedPluginRoot, CODEX_RUNTIME_ENTRIES);
+  createLink(pluginRoot, join(codexDir, 'helloagents'));
   writeCodexRuntimeCarrier(
     join(pluginRoot, CODEX_RUNTIME_CARRIER),
     join(pluginRoot, 'bootstrap.md'),
@@ -286,6 +287,7 @@ export function uninstallCodexGlobal(home) {
   removeIfExists(pluginCacheRoot);
   removeCodexMarketplaceEntry(marketplaceFile);
   removeMarkedContent(join(codexDir, 'AGENTS.md'));
+  removeLink(join(codexDir, 'helloagents'));
 
   const toml = cleanupCodexManagedConfig(configPath, { removePluginConfig: true });
   if (toml.trim()) safeWrite(configPath, toml);
