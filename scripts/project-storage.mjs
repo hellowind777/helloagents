@@ -11,6 +11,7 @@ export const PROJECT_DIR_NAME = '.helloagents'
 const PROJECTS_DIR_NAME = 'projects'
 const PROJECT_SESSIONS_DIR_NAME = 'sessions'
 const PROJECT_STORE_MODES = new Set(['local', 'repo-shared'])
+const DEFAULT_STATE_SESSION_TOKEN = 'default'
 
 function safeJson(filePath) {
   try {
@@ -139,61 +140,38 @@ export function getProjectActivationDir(cwd) {
   return join(cwd, PROJECT_DIR_NAME)
 }
 
-export function getProjectLegacyStatePath(cwd) {
-  return join(getProjectActivationDir(cwd), 'STATE.md')
-}
-
 export function getProjectSessionStateScope(cwd, {
   payload = {},
   env = process.env,
   ppid = process.ppid,
 } = {}) {
-  const legacyStatePath = getProjectLegacyStatePath(cwd)
-  const sessionToken = resolveSessionToken({
+  const rawSessionToken = resolveSessionToken({
     payload,
     env,
     ppid,
     allowPpidFallback: false,
   })
-
-  if (!sessionToken) {
-    return {
-      stateScope: 'project',
-      stateSessionToken: '',
-      stateBranch: '',
-      sessionDir: '',
-      legacyStatePath,
-      statePath: legacyStatePath,
-    }
-  }
-
   const branchName = sanitizeStateScopeSegment(resolveGitBranchName(cwd), 'detached')
+  const sessionToken = sanitizeStateScopeSegment(rawSessionToken, DEFAULT_STATE_SESSION_TOKEN)
   const sessionDir = join(
     getProjectActivationDir(cwd),
     PROJECT_SESSIONS_DIR_NAME,
     branchName,
-    sanitizeStateScopeSegment(sessionToken, 'session'),
+    sessionToken,
   )
 
   return {
     stateScope: 'session',
     stateSessionToken: sessionToken,
+    stateSessionMode: rawSessionToken ? 'host-session' : 'default',
     stateBranch: branchName,
     sessionDir,
-    legacyStatePath,
     statePath: join(sessionDir, 'STATE.md'),
   }
 }
 
 export function getProjectStatePath(cwd, options = {}) {
   return getProjectSessionStateScope(cwd, options).statePath
-}
-
-export function getProjectStateCandidates(cwd, options = {}) {
-  const scope = getProjectSessionStateScope(cwd, options)
-  return scope.statePath === scope.legacyStatePath
-    ? [scope.statePath]
-    : [scope.statePath, scope.legacyStatePath]
 }
 
 export function isRepoSharedProjectStore(cwd) {
@@ -221,9 +199,9 @@ export function getProjectStoreSummary(cwd, options = {}) {
     activationDir,
     storeDir,
     statePath: stateScope.statePath,
-    legacyStatePath: stateScope.legacyStatePath,
     stateScope: stateScope.stateScope,
     stateSessionToken: stateScope.stateSessionToken,
+    stateSessionMode: stateScope.stateSessionMode,
     stateBranch: stateScope.stateBranch,
     sessionStateDir: stateScope.sessionDir,
     usesSharedStore: projectStoreMode === 'repo-shared',
@@ -233,7 +211,6 @@ export function getProjectStoreSummary(cwd, options = {}) {
     promptActivationDir: formatPromptPath(activationDir),
     promptStoreDir: formatPromptPath(storeDir),
     promptStatePath: formatPromptPath(stateScope.statePath),
-    promptLegacyStatePath: formatPromptPath(stateScope.legacyStatePath),
     promptSessionStateDir: formatPromptPath(stateScope.sessionDir),
   }
 }
@@ -297,11 +274,12 @@ export function describeProjectStoreFile(cwd, relativePath = '') {
   return `逻辑路径 \`${logicalPath}\`（实际存储：\`${actualPath}\`）`
 }
 
-export function buildProjectStorageHint(cwd) {
-  const summary = getProjectStoreSummary(cwd)
+export function buildProjectStorageHint(cwd, options = {}) {
+  const summary = getProjectStoreSummary(cwd, options)
   const hints = []
-  if (summary.stateScope === 'session') {
-    hints.push(`当前会话的 STATE.md 独立写入 \`${summary.promptStatePath}\`；仅在缺少会话标识或兼容旧项目时才回退 \`${summary.promptLegacyStatePath}\``)
+  hints.push(`当前恢复快照统一写入 \`${summary.promptStatePath}\``)
+  if (summary.stateSessionMode === 'default') {
+    hints.push(`当前宿主未提供稳定会话标识，因此落到分支级默认会话槽位 \`${summary.stateSessionToken}\``)
   }
   if (summary.usesSharedStore) {
     hints.push(`项目存储：\`project_store_mode=repo-shared\`；本地激活/运行态目录仍是 \`${summary.promptActivationDir}\`，知识库/方案目录改为 \`${summary.promptStoreDir}\``)
@@ -309,8 +287,8 @@ export function buildProjectStorageHint(cwd) {
   return hints.join('。') + (hints.length > 0 ? '。' : '')
 }
 
-export function buildProjectStorageBlock(cwd) {
-  const summary = getProjectStoreSummary(cwd)
+export function buildProjectStorageBlock(cwd, options = {}) {
+  const summary = getProjectStoreSummary(cwd, options)
   if (!summary.usesSharedStore && !existsSync(summary.activationDir)) {
     return ''
   }
@@ -320,17 +298,18 @@ export function buildProjectStorageBlock(cwd) {
     activation_dir: summary.promptActivationDir,
     state_scope: summary.stateScope,
     state_path: summary.promptStatePath,
-    legacy_state_path: summary.promptLegacyStatePath,
     state_branch: summary.stateBranch,
     state_session_token: summary.stateSessionToken,
+    state_session_mode: summary.stateSessionMode,
     session_state_dir: summary.promptSessionStateDir,
     knowledge_base_dir: summary.promptStoreDir,
     uses_shared_store: summary.usesSharedStore,
   }
 
   const explanations = []
-  if (summary.stateScope === 'session') {
-    explanations.push('说明：当前会话的 STATE.md 独立写入 `state_path`；读写恢复快照时优先使用该路径，不要回写 `legacy_state_path`。')
+  explanations.push('说明：恢复快照只认 `state_path` 这一个权威路径，不再读写旧的项目级 `.helloagents/STATE.md`。')
+  if (summary.stateSessionMode === 'default') {
+    explanations.push('说明：当前宿主未提供稳定会话标识，因此自动使用分支级默认会话槽位，仍保持新目录结构。')
   }
   if (summary.usesSharedStore) {
     explanations.push('说明：`STATE.md` 与 `.ralph-*.json` 继续写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')

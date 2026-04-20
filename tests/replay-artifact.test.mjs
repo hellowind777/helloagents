@@ -13,6 +13,7 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
+import { getSessionStatePath } from './helpers/runtime-test-helpers.mjs'
 
 function readJsonl(filePath) {
   return readText(filePath)
@@ -39,7 +40,7 @@ test('replay artifact stays inactive until project activation and records event-
   assert.equal(existsSync(join(project, '.helloagents', 'replay')), false)
 
   writeText(
-    join(project, '.helloagents', 'STATE.md'),
+    getSessionStatePath(project),
     [
       '# 恢复快照',
       '',

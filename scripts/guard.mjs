@@ -62,15 +62,16 @@ function emitGuardEvent(cwd, event, source, reason, details = {}) {
   })
 }
 
-function buildHighRiskGate(matches, cwd) {
-  const stateSyncHint = buildStateSyncHint(cwd)
+function buildHighRiskGate(matches, cwd, payload = {}) {
+  const workflowOptions = { payload }
+  const stateSyncHint = buildStateSyncHint(cwd, workflowOptions)
   if (stateSyncHint) {
     return {
       reason: `[HelloAGENTS Guard] Blocked T3 command until project recovery state is synced.\n${stateSyncHint}`,
     }
   }
 
-  const recommendation = getWorkflowRecommendation(cwd)
+  const recommendation = getWorkflowRecommendation(cwd, workflowOptions)
   if (!recommendation) return null
   if (matches.some((match) => match.gate === 'post-verify')) {
     return {
@@ -172,7 +173,7 @@ function handleHighRiskCommand(data, command) {
   if (warnings.length === 0) return []
 
   const cwd = data.cwd || process.cwd()
-  const gate = buildHighRiskGate(warnings, cwd)
+  const gate = buildHighRiskGate(warnings, cwd, data)
   if (gate) {
     emitHookPayload({
       hookSpecificOutput: {

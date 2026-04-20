@@ -13,6 +13,13 @@ import { describeProjectStoreFile, getProjectDesignContractPath } from './projec
 export function getTargetPlans(snapshot) {
   return snapshot.activePlans.length > 0 ? snapshot.activePlans : snapshot.plans
 }
+
+function describeStateLabel(state) {
+  if (state.stateSessionMode === 'default') {
+    return '当前分支默认会话槽位的 `STATE.md`'
+  }
+  return '当前会话的 `STATE.md`'
+}
 export function classifyPlan(plan) {
   if (!plan) {
     return {
@@ -97,7 +104,7 @@ function collectStateSyncIssues(snapshot) {
   const issues = []
   const hasPlans = snapshot.plans.length > 0
   const state = snapshot.state
-  const stateLabel = state.sessionScoped ? '当前会话的 `STATE.md`' : '`STATE.md`'
+  const stateLabel = describeStateLabel(state)
 
   if (!hasPlans) {
     return issues
@@ -138,10 +145,7 @@ export function buildStateSyncHintFromSnapshot(snapshot) {
 
 export function buildStateRoleHintFromSnapshot(snapshot) {
   if (!snapshot.state.exists || snapshot.plans.length > 0) return ''
-  if (snapshot.state.sessionScoped) {
-    return '恢复约束：当前仅检测到当前会话的 `STATE.md`；先以当前用户消息、显式命令和代码事实确认主线，STATE.md 只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。'
-  }
-  return '恢复约束：当前仅检测到 `.helloagents/STATE.md`；先以当前用户消息、显式命令和代码事实确认主线，STATE.md 只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。'
+  return `恢复约束：当前仅检测到${describeStateLabel(snapshot.state)}；先以当前用户消息、显式命令和代码事实确认主线，STATE.md 只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。`
 }
 
 export function buildUiContractHint(cwd, snapshot) {

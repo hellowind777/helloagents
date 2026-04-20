@@ -499,9 +499,9 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 
 `~wiki` 只创建或同步项目知识库。`~init` 是更完整的项目初始化：它还会写入项目级规则文件（`AGENTS.md`、`CLAUDE.md`、`.gemini/GEMINI.md`）、刷新各宿主项目级原生 skills 链接，并补齐相关忽略项。在标准模式下，真正让当前项目进入完整项目流程的是项目本地 `.helloagents/` 的存在，项目级规则文件只是 `~init` 的附加能力。
 
-默认情况下，知识库和方案包都写在项目本地 `.helloagents/`。当宿主能提供稳定的会话标识时，HelloAGENTS 会把当前恢复快照按“分支 + 会话”隔离到 `.helloagents/sessions/<branch>/<session>/STATE.md`；旧的项目级 `.helloagents/STATE.md` 保留为兼容回退。若 `project_store_mode = "repo-shared"`，本地 `.helloagents/` 仅保留激活信号、会话/兼容 `STATE.md` 与 `.ralph-*` 等运行态文件；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 会改写到 `~/.helloagents/projects/<repo-key>/`，从而在同一 git 仓库的多个 worktree 间共享稳定资料。
+默认情况下，知识库和方案包都写在项目本地 `.helloagents/`。当前恢复快照现在只认一个权威路径：`state_path`。当宿主能提供稳定的会话标识时，HelloAGENTS 会把它写到 `.helloagents/sessions/<branch>/<session>/STATE.md`；否则写到分支默认槽位 `.helloagents/sessions/<branch>/default/STATE.md`。若 `project_store_mode = "repo-shared"`，本地 `.helloagents/` 仅保留激活信号、会话级 `STATE.md` 与 `.ralph-*` 等运行态文件；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 会改写到 `~/.helloagents/projects/<repo-key>/`，从而在同一 git 仓库的多个 worktree 间共享稳定资料。
 
-`STATE.md` 是项目级恢复快照，不是所有交互的统一记忆文件。当宿主能提供稳定会话标识时，它会自动切到会话级存储，从而减少同分支多对话串线与跨分支合并冲突。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
+`STATE.md` 是由 `state_path` 解析出的当前恢复快照，不是所有交互的统一记忆文件。按“分支 + 会话 / 默认槽位”存储后，同仓库并发对话不再争用同一个文件。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
 
 | 文件 | 用途 |
 |------|------|

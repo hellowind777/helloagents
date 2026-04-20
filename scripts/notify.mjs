@@ -202,6 +202,7 @@ function cmdInject() {
     pkgRoot: PKG_ROOT,
     host: HOST,
     cwd,
+    payload,
   });
   clearRouteContext();
   clearTurnState(cwd);
@@ -259,12 +260,12 @@ function cmdCodexNotify() {
   if (!turnState || turnState.role !== 'main') return;
 
   const settings = getSettings();
-  if (turnState.kind === 'complete' && runRalphLoop({ cwd })) {
+  if (turnState.kind === 'complete' && runRalphLoop(data)) {
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(data));
     return;
   }
-  if (turnState.kind === 'complete' && runDeliveryGate({ cwd })) {
+  if (turnState.kind === 'complete' && runDeliveryGate(data)) {
     playSound('warning');
     desktopNotify('warning', buildNotifyExtra(data));
     return;

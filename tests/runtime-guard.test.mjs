@@ -11,7 +11,7 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('guard blocks dangerous commands and warns on risky writes', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -85,7 +85,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   assert.match(payload.hookSpecificOutput.additionalContext, /PowerShell inline script exceeds 3 logical lines/)
 
   writeText(
-    join(gateProject, '.helloagents', 'STATE.md'),
+    getSessionStatePath(gateProject),
     [
       '# 恢复快照',
       '',
@@ -137,7 +137,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   writeText(join(planFirstProject, '.helloagents', 'plans', '202604050301_schema', 'requirements.md'), '# schema requirements\n')
   writeText(join(planFirstProject, '.helloagents', 'plans', '202604050301_schema', 'tasks.md'), '# schema tasks\n\n- [ ] plan first\n')
   writeText(
-    join(planFirstProject, '.helloagents', 'STATE.md'),
+    getSessionStatePath(planFirstProject),
     [
       '# 恢复快照',
       '',
