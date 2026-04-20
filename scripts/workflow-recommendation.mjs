@@ -59,7 +59,7 @@ function buildConsolidateAction(recommendation) {
       phase: 'consolidate',
       mode: recommendation.mode,
       routeHint: recommendation.guidance,
-      gateHint: '交付把关：审查与验证证据已满足；先写 `.helloagents/.ralph-closeout.json` 记录需求覆盖与交付清单，再完成 STATE.md / 归档后才可交付。',
+      gateHint: '交付把关：审查与验证证据已满足；先写 `.helloagents/.ralph-closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后才可交付。',
     }
   }
 
@@ -67,7 +67,7 @@ function buildConsolidateAction(recommendation) {
     phase: 'consolidate',
     mode: recommendation.mode || 'ready',
     routeHint: recommendation.guidance,
-    gateHint: '交付把关：当前已具备收尾证据；完成 STATE.md、知识沉淀与归档后即可交付。',
+    gateHint: '交付把关：当前已具备收尾证据；更新 `state_path`、知识文件并归档后即可交付。',
   }
 }
 
@@ -239,8 +239,8 @@ function buildClosedRecommendation(scopeLabel, plan, cwd) {
         ? `${scopeLabel} "${plan.planName}" 的任务与交付证据已闭合。`
         : `${scopeLabel} "${plan.planName}" 的任务、审查与验证已闭合。`,
       guidance: closedPlanEvidence.closeoutReady
-        ? '当前进入 CONSOLIDATE：完成 `STATE.md`、知识沉淀与方案归档后即可交付；不要无故重开新的方案包或重新跑一遍无关验证。'
-        : '当前进入 CONSOLIDATE：先写 `.helloagents/.ralph-closeout.json` 记录需求覆盖与交付清单，再同步 `STATE.md` / 归档后交付。',
+        ? '当前进入 CONSOLIDATE：更新 `state_path`、知识文件并归档方案后即可交付；不要无故重开新的方案包或重新跑一遍无关验证。'
+        : '当前进入 CONSOLIDATE：先写 `.helloagents/.ralph-closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后交付。',
     }
   }
 

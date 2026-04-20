@@ -16,9 +16,9 @@ export function getTargetPlans(snapshot) {
 
 function describeStateLabel(state) {
   if (state.stateSessionMode === 'default') {
-    return '当前分支默认会话槽位的 `STATE.md`'
+    return '当前分支默认位置的状态文件'
   }
-  return '当前会话的 `STATE.md`'
+  return '当前会话的状态文件'
 }
 export function classifyPlan(plan) {
   if (!plan) {
@@ -140,12 +140,12 @@ export function buildVerifyModeHintFromSnapshot(snapshot) {
 export function buildStateSyncHintFromSnapshot(snapshot) {
   const issues = collectStateSyncIssues(snapshot)
   if (issues.length === 0) return ''
-  return `STATE.md 提醒：${issues.join('；')}；继续项目级流程、收尾或进入压缩前先同步恢复快照。`
+  return `状态文件提醒：${issues.join('；')}；继续项目级流程、收尾或进入压缩前先同步状态文件。`
 }
 
 export function buildStateRoleHintFromSnapshot(snapshot) {
   if (!snapshot.state.exists || snapshot.plans.length > 0) return ''
-  return `恢复约束：当前仅检测到${describeStateLabel(snapshot.state)}；先以当前用户消息、显式命令和代码事实确认主线，STATE.md 只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。`
+  return `恢复约束：当前仅检测到${describeStateLabel(snapshot.state)}；先以当前用户消息、显式命令和代码事实确认当前任务。状态文件只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。`
 }
 
 export function buildUiContractHint(cwd, snapshot) {

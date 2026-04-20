@@ -323,8 +323,8 @@ HelloAGENTS 在不同模式下会写入不同文件，但写入/恢复/清理都
 | 命令 | 说明 |
 |------|------|
 | `~idea` | 轻量点子探索 — 比较方向与方案，不写文件 |
-| `~auto` | 自动编排 — 自动选择主路径并持续衔接到实现 / 验证 / 收尾，并优先复用现有活跃方案包 |
-| `~plan` | 结构化规划 — 需求澄清 + 方案收敛 + 计划包 |
+| `~auto` | 自动执行 — 自动选择主路径并持续推进到实现 / 验证 / 收尾，并优先复用现有活跃方案包 |
+| `~plan` | 结构化规划 — 需求澄清 + 方案确认 + 计划包 |
 | `~build` | 执行实现 — 基于当前需求或现有计划包完成实现 |
 | `~prd` | 完整 PRD — 13 维度头脑风暴式探索，生成产品需求文档 |
 | `~loop` | 自主迭代优化 — 设定目标和指标，AI 循环改进直到达标 |
@@ -440,7 +440,7 @@ helloagents --standby
 - `T0` — 只读探索、点子比较、方向发散
 - `T1` — 低风险小改动、明确实现、显式验证
 - `T2` — 多文件功能、新项目、需要结构化产物的任务
-- `T3` — 高风险或不可逆链路，如认证、安全、支付、数据库、生产发布
+- `T3` — 高风险或不可逆操作，如认证、安全、支付、数据库、生产发布
 
 **路由规则：**
 - 点子探索 / 比较方向 → `~idea`
@@ -482,10 +482,10 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 | `~plan` | 仅做交互式规划，生成计划包 | 想先审查方案再编码 |
 | `~build` | 从当前需求或现有计划包执行实现 | 需求已明确，想直接开始做 |
 | `~verify` | 审查与验证工作流 | 想先看审查结果、跑检查并修复 |
-| `~auto` | 在以上模式之间自动编排并一路推进 | 需求明确，想要端到端交付 |
+| `~auto` | 在以上模式之间自动选择并一路推进 | 需求明确，想要端到端交付 |
 | `~prd` | 13 维度 PRD 生成 | 需要完整的产品需求文档 |
 
-典型模式：先 `~idea` 比较方向，再 `~plan` 收敛方案，然后 `~build` 实现，最后 `~verify` 验证。或者直接 `~auto` 一步到位。如果项目里已经有活跃方案包，`~auto` 应先复用这条现有链路，而不是无故重新脑暴或重新规划。涉及 UI 时，决策优先级固定为：`plan.md` / PRD 中的 UI 决策 → `DESIGN.md` → 通用 UI 规则。
+典型模式：先 `~idea` 比较方向，再 `~plan` 确认方案，然后 `~build` 实现，最后 `~verify` 验证。或者直接 `~auto` 一步到位。如果项目里已经有活跃方案包，`~auto` 应先复用现有计划，而不是无故重新脑暴或重新规划。涉及 UI 时，决策优先级固定为：`plan.md` / PRD 中的 UI 决策 → `DESIGN.md` → 通用 UI 规则。
 
 ### 质量验证（Ralph Loop）
 
@@ -499,9 +499,9 @@ HelloAGENTS 支持两种安装模式，采用不同的安装方式：
 
 `~wiki` 只创建或同步项目知识库。`~init` 是更完整的项目初始化：它还会写入项目级规则文件（`AGENTS.md`、`CLAUDE.md`、`.gemini/GEMINI.md`）、刷新各宿主项目级原生 skills 链接，并补齐相关忽略项。在标准模式下，真正让当前项目进入完整项目流程的是项目本地 `.helloagents/` 的存在，项目级规则文件只是 `~init` 的附加能力。
 
-默认情况下，知识库和方案包都写在项目本地 `.helloagents/`。当前恢复快照现在只认一个权威路径：`state_path`。当宿主能提供稳定的会话标识时，HelloAGENTS 会把它写到 `.helloagents/sessions/<branch>/<session>/STATE.md`；否则写到分支默认槽位 `.helloagents/sessions/<branch>/default/STATE.md`。若 `project_store_mode = "repo-shared"`，本地 `.helloagents/` 仅保留激活信号、会话级 `STATE.md` 与 `.ralph-*` 等运行态文件；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 会改写到 `~/.helloagents/projects/<repo-key>/`，从而在同一 git 仓库的多个 worktree 间共享稳定资料。
+默认情况下，知识库和方案包都写在项目本地 `.helloagents/`。状态文件只使用 `state_path` 指定的位置。当宿主能提供稳定的会话标识时，HelloAGENTS 会把它写到 `.helloagents/sessions/<branch>/<session>/STATE.md`；否则写到分支默认位置 `.helloagents/sessions/<branch>/default/STATE.md`。若 `project_store_mode = "repo-shared"`，本地 `.helloagents/` 仅保留激活信号、会话级 `STATE.md` 与 `.ralph-*` 等运行态文件；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 会改写到 `~/.helloagents/projects/<repo-key>/`，从而在同一 git 仓库的多个 worktree 间共享稳定资料。
 
-`STATE.md` 是由 `state_path` 解析出的当前恢复快照，不是所有交互的统一记忆文件。按“分支 + 会话 / 默认槽位”存储后，同仓库并发对话不再争用同一个文件。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
+`STATE.md` 是由 `state_path` 解析出的当前状态文件，不是所有交互的统一记忆文件。按“分支 + 会话 / 默认位置”存储后，同仓库并发对话不再争用同一个文件。它会在 `~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop` 这类项目级连续流程中创建并持续更新；在验证/审查类任务中仅在文件已存在时更新；对 `~help` 这类一次性只读交互则不会创建。
 
 | 文件 | 用途 |
 |------|------|
@@ -729,7 +729,7 @@ npm test
 
 **相对 `v2.3.8` 的当前主线结果：**
 - ✨ 从 Python 包全面重写为 Node.js/Markdown 工作流框架，安装、运行时注入、技能、规则与验证链路全部重建
-- ✨ 把旧的多层路由 / design-develop 流程，统一收敛成 ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE 六阶段主流程
+- ✨ 把旧的多层路由 / design-develop 流程，统一整理为 ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE 六阶段主流程
 - ✨ 从旧命令集切换到 `~idea` / `~plan` / `~build` / `~verify` / `~prd` / `~loop` / `~wiki` 等更聚焦的命令体系，并引入 14 个自动激活质量技能
 - ✨ 项目产物体系成型：`STATE.md`、`DESIGN.md`、`requirements.md`、`plan.md`、`tasks.md`、`contract.json`、`.ralph-*` 证据成为流程判断依据，而不是附属文档
 - ✨ 安装模型重构为标准模式 / 全局模式双轨；Codex 改为原生本地插件链路，Claude/Gemini 保留各自宿主原生能力
@@ -761,7 +761,7 @@ npm test
 ### v3.0.1
 
 **修复与验证：**
-- 🔧 收敛并加强 `STATE.md` 恢复规则：关键决策变更即更新，长流程一旦失真立即重写，宿主明确进入压缩/恢复前置阶段前必须先确认已同步
+- 🔧 明确并加强 `STATE.md` 恢复规则：关键决策变更即更新，长流程一旦失真立即重写，宿主明确进入压缩/恢复前置阶段前必须先确认已同步
 - 🔧 修复 Codex 本地插件链路清理后的空 `~/.agents/plugins/marketplace.json` 残留
 - 🔧 修复并验证单 CLI `update` 在记录模式过期时仍会优先复用本地已检测模式，符合 `helloagents update <cli>` 的预期行为
 - 🔧 明确标准模式下“链接文件立即同步、注入后的规则文件需显式刷新”的分支 / bootstrap 刷新语义
@@ -783,11 +783,11 @@ npm test
 - ✨ `~verify` 命令：自动检测并运行所有验证命令
 - ✨ Guard 系统（`guard.mjs`）：L1 拦截破坏性命令 + L2 安全模式建议
 - ✨ 标准/全局模式：`install_mode` 配置项支持按项目或全局激活
-- ✨ 流状态管理（`STATE.md`）：用于压缩/恢复衔接的恢复快照（≤70 行）
+- ✨ 流状态管理（`STATE.md`）：用于压缩/恢复时继续工作的恢复快照（≤70 行）
 - ✨ 设计系统生成（`DESIGN.md`）：作为项目级 UI 契约自动创建
 - ✨ 计划包系统：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`
-- ✨ 可选 advisor 契约与证据：仅在 T3 / UI / 高风险链路启用，通过 `contract.json` + `.helloagents/.ralph-advisor.json` 落地
-- ✨ 可选视觉验收证据：仅在 UI 契约明确要求时启用，通过 `contract.json` + `.helloagents/.ralph-visual.json` 落地
+- ✨ 可选 advisor 契约与证据：仅在 T3 / UI / 高风险链路启用，通过 `contract.json` + `.helloagents/.ralph-advisor.json` 记录
+- ✨ 可选视觉验收证据：仅在 UI 契约明确要求时启用，通过 `contract.json` + `.helloagents/.ralph-visual.json` 记录
 
 **架构：**
 - 📦 先选路再执行的六阶段主流程：ROUTE/TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE

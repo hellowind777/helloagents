@@ -277,9 +277,9 @@ export function describeProjectStoreFile(cwd, relativePath = '') {
 export function buildProjectStorageHint(cwd, options = {}) {
   const summary = getProjectStoreSummary(cwd, options)
   const hints = []
-  hints.push(`当前恢复快照统一写入 \`${summary.promptStatePath}\``)
+  hints.push(`当前状态文件写入 \`${summary.promptStatePath}\``)
   if (summary.stateSessionMode === 'default') {
-    hints.push(`当前宿主未提供稳定会话标识，因此落到分支级默认会话槽位 \`${summary.stateSessionToken}\``)
+    hints.push(`当前宿主未提供稳定会话标识，因此使用分支默认位置 \`${summary.stateSessionToken}\``)
   }
   if (summary.usesSharedStore) {
     hints.push(`项目存储：\`project_store_mode=repo-shared\`；本地激活/运行态目录仍是 \`${summary.promptActivationDir}\`，知识库/方案目录改为 \`${summary.promptStoreDir}\``)
@@ -307,12 +307,12 @@ export function buildProjectStorageBlock(cwd, options = {}) {
   }
 
   const explanations = []
-  explanations.push('说明：恢复快照只认 `state_path` 这一个权威路径，不再读写旧的项目级 `.helloagents/STATE.md`。')
+  explanations.push('说明：状态文件只使用 `state_path`。')
   if (summary.stateSessionMode === 'default') {
-    explanations.push('说明：当前宿主未提供稳定会话标识，因此自动使用分支级默认会话槽位，仍保持新目录结构。')
+    explanations.push('说明：当前宿主未提供稳定会话标识，因此使用分支默认位置。')
   }
   if (summary.usesSharedStore) {
-    explanations.push('说明：`STATE.md` 与 `.ralph-*.json` 继续写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
+    explanations.push('说明：状态文件与 `.ralph-*.json` 写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
   } else {
     explanations.push('说明：当前使用项目本地 `.helloagents/` 作为激活目录、知识库目录和方案目录。')
   }
