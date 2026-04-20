@@ -10,13 +10,13 @@ Trigger: ~wiki
 
 `~wiki` 是显式知识库命令，不受 `kb_create_mode` 限制。
 执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和 `STATE.md` 重写规则按当前已加载 bootstrap 执行；不写入项目级规则文件，也不创建项目级原生 skills 链接。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 保持项目本地；若 `project_store_mode=repo-shared`，`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`DESIGN.md`、`modules/` 改按当前上下文中已注入的项目知识目录写入。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 保持项目本地；若当前上下文中的“当前项目存储”给出 `state_path`，本轮恢复快照统一读写该路径；若 `project_store_mode=repo-shared`，`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`DESIGN.md`、`modules/` 改按当前上下文中已注入的项目知识目录写入。
 
 ## 流程
 
 ### 阶段 1：基础准备（必做）
 
-1. 创建 `.helloagents/` 目录 + `STATE.md`（按 templates/STATE.md 格式）；初始“主线目标”只写当前知识库初始化 / 同步目标，不把它写成长期项目总目标
+1. 创建 `.helloagents/` 目录 + 当前 `STATE.md`（优先取当前项目存储中的 `state_path`，未注入时回退 `.helloagents/STATE.md`；按 templates/STATE.md 格式）；初始“主线目标”只写当前知识库初始化 / 同步目标，不把它写成长期项目总目标
 2. 追加 `.gitignore`（如果对应行不存在）：
    ```
    .helloagents/

@@ -97,27 +97,28 @@ function collectStateSyncIssues(snapshot) {
   const issues = []
   const hasPlans = snapshot.plans.length > 0
   const state = snapshot.state
+  const stateLabel = state.sessionScoped ? '当前会话的 `STATE.md`' : '`STATE.md`'
 
   if (!hasPlans) {
     return issues
   }
 
   if (!state.exists) {
-    issues.push('当前已存在方案包，但 `.helloagents/STATE.md` 缺失')
+    issues.push(`当前已存在方案包，但${stateLabel} 缺失`)
     return issues
   }
 
   if (!state.referencedPlanDir) {
-    issues.push('当前已存在方案包，但 `STATE.md` 未记录活跃方案路径')
+    issues.push(`${stateLabel} 未记录活跃方案路径`)
   }
   if (!state.sections['主线目标']) {
-    issues.push('`STATE.md` 缺少“主线目标”')
+    issues.push(`${stateLabel} 缺少“主线目标”`)
   }
   if (!state.sections['正在做什么']) {
-    issues.push('`STATE.md` 缺少“正在做什么”')
+    issues.push(`${stateLabel} 缺少“正在做什么”`)
   }
   if (!state.sections['下一步']) {
-    issues.push('`STATE.md` 缺少“下一步”')
+    issues.push(`${stateLabel} 缺少“下一步”`)
   }
 
   return issues
@@ -137,6 +138,9 @@ export function buildStateSyncHintFromSnapshot(snapshot) {
 
 export function buildStateRoleHintFromSnapshot(snapshot) {
   if (!snapshot.state.exists || snapshot.plans.length > 0) return ''
+  if (snapshot.state.sessionScoped) {
+    return '恢复约束：当前仅检测到当前会话的 `STATE.md`；先以当前用户消息、显式命令和代码事实确认主线，STATE.md 只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。'
+  }
   return '恢复约束：当前仅检测到 `.helloagents/STATE.md`；先以当前用户消息、显式命令和代码事实确认主线，STATE.md 只用于找回上次停在哪，不是当前任务的自动授权或唯一判断依据。'
 }
 

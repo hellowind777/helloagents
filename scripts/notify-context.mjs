@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { buildCommandRouteHint, buildStateSyncHint, buildWorkflowRouteHint } from './workflow-state.mjs';
+import { buildCommandRouteHint, buildStateSyncHint, buildWorkflowRouteHint, readStateSnapshot } from './workflow-state.mjs';
 import { buildCapabilityHint } from './capability-registry.mjs';
 import {
   buildProjectStorageBlock,
@@ -69,16 +69,13 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   summaryParts.push('以下信息在上下文压缩前保存，确保压缩后不丢失关键状态。');
 
   const cwd = payload.cwd || process.cwd();
-  const statePath = join(cwd, '.helloagents', 'STATE.md');
+  const stateSnapshot = readStateSnapshot(cwd);
   const stateSyncHint = buildStateSyncHint(cwd);
-  if (existsSync(statePath)) {
-    try {
-      const stateContent = readFileSync(statePath, 'utf-8');
-      summaryParts.push('');
-      summaryParts.push('## 恢复快照（从 STATE.md 读取，只用于找回上次停在哪）');
-      summaryParts.push('恢复时先看当前用户消息，确认仍是同一任务再按 STATE.md 接续。');
-      summaryParts.push(stateContent);
-    } catch {}
+  if (stateSnapshot.exists && stateSnapshot.content) {
+    summaryParts.push('');
+    summaryParts.push(`## 恢复快照（从 ${stateSnapshot.statePath.replace(/\\/g, '/')} 读取，只用于找回上次停在哪）`);
+    summaryParts.push('恢复时先看当前用户消息，确认仍是同一任务再按 STATE.md 接续。');
+    summaryParts.push(stateSnapshot.content);
   }
 
   let bootstrap = '';

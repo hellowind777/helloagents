@@ -194,6 +194,7 @@
 说明：
 - `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
 - `STATE.md`、`.ralph-*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- 若当前上下文中的“当前项目存储”给出 `state_path`，则本轮 `STATE.md` 一律指该路径；支持会话标识时，它可能实际落在 `.helloagents/sessions/{branch}/{session}/STATE.md`。旧 `.helloagents/STATE.md` 只作为兼容回退，不要求每轮都回写
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
 按上文 `~command` 路由中的相同技能根目录规则确定；确定根目录后读取其中的 `templates/`。
@@ -241,17 +242,17 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 主线判断依据优先级：
 1. 当前用户最新消息、显式 `~command`、本轮已确认的范围与结论
 2. 当前活跃方案包 / PRD、代码与验证证据
-3. `.helloagents/STATE.md`（恢复快照，只用于补齐最近进度）
+3. 当前 `STATE.md`（优先取当前项目存储中的 `state_path`，未注入时回退项目本地 `.helloagents/STATE.md`；恢复快照，只用于补齐最近进度）
 4. 其他知识沉淀与历史归档
 
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
 说明：
-- Tier 1 的 `STATE.md` 始终读取项目本地 `.helloagents/STATE.md`
+- Tier 1 的 `STATE.md` 优先读取当前项目存储中的 `state_path`；未注入时回退项目本地 `.helloagents/STATE.md`
 - Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认按项目级存储路径解析；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 
 Tier 1 — 恢复当前链路时优先读取：
-- .helloagents/STATE.md → 恢复快照（先确认当前消息仍是同一任务，再用它找回最近进度）
+- 当前 `STATE.md` → 恢复快照（优先取当前项目存储中的 `state_path`，未注入时回退 `.helloagents/STATE.md`；先确认当前消息仍是同一任务，再用它找回最近进度）
 
 Tier 2 — 理解项目时读取：
 - .helloagents/context.md → 项目架构、技术栈、目录结构、模块索引

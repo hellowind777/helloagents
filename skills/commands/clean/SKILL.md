@@ -7,7 +7,7 @@ policy:
 Trigger: ~clean
 
 执行 `~clean` 时，方案包归档、临时文件清理和 `STATE.md` 更新边界按当前已加载 bootstrap 执行；本命令只负责判定哪些方案包可以清理，以及输出清理摘要。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 和临时运行态文件保持项目本地；若 `project_store_mode=repo-shared`，`plans/` 与 `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`STATE.md` 和临时运行态文件保持项目本地；若当前上下文中的“当前项目存储”给出 `state_path`，本轮恢复快照统一读写该路径；若 `project_store_mode=repo-shared`，`plans/` 与 `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 流程
 

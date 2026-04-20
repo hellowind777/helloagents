@@ -2,7 +2,12 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { isAbsolute, join, normalize } from 'node:path'
 
 import { getPlanContractIssues, readPlanContract } from './plan-contract.mjs'
-import { getProjectPlansDir, getProjectStatePath, resolveProjectPlanDir } from './project-storage.mjs'
+import {
+  getProjectPlansDir,
+  getProjectSessionStateScope,
+  getProjectStateCandidates,
+  resolveProjectPlanDir,
+} from './project-storage.mjs'
 
 const PLAN_TEMPLATE_MARKERS = {
   'requirements.md': [
@@ -170,15 +175,24 @@ function comparePlanEntries(a, b) {
   return a.planName.localeCompare(b.planName)
 }
 
-export function readStateSnapshot(cwd) {
-  const statePath = getProjectStatePath(cwd)
+export function readStateSnapshot(cwd, options = {}) {
+  const stateScope = getProjectSessionStateScope(cwd, options)
+  const candidates = getProjectStateCandidates(cwd, options)
+  const existingStatePath = candidates.find((candidate) => existsSync(candidate)) || ''
+  const statePath = existingStatePath || stateScope.statePath
   const content = readText(statePath)
   const sections = parseMarkdownSections(content)
   const referencedPlanDir = resolvePlanDir(cwd, sections['方案'])
 
   return {
     statePath,
-    exists: existsSync(statePath),
+    preferredStatePath: stateScope.statePath,
+    legacyStatePath: stateScope.legacyStatePath,
+    stateScope: stateScope.stateScope,
+    stateSessionToken: stateScope.stateSessionToken,
+    stateBranch: stateScope.stateBranch,
+    sessionScoped: stateScope.stateScope === 'session',
+    exists: !!existingStatePath,
     content,
     sections,
     referencedPlanDir,
