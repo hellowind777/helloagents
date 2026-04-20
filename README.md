@@ -8,7 +8,7 @@
 
 **Quality-driven workflow framework for AI coding CLIs — 14 auto-activated skills, process discipline, and checklist-based quality checks.**
 
-[![Version](https://img.shields.io/badge/version-3.0.9-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.10-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -95,7 +95,7 @@ HelloAGENTS fixes that. It's a workflow layer that sits on top of your AI CLI an
 
 If the last version you used seriously was `v2.3.8`, this is not a minor update. The current line is a full product-line reset.
 
-| Dimension | v2.3.8 | Local `v3.0.9` |
+| Dimension | v2.3.8 | Local `v3.0.10` |
 |-----------|--------|----------------|
 | **Implementation base** | Python package plus mixed scripts/rules | Pure Node.js + Markdown runtime built around `cli.mjs`, `bootstrap*.md`, `skills/`, and `scripts/` |
 | **Product shape** | More like a multi-CLI management tool plus prompt protocol bundle | More like a quality workflow framework for AI CLIs, centered on routing, checks, verification, and resumable execution |
@@ -108,7 +108,7 @@ If the last version you used seriously was `v2.3.8`, this is not a minor update.
 | **KB storage** | Project-local only | Project-local by default, plus `project_store_mode=repo-shared` for sharing stable KB/plan assets across git worktrees |
 | **Codex integration** | Earlier compatibility layers and legacy paths | Standby = injected rules + local links; global = native local-plugin chain with less noise and drift |
 
-In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.9` is a workflow framework that unifies quality rules, plan files, verification records, and installation lifecycle into one operating model.
+In one sentence: `v2.3.8` was closer to "workflow glue for multiple CLIs"; `v3.0.10` is a workflow framework that unifies quality rules, plan files, verification records, and installation lifecycle into one operating model.
 
 ## ✨ Core Features
 
@@ -718,7 +718,16 @@ Subagents may skip workflow packaging such as routing, interaction flow, and out
 
 ## 📈 Version History
 
-### v3.0.9 (current)
+### v3.0.10 (current)
+
+**Fixes and verification since `v3.0.9beta`:**
+- 🔧 Codex managed `notify` entries now carry an explicit marker, so cleanup can distinguish HelloAGENTS config from user-owned `notify` commands that also use `codex-notify`
+- 🔧 Codex cleanup now preserves multiline user `notify` arrays and restores them without corrupting surrounding TOML sections
+- 🔧 `notify_level=0` now suppresses warning and confirmation notifications as well as completion notifications, keeping the documented "off" behavior consistent
+- 🔧 Restored `hello-ui` guidance after confirming OpenAI's public skill guidance recommends keeping `SKILL.md` under about 500 lines rather than enforcing a 200-line limit
+- 🧪 Added regressions for Codex `notify` preservation, multiline TOML handling, and notification-level gating
+
+### v3.0.9
 
 **Fixes and verification:**
 - 🔧 Claude Code / Gemini CLI `stop` delivery gating now only accepts structured `turn-state` for completion, so ordinary waiting turns no longer get misclassified as finished delivery

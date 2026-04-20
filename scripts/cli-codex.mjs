@@ -20,6 +20,7 @@ import {
 } from './cli-codex-config.mjs';
 import {
   readTopLevelTomlLine,
+  readTopLevelTomlBlock,
   readTomlKeyInSection,
   removeTomlKeyInSection,
   ensureTomlKeyInSection,
@@ -131,7 +132,7 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
   let toml = safeRead(configPath) || '';
 
   const currentModelInstructions = readTopLevelTomlLine(toml, 'model_instructions_file');
-  const currentNotify = readTopLevelTomlLine(toml, 'notify');
+  const currentNotify = readTopLevelTomlBlock(toml, 'notify');
   const currentCodexHooks = readTomlKeyInSection(toml, '[features]', 'codex_hooks');
 
   const shouldRestoreModelInstructions = isManagedCodexModelInstruction(currentModelInstructions);
@@ -154,7 +155,7 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
   }
 
   const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
-  const backupNotify = readTopLevelTomlLine(backupToml, 'notify');
+  const backupNotify = readTopLevelTomlBlock(backupToml, 'notify');
   const backupCodexHooks = readTomlKeyInSection(backupToml, '[features]', 'codex_hooks');
 
   toml = restoreCodexTopLevelConfig(toml, {

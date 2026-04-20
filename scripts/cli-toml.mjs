@@ -3,6 +3,8 @@
  * Targets the small subset of TOML structures used by Codex CLI config.
  */
 
+import { getTomlArrayDepthDelta } from './cli-toml-values.mjs'
+
 export function isTomlTableHeader(line) {
   const trimmed = String(line || '').trim();
   return trimmed.startsWith('[') && trimmed.endsWith(']');
@@ -61,6 +63,19 @@ function findTopLevelTomlBlock(text, key) {
     const openIndex = normalized.indexOf('"""', firstLine.indexOf('='));
     const closeIndex = normalized.indexOf('"""', openIndex + 3);
     end = closeIndex >= 0 ? closeIndex + 3 : normalized.length;
+  }
+  if (value.startsWith('[')) {
+    let depth = getTomlArrayDepthDelta(firstLine.slice(firstLine.indexOf('=') + 1));
+    let lineStart = firstLineEnd + (normalized[firstLineEnd] === '\n' ? 1 : 0);
+
+    while (depth > 0 && lineStart < normalized.length) {
+      const lineEndIndex = normalized.indexOf('\n', lineStart);
+      const nextLineEnd = lineEndIndex >= 0 ? lineEndIndex : normalized.length;
+      const nextLine = normalized.slice(lineStart, nextLineEnd);
+      depth += getTomlArrayDepthDelta(nextLine);
+      end = nextLineEnd;
+      lineStart = nextLineEnd + 1;
+    }
   }
 
   while (end < normalized.length && normalized[end] === '\n') {

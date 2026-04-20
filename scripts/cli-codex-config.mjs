@@ -27,7 +27,13 @@ export function isManagedCodexModelInstruction(line = '') {
 }
 
 export function isManagedCodexNotify(line = '') {
-  return line.includes('codex-notify')
+  const value = String(line || '').replace(/\\/g, '/')
+  return value.includes(CODEX_MANAGED_TOML_COMMENT)
+    || (
+      value.includes('codex-notify')
+      && value.includes('/scripts/notify.mjs')
+      && /(^|[/\\])helloagents([/\\]|-|$)|[/\\]plugins[/\\]helloagents[/\\]/i.test(value)
+    )
 }
 
 export function isManagedCodexBackupInstruction(line = '') {
@@ -51,7 +57,7 @@ function formatManagedCodexNotifyValue(notifyScriptPath) {
 }
 
 function formatManagedCodexNotifyLine(notifyScriptPath) {
-  return `notify = ${formatManagedCodexNotifyValue(notifyScriptPath)}`
+  return `notify = ${formatManagedCodexNotifyValue(notifyScriptPath)} ${CODEX_MANAGED_TOML_COMMENT}`
 }
 
 function removeTopLevelLinesBeingReplaced(toml, lines) {

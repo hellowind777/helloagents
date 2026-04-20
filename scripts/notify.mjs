@@ -37,6 +37,17 @@ const EVENT_NAME = {
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
 
+function normalizeNotifyLevel(value) {
+  const level = Number(value);
+  return [0, 1, 2, 3].includes(level) ? level : 0;
+}
+
+function notifyByLevel(event, extra, settings = getSettings()) {
+  const level = normalizeNotifyLevel(settings.notify_level ?? 0);
+  if (level === 2 || level === 3) playSound(event);
+  if (level === 1 || level === 3) desktopNotify(event, extra);
+}
+
 function buildNotifyExtra(payload = {}, options = {}) {
   const source = resolveNotificationSource({
     host: HOST,
@@ -190,22 +201,18 @@ function cmdStop() {
   clearRouteContext();
   if (shouldProcess && runRalphLoop(payload)) {
     consumeMainTurnState(cwd, turnState);
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(payload));
+    notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
   if (shouldProcess && runDeliveryGate(payload)) {
     consumeMainTurnState(cwd, turnState);
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(payload));
+    notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
 
   const settings = getSettings();
-  const level = settings.notify_level ?? 0;
   if (shouldProcess) {
-    if (level === 2 || level === 3) playSound('complete');
-    if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(payload));
+    notifyByLevel('complete', buildNotifyExtra(payload), settings);
   }
   consumeMainTurnState(cwd, turnState);
   emptySuppress();
@@ -228,8 +235,7 @@ function cmdCodexNotify() {
   if (shouldIgnoreCodexNotifyClient(client)) return;
 
   if (type === 'approval-requested') {
-    playSound('confirm');
-    desktopNotify('confirm', buildNotifyExtra(data));
+    notifyByLevel('confirm', buildNotifyExtra(data));
     return;
   }
   if (type !== 'agent-turn-complete') return;
@@ -245,20 +251,16 @@ function cmdCodexNotify() {
   const settings = getSettings();
   if (runRalphLoop(data)) {
     consumeMainTurnState(cwd, turnState);
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(data));
+    notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
   }
   if (runDeliveryGate(data)) {
     consumeMainTurnState(cwd, turnState);
-    playSound('warning');
-    desktopNotify('warning', buildNotifyExtra(data));
+    notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
   }
 
-  const level = settings.notify_level ?? 0;
-  if (level === 2 || level === 3) playSound('complete');
-  if (level === 1 || level === 3) desktopNotify('complete', buildNotifyExtra(data));
+  notifyByLevel('complete', buildNotifyExtra(data), settings);
   consumeMainTurnState(cwd, turnState);
 }
 
