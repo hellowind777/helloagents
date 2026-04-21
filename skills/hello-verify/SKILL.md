@@ -76,7 +76,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 5. 若当前存在方案包并准备最终收尾，优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录 `requirementsCoverage` 与 `deliveryChecklist` 两项结论；两项都必须包含 `status`（`PASS` / `BLOCKED`）和 `summary`
 6. 若当前方案包要求 `review-first`，必须先确认 `.helloagents/.ralph-review.json` 已通过 `scripts/review-state.mjs write` 写成最新结构化证据；不要把审查自然语言消息直接当成交付证据
 7. 若 `contract.json` 中 `ui.visualValidation.required=true`，必须确认 `.helloagents/.ralph-visual.json` 已通过 `scripts/visual-state.mjs write` 写成最新结构化证据；若没有视觉验收证据，不得把本轮视为 UI 可交付
-8. 准备以本轮最终收尾消息报告完成时，先调用 `scripts/turn-state.mjs write` 写 `kind=complete`、`role=main`；若因阻塞判定等待输入或因前置条件缺失而停下，写 `kind=waiting` 或 `kind=blocked`，不要让运行时从自然语言消息里猜状态
+8. 准备以本轮最终收尾消息报告完成时，先调用 `scripts/turn-state.mjs write` 写 `kind=complete`、`role=main`；若因阻塞判定等待输入或因前置条件缺失而停下，写 `kind=waiting` 或 `kind=blocked`，并同时写 `reasonCategory` 与 `reason`，不要让运行时从自然语言消息里猜状态
 
 ## 需求追踪验证
 
