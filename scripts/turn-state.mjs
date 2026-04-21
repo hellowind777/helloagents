@@ -9,6 +9,16 @@ const TURN_STATE_PATH = join(homedir(), '.helloagents', 'runtime', 'turn-state.j
 const TURN_STATE_TTL_MS = 30 * 60 * 1000
 const VALID_KINDS = new Set(['complete', 'waiting', 'blocked', 'progress'])
 const VALID_ROLES = new Set(['main', 'subagent'])
+const VALID_REASON_CATEGORIES = new Set([
+  'ambiguity',
+  'missing-input',
+  'missing-file',
+  'missing-credential',
+  'unauthorized-side-effect',
+  'high-risk-confirmation',
+  'external-dependency',
+  'error',
+])
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
@@ -44,6 +54,10 @@ function getTurnStateKey(cwd = process.cwd()) {
 function normalizeTurnState(input = {}) {
   const kind = typeof input.kind === 'string' ? input.kind.trim().toLowerCase() : ''
   const role = typeof input.role === 'string' ? input.role.trim().toLowerCase() : 'main'
+  const reasonCategory = typeof input.reasonCategory === 'string'
+    ? input.reasonCategory.trim().toLowerCase()
+    : ''
+  const reason = typeof input.reason === 'string' ? input.reason.trim() : ''
 
   return {
     kind: VALID_KINDS.has(kind) ? kind : '',
@@ -51,6 +65,8 @@ function normalizeTurnState(input = {}) {
     phase: typeof input.phase === 'string' ? input.phase.trim().toLowerCase() : '',
     source: typeof input.source === 'string' && input.source.trim() ? input.source.trim() : 'manual',
     requiresDeliveryGate: Boolean(input.requiresDeliveryGate),
+    reasonCategory: VALID_REASON_CATEGORIES.has(reasonCategory) ? reasonCategory : '',
+    reason,
   }
 }
 
@@ -105,6 +121,12 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
   if (!key || !normalized.kind) {
     throw new Error('turn-state requires cwd and a valid kind')
   }
+  if (
+    (normalized.kind === 'waiting' || normalized.kind === 'blocked')
+    && (!normalized.reasonCategory || !normalized.reason)
+  ) {
+    throw new Error('turn-state waiting/blocked requires reasonCategory and reason')
+  }
 
   const store = readStore()
   const payload = {
@@ -123,6 +145,8 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
       role: normalized.role,
       phase: normalized.phase,
       requiresDeliveryGate: normalized.requiresDeliveryGate,
+      reasonCategory: normalized.reasonCategory,
+      reason: normalized.reason,
     },
   })
 

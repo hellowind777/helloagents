@@ -123,8 +123,9 @@
 ### 收尾状态信号
 - 为避免运行时从自然语言、图标或格式反推“完成 / 等待输入”，主代理在本轮最终收尾前必须先调用 `scripts/turn-state.mjs write`
 - 本轮已完成且不再等待用户输入 → 写 `kind=complete`、`role=main`
-- 因阻塞判定等待用户输入、确认、授权或补充信息 → 写 `kind=waiting`、`role=main`
-- 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`
+- 因阻塞判定等待用户输入、确认、授权或补充信息 → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
+- 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
+- `reasonCategory` 只允许：`ambiguity`、`missing-input`、`missing-file`、`missing-credential`、`unauthorized-side-effect`、`high-risk-confirmation`、`external-dependency`、`error`
 - 子代理不得写 turn-state；子代理结束只直接返回结果，不为主代理代写完成态
 
 ## 交互规则

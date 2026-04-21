@@ -93,6 +93,19 @@ function runDeliveryGate(payload) {
   });
 }
 
+function runTurnStopGate(payload) {
+  return runGateScript({
+    payload,
+    host: HOST,
+    scriptPath: join(__dirname, 'turn-stop-gate.mjs'),
+    source: 'turn-stop-gate',
+    blockEvent: 'turn_stop_blocked',
+    timeout: 30_000,
+    appendReplayEvent,
+    output,
+  });
+}
+
 function readMainTurnState(cwd) {
   const turnState = readTurnState(cwd);
   return turnState?.role === 'main' ? turnState : null;
@@ -197,8 +210,11 @@ function cmdStop() {
   const payload = readStdinJson();
   const cwd = payload.cwd || process.cwd();
   const turnState = readMainTurnState(cwd);
+  if (runTurnStopGate(payload)) {
+    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState);
+    return;
+  }
   const shouldProcess = shouldProcessCloseout(turnState);
-  clearRouteContext();
   if (shouldProcess && runRalphLoop(payload)) {
     consumeMainTurnState(cwd, turnState);
     notifyByLevel('warning', buildNotifyExtra(payload));
@@ -215,6 +231,7 @@ function cmdStop() {
     notifyByLevel('complete', buildNotifyExtra(payload), settings);
   }
   consumeMainTurnState(cwd, turnState);
+  clearRouteContext();
   emptySuppress();
 }
 
@@ -242,9 +259,14 @@ function cmdCodexNotify() {
 
   const cwd = data.cwd || process.cwd();
   const turnState = readMainTurnState(cwd);
+  if (runTurnStopGate(data)) {
+    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState);
+    return;
+  }
   if (!turnState) return;
   if (turnState.kind !== 'complete') {
     consumeMainTurnState(cwd, turnState);
+    clearRouteContext();
     return;
   }
 
@@ -262,6 +284,7 @@ function cmdCodexNotify() {
 
   notifyByLevel('complete', buildNotifyExtra(data), settings);
   consumeMainTurnState(cwd, turnState);
+  clearRouteContext();
 }
 
 const cmd = process.argv[2] || '';
