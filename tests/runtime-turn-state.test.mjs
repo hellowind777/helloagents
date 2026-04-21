@@ -86,6 +86,8 @@ test('codex notify gates only main complete turns from turn-state', () => {
       role: 'main',
       kind: 'waiting',
       phase: 'plan',
+      reasonCategory: 'missing-input',
+      reason: '用户尚未给出当前审计范围。',
     }),
   })
   parseStdoutJson(result)
@@ -144,7 +146,7 @@ test('codex notify gates only main complete turns from turn-state', () => {
   assert.equal(result.stdout, '')
 })
 
-test('stop ignores completion gates when structured turn-state is waiting', () => {
+test('stop allows structured waiting turn-state and clears it', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
@@ -168,6 +170,8 @@ test('stop ignores completion gates when structured turn-state is waiting', () =
       role: 'main',
       kind: 'waiting',
       phase: 'clarify',
+      reasonCategory: 'ambiguity',
+      reason: '当前需求存在影响实现结果的真实歧义。',
     }),
   })
   parseStdoutJson(result)
@@ -190,6 +194,97 @@ test('stop ignores completion gates when structured turn-state is waiting', () =
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.state, null)
+})
+
+test('turn-state rejects waiting without blocker details', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-invalid-')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  const result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'waiting',
+      phase: 'clarify',
+    }),
+  })
+
+  assert.notEqual(result.status, 0)
+  assert.match(`${result.stderr}${result.stdout}`, /requires reasonCategory and reason/)
+})
+
+test('stop blocks explicit auto when turn-state is missing', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-stop-auto-missing-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home)
+
+  let result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      prompt: '~auto continue the current task until done',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['stop'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '我先停在这里，等你决定下一步。',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.decision, 'block')
+  assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
+  assert.match(payload.reason, /缺少主代理 turn-state/)
+})
+
+test('codex notify blocks explicit auto when turn-state is missing', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-codex-auto-missing-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { output_format: true })
+
+  let result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      prompt: '~auto continue the current task until done',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['codex-notify', JSON.stringify({
+    type: 'agent-turn-complete',
+    client: 'codex-tui',
+    cwd: project,
+    'last-assistant-message': '我先停在这里，等你决定下一步。',
+  })], {
+    cwd: project,
+    env,
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.decision, 'block')
+  assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
+  assert.match(payload.reason, /缺少主代理 turn-state/)
 })
 
 test('stop ignores completion-looking text when turn-state is missing', () => {
@@ -253,6 +348,8 @@ test('stop delivery gate prefers structured turn-state over completion text', ()
       role: 'main',
       kind: 'waiting',
       phase: 'clarify',
+      reasonCategory: 'ambiguity',
+      reason: '当前需求存在影响实现结果的真实歧义。',
     }),
   })
   parseStdoutJson(result)
