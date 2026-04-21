@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.11-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.12-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -30,7 +30,7 @@
 ## Contents
 
 - [What HelloAGENTS Does](#what-helloagents-does)
-- [What Changed Since v3.0.7](#what-changed-since-v307)
+- [What Changed Since v3.0.11](#what-changed-since-v3011)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [CLI Management](#cli-management)
@@ -77,19 +77,13 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 | Completion is vague | Natural language says “done” | Delivery checks use state, evidence, and verification |
 | Config writes are risky | CLI files can drift | Install, update, cleanup, and doctor flows check managed files |
 
-## What Changed Since v3.0.7
+## What Changed Since v3.0.11
 
-These are the main user-visible runtime and install changes in `v3.0.11`, compared with `v3.0.7`:
+These are the main user-visible runtime changes in `v3.0.12`, compared with `v3.0.11`:
 
-- Workflow runtime hints now use execution wording instead of staged “next command / next stage” suggestions, so active work is less likely to stop at phase boundaries.
-- Explicit `~auto` now treats the chosen path as a direct execution path and tells the agent to keep going until delivery or a real blocker, instead of turning phase results into “next-step” hand-offs.
-- Explicit `~loop` now follows its own loop rules directly; existing plan or verify recommendations stay as context only and no longer try to reroute the loop itself.
-- The final closeout fallback wording no longer sounds like it is waiting for another manual approval after the task is already complete.
-- Main-agent delivery now uses structured `turn-state` values such as `complete`, `waiting`, and `blocked`; stop, notify, and closeout no longer infer completion from natural-language text.
-- Workflow recovery now uses the current `state_path`, with session-scoped state files under `.helloagents/sessions/<branch>/<session-or-default>/STATE.md`.
-- The old project-root state fallback has been removed, so recovery follows one current state path.
-- Codex standby/global install, refresh, cleanup, and doctor checks are stricter: managed `notify` entries are marked, multiline `notify` arrays are preserved, and user-owned `model_instructions_file`, `notify`, and non-managed `codex_hooks` are kept during restore.
-- Codex global mode now refreshes the home read root, local plugin root, marketplace entry, enabled plugin block, and cache copy after reinstall, update, or local branch changes.
+- Explicit `~auto` and `~loop` no longer get a free pass to stop a turn early. Before the runtime accepts the turn end, it now checks whether the main agent wrote a valid structured stop state.
+- `waiting` and `blocked` turn states now require both a `reasonCategory` and a concrete `reason`, so only real blockers can pause the workflow instead of vague “next step” hand-offs.
+- The stop hook and Codex turn-complete notification path now enforce the same gate, reducing cases where work still should continue but the agent stops as if it is waiting for approval.
 
 ## Core Features
 
