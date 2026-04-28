@@ -23,6 +23,7 @@ import {
   syncVersion,
 } from './scripts/cli-lifecycle.mjs'
 import { initCliDoctor, runDoctor } from './scripts/cli-doctor.mjs'
+import { runBranchSwitch } from './scripts/cli-branch.mjs'
 import { createMessageHelpers, createInstallMessagePrinter } from './scripts/cli-messages.mjs'
 
 const HOME = homedir()
@@ -99,6 +100,8 @@ if (cmd === 'postinstall') {
   runSafely(() => runDoctor(argv.slice(1)))
 } else if (cmd === '--global' || cmd === '--standby') {
   switchMode(cmd === '--global' ? 'global' : 'standby')
+} else if (cmd === 'branch' || cmd === 'switch-branch') {
+  runSafely(() => runBranchSwitch(argv.slice(1)))
 } else if (['install', 'update', 'uninstall', 'cleanup', '--cleanup'].includes(cmd)) {
   runSafely(() => runScopedLifecycle(cmd === '--cleanup' ? 'cleanup' : cmd, argv.slice(1)))
 } else {
