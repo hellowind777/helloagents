@@ -72,10 +72,16 @@ function printPostinstallMessage() {
 
   const settings = readSettings()
   const mode = settings.install_mode || DEFAULTS.install_mode
-  console.log(msg(
-    `  HelloAGENTS 包已安装，尚未自动部署到任何 CLI。\n  使用显式命令部署：\n    helloagents install codex --${mode}\n    helloagents install --all --${mode}\n`,
-    `  HelloAGENTS package installed. No CLI targets were configured automatically.\n  Deploy explicitly with:\n    helloagents install codex --${mode}\n    helloagents install --all --${mode}\n`,
-  ))
+  const deployMessage = shouldDeployFromEnv()
+    ? msg(
+      '  HelloAGENTS 包已安装，正在按 HELLOAGENTS_TARGET / HELLOAGENTS_MODE 部署。\n',
+      '  HelloAGENTS package installed; deploying from HELLOAGENTS_TARGET / HELLOAGENTS_MODE.\n',
+    )
+    : msg(
+      `  HelloAGENTS 包已安装，尚未自动部署到任何 CLI。\n  使用显式命令部署：\n    helloagents install codex --${mode}\n    helloagents install --all --${mode}\n`,
+      `  HelloAGENTS package installed. No CLI targets were configured automatically.\n  Deploy explicitly with:\n    helloagents install codex --${mode}\n    helloagents install --all --${mode}\n`,
+    )
+  console.log(deployMessage)
 }
 
 function runSafely(handler) {
@@ -87,13 +93,32 @@ function runSafely(handler) {
   }
 }
 
+function envFlag(name) {
+  return ['1', 'true', 'yes', 'on'].includes(String(process.env[name] || '').toLowerCase())
+}
+
+function lifecycleArgsFromEnv(defaultTarget = 'all') {
+  const target = (process.env.HELLOAGENTS_TARGET || process.env.HELLOAGENTS_HOST || defaultTarget).trim()
+  const mode = (process.env.HELLOAGENTS_MODE || '').trim().toLowerCase()
+  const args = [target === 'all' ? '--all' : target]
+  if (mode) args.push(`--${mode}`)
+  return args
+}
+
+function shouldDeployFromEnv() {
+  return envFlag('HELLOAGENTS_DEPLOY')
+}
+
 const argv = process.argv.slice(2)
 const cmd = argv[0] || ''
 
 if (cmd === 'postinstall') {
   printPostinstallMessage()
+  if (shouldDeployFromEnv()) {
+    runSafely(() => runScopedLifecycle('install', lifecycleArgsFromEnv()))
+  }
 } else if (cmd === 'preuninstall') {
-  runScopedLifecycle('cleanup', [])
+  runScopedLifecycle('cleanup', lifecycleArgsFromEnv('all'))
 } else if (cmd === 'sync-version') {
   syncVersion()
 } else if (cmd === 'doctor') {

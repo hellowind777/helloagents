@@ -7,7 +7,9 @@ import {
   createHomeFixture,
   createPackageFixture,
   createTempDir,
+  readJson,
   readText,
+  REPO_ROOT,
   writeText,
 } from './helpers/test-env.mjs'
 import { runCli } from './helpers/cli-test-helpers.mjs'
@@ -29,30 +31,27 @@ function createBranchSwitchFixture() {
   const home = createHomeFixture()
   const binDir = createTempDir('helloagents-branch-bin-')
   const npmLog = join(home, 'npm.log')
-  const helloagentsLog = join(home, 'helloagents.log')
   return {
     pkgRoot,
     home,
     npmLog,
-    helloagentsLog,
     env: {
       HELLOAGENTS_NPM_CMD: writeFakeCommand(binDir, 'npm', npmLog),
-      HELLOAGENTS_BIN_CMD: writeFakeCommand(binDir, 'helloagents', helloagentsLog),
     },
   }
 }
 
-test('switch-branch installs a GitHub branch and refreshes a scoped global host', () => {
-  const { pkgRoot, home, env, npmLog, helloagentsLog } = createBranchSwitchFixture()
+test('switch-branch installs a GitHub branch and refreshes a scoped global host through npm', () => {
+  const { pkgRoot, home, env, npmLog } = createBranchSwitchFixture()
 
   runCli(pkgRoot, home, ['switch-branch', 'beta', 'claude', '--global'], env)
 
   assert.match(readText(npmLog), /install -g github:hellowind777\/helloagents#beta/)
-  assert.match(readText(helloagentsLog), /update claude --global/)
+  assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- claude --global/)
 })
 
-test('branch accepts a full npm spec and refreshes all hosts with explicit mode', () => {
-  const { pkgRoot, home, env, npmLog, helloagentsLog } = createBranchSwitchFixture()
+test('branch accepts a full npm spec and refreshes all hosts through npm', () => {
+  const { pkgRoot, home, env, npmLog } = createBranchSwitchFixture()
 
   runCli(pkgRoot, home, [
     'branch',
@@ -62,5 +61,19 @@ test('branch accepts a full npm spec and refreshes all hosts with explicit mode'
   ], env)
 
   assert.match(readText(npmLog), /install -g github:hellowind777\/helloagents#beta/)
-  assert.match(readText(helloagentsLog), /update --all --standby/)
+  assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- --all --standby/)
+})
+
+test('package exposes npm-script and one-shot script entry points', () => {
+  const pkg = readJson(join(REPO_ROOT, 'package.json'))
+
+  assert.equal(pkg.scripts.deploy, 'node cli.mjs install')
+  assert.equal(pkg.scripts['deploy:global'], 'node cli.mjs install --all --global')
+  assert.equal(pkg.scripts['sync-hosts'], 'node cli.mjs update')
+  assert.equal(pkg.scripts['cleanup-hosts'], 'node cli.mjs cleanup')
+  assert.equal(pkg.scripts['switch-branch'], 'node cli.mjs switch-branch')
+  assert.ok(pkg.files.includes('install.sh'))
+  assert.ok(pkg.files.includes('install.ps1'))
+  assert.match(readText(join(REPO_ROOT, 'install.sh')), /HELLOAGENTS_ACTION/)
+  assert.match(readText(join(REPO_ROOT, 'install.ps1')), /HELLOAGENTS_ACTION/)
 })
