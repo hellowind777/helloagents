@@ -200,6 +200,24 @@ export function installCodexStandby(home, pkgRoot) {
   return true;
 }
 
+export function cleanupCodexGlobalResidueForStandby(home) {
+  const codexDir = join(home, '.codex');
+  const pluginRoot = join(home, 'plugins', CODEX_PLUGIN_NAME);
+  const pluginCacheRoot = join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME);
+  const marketplaceFile = join(home, '.agents', 'plugins', 'marketplace.json');
+  const configPath = join(codexDir, 'config.toml');
+
+  removeIfExists(pluginRoot);
+  removeIfExists(pluginCacheRoot);
+  removeCodexMarketplaceEntry(marketplaceFile);
+
+  const toml = removeCodexPluginConfig(safeRead(configPath) || '');
+  if (toml.trim()) safeWrite(configPath, toml);
+  else removeIfExists(configPath);
+
+  return true;
+}
+
 export function uninstallCodexStandby(home) {
   const codexDir = join(home, '.codex');
   let changed = false;
