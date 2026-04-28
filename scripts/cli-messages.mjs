@@ -93,6 +93,12 @@ ${msg('单 CLI 管理', 'Scoped CLI management')}:
   helloagents uninstall gemini
   ${msg('支持: claude | gemini | codex | --all；省略模式时优先沿用该 CLI 已记录/已检测的模式，否则回退 standby', 'Hosts: claude | gemini | codex | --all; omit mode to reuse the tracked/detected mode for that CLI, then fall back to standby')}
 
+${msg('分支切换', 'Branch switching')}:
+  helloagents switch-branch beta
+  helloagents switch-branch beta claude --global
+  helloagents branch github:hellowind777/helloagents#beta --all --standby
+  ${msg('先通过 npm 安装指定 ref，再执行 helloagents update 同步宿主 CLI', 'Installs the requested ref with npm first, then runs helloagents update to sync host CLIs')}
+
 ${msg('诊断', 'Diagnostics')}:
   helloagents doctor
   helloagents doctor codex --json

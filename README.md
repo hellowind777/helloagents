@@ -289,6 +289,8 @@ helloagents install --all --global
 helloagents update codex
 helloagents cleanup claude --global
 helloagents uninstall gemini
+helloagents switch-branch beta
+helloagents switch-branch beta claude --global
 helloagents doctor
 helloagents doctor codex --json
 ```
@@ -301,6 +303,24 @@ Supported targets:
 - `--all`
 
 If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/detected mode for that CLI, then falls back to `standby`.
+
+### Branch switching
+
+`switch-branch` installs the requested npm/GitHub ref first, then runs `helloagents update` to sync host CLIs:
+
+```bash
+helloagents switch-branch beta
+helloagents switch-branch beta claude --global
+helloagents branch github:hellowind777/helloagents#beta --all --standby
+```
+
+Use normal npm commands when you only want to change the package and not sync host CLIs immediately:
+
+```bash
+npm install -g github:hellowind777/helloagents#beta
+npm update -g helloagents
+npm uninstall -g helloagents
+```
 
 ### Standby mode files
 

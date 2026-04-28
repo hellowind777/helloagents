@@ -289,6 +289,8 @@ helloagents install --all --global
 helloagents update codex
 helloagents cleanup claude --global
 helloagents uninstall gemini
+helloagents switch-branch beta
+helloagents switch-branch beta claude --global
 helloagents doctor
 helloagents doctor codex --json
 ```
@@ -301,6 +303,24 @@ helloagents doctor codex --json
 - `--all`
 
 省略 `--standby` 或 `--global` 时，HelloAGENTS 会先复用该 CLI 已记录或检测到的模式，再回退到 `standby`。
+
+### 分支切换
+
+`switch-branch` 会先安装指定 npm/GitHub ref，再执行 `helloagents update` 同步宿主 CLI：
+
+```bash
+helloagents switch-branch beta
+helloagents switch-branch beta claude --global
+helloagents branch github:hellowind777/helloagents#beta --all --standby
+```
+
+如果只想切换包本身，暂不同步宿主 CLI，可以直接使用 npm：
+
+```bash
+npm install -g github:hellowind777/helloagents#beta
+npm update -g helloagents
+npm uninstall -g helloagents
+```
 
 ### 标准模式文件
 
