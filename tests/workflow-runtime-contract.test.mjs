@@ -62,6 +62,18 @@ test('workflow runtime contract keeps route and state scripts aligned', () => {
   assert.doesNotMatch(notify, /playSound\('warning'\)/)
   assert.doesNotMatch(notify, /desktopNotify\('warning'/)
 
+  const cliCodex = readText(join(REPO_ROOT, 'scripts', 'cli-codex.mjs'))
+  assert.match(cliCodex, /cleanupCodexGlobalResidueForStandby/)
+  const residueCleanup = cliCodex.slice(
+    cliCodex.indexOf('export function cleanupCodexGlobalResidueForStandby'),
+    cliCodex.indexOf('export function uninstallCodexStandby'),
+  )
+  assert.doesNotMatch(residueCleanup, /removeMarkedContent\(join\(codexDir, 'AGENTS\.md'\)\)/)
+
+  const cliLifecycleHosts = readText(join(REPO_ROOT, 'scripts', 'cli-lifecycle-hosts.mjs'))
+  assert.match(cliLifecycleHosts, /cleanupCodexGlobalResidueForStandby/)
+  assert.doesNotMatch(cliLifecycleHosts, /function installStandby[\s\S]*uninstallCodexGlobal\(runtime\.home\)[\s\S]*function installGlobal/)
+
   const deliveryGate = readText(join(REPO_ROOT, 'scripts', 'delivery-gate.mjs'))
   assert.match(deliveryGate, /workflow-aware completion gate/)
   assert.match(deliveryGate, /missing required artifacts/)
