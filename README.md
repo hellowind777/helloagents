@@ -321,8 +321,11 @@ Claude Code and Gemini CLI global mode still require their host-native install c
 
 ```text
 /plugin marketplace add hellowind777/helloagents
+/plugin install helloagents@helloagents
 gemini extensions install https://github.com/hellowind777/helloagents
 ```
+
+For Claude Code, run the two `/plugin ...` commands inside Claude Code. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. If you previously added an older development marketplace name, remove it first and add the marketplace again.
 
 Codex global mode is installed by HelloAGENTS automatically through the local-plugin path.
 

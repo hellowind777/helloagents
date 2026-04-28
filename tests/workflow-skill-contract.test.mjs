@@ -33,6 +33,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(helloagents, /不得把等待输入包装成完成态/)
   assert.match(helloagents, /node "\{HELLOAGENTS_READ_ROOT\}\/scripts\/turn-state\.mjs" write/)
   assert.match(helloagents, /普通对话、选路和收尾不要读取源码/)
+  assert.match(helloagents, /可核实的真实阻塞对象/)
   assert.match(helloagents, /子代理不得写 turn-state/)
   assert.match(helloagents, /`~do` → 直接按 `~build` 的 command skill 路径读取并执行/)
   assert.match(helloagents, /`~design` → 直接按 `~plan` 的 command skill 路径读取并执行/)
