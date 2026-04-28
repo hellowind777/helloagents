@@ -78,9 +78,9 @@ test('Codex standby replaces a user-owned model_instructions_file with the manag
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const installedConfig = readText(join(home, '.codex', 'config.toml'))
-  assert.match(installedConfig, new RegExp(`model_instructions_file = "${userAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
+  assert.match(installedConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.ok(isManagedCodexModelInstruction(installedConfig.split('\n').find((line) => line.startsWith('model_instructions_file ='))))
-  assert.match(installedConfig, /notify = \["node", ".*\/scripts\/notify\.mjs", "codex-notify"\] # helloagents-managed/)
+  assert.match(installedConfig, /notify = \["helloagents-js", "codex-notify"\] # helloagents-managed/)
 
   runCli(pkgRoot, home, ['cleanup'])
 
@@ -110,7 +110,7 @@ test('Codex standby keeps model_instructions_file before notify and separates ma
   const installedConfig = readText(join(home, '.codex', 'config.toml'))
   assert.match(
     installedConfig,
-    /^model_instructions_file = ".*\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["node", ".*\/scripts\/notify\.mjs", "codex-notify"\] # helloagents-managed\n\napproval_policy = "never"\nsandbox_mode = "danger-full-access"\n\n\[features\]\nexperimental = true\n/,
+    /^model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["helloagents-js", "codex-notify"\] # helloagents-managed\n\napproval_policy = "never"\nsandbox_mode = "danger-full-access"\n\n\[features\]\nexperimental = true\n/,
   )
 })
 
@@ -135,7 +135,7 @@ test('Codex standby leaves a user-owned developer_instructions block untouched',
 
   const installedConfig = readText(join(home, '.codex', 'config.toml'))
   assert.match(installedConfig, /developer_instructions = """\nuser custom instructions\n"""/)
-  assert.match(installedConfig, /model_instructions_file = ".*\/\.codex\/AGENTS\.md" # helloagents-managed/)
+  assert.match(installedConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
 
   runCli(pkgRoot, home, ['cleanup'])
 
@@ -238,7 +238,7 @@ test('Codex install and cleanup preserve multiline user notify arrays', () => {
 
   const installed = readText(join(home, '.codex', 'config.toml'))
   assert.doesNotMatch(installed, /"C:\/tools\/custom-notify\.mjs",\n\s+"custom-notify"\n\]/)
-  assert.match(installed, /notify = \["node", ".*\/scripts\/notify\.mjs", "codex-notify"\] # helloagents-managed/)
+  assert.match(installed, /notify = \["helloagents-js", "codex-notify"\] # helloagents-managed/)
 
   runCli(pkgRoot, home, ['cleanup', 'codex'])
 

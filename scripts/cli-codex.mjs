@@ -8,6 +8,7 @@ import {
 import { ensureTimestampedBackup, readCodexBackup, removeCodexBackup } from './cli-codex-backup.mjs';
 import {
   CODEX_MANAGED_TOML_COMMENT,
+  CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   CODEX_PLUGIN_CONFIG_HEADER,
   isManagedCodexHooks,
   installCodexManagedTopLevelConfig,
@@ -191,8 +192,7 @@ export function installCodexStandby(home, pkgRoot) {
   ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
 
   toml = installCodexManagedTopLevelConfig(toml, {
-    modelInstructionsPath: codexAgentsPath,
-    notifyScriptPath: join(pkgRoot, 'scripts', 'notify.mjs'),
+    modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
   safeWrite(configPath, toml);
 
@@ -286,8 +286,7 @@ export function installCodexGlobal(home, pkgRoot) {
   let toml = safeRead(configPath) || '';
   ensureTimestampedBackup(configPath, CODEX_CONFIG_BASENAME);
   toml = installCodexManagedTopLevelConfig(toml, {
-    modelInstructionsPath: homeCarrierPath,
-    notifyScriptPath: join(pluginRoot, 'scripts', 'notify.mjs'),
+    modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
   toml = upsertCodexPluginConfig(toml);
   safeWrite(configPath, toml);

@@ -82,7 +82,7 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 These are the main user-visible changes in `v3.0.13`, compared with `v3.0.12`:
 
 - Install, update, uninstall, and branch switching now work through npm scripts and one-shot scripts, so host sync no longer depends on a stale `helloagents` executable during package updates.
-- Standby mode now reads from the stable runtime root `~/.helloagents/helloagents`; managed hooks, Codex `notify`, skills, templates, and runtime scripts no longer point at Node versioned global package paths.
+- Standby mode now reads from the stable runtime root `~/.helloagents/helloagents`; managed hooks use the `helloagents-js` entrypoint, and skills, templates, and runtime scripts no longer point at Node versioned global package paths.
 - Global mode now attempts Claude Code plugin and Gemini extension installation automatically, while Codex keeps using the managed local-plugin chain with marketplace and cache refresh.
 - Structured turn-state gating is stricter for `~auto` and `~loop`, so incomplete hand-offs must include concrete blocker evidence before the runtime accepts a pause.
 - Codex standby refresh and cleanup preserve user-owned config content while refreshing managed carriers, local plugin files, marketplace entries, and doctor checks.
@@ -310,7 +310,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
 
-Host configs point to the stable runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed `notify` or hooks.
+Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`.
 
 #### npm commands
 
@@ -617,8 +617,8 @@ Default shape:
 Codex is rules-file driven by default.
 
 - standby writes `~/.codex/AGENTS.md`
-- standby writes a managed `model_instructions_file` pointing to that file
-- standby writes a managed `notify` command for closeout notification
+- standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
+- standby writes a managed `notify = ["helloagents-js", "codex-notify"]` command for closeout notification
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain
 - HelloAGENTS does not enable Codex hooks by default

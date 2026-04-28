@@ -12,6 +12,23 @@ import {
 } from './helpers/test-env.mjs'
 import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
+test('CLI runtime entry dispatches Codex notify payloads', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-codex-notify-')
+  const env = buildHomeEnv(home)
+
+  const result = runNode(join(pkgRoot, 'cli.mjs'), [
+    'codex-notify',
+    JSON.stringify({ type: 'noop', cwd: project }),
+  ], {
+    cwd: project,
+    env,
+  })
+
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+})
+
 test('notify inject and semantic route cover standby and recovery hints', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

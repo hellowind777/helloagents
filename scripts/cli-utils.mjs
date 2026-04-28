@@ -137,3 +137,37 @@ export function loadHooksWithAbsPath(pkgRoot, hooksFile, pathVar) {
   const absRoot = pkgRoot.replace(/\\/g, '/');
   return JSON.parse(src.replace(new RegExp(pathVar.replace(/[{}$]/g, '\\$&'), 'g'), absRoot));
 }
+
+function rewriteHookCommandToCli(command = '', pathVar = '') {
+  const replacements = new Map([
+    [`node "${pathVar}/scripts/notify.mjs"`, 'helloagents-js notify'],
+    [`node "${pathVar}/scripts/guard.mjs"`, 'helloagents-js guard'],
+    [`node "${pathVar}/scripts/ralph-loop.mjs"`, 'helloagents-js ralph-loop'],
+  ]);
+
+  let next = command;
+  for (const [from, to] of replacements) {
+    next = next.replaceAll(from, to);
+  }
+  return next;
+}
+
+function rewriteHookCommands(value, pathVar) {
+  if (Array.isArray(value)) return value.map((item) => rewriteHookCommands(item, pathVar));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [
+      key,
+      key === 'command' && typeof entry === 'string'
+        ? rewriteHookCommandToCli(entry, pathVar)
+        : rewriteHookCommands(entry, pathVar),
+    ]));
+  }
+  return value;
+}
+
+/** Read hooks source file and rewrite standby hooks to the stable CLI entrypoint. */
+export function loadHooksWithCliEntry(pkgRoot, hooksFile, pathVar) {
+  const src = safeRead(join(pkgRoot, 'hooks', hooksFile));
+  if (!src) return null;
+  return rewriteHookCommands(JSON.parse(src), pathVar);
+}

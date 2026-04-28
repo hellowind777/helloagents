@@ -10,7 +10,7 @@ import {
   removeMarkedContent,
   mergeSettingsHooks,
   cleanSettingsHooks,
-  loadHooksWithAbsPath,
+  loadHooksWithCliEntry,
 } from './cli-utils.mjs';
 
 export function installClaudeStandby(home, pkgRoot) {
@@ -25,7 +25,7 @@ export function installClaudeStandby(home, pkgRoot) {
   createLink(pkgRoot, join(claudeDir, 'helloagents'));
 
   const settingsPath = join(claudeDir, 'settings.json');
-  const hooksData = loadHooksWithAbsPath(pkgRoot, 'hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}');
+  const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}');
   if (hooksData) {
     mergeSettingsHooks(settingsPath, hooksData, [
       'Read(~/.helloagents/helloagents/**)',
@@ -59,7 +59,7 @@ export function installGeminiStandby(home, pkgRoot) {
   createLink(pkgRoot, join(geminiDir, 'helloagents'));
 
   const settingsPath = join(geminiDir, 'settings.json');
-  const hooksData = loadHooksWithAbsPath(pkgRoot, 'hooks.json', '${extensionPath}');
+  const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks.json', '${extensionPath}');
   if (hooksData) mergeSettingsHooks(settingsPath, hooksData);
 
   return true;
