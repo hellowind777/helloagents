@@ -137,7 +137,7 @@ export function syncVersion() {
   }
   const marketPath = join(runtime.pkgRoot, '.claude-plugin', 'marketplace.json')
   const market = safeJson(marketPath)
-  if (market?.plugins?.[0]) {
+  if (market?.plugins?.[0]?.version) {
     market.plugins[0].version = runtime.pkgVersion
     safeWrite(marketPath, JSON.stringify(market, null, 2) + '\n')
   }

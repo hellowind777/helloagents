@@ -321,8 +321,11 @@ Claude Code 和 Gemini CLI 的全局模式仍需要宿主原生命令：
 
 ```text
 /plugin marketplace add hellowind777/helloagents
+/plugin install helloagents@helloagents
 gemini extensions install https://github.com/hellowind777/helloagents
 ```
+
+Claude Code 中需要在会话内依次执行这两条 `/plugin ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。如果之前添加过旧的开发 marketplace 名称，先移除后再重新添加。
 
 Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 

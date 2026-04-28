@@ -20,7 +20,11 @@ function codexGlobalStatus({ home, msg }) {
 }
 
 function pluginCommands() {
-  return '    Claude Code:  /plugin marketplace add hellowind777/helloagents\n                  /plugin install helloagents@helloagents\n    Gemini CLI:   gemini extensions install https://github.com/hellowind777/helloagents'
+  return [
+    '    Claude Code:  /plugin marketplace add hellowind777/helloagents',
+    '                  /plugin install helloagents@helloagents',
+    '    Gemini CLI:   gemini extensions install https://github.com/hellowind777/helloagents',
+  ].join('\n')
 }
 
 function removeHint(msg) {
@@ -45,10 +49,10 @@ function renderInstallMessage(context, mode, state) {
     return msg(
       refresh
         ? '  global 模式已刷新。\n  Claude Code / Gemini 请保持插件已安装；Codex 原生本地插件已重装并同步最新文件。'
-        : '  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 请手动安装插件；Codex 已自动安装原生本地插件。',
+        : `  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 请手动安装插件；Codex 已自动安装原生本地插件。\n\n${pluginCommands()}`,
       refresh
         ? '  Global mode refreshed.\n  Keep Claude Code / Gemini plugins installed; Codex native local-plugin files were reinstalled and synced.'
-        : '  All projects will use full HelloAGENTS rules.\n  Install Claude Code / Gemini plugins manually; Codex now uses the native local-plugin path automatically.',
+        : `  All projects will use full HelloAGENTS rules.\n  Install Claude Code / Gemini plugins manually; Codex now uses the native local-plugin path automatically.\n\n${pluginCommands()}`,
     )
   }
 

@@ -17,6 +17,16 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.equal(claudePlugin.skills, './skills');
   assert.equal(claudePlugin.hooks, './hooks/hooks-claude.json');
 
+  const claudeMarketplace = JSON.parse(read('.claude-plugin/marketplace.json'));
+  assert.equal(claudeMarketplace.name, 'helloagents');
+  assert.doesNotMatch(claudeMarketplace.description, /Development/);
+  assert.equal(claudeMarketplace.plugins[0].name, 'helloagents');
+  assert.deepEqual(claudeMarketplace.plugins[0].source, {
+    source: 'github',
+    repo: 'hellowind777/helloagents',
+  });
+  assert.equal(claudeMarketplace.plugins[0].version, undefined);
+
   const codexPlugin = JSON.parse(read('.codex-plugin/plugin.json'));
   assert.equal(codexPlugin.skills, './skills');
   assert.equal(codexPlugin.hooks, undefined);

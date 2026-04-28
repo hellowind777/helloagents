@@ -46,8 +46,8 @@ function installHostGlobal(runtime, host) {
   if (host === 'claude') {
     uninstallClaudeStandby(runtime.home)
     return {
-      noteCN: 'Claude Code 的 global 模式需手动安装插件: /plugin marketplace add hellowind777/helloagents',
-      noteEN: 'Claude Code global mode still needs a manual plugin install: /plugin marketplace add hellowind777/helloagents',
+      noteCN: 'Claude Code 的 global 模式需手动安装插件: /plugin marketplace add hellowind777/helloagents；/plugin install helloagents@helloagents',
+      noteEN: 'Claude Code global mode still needs manual plugin install: /plugin marketplace add hellowind777/helloagents; /plugin install helloagents@helloagents',
     }
   }
   if (host === 'gemini') {
