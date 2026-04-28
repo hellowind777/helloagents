@@ -150,8 +150,8 @@ function inspectClaudeDoctor(settings) {
   }
   if (trackedMode === 'global') {
     notes.push(runtime.msg(
-      'Claude Code 的 global 模式插件需手动安装；doctor 只检查 standby 残留，不直接探测插件状态。',
-      'Claude Code global-mode plugins are manual; doctor only checks for standby residue and does not inspect plugin state directly.',
+      'Claude Code 的 global 模式由宿主插件系统管理；doctor 只检查 standby 残留，不直接探测插件状态。',
+      'Claude Code global mode is managed by the host plugin system; doctor only checks for standby residue and does not inspect plugin state directly.',
     ))
     if (checks.carrierMarker || checks.homeLink || checks.settingsHooks || checks.settingsPermission) {
       issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is tracked as global'))
@@ -197,8 +197,8 @@ function inspectGeminiDoctor(settings) {
   }
   if (trackedMode === 'global') {
     notes.push(runtime.msg(
-      'Gemini CLI 的 global 模式扩展需手动安装；doctor 只检查 standby 残留，不直接探测扩展状态。',
-      'Gemini CLI global-mode extensions are manual; doctor only checks for standby residue and does not inspect extension state directly.',
+      'Gemini CLI 的 global 模式由宿主扩展系统管理；doctor 只检查 standby 残留，不直接探测扩展状态。',
+      'Gemini CLI global mode is managed by the host extension system; doctor only checks for standby residue and does not inspect extension state directly.',
     ))
     if (checks.carrierMarker || checks.homeLink || checks.settingsHooks) {
       issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is tracked as global'))

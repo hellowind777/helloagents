@@ -70,6 +70,14 @@ cleanup_hosts() {
   fi
 }
 
+uninstall_hosts() {
+  if [ "$TARGET" = "all" ]; then
+    npm explore -g helloagents -- npm run uninstall -- --all "--$MODE"
+  else
+    npm explore -g helloagents -- npm run uninstall -- "$TARGET" "--$MODE"
+  fi
+}
+
 enable_postinstall_deploy() {
   export HELLOAGENTS_DEPLOY=1
   export HELLOAGENTS_TARGET="$TARGET"
@@ -98,7 +106,7 @@ case "$ACTION" in
     sync_hosts
     ;;
   uninstall)
-    if ! cleanup_hosts; then
+    if ! uninstall_hosts; then
       echo "Warning: failed to cleanup HelloAGENTS host integrations before uninstall" >&2
     fi
     npm uninstall -g helloagents

@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.12-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.13-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -30,7 +30,7 @@
 ## Contents
 
 - [What HelloAGENTS Does](#what-helloagents-does)
-- [What Changed Since v3.0.11](#what-changed-since-v3011)
+- [What Changed Since v3.0.12](#what-changed-since-v3012)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [CLI Management](#cli-management)
@@ -77,13 +77,15 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 | Completion is vague | Natural language says “done” | Delivery checks use state, evidence, and verification |
 | Config writes are risky | CLI files can drift | Install, update, cleanup, and doctor flows check managed files |
 
-## What Changed Since v3.0.11
+## What Changed Since v3.0.12
 
-These are the main user-visible runtime changes in `v3.0.12`, compared with `v3.0.11`:
+These are the main user-visible changes in `v3.0.13`, compared with `v3.0.12`:
 
-- Explicit `~auto` and `~loop` no longer get a free pass to stop a turn early. Before the runtime accepts the turn end, it now checks whether the main agent wrote a valid structured stop state.
-- `waiting` and `blocked` turn states now require both a `reasonCategory` and a concrete `reason`, so only real blockers can pause the workflow instead of vague “next step” hand-offs.
-- The stop hook and Codex turn-complete notification path now enforce the same gate, reducing cases where work still should continue but the agent stops as if it is waiting for approval.
+- Install, update, uninstall, and branch switching now work through npm scripts and one-shot scripts, so host sync no longer depends on a stale `helloagents` executable during package updates.
+- Standby mode now reads from the stable runtime root `~/.helloagents/helloagents`; managed hooks, Codex `notify`, skills, templates, and runtime scripts no longer point at Node versioned global package paths.
+- Global mode now attempts Claude Code plugin and Gemini extension installation automatically, while Codex keeps using the managed local-plugin chain with marketplace and cache refresh.
+- Structured turn-state gating is stricter for `~auto` and `~loop`, so incomplete hand-offs must include concrete blocker evidence before the runtime accepts a pause.
+- Codex standby refresh and cleanup preserve user-owned config content while refreshing managed carriers, local plugin files, marketplace entries, and doctor checks.
 
 ## Core Features
 
@@ -327,8 +329,9 @@ HELLOAGENTS=claude:standby npm update -g helloagents
 # Switch to the beta branch and sync all CLIs in standby mode
 HELLOAGENTS=all:standby npm install -g github:hellowind777/helloagents#beta
 
-# Clean Gemini integration and uninstall the package
-HELLOAGENTS=gemini npm uninstall -g helloagents
+# Clean Gemini integration before package uninstall
+npm explore -g helloagents -- npm run uninstall -- gemini --standby
+npm uninstall -g helloagents
 ```
 
 Windows PowerShell:
@@ -346,8 +349,9 @@ $env:HELLOAGENTS="claude:standby"; npm update -g helloagents
 # Switch to the beta branch and sync all CLIs in standby mode
 $env:HELLOAGENTS="all:standby"; npm install -g github:hellowind777/helloagents#beta
 
-# Clean Gemini integration and uninstall the package
-$env:HELLOAGENTS="gemini"; npm uninstall -g helloagents
+# Clean Gemini integration before package uninstall
+npm explore -g helloagents -- npm run uninstall -- gemini --standby
+npm uninstall -g helloagents
 ```
 
 After the package is installed, you can also call its npm scripts directly:
@@ -356,6 +360,7 @@ After the package is installed, you can also call its npm scripts directly:
 npm explore -g helloagents -- npm run deploy:global
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
+npm explore -g helloagents -- npm run uninstall -- --all --standby
 ```
 
 #### One-shot scripts
@@ -407,6 +412,7 @@ Use normal npm commands when you only want to change the package and not sync ho
 ```bash
 npm install -g github:hellowind777/helloagents#beta
 npm update -g helloagents
+npm explore -g helloagents -- npm run uninstall -- --all --standby
 npm uninstall -g helloagents
 ```
 
@@ -672,7 +678,7 @@ Yes.
 
 ### Does `npm uninstall -g helloagents` remove project knowledge?
 
-No. Default package uninstall removes the package and stable runtime copy. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
+No. Run `npm explore -g helloagents -- npm run uninstall -- --all --standby` before package removal to clean host integrations and the stable runtime copy. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
 
 ## Troubleshooting
 

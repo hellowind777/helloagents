@@ -154,7 +154,7 @@ if (cmd === 'postinstall') {
   }
 } else if (cmd === 'preuninstall') {
   runSafely(() => {
-    const cleanupArgs = lifecycleArgsFromEnv('all')
+    const cleanupArgs = argv.length > 1 ? argv.slice(1) : lifecycleArgsFromEnv('all')
     runScopedLifecycle('cleanup', cleanupArgs)
     if (cleanupArgs.includes('--all')) removeRuntimeRoot(RUNTIME_ROOT)
   })
@@ -171,8 +171,14 @@ if (cmd === 'postinstall') {
   runSafely(() => runBranchSwitch(argv.slice(1)))
 } else if (['install', 'update', 'uninstall', 'cleanup', '--cleanup'].includes(cmd)) {
   runSafely(() => {
+    const action = cmd === '--cleanup' ? 'cleanup' : cmd
+    const lifecycleArgs = argv.slice(1)
     if (cmd === 'install' || cmd === 'update') ensureRuntimeRoot()
-    runScopedLifecycle(cmd === '--cleanup' ? 'cleanup' : cmd, argv.slice(1))
+    runScopedLifecycle(action, lifecycleArgs)
+    const positionals = lifecycleArgs.filter((arg) => !arg.startsWith('--'))
+    if (action === 'uninstall' && (lifecycleArgs.includes('--all') || positionals.length === 0)) {
+      removeRuntimeRoot(RUNTIME_ROOT)
+    }
   })
 } else {
   printHelp()
