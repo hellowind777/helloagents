@@ -306,32 +306,88 @@ helloagents doctor codex --json
 
 ### npm 和一键脚本入口
 
-当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本：
+当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`，省略时默认 `standby`。
+
+#### npm 命令
+
+macOS / Linux：
 
 ```bash
+# 安装到 Codex，标准模式
 HELLOAGENTS=codex npm install -g helloagents
+
+# 安装到 Codex，全局模式
 HELLOAGENTS=codex:global npm install -g helloagents
+
+# 更新并同步 Claude，标准模式
 HELLOAGENTS=claude:standby npm update -g helloagents
-HELLOAGENTS=all:global npm install -g github:hellowind777/helloagents#beta
-HELLOAGENTS=gemini:global npm uninstall -g helloagents
-npm explore -g helloagents -- npm run deploy:global
-npm explore -g helloagents -- npm run sync-hosts -- --all --standby
+
+# 切换到 beta 分支并同步全部 CLI，标准模式
+HELLOAGENTS=all:standby npm install -g github:hellowind777/helloagents#beta
+
+# 清理 Gemini 集成并卸载包
+HELLOAGENTS=gemini npm uninstall -g helloagents
 ```
 
-一键脚本使用相同环境变量：
-
-```bash
-HELLOAGENTS=all:global curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-HELLOAGENTS=claude:global HELLOAGENTS_ACTION=switch-branch HELLOAGENTS_BRANCH=beta curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-HELLOAGENTS=gemini:global HELLOAGENTS_ACTION=uninstall curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-```
-
-PowerShell：
+Windows PowerShell：
 
 ```powershell
-$env:HELLOAGENTS="all:global"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-$env:HELLOAGENTS="claude:global"; $env:HELLOAGENTS_ACTION="switch-branch"; $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-$env:HELLOAGENTS="gemini:global"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+# 安装到 Codex，标准模式
+$env:HELLOAGENTS="codex"; npm install -g helloagents
+
+# 安装到 Codex，全局模式
+$env:HELLOAGENTS="codex:global"; npm install -g helloagents
+
+# 更新并同步 Claude，标准模式
+$env:HELLOAGENTS="claude:standby"; npm update -g helloagents
+
+# 切换到 beta 分支并同步全部 CLI，标准模式
+$env:HELLOAGENTS="all:standby"; npm install -g github:hellowind777/helloagents#beta
+
+# 清理 Gemini 集成并卸载包
+$env:HELLOAGENTS="gemini"; npm uninstall -g helloagents
+```
+
+包已安装后，也可以直接调用包内 npm scripts：
+
+```bash
+npm explore -g helloagents -- npm run deploy:global
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
+npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
+```
+
+#### 一键脚本
+
+macOS / Linux：
+
+```bash
+# 安装
+HELLOAGENTS=codex curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+
+# 更新
+HELLOAGENTS=claude:standby HELLOAGENTS_ACTION=update curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+
+# 切换分支
+HELLOAGENTS=all:global HELLOAGENTS_ACTION=switch-branch HELLOAGENTS_BRANCH=beta curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+
+# 卸载
+HELLOAGENTS=gemini HELLOAGENTS_ACTION=uninstall curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+```
+
+Windows PowerShell：
+
+```powershell
+# 安装
+$env:HELLOAGENTS="codex"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+# 更新
+$env:HELLOAGENTS="claude:standby"; $env:HELLOAGENTS_ACTION="update"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+# 切换分支
+$env:HELLOAGENTS="all:global"; $env:HELLOAGENTS_ACTION="switch-branch"; $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+# 卸载
+$env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
 ### 分支切换
