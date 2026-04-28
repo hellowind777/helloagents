@@ -85,7 +85,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(helloVerify, /node "\{HELLOAGENTS_READ_ROOT\}\/scripts\/turn-state\.mjs" write/)
   assert.match(helloVerify, /scripts\/visual-state\.mjs write/)
   assert.match(helloVerify, /本地版本检查点/)
-  assert.match(helloVerify, /提交说明按“变更 \/ 验证 \/ 备注”组织/)
+  assert.match(helloVerify, /“变更 \/ 验证 \/ 备注”说明后提交/)
   assert.match(helloVerify, /不自动远程 `git push`/)
   assert.match(helloVerify, /requirementsCoverage/)
   assert.match(helloVerify, /deliveryChecklist/)
