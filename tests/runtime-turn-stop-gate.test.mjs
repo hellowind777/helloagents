@@ -23,7 +23,7 @@ function routeExplicitAuto(notifyScript, project, env) {
   parseStdoutJson(result)
 }
 
-function writeWaitingState(turnStateScript, project, env, reasonCategory, reason) {
+function writeWaitingState(turnStateScript, project, env, reasonCategory, reason, blocker) {
   const result = runNode(turnStateScript, ['write'], {
     cwd: project,
     env,
@@ -34,6 +34,7 @@ function writeWaitingState(turnStateScript, project, env, reasonCategory, reason
       phase: 'build',
       reasonCategory,
       reason,
+      ...(blocker ? { blocker } : {}),
     }),
   })
   parseStdoutJson(result)
@@ -68,7 +69,7 @@ test('stop blocks explicit auto soft handoff even with waiting turn-state', () =
 
   const payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /阶段性交接/)
+  assert.match(payload.reason, /blocker\.target/)
   assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
 })
 
@@ -88,6 +89,11 @@ test('stop allows explicit auto waiting when the blocker is concrete', () => {
     env,
     'missing-file',
     '缺少 tests/fixtures/input.csv 文件，无法继续生成基线结果。',
+    {
+      target: 'tests/fixtures/input.csv',
+      evidence: '读取基线输入文件时文件不存在。',
+      requiredAction: '用户补充该文件或确认改用其他输入路径。',
+    },
   )
 
   const result = runNode(notifyScript, ['stop'], {

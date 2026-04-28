@@ -127,7 +127,7 @@
 - 因阻塞判定等待用户输入、确认、授权或补充信息 → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - `reasonCategory` 只允许：`ambiguity`、`missing-input`、`missing-file`、`missing-credential`、`unauthorized-side-effect`、`high-risk-confirmation`、`external-dependency`、`error`
-- 显式 `~auto` / `~loop` 下，`waiting` / `blocked` 必须说明可核实的真实阻塞对象；阶段汇报、单轮 probe 完成、内部路线调整或“下一步建议”不构成停下理由，运行时会拦截
+- 显式 `~auto` / `~loop` 下，`waiting` / `blocked` 还必须写入 `blocker.target`、`blocker.evidence`、`blocker.requiredAction`；阶段汇报、单轮 probe 完成、内部路线调整或“下一步建议”不构成停下理由
 - 子代理不得写 turn-state；子代理结束只直接返回结果，不为主代理代写完成态
 
 ## 交互规则

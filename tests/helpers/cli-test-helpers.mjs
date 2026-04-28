@@ -11,10 +11,10 @@ export function writeTimestampedBackup(home, baseName, content) {
   writeText(join(home, '.codex', `${baseName}_20260403-000000.bak`), content)
 }
 
-export function runCli(pkgRoot, home, args) {
+export function runCli(pkgRoot, home, args, env = {}) {
   const result = runNode(join(pkgRoot, 'cli.mjs'), args, {
     cwd: pkgRoot,
-    env: buildHomeEnv(home),
+    env: { ...buildHomeEnv(home), ...env },
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
   return result

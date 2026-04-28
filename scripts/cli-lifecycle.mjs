@@ -173,8 +173,8 @@ function runAllHostsLifecycle(action, explicitMode) {
     }
     runtime.ok(runtime.msg('所有 CLI 配置已清理', 'All CLI configurations cleaned'))
     console.log(runtime.msg(
-      '  ℹ ~/.helloagents/ 已保留（如需彻底清理请手动删除）\n  ℹ 如已安装 Claude Code 插件，请手动执行: /plugin remove helloagents\n  ℹ 如已安装 Gemini CLI 扩展，请手动执行: gemini extensions uninstall helloagents',
-      '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n  ℹ If Claude Code plugin installed, run: /plugin remove helloagents\n  ℹ If Gemini CLI extension installed, run: gemini extensions uninstall helloagents',
+      '  ℹ ~/.helloagents/ 已保留（如需彻底清理请手动删除）\n  ℹ 已自动尝试移除 Claude/Gemini 插件或扩展；如宿主命令不可用，请手动执行对应移除命令',
+      '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n  ℹ Claude/Gemini plugin or extension removal was attempted automatically; if host commands are unavailable, remove them manually',
     ))
     console.log()
     return

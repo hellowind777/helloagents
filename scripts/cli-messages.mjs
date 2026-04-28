@@ -42,24 +42,24 @@ function renderInstallMessage(context, mode, state) {
   if (mode === 'global') {
     if (install) {
       return msg(
-        `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n${pluginCommands()}\n    Codex:        ${codexGlobalStatus(context)}（~/.agents/plugins/marketplace.json + ~/plugins/helloagents）\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
-        `\n  ✅ HelloAGENTS installed (global mode)!\n\n${pluginCommands()}\n    Codex:        ${codexGlobalStatus(context)} (~/.agents/plugins/marketplace.json + ~/plugins/helloagents)\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`,
+        `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n    Claude Code / Gemini CLI: 已自动尝试宿主原生插件/扩展安装\n    Codex:        ${codexGlobalStatus(context)}（~/.agents/plugins/marketplace.json + ~/plugins/helloagents）\n\n  若宿主命令不可用，请手动执行：\n${pluginCommands()}\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
+        `\n  ✅ HelloAGENTS installed (global mode)!\n\n    Claude Code / Gemini CLI: native plugin/extension install attempted automatically\n    Codex:        ${codexGlobalStatus(context)} (~/.agents/plugins/marketplace.json + ~/plugins/helloagents)\n\n  If a host command is unavailable, run manually:\n${pluginCommands()}\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`,
       )
     }
     return msg(
       refresh
-        ? '  global 模式已刷新。\n  Claude Code / Gemini 请保持插件已安装；Codex 原生本地插件已重装并同步最新文件。'
-        : `  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 请手动安装插件；Codex 已自动安装原生本地插件。\n\n${pluginCommands()}`,
+        ? '  global 模式已刷新。\n  Claude Code / Gemini 已自动尝试刷新宿主插件/扩展；Codex 原生本地插件已重装并同步最新文件。'
+        : `  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 已自动尝试安装宿主插件/扩展；Codex 已自动安装原生本地插件。\n\n若宿主命令不可用，请手动执行：\n${pluginCommands()}`,
       refresh
-        ? '  Global mode refreshed.\n  Keep Claude Code / Gemini plugins installed; Codex native local-plugin files were reinstalled and synced.'
-        : `  All projects will use full HelloAGENTS rules.\n  Install Claude Code / Gemini plugins manually; Codex now uses the native local-plugin path automatically.\n\n${pluginCommands()}`,
+        ? '  Global mode refreshed.\n  Claude Code / Gemini native plugin/extension refresh was attempted automatically; Codex native local-plugin files were reinstalled and synced.'
+        : `  All projects will use full HelloAGENTS rules.\n  Claude Code / Gemini native plugin/extension install was attempted automatically; Codex now uses the native local-plugin path automatically.\n\nIf a host command is unavailable, run manually:\n${pluginCommands()}`,
     )
   }
 
   if (install) {
     return msg(
-      `\n  ✅ HelloAGENTS 已安装（standby 模式）！\n\n    Claude Code:  已自动配置（~/.claude/CLAUDE.md + hooks）\n    Gemini CLI:   已自动配置（~/.gemini/GEMINI.md）\n    Codex:        ${codexStandbyStatus(context)}\n\n  standby 模式下，hello-* 技能不会自动触发。\n  在项目中使用 ~wiki 仅创建/同步知识库，或用 ~init 完整初始化项目；也可用 ~command 按需调用。\n\n  切换模式：\n    helloagents --global    全局模式（Claude/Gemini 装插件；Codex 自动装原生本地插件）`,
-      `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Codex:        ${codexStandbyStatus(context)}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~wiki to create or sync the KB only, or ~init for the full project bootstrap; ~command stays available on demand.\n\n  Switch modes:\n    helloagents --global    Global mode (manual plugins for Claude/Gemini; native local plugin auto-install for Codex)`,
+      `\n  ✅ HelloAGENTS 已安装（standby 模式）！\n\n    Claude Code:  已自动配置（~/.claude/CLAUDE.md + hooks）\n    Gemini CLI:   已自动配置（~/.gemini/GEMINI.md）\n    Codex:        ${codexStandbyStatus(context)}\n\n  standby 模式下，hello-* 技能不会自动触发。\n  在项目中使用 ~wiki 仅创建/同步知识库，或用 ~init 完整初始化项目；也可用 ~command 按需调用。\n\n  切换模式：\n    helloagents --global    全局模式（自动尝试 Claude/Gemini 插件或扩展；Codex 自动装原生本地插件）`,
+      `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Codex:        ${codexStandbyStatus(context)}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~wiki to create or sync the KB only, or ~init for the full project bootstrap; ~command stays available on demand.\n\n  Switch modes:\n    helloagents --global    Global mode (auto-attempts Claude/Gemini plugins or extensions; native local plugin auto-install for Codex)`,
     )
   }
 
@@ -82,7 +82,7 @@ ${msg('安装', 'Install')}:
   helloagents-js             ${msg('（稳定别名，避免与系统中同名可执行文件冲突）', '(stable alias to avoid conflicts with system executables of the same name)')}
 
 ${msg('模式切换', 'Mode switching')}:
-  helloagents --global     ${msg('全局模式（Claude/Gemini 装插件；Codex 自动装原生本地插件）', 'Global mode (manual plugins for Claude/Gemini; native local plugin auto-install for Codex)')}
+  helloagents --global     ${msg('全局模式（自动尝试 Claude/Gemini 插件或扩展；Codex 自动装原生本地插件）', 'Global mode (auto-attempts Claude/Gemini plugins or extensions; native local plugin auto-install for Codex)')}
   helloagents --standby    ${msg('标准模式（非插件安装，hello-* 不自动触发，默认）', "Standby mode (non-plugin install, hello-* won't auto-trigger, default)")}
 
 ${msg('单 CLI 管理', 'Scoped CLI management')}:
@@ -101,7 +101,7 @@ ${msg('诊断', 'Diagnostics')}:
 ${msg('卸载', 'Uninstall')}:
   helloagents cleanup      ${msg('（推荐先执行，显式清理所有 CLI 注入/链接）', '(recommended first, explicitly cleans CLI injections/links)')}
   npm uninstall -g helloagents
-  ${msg('如已安装插件，另需手动移除：', 'If plugins installed, also remove manually:')}
+  ${msg('如宿主命令不可用，另需手动移除：', 'If host commands are unavailable, also remove manually:')}
     Claude Code:  /plugin remove helloagents
     Gemini CLI:   gemini extensions uninstall helloagents
 `.trim()

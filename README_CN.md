@@ -250,6 +250,7 @@ helloagents install --all --standby
 
 ```bash
 helloagents --global
+helloagents install --all --global
 ```
 
 ### 3）在 AI CLI 里验证
@@ -317,7 +318,7 @@ helloagents doctor codex --json
 | Gemini CLI | 原生扩展安装 | 由 Gemini 扩展系统管理 |
 | Codex CLI | 原生本地插件链路 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/`、`~/.codex/plugins/cache/local-plugins/helloagents/local/`、`~/.codex/config.toml`、`~/.codex/helloagents -> ~/plugins/helloagents` |
 
-Claude Code 和 Gemini CLI 的全局模式仍需要宿主原生命令：
+全局模式下，HelloAGENTS 会自动尝试宿主原生命令。若宿主命令不可用，再手动执行：
 
 ```text
 /plugin marketplace add hellowind777/helloagents
@@ -325,7 +326,7 @@ Claude Code 和 Gemini CLI 的全局模式仍需要宿主原生命令：
 gemini extensions install https://github.com/hellowind777/helloagents
 ```
 
-Claude Code 中需要在会话内依次执行这两条 `/plugin ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。如果之前添加过旧的开发 marketplace 名称，先移除后再重新添加。
+Claude Code 会自动尝试等价的 `claude plugin marketplace add ...` 和 `claude plugin install ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。全局安装后需要重启宿主 CLI。
 
 Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 
