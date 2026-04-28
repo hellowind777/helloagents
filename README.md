@@ -235,7 +235,7 @@ If another executable named `helloagents` already exists in your `PATH`, use the
 helloagents-js
 ```
 
-By default, `postinstall` only installs the package command and initializes `~/.helloagents/helloagents.json`. Set `HELLOAGENTS=target[:mode]`, such as `HELLOAGENTS=codex:global`, when you want npm itself to deploy after install or update.
+By default, `postinstall` installs the package command, initializes `~/.helloagents/helloagents.json`, and syncs runtime files to `~/.helloagents/helloagents`. No host CLI is deployed unless you set `HELLOAGENTS=target[:mode]`, such as `HELLOAGENTS=codex:global`.
 
 ### 2) Deploy to a CLI
 
@@ -307,6 +307,8 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 ### npm and one-shot script entries
 
 Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
+
+Host configs point to the stable runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed `notify` or hooks.
 
 #### npm commands
 
@@ -412,9 +414,9 @@ npm uninstall -g helloagents
 
 | CLI | Files written or updated | Cleanup behavior |
 |-----|--------------------------|------------------|
-| Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> <package-root>` | removes managed marker block, HelloAGENTS hooks/permissions, and symlink |
-| Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> <package-root>` | removes managed marker block, HelloAGENTS hooks, and symlink |
-| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/helloagents -> <package-root>`, managed backups | removes managed marker block, managed config keys, symlink, and the latest managed backup |
+| Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks/permissions, and symlink |
+| Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks, and symlink |
+| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/helloagents -> ~/.helloagents/helloagents`, managed backups | removes managed marker block, managed config keys, symlink, and the latest managed backup |
 
 ### Global mode files
 
@@ -594,14 +596,14 @@ Default shape:
 
 - standby writes `~/.claude/CLAUDE.md`
 - standby updates `~/.claude/settings.json` with managed hooks and permissions
-- standby creates `~/.claude/helloagents -> <package-root>`
+- standby creates `~/.claude/helloagents -> ~/.helloagents/helloagents`
 - global mode uses Claude Code's plugin system
 
 ### Gemini CLI
 
 - standby writes `~/.gemini/GEMINI.md`
 - standby updates `~/.gemini/settings.json` with managed hooks
-- standby creates `~/.gemini/helloagents -> <package-root>`
+- standby creates `~/.gemini/helloagents -> ~/.helloagents/helloagents`
 - global mode uses Gemini's extension system
 
 ### Codex CLI
@@ -611,7 +613,7 @@ Codex is rules-file driven by default.
 - standby writes `~/.codex/AGENTS.md`
 - standby writes a managed `model_instructions_file` pointing to that file
 - standby writes a managed `notify` command for closeout notification
-- standby creates `~/.codex/helloagents -> <package-root>`
+- standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain
 - HelloAGENTS does not enable Codex hooks by default
 
@@ -670,7 +672,7 @@ Yes.
 
 ### Does `npm uninstall -g helloagents` remove project knowledge?
 
-No. Package uninstall removes the package. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
+No. Default package uninstall removes the package and stable runtime copy. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
 
 ## Troubleshooting
 

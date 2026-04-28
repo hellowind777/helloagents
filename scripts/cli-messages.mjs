@@ -78,7 +78,7 @@ function renderHelp({ pkgVersion, msg }) {
 HelloAGENTS v${pkgVersion} — The orchestration kernel for AI CLIs
 
 ${msg('安装', 'Install')}:
-  npm install -g helloagents  ${msg('（只安装包与命令；CLI 部署需显式执行 helloagents install ...）', '(installs the package/command only; deploy to CLIs explicitly with helloagents install ...)')}
+  npm install -g helloagents  ${msg('（安装命令并同步稳定运行根目录；CLI 部署需显式执行 helloagents install ...）', '(installs the command and syncs the stable runtime root; deploy to CLIs explicitly with helloagents install ...)')}
   HELLOAGENTS=codex:global npm install -g helloagents
   helloagents-js             ${msg('（稳定别名，避免与系统中同名可执行文件冲突）', '(stable alias to avoid conflicts with system executables of the same name)')}
 

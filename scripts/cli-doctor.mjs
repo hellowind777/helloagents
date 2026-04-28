@@ -10,6 +10,7 @@ import { loadHooksWithAbsPath, safeJson, safeRead } from './cli-utils.mjs'
 const runtime = {
   home: '',
   pkgRoot: '',
+  sourceRoot: '',
   pkgVersion: '',
   msg: (cn, en) => en || cn,
   readSettings: () => ({}),
@@ -131,7 +132,7 @@ function inspectClaudeDoctor(settings) {
     settingsHooks: JSON.stringify(claudeSettings.hooks || {}).includes('helloagents'),
     settingsHooksMatch: managedHooksMatch(claudeSettings.hooks || {}, expectedHooks),
     settingsPermission: Array.isArray(claudeSettings.permissions?.allow)
-      && claudeSettings.permissions.allow.includes('Read(~/.claude/helloagents/**)'),
+      && claudeSettings.permissions.allow.includes('Read(~/.helloagents/helloagents/**)'),
   }
 
   const issues = []
@@ -142,7 +143,7 @@ function inspectClaudeDoctor(settings) {
   if (detectedMode === 'standby') {
     if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
     if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
-    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
+    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
     if (!checks.settingsPermission) issues.push(buildDoctorIssue('standby-permission-missing', 'standby Claude 权限注入缺失', 'Standby Claude permission injection is missing'))
@@ -190,7 +191,7 @@ function inspectGeminiDoctor(settings) {
   if (detectedMode === 'standby') {
     if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
     if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
-    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
+    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
   }
@@ -217,11 +218,11 @@ function inspectGeminiDoctor(settings) {
 function appendCodexStandbyIssues(issues, checks) {
   if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
   if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
-  if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
+  if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
   if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('standby-model-instructions-missing', 'standby config 缺少受管 model_instructions_file', 'Standby config is missing the managed model_instructions_file'))
   if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('standby-model-instructions-drift', 'standby model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Standby model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
   if (!checks.codexNotify) issues.push(buildDoctorIssue('standby-notify-missing', 'standby notify 配置缺失', 'Standby notify configuration is missing'))
-  if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 路径未指向当前包根目录', 'Standby notify path does not point to the current package root'))
+  if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 路径未指向稳定运行根目录', 'Standby notify path does not point to the runtime root'))
   if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled || checks.globalNotifyPath) {
     issues.push(buildDoctorIssue('standby-global-residue', 'standby 模式下仍残留 global 插件文件或配置', 'Global plugin artifacts still remain while Codex is in standby mode'))
   }
@@ -355,7 +356,8 @@ function buildDoctorReport(host) {
   return {
     config: {
       packageVersion: runtime.pkgVersion,
-      packageRoot: runtime.pkgRoot,
+      runtimeRoot: runtime.pkgRoot,
+      packageRoot: runtime.sourceRoot || runtime.pkgRoot,
       installMode: settings.install_mode || DEFAULTS.install_mode,
       trackedHostModes: settings.host_install_modes || {},
     },

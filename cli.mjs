@@ -25,10 +25,12 @@ import {
 import { initCliDoctor, runDoctor } from './scripts/cli-doctor.mjs'
 import { runBranchSwitch } from './scripts/cli-branch.mjs'
 import { createMessageHelpers, createInstallMessagePrinter } from './scripts/cli-messages.mjs'
+import { getStableRuntimeRoot, removeRuntimeRoot, syncRuntimeRoot } from './scripts/cli-runtime-root.mjs'
 
 const HOME = homedir()
 const PKG_ROOT = resolve(dirname(fileURLToPath(import.meta.url)))
 const HELLOAGENTS_HOME = join(HOME, '.helloagents')
+const RUNTIME_ROOT = getStableRuntimeRoot(HOME)
 const CONFIG_FILE = join(HELLOAGENTS_HOME, 'helloagents.json')
 const pkg = loadPackageVersion(PKG_ROOT)
 
@@ -45,7 +47,8 @@ const { printHelp, printInstallMsg } = createInstallMessagePrinter({
 })
 initCliLifecycle({
   home: HOME,
-  pkgRoot: PKG_ROOT,
+  pkgRoot: RUNTIME_ROOT,
+  sourceRoot: PKG_ROOT,
   helloagentsHome: HELLOAGENTS_HOME,
   configFile: CONFIG_FILE,
   pkgVersion: pkg.version,
@@ -55,7 +58,8 @@ initCliLifecycle({
 })
 initCliDoctor({
   home: HOME,
-  pkgRoot: PKG_ROOT,
+  pkgRoot: RUNTIME_ROOT,
+  sourceRoot: PKG_ROOT,
   pkgVersion: pkg.version,
   msg,
   readSettings,
@@ -65,10 +69,16 @@ initCliDoctor({
   getHostLabel,
 })
 
+function ensureRuntimeRoot() {
+  syncRuntimeRoot(PKG_ROOT, RUNTIME_ROOT)
+}
+
 function printPostinstallMessage() {
   console.log(`\n  HelloAGENTS v${pkg.version}\n`)
   ensureConfig(HELLOAGENTS_HOME, CONFIG_FILE, safeJson, ensureDir)
+  ensureRuntimeRoot()
   ok('~/.helloagents/helloagents.json')
+  ok('~/.helloagents/helloagents')
 
   const settings = readSettings()
   const mode = settings.install_mode || DEFAULTS.install_mode
@@ -143,17 +153,27 @@ if (cmd === 'postinstall') {
     runSafely(() => runScopedLifecycle('install', lifecycleArgsFromEnv()))
   }
 } else if (cmd === 'preuninstall') {
-  runScopedLifecycle('cleanup', lifecycleArgsFromEnv('all'))
+  runSafely(() => {
+    const cleanupArgs = lifecycleArgsFromEnv('all')
+    runScopedLifecycle('cleanup', cleanupArgs)
+    if (cleanupArgs.includes('--all')) removeRuntimeRoot(RUNTIME_ROOT)
+  })
 } else if (cmd === 'sync-version') {
   syncVersion()
 } else if (cmd === 'doctor') {
   runSafely(() => runDoctor(argv.slice(1)))
 } else if (cmd === '--global' || cmd === '--standby') {
-  switchMode(cmd === '--global' ? 'global' : 'standby')
+  runSafely(() => {
+    ensureRuntimeRoot()
+    switchMode(cmd === '--global' ? 'global' : 'standby')
+  })
 } else if (cmd === 'branch' || cmd === 'switch-branch') {
   runSafely(() => runBranchSwitch(argv.slice(1)))
 } else if (['install', 'update', 'uninstall', 'cleanup', '--cleanup'].includes(cmd)) {
-  runSafely(() => runScopedLifecycle(cmd === '--cleanup' ? 'cleanup' : cmd, argv.slice(1)))
+  runSafely(() => {
+    if (cmd === 'install' || cmd === 'update') ensureRuntimeRoot()
+    runScopedLifecycle(cmd === '--cleanup' ? 'cleanup' : cmd, argv.slice(1))
+  })
 } else {
   printHelp()
 }

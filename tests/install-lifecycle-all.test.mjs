@@ -9,6 +9,7 @@ import { hasTimestampedBackup, runCli, seedHostConfigs } from './helpers/cli-tes
 test('CLI lifecycle covers standby, global, update, cleanup, and config preservation', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
+  const runtimeRoot = join(home, '.helloagents', 'helloagents')
   seedHostConfigs(home)
 
   runCli(pkgRoot, home, ['postinstall'])
@@ -23,7 +24,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const claudeMd = readText(join(home, '.claude', 'CLAUDE.md'))
   assert.match(claudeMd, /HELLOAGENTS_START/)
-  assert.match(claudeMd, /Codex `~\/\.codex\/helloagents`；Claude `~\/\.claude\/helloagents`；Gemini `~\/\.gemini\/helloagents`/)
+  assert.match(claudeMd, /稳定运行根目录 `~\/\.helloagents\/helloagents`/)
   assert.match(claudeMd, /不要递归扫描 `\$HOME`、`Downloads`、项目目录或旧版本目录/)
   assert.match(claudeMd, /# Claude custom/)
 
@@ -39,11 +40,11 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(codexConfig, /codex-notify/)
   assert.match(codexConfig, /^model_instructions_file = ".*\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["node", ".*\/scripts\/notify\.mjs", "codex-notify"\] # helloagents-managed\n\n\[features\]\nexperimental = true\n/m)
   assert.ok(hasTimestampedBackup(home, 'config.toml'))
-  assert.equal(realTarget(join(home, '.claude', 'helloagents')), pkgRoot)
-  assert.equal(realTarget(join(home, '.gemini', 'helloagents')), pkgRoot)
-  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pkgRoot)
+  assert.equal(realTarget(join(home, '.claude', 'helloagents')), runtimeRoot)
+  assert.equal(realTarget(join(home, '.gemini', 'helloagents')), runtimeRoot)
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
 
-  writeText(join(pkgRoot, 'bootstrap-lite.md'), '# standby updated\n')
+  writeText(join(runtimeRoot, 'bootstrap-lite.md'), '# standby updated\n')
   assert.equal(readText(join(home, '.claude', 'helloagents', 'bootstrap-lite.md')), '# standby updated\n')
 
   runCli(pkgRoot, home, ['--global'])
@@ -77,7 +78,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.ok(!existsSync(pluginRoot))
   assert.ok(!existsSync(pluginCacheRoot))
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
-  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pkgRoot)
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
 
   runCli(pkgRoot, home, ['preuninstall'])
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
@@ -93,6 +94,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 test('postinstall can deploy a selected host from npm environment variables', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
+  const runtimeRoot = join(home, '.helloagents', 'helloagents')
   seedHostConfigs(home)
 
   runCli(pkgRoot, home, ['postinstall'], {
@@ -102,6 +104,7 @@ test('postinstall can deploy a selected host from npm environment variables', ()
   })
 
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
+  assert.equal(realTarget(join(home, '.claude', 'helloagents')), runtimeRoot)
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'standby')

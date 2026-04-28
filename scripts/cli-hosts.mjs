@@ -27,7 +27,10 @@ export function installClaudeStandby(home, pkgRoot) {
   const settingsPath = join(claudeDir, 'settings.json');
   const hooksData = loadHooksWithAbsPath(pkgRoot, 'hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}');
   if (hooksData) {
-    mergeSettingsHooks(settingsPath, hooksData, ['Read(~/.claude/helloagents/**)']);
+    mergeSettingsHooks(settingsPath, hooksData, [
+      'Read(~/.helloagents/helloagents/**)',
+      'Read(~/.claude/helloagents/**)',
+    ]);
   }
 
   return true;
