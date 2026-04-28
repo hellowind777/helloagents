@@ -306,32 +306,88 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates:
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
+
+#### npm commands
+
+macOS / Linux:
 
 ```bash
+# Install to Codex in standby mode
 HELLOAGENTS=codex npm install -g helloagents
+
+# Install to Codex in global mode
 HELLOAGENTS=codex:global npm install -g helloagents
+
+# Update and sync Claude in standby mode
 HELLOAGENTS=claude:standby npm update -g helloagents
-HELLOAGENTS=all:global npm install -g github:hellowind777/helloagents#beta
-HELLOAGENTS=gemini:global npm uninstall -g helloagents
-npm explore -g helloagents -- npm run deploy:global
-npm explore -g helloagents -- npm run sync-hosts -- --all --standby
+
+# Switch to the beta branch and sync all CLIs in standby mode
+HELLOAGENTS=all:standby npm install -g github:hellowind777/helloagents#beta
+
+# Clean Gemini integration and uninstall the package
+HELLOAGENTS=gemini npm uninstall -g helloagents
 ```
 
-One-shot scripts use the same environment variables:
-
-```bash
-HELLOAGENTS=all:global curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-HELLOAGENTS=claude:global HELLOAGENTS_ACTION=switch-branch HELLOAGENTS_BRANCH=beta curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-HELLOAGENTS=gemini:global HELLOAGENTS_ACTION=uninstall curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-```
-
-PowerShell:
+Windows PowerShell:
 
 ```powershell
-$env:HELLOAGENTS="all:global"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-$env:HELLOAGENTS="claude:global"; $env:HELLOAGENTS_ACTION="switch-branch"; $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-$env:HELLOAGENTS="gemini:global"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+# Install to Codex in standby mode
+$env:HELLOAGENTS="codex"; npm install -g helloagents
+
+# Install to Codex in global mode
+$env:HELLOAGENTS="codex:global"; npm install -g helloagents
+
+# Update and sync Claude in standby mode
+$env:HELLOAGENTS="claude:standby"; npm update -g helloagents
+
+# Switch to the beta branch and sync all CLIs in standby mode
+$env:HELLOAGENTS="all:standby"; npm install -g github:hellowind777/helloagents#beta
+
+# Clean Gemini integration and uninstall the package
+$env:HELLOAGENTS="gemini"; npm uninstall -g helloagents
+```
+
+After the package is installed, you can also call its npm scripts directly:
+
+```bash
+npm explore -g helloagents -- npm run deploy:global
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
+npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
+```
+
+#### One-shot scripts
+
+macOS / Linux:
+
+```bash
+# Install
+HELLOAGENTS=codex curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+
+# Update
+HELLOAGENTS=claude:standby HELLOAGENTS_ACTION=update curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+
+# Switch branch
+HELLOAGENTS=all:global HELLOAGENTS_ACTION=switch-branch HELLOAGENTS_BRANCH=beta curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+
+# Uninstall
+HELLOAGENTS=gemini HELLOAGENTS_ACTION=uninstall curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+# Install
+$env:HELLOAGENTS="codex"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+# Update
+$env:HELLOAGENTS="claude:standby"; $env:HELLOAGENTS_ACTION="update"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+# Switch branch
+$env:HELLOAGENTS="all:global"; $env:HELLOAGENTS_ACTION="switch-branch"; $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+# Uninstall
+$env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
 ### Branch switching

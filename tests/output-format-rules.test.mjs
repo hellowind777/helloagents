@@ -29,9 +29,11 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /不得使用输出格式/);
     assert.match(content, /子代理在任何场景下都不得使用输出格式/);
     assert.match(content, /状态图标与收尾内容必须一致/);
-    assert.match(content, /仅在本轮执行已完成且不再等待用户输入时，才能使用 `✅完成`/);
+    assert.match(content, /仅在本轮执行已完成且不存在待确认动作时，才能使用 `✅完成`/);
+    assert.match(content, /含确认是否执行已给出的方案/);
+    assert.match(content, /若正在等待确认，写清待确认动作/);
     assert.match(content, /不用“下一步建议”代替实际执行/);
-    assert.match(content, /只写真实下一步，不改写成条件式能力表述或询问句/);
+    assert.match(content, /必须写真实下一步，不改写成条件式能力表述或空泛询问/);
   }
 });
 
