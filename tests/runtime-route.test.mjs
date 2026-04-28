@@ -29,7 +29,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /HelloAGENTS \(Standby\)/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 包根目录/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 运行根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /本轮 HelloAGENTS 读取根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /turnStateScript/)
   assert.match(payload.hookSpecificOutput.additionalContext, /scripts[\\/]turn-state\.mjs/)
@@ -184,7 +184,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /~verify=审查\/验证/)
 })
 
-test('notify route keeps standby command skills on home roots even if project-level skill dirs exist', () => {
+test('notify route keeps command skills on the runtime root even if project-level skill dirs exist', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const project = createTempDir('helloagents-codex-route-')
@@ -192,9 +192,6 @@ test('notify route keeps standby command skills on home roots even if project-le
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
 
   writeSettings(home, { install_mode: 'standby' })
-  writeText(join(home, '.claude', 'helloagents', '.keep'), '')
-  writeText(join(home, '.gemini', 'helloagents', '.keep'), '')
-  writeText(join(home, '.codex', 'helloagents', '.keep'), '')
   writeText(join(project, 'skills', 'helloagents', '.keep'), '')
   writeText(join(project, '.claude', 'skills', 'helloagents', '.keep'), '')
   writeText(join(project, '.gemini', 'skills', 'helloagents', '.keep'), '')
@@ -206,8 +203,8 @@ test('notify route keeps standby command skills on home roots even if project-le
     input: JSON.stringify({ cwd: project, prompt: '~help' }),
   })
   let payload = parseStdoutJson(result)
-  const claudeSkillPath = join(home, '.claude', 'helloagents', 'skills', 'commands', 'help', 'SKILL.md')
-  assert.match(payload.hookSpecificOutput.additionalContext, new RegExp(claudeSkillPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  const runtimeSkillPath = join(pkgRoot, 'skills', 'commands', 'help', 'SKILL.md')
+  assert.match(payload.hookSpecificOutput.additionalContext, new RegExp(runtimeSkillPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /skills[\\/]helloagents[\\/]skills[\\/]commands[\\/]help[\\/]SKILL\.md/)
 
   result = runNode(notifyScript, ['route', '--gemini'], {
@@ -216,8 +213,7 @@ test('notify route keeps standby command skills on home roots even if project-le
     input: JSON.stringify({ cwd: project, prompt: '~help' }),
   })
   payload = parseStdoutJson(result)
-  const geminiSkillPath = join(home, '.gemini', 'helloagents', 'skills', 'commands', 'help', 'SKILL.md')
-  assert.match(payload.hookSpecificOutput.additionalContext, new RegExp(geminiSkillPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.match(payload.hookSpecificOutput.additionalContext, new RegExp(runtimeSkillPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /skills[\\/]helloagents[\\/]skills[\\/]commands[\\/]help[\\/]SKILL\.md/)
 
   result = runNode(notifyScript, ['route', '--codex'], {
@@ -226,7 +222,6 @@ test('notify route keeps standby command skills on home roots even if project-le
     input: JSON.stringify({ cwd: project, prompt: '~help' }),
   })
   payload = parseStdoutJson(result)
-  const standbySkillPath = join(home, '.codex', 'helloagents', 'skills', 'commands', 'help', 'SKILL.md')
-  assert.match(payload.hookSpecificOutput.additionalContext, new RegExp(standbySkillPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.match(payload.hookSpecificOutput.additionalContext, new RegExp(runtimeSkillPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /skills[\\/]helloagents[\\/]skills[\\/]commands[\\/]help[\\/]SKILL\.md/)
 })

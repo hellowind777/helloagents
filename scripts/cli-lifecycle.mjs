@@ -15,6 +15,7 @@ export const HOSTS = ['claude', 'gemini', 'codex']
 const runtime = {
   home: '',
   pkgRoot: '',
+  sourceRoot: '',
   helloagentsHome: '',
   configFile: '',
   pkgVersion: '',
@@ -124,10 +125,11 @@ function resolveInstallMode(explicitMode, settings) {
 
 
 export function syncVersion() {
+  const packageRoot = runtime.sourceRoot || runtime.pkgRoot
   const targets = [
-    join(runtime.pkgRoot, '.claude-plugin', 'plugin.json'),
-    join(runtime.pkgRoot, '.codex-plugin', 'plugin.json'),
-    join(runtime.pkgRoot, 'gemini-extension.json'),
+    join(packageRoot, '.claude-plugin', 'plugin.json'),
+    join(packageRoot, '.codex-plugin', 'plugin.json'),
+    join(packageRoot, 'gemini-extension.json'),
   ]
   for (const path of targets) {
     const obj = safeJson(path)
@@ -135,7 +137,7 @@ export function syncVersion() {
     obj.version = runtime.pkgVersion
     safeWrite(path, JSON.stringify(obj, null, 2) + '\n')
   }
-  const marketPath = join(runtime.pkgRoot, '.claude-plugin', 'marketplace.json')
+  const marketPath = join(packageRoot, '.claude-plugin', 'marketplace.json')
   const market = safeJson(marketPath)
   if (market?.plugins?.[0]?.version) {
     market.plugins[0].version = runtime.pkgVersion

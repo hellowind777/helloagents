@@ -235,7 +235,7 @@ npm install -g helloagents
 helloagents-js
 ```
 
-默认情况下，`postinstall` 只安装包命令并初始化 `~/.helloagents/helloagents.json`。如果希望 npm 在安装或更新后直接部署，设置 `HELLOAGENTS=目标[:模式]`，例如 `HELLOAGENTS=codex:global`。
+默认情况下，`postinstall` 会安装包命令、初始化 `~/.helloagents/helloagents.json`，并把运行时文件同步到 `~/.helloagents/helloagents`。如果希望 npm 在安装或更新后直接部署，设置 `HELLOAGENTS=目标[:模式]`，例如 `HELLOAGENTS=codex:global`。
 
 ### 2）部署到目标 CLI
 
@@ -307,6 +307,8 @@ helloagents doctor codex --json
 ### npm 和一键脚本入口
 
 当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`，省略时默认 `standby`。
+
+宿主配置会指向稳定运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 `notify` 或 hooks。
 
 #### npm 命令
 
@@ -412,9 +414,9 @@ npm uninstall -g helloagents
 
 | CLI | 写入或更新的文件 | 清理行为 |
 |-----|------------------|----------|
-| Claude Code | `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/helloagents -> <package-root>` | 删除受管标记块、HelloAGENTS hooks / 权限和符号链接 |
-| Gemini CLI | `~/.gemini/GEMINI.md`、`~/.gemini/settings.json`、`~/.gemini/helloagents -> <package-root>` | 删除受管标记块、HelloAGENTS hooks 和符号链接 |
-| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/helloagents -> <package-root>`、受管备份 | 删除受管标记块、受管配置键、符号链接和最近一次受管备份 |
+| Claude Code | `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks / 权限和符号链接 |
+| Gemini CLI | `~/.gemini/GEMINI.md`、`~/.gemini/settings.json`、`~/.gemini/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks 和符号链接 |
+| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/helloagents -> ~/.helloagents/helloagents`、受管备份 | 删除受管标记块、受管配置键、符号链接和最近一次受管备份 |
 
 ### 全局模式文件
 
@@ -596,14 +598,14 @@ UI 任务遵循以下优先级：
 
 - 标准模式写入 `~/.claude/CLAUDE.md`
 - 标准模式在 `~/.claude/settings.json` 中写入受管 hooks 和权限
-- 标准模式创建 `~/.claude/helloagents -> <package-root>`
+- 标准模式创建 `~/.claude/helloagents -> ~/.helloagents/helloagents`
 - 全局模式使用 Claude Code 插件系统
 
 ### Gemini CLI
 
 - 标准模式写入 `~/.gemini/GEMINI.md`
 - 标准模式在 `~/.gemini/settings.json` 中写入受管 hooks
-- 标准模式创建 `~/.gemini/helloagents -> <package-root>`
+- 标准模式创建 `~/.gemini/helloagents -> ~/.helloagents/helloagents`
 - 全局模式使用 Gemini 扩展系统
 
 ### Codex CLI
@@ -613,7 +615,7 @@ Codex 默认走规则文件驱动。
 - 标准模式写入 `~/.codex/AGENTS.md`
 - 标准模式写入受管 `model_instructions_file` 指向该文件
 - 标准模式写入受管 `notify` 命令用于收尾通知
-- 标准模式创建 `~/.codex/helloagents -> <package-root>`
+- 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件链路
 - HelloAGENTS 默认不启用 Codex hooks
 
@@ -672,7 +674,7 @@ npm test
 
 ### `npm uninstall -g helloagents` 会删除项目知识库吗？
 
-不会。卸载包只移除包本身。项目 `.helloagents/` 文件和 `~/.helloagents/helloagents.json` 会保留，除非你手动删除。
+不会。默认卸载包只移除包本身和稳定运行副本。项目 `.helloagents/` 文件和 `~/.helloagents/helloagents.json` 会保留，除非你手动删除。
 
 ## 故障排除
 

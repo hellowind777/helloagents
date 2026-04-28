@@ -64,11 +64,12 @@ Layer 3 — 资源文件（技能内引用时读取）：
 
 读取其他技能时，按以下路径查找，找到即停，不自行猜测或遍历其他路径。
 
-路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 包读取根目录，统一用于读取 `skills/`、`templates/` 和调用 `scripts/`
+路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/`、`templates/` 和调用 `scripts/`
 先确定当前技能根目录：
 - 优先使用当前上下文中已注入的“本轮 HelloAGENTS 读取根目录”
-- 若当前上下文未注入，则按当前宿主使用固定链接作为 `{HELLOAGENTS_READ_ROOT}`：Codex `~/.codex/helloagents`；Claude `~/.claude/helloagents`；Gemini `~/.gemini/helloagents`
-- 仍无法确定时，明确说明缺少 HelloAGENTS 包读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
+- 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
+- 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`）只作为兼容别名，不作为优先探测路径
+- 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
 - 已激活项目或全局模式下，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
 
 ### hello-* 技能

@@ -30,6 +30,7 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   const prefix = createTempDir('helloagents-prefix-');
   const packDir = createTempDir('helloagents-pack-');
   const env = buildHomeEnv(home);
+  const runtimeRoot = join(home, '.helloagents', 'helloagents');
 
   writeText(join(home, '.claude', 'CLAUDE.md'), '# Claude custom\n');
   writeJson(join(home, '.claude', 'settings.json'), { permissions: { allow: ['Read(*)'] } });
@@ -41,6 +42,7 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
 
   runNpm(['install', '-g', '--prefix', prefix, tarball], pkgRoot, env);
 
+  assert.ok(existsSync(runtimeRoot));
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')));
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')));
   assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
@@ -73,4 +75,5 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.match(readText(join(home, '.codex', 'config.toml')), /model_instructions_file = "C:\/original\/bootstrap\.md"/);
 
   runNpm(['uninstall', '-g', '--prefix', prefix, 'helloagents'], pkgRoot, env);
+  assert.ok(!existsSync(runtimeRoot));
 });
