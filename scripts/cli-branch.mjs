@@ -59,9 +59,16 @@ function buildPackageSpec(ref) {
   return `${DEFAULT_REPO_SPEC}#${ref}`
 }
 
-function buildUpdateArgs({ host, mode }) {
+function buildSyncArgs({ host, mode }) {
   return [
-    'update',
+    'explore',
+    '-g',
+    'helloagents',
+    '--',
+    'npm',
+    'run',
+    'sync-hosts',
+    '--',
     host === 'all' ? '--all' : host,
     ...(mode ? [`--${mode}`] : []),
   ]
@@ -70,9 +77,8 @@ function buildUpdateArgs({ host, mode }) {
 export function runBranchSwitch(args, options = {}) {
   const parsed = parseBranchArgs(args)
   const npmCommand = options.npmCommand || process.env.HELLOAGENTS_NPM_CMD || 'npm'
-  const helloagentsCommand = options.helloagentsCommand || process.env.HELLOAGENTS_BIN_CMD || 'helloagents'
 
   const packageSpec = buildPackageSpec(parsed.branch)
   runCommand(npmCommand, ['install', '-g', packageSpec])
-  runCommand(helloagentsCommand, buildUpdateArgs(parsed))
+  runCommand(npmCommand, buildSyncArgs(parsed))
 }

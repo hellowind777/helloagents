@@ -20,7 +20,13 @@
     "preuninstall": "node cli.mjs preuninstall",
     "uninstall": "node cli.mjs preuninstall",
     "postuninstall": "node cli.mjs preuninstall",
-    "prepublishOnly": "node cli.mjs sync-version"
+    "prepublishOnly": "node cli.mjs sync-version",
+    "deploy": "node cli.mjs install",
+    "deploy:standby": "node cli.mjs install --all --standby",
+    "deploy:global": "node cli.mjs install --all --global",
+    "sync-hosts": "node cli.mjs update",
+    "cleanup-hosts": "node cli.mjs cleanup",
+    "switch-branch": "node cli.mjs switch-branch"
   },
   "files": [
     "cli.mjs",
@@ -32,6 +38,8 @@
     "bootstrap.md",
     "bootstrap-lite.md",
     "README_CN.md",
+    "install.sh",
+    "install.ps1",
     "gemini-extension.json",
     ".claude-plugin/",
     ".codex-plugin/"

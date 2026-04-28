@@ -89,3 +89,20 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(finalCodexConfig, /notify = \["node", "C:\/original\/notify\.mjs", "codex-notify"\]/)
   assert.doesNotMatch(finalCodexConfig, /developer_instructions\s*=/)
 })
+
+test('postinstall can deploy a selected host from npm environment variables', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['postinstall'], {
+    HELLOAGENTS_DEPLOY: '1',
+    HELLOAGENTS_TARGET: 'claude',
+    HELLOAGENTS_MODE: 'standby',
+  })
+
+  assert.ok(existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
+  assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'standby')
+})

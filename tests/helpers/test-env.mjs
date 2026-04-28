@@ -16,6 +16,8 @@ const PACKAGE_FIXTURE_ENTRIES = [
   'cli.mjs',
   'gemini-extension.json',
   'hooks',
+  'install.ps1',
+  'install.sh',
   'LICENSE.md',
   'package.json',
   'README.md',
