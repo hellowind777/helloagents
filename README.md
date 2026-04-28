@@ -250,6 +250,7 @@ Use global mode when you want full rules everywhere:
 
 ```bash
 helloagents --global
+helloagents install --all --global
 ```
 
 ### 3) Verify inside your AI CLI
@@ -317,7 +318,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 | Gemini CLI | native extension install | managed by Gemini extension system |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml`, `~/.codex/helloagents -> ~/plugins/helloagents` |
 
-Claude Code and Gemini CLI global mode still require their host-native install commands:
+In global mode, HelloAGENTS now attempts the host-native install commands automatically. If a host command is unavailable, run the same commands manually:
 
 ```text
 /plugin marketplace add hellowind777/helloagents
@@ -325,7 +326,7 @@ Claude Code and Gemini CLI global mode still require their host-native install c
 gemini extensions install https://github.com/hellowind777/helloagents
 ```
 
-For Claude Code, run the two `/plugin ...` commands inside Claude Code. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. If you previously added an older development marketplace name, remove it first and add the marketplace again.
+For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.
 
 Codex global mode is installed by HelloAGENTS automatically through the local-plugin path.
 

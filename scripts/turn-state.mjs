@@ -58,6 +58,7 @@ function normalizeTurnState(input = {}) {
     ? input.reasonCategory.trim().toLowerCase()
     : ''
   const reason = typeof input.reason === 'string' ? input.reason.trim() : ''
+  const blocker = normalizeBlocker(input.blocker)
 
   return {
     kind: VALID_KINDS.has(kind) ? kind : '',
@@ -67,7 +68,21 @@ function normalizeTurnState(input = {}) {
     requiresDeliveryGate: Boolean(input.requiresDeliveryGate),
     reasonCategory: VALID_REASON_CATEGORIES.has(reasonCategory) ? reasonCategory : '',
     reason,
+    ...(blocker ? { blocker } : {}),
   }
+}
+
+function normalizeBlocker(input = {}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null
+
+  const target = typeof input.target === 'string' ? input.target.trim() : ''
+  const evidence = typeof input.evidence === 'string' ? input.evidence.trim() : ''
+  const requiredAction = typeof input.requiredAction === 'string'
+    ? input.requiredAction.trim()
+    : ''
+
+  if (!target && !evidence && !requiredAction) return null
+  return { target, evidence, requiredAction }
 }
 
 function pruneInvalidEntry(store, key) {

@@ -16,15 +16,6 @@ const ALLOWED_STOP_REASON_CATEGORIES = [
   'external-dependency',
   'error',
 ]
-const SOFT_HANDOFF_PATTERNS = [
-  /下一步|后续|继续(推进|执行)?|阶段(性)?(汇报|小结|收口|完成)|先停|停在这里|等待.*(指示|继续|下一步)/i,
-  /checkpoint|probe|handoff/i,
-]
-const CONCRETE_BLOCKER_PATTERNS = [
-  /缺少|未提供|尚未(提供|给出|确认)|找不到|不存在|无法|不能|失败|报错|错误|异常|超时/i,
-  /文件|路径|目录|配置|命令|测试|构建|服务|网络|接口|依赖|权限|授权|凭据|密钥|token|api\s*key/i,
-  /高风险|不可逆|生产|数据库|选择|范围|目标|输入|数据|歧义|冲突|external|credential|permission|timeout|not found|no such|failed|error/i,
-]
 
 function readStdinJson() {
   try {
@@ -62,21 +53,18 @@ function getMainTurnState(cwd) {
   return turnState?.role === 'main' ? turnState : null
 }
 
-function getLastAssistantMessage(payload = {}) {
-  return payload.lastAssistantMessage || payload['last-assistant-message'] || payload.message || ''
+function hasStructuredBlocker(turnState) {
+  const blocker = turnState?.blocker
+  return Boolean(
+    blocker
+    && typeof blocker === 'object'
+    && blocker.target
+    && blocker.evidence
+    && blocker.requiredAction,
+  )
 }
 
-function isSoftHandoffOnly(turnState, payload) {
-  const text = [turnState?.reason, getLastAssistantMessage(payload)]
-    .filter(Boolean)
-    .join('\n')
-  if (!text) return false
-  const looksLikeHandoff = SOFT_HANDOFF_PATTERNS.some((pattern) => pattern.test(text))
-  if (!looksLikeHandoff) return false
-  return !CONCRETE_BLOCKER_PATTERNS.some((pattern) => pattern.test(text))
-}
-
-function validateTurnState(routeContext, turnState, cwd, payload = {}) {
+function validateTurnState(routeContext, turnState, cwd) {
   if (!turnState) {
     return buildBlockReason(routeContext, '缺少主代理 turn-state。', cwd)
   }
@@ -85,10 +73,10 @@ function validateTurnState(routeContext, turnState, cwd, payload = {}) {
   }
   if (turnState.kind === 'waiting' || turnState.kind === 'blocked') {
     if (turnState.reasonCategory && turnState.reason) {
-      if (isSoftHandoffOnly(turnState, payload)) {
+      if (!hasStructuredBlocker(turnState)) {
         return buildBlockReason(
           routeContext,
-          '当前 waiting/blocked 更像阶段性交接或“下一步”建议，未说明可核实的真实阻塞。',
+          '当前 waiting/blocked 缺少结构化 `blocker.target`、`blocker.evidence` 或 `blocker.requiredAction`，不能证明存在可核实的真实阻塞。',
           cwd,
         )
       }
@@ -113,7 +101,7 @@ function main() {
     return
   }
 
-  const reason = validateTurnState(routeContext, getMainTurnState(cwd), cwd, payload)
+  const reason = validateTurnState(routeContext, getMainTurnState(cwd), cwd)
   process.stdout.write(JSON.stringify(reason ? { decision: 'block', reason } : { decision: 'continue' }))
 }
 
