@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "3.0.12",
+  "version": "3.0.13",
   "type": "module",
   "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, quality verification (Ralph Loop), safety guards, and notifications.",
   "author": "HelloWind",
@@ -44,7 +44,17 @@
     ".claude-plugin/",
     ".codex-plugin/"
   ],
-  "keywords": ["ai", "agent", "claude", "codex", "cli", "orchestration", "subagent", "hooks", "skills"],
+  "keywords": [
+    "ai",
+    "agent",
+    "claude",
+    "codex",
+    "cli",
+    "orchestration",
+    "subagent",
+    "hooks",
+    "skills"
+  ],
   "engines": {
     "node": ">=18"
   }

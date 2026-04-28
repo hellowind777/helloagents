@@ -77,6 +77,10 @@ function Cleanup-Hosts {
     Invoke-HostScript "cleanup-hosts"
 }
 
+function Uninstall-Hosts {
+    Invoke-HostScript "uninstall"
+}
+
 switch ($Action) {
     "install" {
         Enable-PostinstallDeploy
@@ -109,7 +113,7 @@ switch ($Action) {
     }
     "uninstall" {
         try {
-            Cleanup-Hosts
+            Uninstall-Hosts
         } catch {
             Write-Warning "Failed to cleanup HelloAGENTS host integrations before uninstall: $_"
         }

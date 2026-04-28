@@ -24,7 +24,7 @@ function runNpm(args, cwd, env) {
   return result;
 }
 
-test('npm global install plus explicit cleanup command removes lifecycle artifacts', { skip: !npmCli }, () => {
+test('npm global install plus explicit uninstall command removes lifecycle artifacts', { skip: !npmCli }, () => {
   const { root: pkgRoot } = createPackageFixture();
   const home = createHomeFixture();
   const prefix = createTempDir('helloagents-prefix-');
@@ -74,6 +74,20 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.doesNotMatch(readText(join(home, '.codex', 'config.toml')), /developer_instructions\s*=/);
   assert.match(readText(join(home, '.codex', 'config.toml')), /model_instructions_file = "C:\/original\/bootstrap\.md"/);
 
-  runNpm(['uninstall', '-g', '--prefix', prefix, 'helloagents'], pkgRoot, env);
+  runNpm([
+    'explore',
+    '-g',
+    '--prefix',
+    prefix,
+    'helloagents',
+    '--',
+    'npm',
+    'run',
+    'uninstall',
+    '--',
+    '--all',
+    '--standby',
+  ], pkgRoot, env);
   assert.ok(!existsSync(runtimeRoot));
+  runNpm(['uninstall', '-g', '--prefix', prefix, 'helloagents'], pkgRoot, env);
 });
