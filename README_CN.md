@@ -235,7 +235,7 @@ npm install -g helloagents
 helloagents-js
 ```
 
-默认情况下，`postinstall` 只安装包命令并初始化 `~/.helloagents/helloagents.json`。如果希望 npm 在安装或更新后直接部署，设置 `HELLOAGENTS_DEPLOY=1`、`HELLOAGENTS_TARGET` 和 `HELLOAGENTS_MODE`。
+默认情况下，`postinstall` 只安装包命令并初始化 `~/.helloagents/helloagents.json`。如果希望 npm 在安装或更新后直接部署，设置 `HELLOAGENTS=目标[:模式]`，例如 `HELLOAGENTS=codex:global`。
 
 ### 2）部署到目标 CLI
 
@@ -309,11 +309,11 @@ helloagents doctor codex --json
 当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本：
 
 ```bash
-HELLOAGENTS_DEPLOY=1 HELLOAGENTS_TARGET=all HELLOAGENTS_MODE=global npm install -g helloagents
-HELLOAGENTS_DEPLOY=1 HELLOAGENTS_TARGET=claude HELLOAGENTS_MODE=standby npm update -g helloagents
-HELLOAGENTS_DEPLOY=1 HELLOAGENTS_TARGET=all HELLOAGENTS_MODE=global npm install -g github:hellowind777/helloagents#beta
-npm explore -g helloagents -- npm run cleanup-hosts -- gemini --global
-npm uninstall -g helloagents
+HELLOAGENTS=codex npm install -g helloagents
+HELLOAGENTS=codex:global npm install -g helloagents
+HELLOAGENTS=claude:standby npm update -g helloagents
+HELLOAGENTS=all:global npm install -g github:hellowind777/helloagents#beta
+HELLOAGENTS=gemini:global npm uninstall -g helloagents
 npm explore -g helloagents -- npm run deploy:global
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 ```
@@ -321,17 +321,17 @@ npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 一键脚本使用相同环境变量：
 
 ```bash
-HELLOAGENTS_TARGET=all HELLOAGENTS_MODE=global curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-HELLOAGENTS_ACTION=update HELLOAGENTS_BRANCH=beta HELLOAGENTS_TARGET=claude HELLOAGENTS_MODE=global curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
-HELLOAGENTS_ACTION=uninstall HELLOAGENTS_TARGET=gemini HELLOAGENTS_MODE=global curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+HELLOAGENTS=all:global curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+HELLOAGENTS=claude:global HELLOAGENTS_ACTION=switch-branch HELLOAGENTS_BRANCH=beta curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+HELLOAGENTS=gemini:global HELLOAGENTS_ACTION=uninstall curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
 ```
 
 PowerShell：
 
 ```powershell
-$env:HELLOAGENTS_ACTION="install"; $env:HELLOAGENTS_TARGET="all"; $env:HELLOAGENTS_MODE="global"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-$env:HELLOAGENTS_ACTION="switch-branch"; $env:HELLOAGENTS_BRANCH="beta"; $env:HELLOAGENTS_TARGET="claude"; $env:HELLOAGENTS_MODE="global"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
-$env:HELLOAGENTS_ACTION="uninstall"; $env:HELLOAGENTS_TARGET="gemini"; $env:HELLOAGENTS_MODE="global"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+$env:HELLOAGENTS="all:global"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+$env:HELLOAGENTS="claude:global"; $env:HELLOAGENTS_ACTION="switch-branch"; $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+$env:HELLOAGENTS="gemini:global"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
 ### 分支切换

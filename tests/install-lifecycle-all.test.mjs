@@ -106,3 +106,20 @@ test('postinstall can deploy a selected host from npm environment variables', ()
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'standby')
 })
+
+test('postinstall can deploy from compact HELLOAGENTS spec', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['postinstall'], {
+    HELLOAGENTS: 'codex:global',
+  })
+
+  const pluginRoot = join(home, 'plugins', 'helloagents')
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(existsSync(pluginRoot))
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pluginRoot)
+  assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.codex, 'global')
+})
