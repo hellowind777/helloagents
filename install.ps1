@@ -1,6 +1,7 @@
 # HelloAGENTS one-shot installer.
 #
 # Environment:
+#   HELLOAGENTS=all|claude|gemini|codex[:standby|global]
 #   HELLOAGENTS_ACTION=install|update|uninstall|switch-branch|branch
 #   HELLOAGENTS_TARGET=all|claude|gemini|codex
 #   HELLOAGENTS_MODE=standby|global
@@ -10,10 +11,32 @@
 $ErrorActionPreference = "Stop"
 
 $Action = if ($env:HELLOAGENTS_ACTION) { $env:HELLOAGENTS_ACTION } else { "install" }
-$Target = if ($env:HELLOAGENTS_TARGET) { $env:HELLOAGENTS_TARGET } else { "all" }
-$Mode = if ($env:HELLOAGENTS_MODE) { $env:HELLOAGENTS_MODE } else { "standby" }
+$Target = if ($env:HELLOAGENTS_TARGET) { $env:HELLOAGENTS_TARGET } else { "" }
+$Mode = if ($env:HELLOAGENTS_MODE) { $env:HELLOAGENTS_MODE } else { "" }
 $Branch = if ($env:HELLOAGENTS_BRANCH) { $env:HELLOAGENTS_BRANCH } else { "" }
 $Package = if ($env:HELLOAGENTS_PACKAGE) { $env:HELLOAGENTS_PACKAGE } else { "" }
+
+if ($env:HELLOAGENTS) {
+    $Parts = $env:HELLOAGENTS.Split(":", 2)
+    if (-not $Parts[0]) {
+        throw "HELLOAGENTS must be target[:mode], for example codex:global"
+    }
+    if (-not $Target) { $Target = $Parts[0] }
+    if (-not $Mode -and $Parts.Count -gt 1) { $Mode = $Parts[1] }
+}
+
+if (-not $Target) { $Target = "all" }
+if (-not $Mode) { $Mode = "standby" }
+$Target = $Target.ToLowerInvariant()
+$Mode = $Mode.ToLowerInvariant()
+
+if (@("all", "claude", "gemini", "codex") -notcontains $Target) {
+    throw "Unsupported HELLOAGENTS target: $Target"
+}
+
+if (@("standby", "global") -notcontains $Mode) {
+    throw "Unsupported HELLOAGENTS mode: $Mode"
+}
 
 if (-not $Package) {
     if ($Branch) {

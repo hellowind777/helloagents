@@ -74,8 +74,8 @@ function printPostinstallMessage() {
   const mode = settings.install_mode || DEFAULTS.install_mode
   const deployMessage = shouldDeployFromEnv()
     ? msg(
-      '  HelloAGENTS 包已安装，正在按 HELLOAGENTS_TARGET / HELLOAGENTS_MODE 部署。\n',
-      '  HelloAGENTS package installed; deploying from HELLOAGENTS_TARGET / HELLOAGENTS_MODE.\n',
+      '  HelloAGENTS 包已安装，正在按环境变量部署。\n',
+      '  HelloAGENTS package installed; deploying from environment variables.\n',
     )
     : msg(
       `  HelloAGENTS 包已安装，尚未自动部署到任何 CLI。\n  使用显式命令部署：\n    helloagents install codex --${mode}\n    helloagents install --all --${mode}\n`,
@@ -97,16 +97,41 @@ function envFlag(name) {
   return ['1', 'true', 'yes', 'on'].includes(String(process.env[name] || '').toLowerCase())
 }
 
+function parseCompactLifecycleSpec() {
+  const raw = String(process.env.HELLOAGENTS || '').trim()
+  if (!raw) return null
+
+  const parts = raw.split(':')
+  if (parts.length > 2 || !parts[0]) {
+    throw new Error('HELLOAGENTS must be target[:mode], for example codex:global')
+  }
+
+  const target = normalizeHost(parts[0].trim().toLowerCase())
+  const mode = (parts[1] || '').trim().toLowerCase()
+  if (!target) throw new Error(`Unsupported HELLOAGENTS target: ${parts[0]}`)
+  if (mode && !['standby', 'global'].includes(mode)) {
+    throw new Error(`Unsupported HELLOAGENTS mode: ${mode}`)
+  }
+
+  return { target, mode }
+}
+
 function lifecycleArgsFromEnv(defaultTarget = 'all') {
-  const target = (process.env.HELLOAGENTS_TARGET || process.env.HELLOAGENTS_HOST || defaultTarget).trim()
-  const mode = (process.env.HELLOAGENTS_MODE || '').trim().toLowerCase()
+  const compact = parseCompactLifecycleSpec()
+  const target = (
+    process.env.HELLOAGENTS_TARGET
+    || process.env.HELLOAGENTS_HOST
+    || compact?.target
+    || defaultTarget
+  ).trim()
+  const mode = (process.env.HELLOAGENTS_MODE || compact?.mode || '').trim().toLowerCase()
   const args = [target === 'all' ? '--all' : target]
   if (mode) args.push(`--${mode}`)
   return args
 }
 
 function shouldDeployFromEnv() {
-  return envFlag('HELLOAGENTS_DEPLOY')
+  return envFlag('HELLOAGENTS_DEPLOY') || Boolean(String(process.env.HELLOAGENTS || '').trim())
 }
 
 const argv = process.argv.slice(2)

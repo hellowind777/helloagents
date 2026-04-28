@@ -79,6 +79,7 @@ HelloAGENTS v${pkgVersion} — The orchestration kernel for AI CLIs
 
 ${msg('安装', 'Install')}:
   npm install -g helloagents  ${msg('（只安装包与命令；CLI 部署需显式执行 helloagents install ...）', '(installs the package/command only; deploy to CLIs explicitly with helloagents install ...)')}
+  HELLOAGENTS=codex:global npm install -g helloagents
   helloagents-js             ${msg('（稳定别名，避免与系统中同名可执行文件冲突）', '(stable alias to avoid conflicts with system executables of the same name)')}
 
 ${msg('模式切换', 'Mode switching')}:
@@ -97,7 +98,7 @@ ${msg('分支切换', 'Branch switching')}:
   helloagents switch-branch beta
   helloagents switch-branch beta claude --global
   helloagents branch github:hellowind777/helloagents#beta --all --standby
-  ${msg('先通过 npm 安装指定 ref，再执行 helloagents update 同步宿主 CLI', 'Installs the requested ref with npm first, then runs helloagents update to sync host CLIs')}
+  ${msg('先通过 npm 安装指定 ref，再通过 npm 脚本同步宿主 CLI', 'Installs the requested ref with npm first, then syncs host CLIs through npm scripts')}
 
 ${msg('诊断', 'Diagnostics')}:
   helloagents doctor
