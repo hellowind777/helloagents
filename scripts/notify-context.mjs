@@ -43,7 +43,12 @@ function resolveReadRoot({ cwd, pkgRoot, host, settings }) {
 
 function buildReadRootBlock(readRoot) {
   if (!readRoot?.root) return '';
-  return `## 本轮 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(readRoot, null, 2)}\n\`\`\``;
+  const block = {
+    ...readRoot,
+    scriptRoot: join(readRoot.root, 'scripts'),
+    turnStateScript: join(readRoot.root, 'scripts', 'turn-state.mjs'),
+  };
+  return `## 本轮 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(block, null, 2)}\n\`\`\``;
 }
 
 export function resolveCanonicalCommandSkill(skillName) {
