@@ -58,7 +58,8 @@ test('npm global install plus explicit uninstall command removes lifecycle artif
   assert.ok(existsSync(join(home, '.codex', 'helloagents')));
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
   const installedCodexConfig = readText(join(home, '.codex', 'config.toml'));
-  assert.match(installedCodexConfig, /model_instructions_file = ".*\/\.codex\/AGENTS\.md"/);
+  assert.match(installedCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md"/);
+  assert.match(installedCodexConfig, /notify = \["helloagents-js", "codex-notify"\]/);
   assert.doesNotMatch(installedCodexConfig, /developer_instructions\s*=/);
 
   const cleanup = runCommand(process.execPath, [join(pkgRoot, 'cli.mjs'), 'cleanup'], {

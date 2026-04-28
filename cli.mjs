@@ -6,6 +6,8 @@
 'use strict'
 
 import { homedir } from 'node:os'
+import { existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -103,6 +105,25 @@ function runSafely(handler) {
   }
 }
 
+function resolveRuntimeScript(scriptName) {
+  const runtimeScript = join(RUNTIME_ROOT, 'scripts', scriptName)
+  if (existsSync(runtimeScript)) return runtimeScript
+  return join(PKG_ROOT, 'scripts', scriptName)
+}
+
+function runRuntimeScript(scriptName, scriptArgs) {
+  const result = spawnSync(process.execPath, [resolveRuntimeScript(scriptName), ...scriptArgs], {
+    stdio: 'inherit',
+    windowsHide: true,
+  })
+  if (result.error) {
+    console.error(`\n  ✗ ${result.error.message}\n`)
+    process.exitCode = 1
+    return
+  }
+  process.exitCode = typeof result.status === 'number' ? result.status : 1
+}
+
 function envFlag(name) {
   return ['1', 'true', 'yes', 'on'].includes(String(process.env[name] || '').toLowerCase())
 }
@@ -147,7 +168,15 @@ function shouldDeployFromEnv() {
 const argv = process.argv.slice(2)
 const cmd = argv[0] || ''
 
-if (cmd === 'postinstall') {
+if (cmd === 'codex-notify') {
+  runRuntimeScript('notify.mjs', ['codex-notify', ...argv.slice(1)])
+} else if (cmd === 'notify') {
+  runRuntimeScript('notify.mjs', argv.slice(1))
+} else if (cmd === 'guard') {
+  runRuntimeScript('guard.mjs', argv.slice(1))
+} else if (cmd === 'ralph-loop') {
+  runRuntimeScript('ralph-loop.mjs', argv.slice(1))
+} else if (cmd === 'postinstall') {
   printPostinstallMessage()
   if (shouldDeployFromEnv()) {
     runSafely(() => runScopedLifecycle('install', lifecycleArgsFromEnv()))
