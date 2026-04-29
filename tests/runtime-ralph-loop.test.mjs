@@ -22,6 +22,7 @@ test('ralph loop covers build detection, breaker reset, and subagent fast-path f
   const ralphScript = join(pkgRoot, 'scripts', 'ralph-loop.mjs')
 
   writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
   writeJson(join(project, 'package.json'), {
     name: 'verify-project',
     scripts: {

@@ -56,7 +56,7 @@ export function getSessionEventsPath(cwd = process.cwd(), options = {}) {
 }
 
 export function getSessionArtifactsDir(cwd = process.cwd(), options = {}) {
-  return getScope(cwd, { ...normalizeOptions(options), project: true }).artifactsDir
+  return getScope(cwd, options).artifactsDir
 }
 
 export function getSessionArtifactPath(cwd, fileName, options = {}) {
@@ -64,8 +64,11 @@ export function getSessionArtifactPath(cwd, fileName, options = {}) {
 }
 
 export function getSessionArtifactRelativePath(cwd, fileName, options = {}) {
-  const scope = getScope(cwd, { ...normalizeOptions(options), project: true })
-  return `.helloagents/sessions/${scope.branch}/${scope.session}/artifacts/${fileName}`
+  const scope = getScope(cwd, options)
+  if (scope.scope === 'project-session') {
+    return `.helloagents/sessions/${scope.branch}/${scope.session}/artifacts/${fileName}`
+  }
+  return `~/.helloagents/runtime/${basename(scope.sessionDir)}/artifacts/${fileName}`
 }
 
 export function readSessionCapsule(cwd = process.cwd(), options = {}) {
@@ -179,14 +182,14 @@ export function writeSessionArtifact(cwd, fileName, payload, options = {}) {
         type: basename(fileName, '.json'),
       },
     },
-  }), { ...normalizeOptions(options), project: true })
+  }), options)
   return artifactPath
 }
 
 export function clearSessionArtifact(cwd, fileName, options = {}) {
   const artifactPath = getSessionArtifactPath(cwd, fileName, options)
   rmSync(artifactPath, { force: true })
-  const capsuleOptions = { ...normalizeOptions(options), project: true }
+  const capsuleOptions = normalizeOptions(options)
   const capsule = readSessionCapsule(cwd, capsuleOptions)
   if (capsule.artifacts && Object.prototype.hasOwnProperty.call(capsule.artifacts, fileName)) {
     delete capsule.artifacts[fileName]
