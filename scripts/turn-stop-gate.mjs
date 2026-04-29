@@ -48,8 +48,8 @@ function buildBlockReason(routeContext, detail, cwd) {
   ].filter(Boolean).join('\n')
 }
 
-function getMainTurnState(cwd) {
-  const turnState = readTurnState(cwd)
+function getMainTurnState(cwd, payload = {}) {
+  const turnState = readTurnState(cwd, { payload })
   return turnState?.role === 'main' ? turnState : null
 }
 
@@ -94,14 +94,14 @@ function validateTurnState(routeContext, turnState, cwd) {
 function main() {
   const payload = readStdinJson()
   const cwd = payload.cwd || process.cwd()
-  const routeContext = getApplicableRouteContext({ cwd })
+  const routeContext = getApplicableRouteContext({ cwd, payload })
 
   if (!routeContext || !ENFORCED_COMMANDS.has(routeContext.skillName)) {
     process.stdout.write(JSON.stringify({ decision: 'continue' }))
     return
   }
 
-  const reason = validateTurnState(routeContext, getMainTurnState(cwd), cwd)
+  const reason = validateTurnState(routeContext, getMainTurnState(cwd, payload), cwd)
   process.stdout.write(JSON.stringify(reason ? { decision: 'block', reason } : { decision: 'continue' }))
 }
 

@@ -18,12 +18,12 @@ import {
 
 export function getDeliveryAction(cwd, options = {}) {
   const snapshot = getWorkflowSnapshot(cwd, options)
-  const recommendation = buildRecommendation(snapshot, cwd)
+  const recommendation = buildRecommendation(snapshot, cwd, options)
   return buildDeliveryActionFromSnapshot(snapshot, cwd, recommendation)
 }
 
 export function getWorkflowRecommendation(cwd, options = {}) {
-  return buildRecommendation(getWorkflowSnapshot(cwd, options), cwd)
+  return buildRecommendation(getWorkflowSnapshot(cwd, options), cwd, options)
 }
 
 export function buildStateSyncHint(cwd, options = {}) {
@@ -32,12 +32,12 @@ export function buildStateSyncHint(cwd, options = {}) {
 
 export function buildDeliveryGateHint(cwd, options = {}) {
   const snapshot = getWorkflowSnapshot(cwd, options)
-  return buildDeliveryGateHintFromSnapshot(snapshot, cwd, buildRecommendation(snapshot, cwd))
+  return buildDeliveryGateHintFromSnapshot(snapshot, cwd, buildRecommendation(snapshot, cwd, options))
 }
 
 export function buildWorkflowRouteHint(cwd, options = {}) {
   const snapshot = getWorkflowSnapshot(cwd, options)
-  const recommendation = buildRecommendation(snapshot, cwd)
+  const recommendation = buildRecommendation(snapshot, cwd, options)
   const stateSyncHint = buildStateSyncHintFromSnapshot(snapshot)
   const stateRoleHint = buildStateRoleHintFromSnapshot(snapshot)
   const orchestrationHint = buildOrchestrationHintFromSnapshot(snapshot, cwd, recommendation)
@@ -92,7 +92,7 @@ function buildCommandRouteMessage(skillName, recommendation, verifyModeHint) {
 
 export function buildCommandRouteHint(skillName, cwd, options = {}) {
   const snapshot = getWorkflowSnapshot(cwd, options)
-  const recommendation = buildRecommendation(snapshot, cwd)
+  const recommendation = buildRecommendation(snapshot, cwd, options)
   const contextHints = [
     buildStateRoleHintFromSnapshot(snapshot),
     buildStateSyncHintFromSnapshot(snapshot),

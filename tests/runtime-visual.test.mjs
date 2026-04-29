@@ -11,7 +11,12 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getSessionEvidencePath,
+  getSessionStatePath,
+  parseStdoutJson,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('visual validation stays optional but blocks closeout when the UI contract explicitly requires it', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -56,7 +61,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test'],
     fastOnly: false,
@@ -76,7 +81,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /visual-evaluator=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-visual\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /evidence\/visual\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,

@@ -17,6 +17,7 @@ import { clearRouteContext, writeRouteContext } from './runtime-context.mjs';
 import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
 import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
+import { resolveSessionToken } from './session-token.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -106,13 +107,24 @@ function runTurnStopGate(payload) {
   });
 }
 
-function readMainTurnState(cwd) {
-  const turnState = readTurnState(cwd);
+function attachTurnSession(payload = {}) {
+  const sessionId = resolveSessionToken({
+    payload,
+    env: process.env,
+    ppid: process.ppid,
+    allowPpidFallback: true,
+  });
+  if (!sessionId || payload.sessionId) return payload;
+  return { ...payload, sessionId };
+}
+
+function readMainTurnState(cwd, payload = {}) {
+  const turnState = readTurnState(cwd, { payload });
   return turnState?.role === 'main' ? turnState : null;
 }
 
-function consumeMainTurnState(cwd, turnState) {
-  if (turnState?.role === 'main') clearTurnState(cwd);
+function consumeMainTurnState(cwd, turnState, payload = {}) {
+  if (turnState?.role === 'main') clearTurnState(cwd, { payload });
 }
 
 function shouldProcessCloseout(turnState) {
@@ -136,6 +148,7 @@ function cmdPreCompact() {
     host: HOST,
     event: 'pre_compact_snapshot',
     source: 'pre-compact',
+    payload,
     details: {
       bootstrapFile,
       installMode: settings.install_mode || '',
@@ -146,7 +159,7 @@ function cmdPreCompact() {
 
 function cmdRoute() {
   const payload = readStdinJson();
-  clearTurnState(payload.cwd || process.cwd());
+  clearTurnState(payload.cwd || process.cwd(), { payload });
   handleRouteCommand({
     payload,
     host: HOST,
@@ -181,11 +194,13 @@ function cmdInject() {
     source,
     bootstrapFile,
     installMode: settings.install_mode || '',
+    payload,
   });
   appendReplayEvent(cwd, {
     host: HOST,
     event: 'session_injected',
     source,
+    payload,
     details: {
       bootstrapFile,
       installMode: settings.install_mode || '',
@@ -201,27 +216,28 @@ function cmdInject() {
     cwd,
     payload,
   });
-  clearRouteContext();
-  clearTurnState(cwd);
+  clearRouteContext({ cwd, payload });
+  clearTurnState(cwd, { payload });
   suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
 }
 
 function cmdStop() {
   const payload = readStdinJson();
   const cwd = payload.cwd || process.cwd();
-  const turnState = readMainTurnState(cwd);
-  if (runTurnStopGate(payload)) {
-    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState);
+  const turnPayload = attachTurnSession(payload);
+  const turnState = readMainTurnState(cwd, turnPayload);
+  if (runTurnStopGate(turnPayload)) {
+    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
     return;
   }
   const shouldProcess = shouldProcessCloseout(turnState);
   if (shouldProcess && runRalphLoop(payload)) {
-    consumeMainTurnState(cwd, turnState);
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
   if (shouldProcess && runDeliveryGate(payload)) {
-    consumeMainTurnState(cwd, turnState);
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
@@ -230,8 +246,8 @@ function cmdStop() {
   if (shouldProcess) {
     notifyByLevel('complete', buildNotifyExtra(payload), settings);
   }
-  consumeMainTurnState(cwd, turnState);
-  clearRouteContext();
+  consumeMainTurnState(cwd, turnState, turnPayload);
+  clearRouteContext({ cwd, payload: turnPayload });
   emptySuppress();
 }
 
@@ -246,6 +262,7 @@ function cmdDesktop() {
 function cmdCodexNotify() {
   let data = {};
   try { data = JSON.parse(process.argv[3] || '{}'); } catch {}
+  const turnPayload = attachTurnSession(data);
 
   const type = data.type || '';
   const client = data.client || '';
@@ -258,33 +275,33 @@ function cmdCodexNotify() {
   if (type !== 'agent-turn-complete') return;
 
   const cwd = data.cwd || process.cwd();
-  const turnState = readMainTurnState(cwd);
-  if (runTurnStopGate(data)) {
-    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState);
+  const turnState = readMainTurnState(cwd, turnPayload);
+  if (runTurnStopGate(turnPayload)) {
+    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
     return;
   }
   if (!turnState) return;
   if (turnState.kind !== 'complete') {
-    consumeMainTurnState(cwd, turnState);
-    clearRouteContext();
+    consumeMainTurnState(cwd, turnState, turnPayload);
+    clearRouteContext({ cwd, payload: turnPayload });
     return;
   }
 
   const settings = getSettings();
   if (runRalphLoop(data)) {
-    consumeMainTurnState(cwd, turnState);
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
   }
   if (runDeliveryGate(data)) {
-    consumeMainTurnState(cwd, turnState);
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
   }
 
   notifyByLevel('complete', buildNotifyExtra(data), settings);
-  consumeMainTurnState(cwd, turnState);
-  clearRouteContext();
+  consumeMainTurnState(cwd, turnState, turnPayload);
+  clearRouteContext({ cwd, payload: turnPayload });
 }
 
 const cmd = process.argv[2] || '';
