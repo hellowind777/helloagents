@@ -90,7 +90,7 @@ test('activated project scope resolves from nested working directories', () => {
   assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'detached', 'abc123', 'STATE.md'))
 })
 
-test('user runtime cleanup removes legacy flat files and expired transient sessions only', () => {
+test('user runtime cleanup removes expired transient sessions only', () => {
   const home = createHomeFixture()
   const runtimeRoot = getUserRuntimeRoot(home)
   const expiredDir = join(runtimeRoot, 'expired-session')
@@ -98,8 +98,6 @@ test('user runtime cleanup removes legacy flat files and expired transient sessi
   const now = Date.now()
   const oldDate = new Date(now - 10 * 24 * 60 * 60 * 1000)
 
-  writeText(join(runtimeRoot, 'turn-state.json'), '{}\n')
-  writeText(join(runtimeRoot, 'replay-context.json'), '{}\n')
   writeText(join(expiredDir, 'capsule.json'), '{}\n')
   writeText(join(freshDir, 'capsule.json'), '{}\n')
   mkdirSync(expiredDir, { recursive: true })
@@ -112,8 +110,6 @@ test('user runtime cleanup removes legacy flat files and expired transient sessi
   })
 
   assert.equal(result.errors.length, 0)
-  assert.ok(!existsSync(join(runtimeRoot, 'turn-state.json')))
-  assert.ok(!existsSync(join(runtimeRoot, 'replay-context.json')))
   assert.ok(!existsSync(expiredDir))
   assert.ok(existsSync(freshDir))
   assert.deepEqual(readdirSync(runtimeRoot).sort(), ['fresh-session'])

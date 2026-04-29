@@ -90,6 +90,25 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /会话已恢复\/压缩/)
   assert.match(payload.hookSpecificOutput.additionalContext, /先看当前用户消息，如果仍是同一任务/)
 
+  const nested = join(project, 'packages', 'app')
+  writeText(join(nested, 'index.js'), 'console.log("ok")\n')
+
+  result = runNode(notifyScript, ['inject'], {
+    cwd: nested,
+    env,
+    input: JSON.stringify({ cwd: nested, source: 'startup' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /## 统一执行流程/)
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: nested,
+    env,
+    input: JSON.stringify({ cwd: nested, prompt: 'continue the existing feature flow' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
+
   result = runNode(notifyScript, ['pre-compact'], {
     cwd: project,
     env,

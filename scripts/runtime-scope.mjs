@@ -14,7 +14,6 @@ export const EVENTS_FILE_NAME = 'events.jsonl'
 export const DEFAULT_STATE_SESSION_TOKEN = 'default'
 export const USER_RUNTIME_DIR_NAME = 'runtime'
 export const USER_RUNTIME_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
-const LEGACY_USER_RUNTIME_FILES = new Set(['turn-state.json', 'replay-context.json'])
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
@@ -169,16 +168,11 @@ export function cleanupUserRuntimeRoot({
   const root = getUserRuntimeRoot(home)
   const result = {
     root,
-    removedLegacyFiles: [],
     removedExpiredDirs: [],
     errors: [],
   }
 
   if (!existsSync(root)) return result
-
-  for (const fileName of LEGACY_USER_RUNTIME_FILES) {
-    removePathIfExists(join(root, fileName), result, 'removedLegacyFiles')
-  }
 
   let entries = []
   try {

@@ -3,7 +3,7 @@
 // Zero external dependencies, ES module, cross-platform
 
 import { join, dirname } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
@@ -215,7 +215,7 @@ function cmdInject() {
     details: {
       bootstrapFile,
       installMode: settings.install_mode || '',
-      activatedProject: existsSync(join(cwd, '.helloagents')),
+      activatedProject: isProjectRuntimeActive(cwd),
     },
   });
   const context = buildInjectContext({

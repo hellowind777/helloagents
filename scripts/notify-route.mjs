@@ -1,8 +1,7 @@
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { isProjectRuntimeActive } from './runtime-scope.mjs'
 
 export function resolveBootstrapFile(cwd, installMode) {
-  const isActivated = existsSync(join(cwd, '.helloagents'))
+  const isActivated = isProjectRuntimeActive(cwd)
   return (installMode === 'global' || isActivated) ? 'bootstrap.md' : 'bootstrap-lite.md'
 }
 
