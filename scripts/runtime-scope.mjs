@@ -8,9 +8,9 @@ import { resolveSessionToken } from './session-token.mjs'
 
 export const PROJECT_DIR_NAME = '.helloagents'
 export const PROJECT_SESSIONS_DIR_NAME = 'sessions'
-export const PROJECT_EVIDENCE_DIR_NAME = 'evidence'
-export const PROJECT_RUNTIME_DIR_NAME = 'runtime'
-export const PROJECT_REPLAY_DIR_NAME = 'replay'
+export const PROJECT_ARTIFACTS_DIR_NAME = 'artifacts'
+export const CAPSULE_FILE_NAME = 'capsule.json'
+export const EVENTS_FILE_NAME = 'events.jsonl'
 export const DEFAULT_STATE_SESSION_TOKEN = 'default'
 
 function normalizePath(filePath = '') {
@@ -102,9 +102,9 @@ export function getProjectSessionScope(cwd, options = {}) {
     activationDir,
     sessionDir,
     statePath: join(sessionDir, 'STATE.md'),
-    evidenceDir: join(sessionDir, PROJECT_EVIDENCE_DIR_NAME),
-    runtimeDir: join(sessionDir, PROJECT_RUNTIME_DIR_NAME),
-    replayDir: join(sessionDir, PROJECT_REPLAY_DIR_NAME),
+    capsulePath: join(sessionDir, CAPSULE_FILE_NAME),
+    eventsPath: join(sessionDir, EVENTS_FILE_NAME),
+    artifactsDir: join(sessionDir, PROJECT_ARTIFACTS_DIR_NAME),
     key: `${normalizedCwd}::${branch}::${session}`,
   }
 }
@@ -126,7 +126,10 @@ function buildTransientRuntimeDir(cwd, options = {}) {
     branch: 'transient',
     session: token,
     sessionMode: token === DEFAULT_STATE_SESSION_TOKEN ? 'default' : 'transient-session',
-    runtimeDir: join(homedir(), PROJECT_DIR_NAME, PROJECT_RUNTIME_DIR_NAME, hash),
+    sessionDir: join(homedir(), PROJECT_DIR_NAME, 'runtime', hash),
+    capsulePath: join(homedir(), PROJECT_DIR_NAME, 'runtime', hash, CAPSULE_FILE_NAME),
+    eventsPath: join(homedir(), PROJECT_DIR_NAME, 'runtime', hash, EVENTS_FILE_NAME),
+    artifactsDir: join(homedir(), PROJECT_DIR_NAME, 'runtime', hash, PROJECT_ARTIFACTS_DIR_NAME),
     key: `${normalizedCwd}::transient::${token}`,
   }
 }
@@ -148,12 +151,12 @@ export function getRuntimeScope(cwd = process.cwd(), options = {}) {
 }
 
 export function getRuntimeFilePath(cwd, fileName, options = {}) {
-  return join(getRuntimeScope(cwd, options).runtimeDir, fileName)
+  return join(getRuntimeScope(cwd, options).sessionDir, fileName)
 }
 
-export function getProjectReplayDir(cwd, options = {}) {
+export function getProjectEventsPath(cwd, options = {}) {
   const scope = getProjectSessionScope(cwd, options)
-  return scope.active ? scope.replayDir : ''
+  return scope.active ? scope.eventsPath : ''
 }
 
 export function readJsonFile(filePath, fallback = null) {
@@ -174,4 +177,3 @@ export function writeJsonFileAtomic(filePath, value) {
 export function removeRuntimeFile(filePath) {
   rmSync(filePath, { force: true })
 }
-

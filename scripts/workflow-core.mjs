@@ -162,10 +162,10 @@ export function buildUiContractHint(cwd, snapshot) {
 
   const extraHints = []
   if (styleAdvisorRequired) {
-    extraHints.push('若当前 UI 契约要求 style advisor，收尾前需写当前会话 `evidence/advisor.json` 留下独立复查证据')
+    extraHints.push('若当前 UI 契约要求 style advisor，收尾前需写当前会话 `artifacts/advisor.json` 留下独立复查证据')
   }
   if (visualValidationRequired) {
-    extraHints.push('若当前 UI 契约要求视觉验收，收尾前需写当前会话 `evidence/visual.json` 记录关键视口、状态与结论')
+    extraHints.push('若当前 UI 契约要求视觉验收，收尾前需写当前会话 `artifacts/visual.json` 记录关键视口、状态与结论')
   }
   return `UI 约束提示：如本次属于视觉/交互任务，设计决策优先级固定为：当前活跃 plan.md / prd/03-ui-design.md → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → hello-ui。${extraHints.length > 0 ? ` ${extraHints.join('；')}。` : ''}`
 }

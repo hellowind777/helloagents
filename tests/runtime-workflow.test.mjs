@@ -193,7 +193,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   assert.match(payload.hookSpecificOutput.additionalContext, /当前不该继续 ~build/)
   assert.match(payload.hookSpecificOutput.additionalContext, /除非用户明确提出新增实现范围，否则直接进入 CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前已进入 CONSOLIDATE/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /evidence\/closeout\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/closeout\.json/)
   assert.match(payload.hookSpecificOutput.additionalContext, /UI 约束提示/)
 
   writeText(

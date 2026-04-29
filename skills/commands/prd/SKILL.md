@@ -8,7 +8,7 @@ Trigger: ~prd [description]
 
 执行 `~prd` 时，不读取 `~plan` 的 command skill；只有当前流程明确需要时，才继续读取对应的 hello-* 技能。
 执行 `~prd` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充规格探索、PRD 写入与继续执行要求。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；会话证据使用当前 `state_path` 所在目录下的 `evidence/*.json`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；会话证据使用当前 `state_path` 所在目录下的 `artifacts/*.json`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
 - 在用户确认方案之前，禁止编写任何实现代码、创建任何文件、或执行任何实现操作。

@@ -4,7 +4,7 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 ---
 
 声称完成之前，必须有验证证据。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：交付证据写入当前 `state_path` 所在目录下的 `evidence/*.json`；若 `project_store_mode=repo-shared`，`verify.yaml`、方案包与 `DESIGN.md` 按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：交付证据写入当前 `state_path` 所在目录下的 `artifacts/*.json`；若 `project_store_mode=repo-shared`，`verify.yaml`、方案包与 `DESIGN.md` 按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
 
@@ -73,9 +73,9 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 2. 逐项确认每个检查项，标记 [√] 并附带证据（如：`src/api.ts:42` 使用了参数化查询）
 3. 不适用的项标记 [-] 并说明原因
 4. 有未通过项 → 修复 → 重新运行验证循环
-5. 若当前存在方案包并准备最终收尾，优先调用 `scripts/closeout-state.mjs write` 写当前会话 `evidence/closeout.json`，记录 `requirementsCoverage` 与 `deliveryChecklist` 两项结论；两项都必须包含 `status`（`PASS` / `BLOCKED`）和 `summary`
-6. 若当前方案包要求 `review-first`，必须先确认当前会话 `evidence/review.json` 已通过 `scripts/review-state.mjs write` 写成最新结构化证据；不要把审查自然语言消息直接当成交付证据
-7. 若 `contract.json` 中 `ui.visualValidation.required=true`，必须确认当前会话 `evidence/visual.json` 已通过 `scripts/visual-state.mjs write` 写成最新结构化证据；若没有视觉验收证据，不得把本轮视为 UI 可交付
+5. 若当前存在方案包并准备最终收尾，优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录 `requirementsCoverage` 与 `deliveryChecklist` 两项结论；两项都必须包含 `status`（`PASS` / `BLOCKED`）和 `summary`
+6. 若当前方案包要求 `review-first`，必须先确认当前会话 `artifacts/review.json` 已通过 `scripts/review-state.mjs write` 写成最新结构化证据；不要把审查自然语言消息直接当成交付证据
+7. 若 `contract.json` 中 `ui.visualValidation.required=true`，必须确认当前会话 `artifacts/visual.json` 已通过 `scripts/visual-state.mjs write` 写成最新结构化证据；若没有视觉验收证据，不得把本轮视为 UI 可交付
 8. 本地版本检查点：非只读任务完成验证且产生工作区变更时，最终收尾前自动执行本地提交。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。不自动远程 `git push`，除非用户明确要求
 9. 准备以本轮最终收尾消息报告完成时，先调用 `node "{HELLOAGENTS_READ_ROOT}/scripts/turn-state.mjs" write` 写 `kind=complete`、`role=main`；若因阻塞判定等待输入或因前置条件缺失而停下，写 `kind=waiting` 或 `kind=blocked`，并同时写 `reasonCategory` 与 `reason`；显式 `~auto` / `~loop` 下还要写 `blocker.target`、`blocker.evidence`、`blocker.requiredAction`，不要让运行时从自然语言消息里猜状态
 
@@ -87,8 +87,8 @@ description: 声称工作完成前、提交代码前、创建 PR 前、报告任
 3. 确认非目标章节列出的内容确实没有被实现（防止范围蔓延）
 4. 若 tasks.md 中定义了“完成标准”，逐项确认每个任务的完成标准确实成立，不能只因为代码存在或命令通过就视为完成
 5. 若存在 `contract.json`，逐项确认其中的 `verifyMode`、reviewer / tester 关注边界都已被本轮验证覆盖
-6. 若 `contract.json` 中 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，额外确认当前会话 `evidence/advisor.json` 已存在且结论为 clean；若没有 advisor 证据，不得把本轮视为可交付
-7. 若 `contract.json` 中 `ui.visualValidation.required=true`，额外确认当前会话 `evidence/visual.json` 已存在、覆盖要求的关键 screens / states，且结论为 `PASS`；若没有视觉验收证据，不得把本轮视为 UI 可交付
+6. 若 `contract.json` 中 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，额外确认当前会话 `artifacts/advisor.json` 已存在且结论为 clean；若没有 advisor 证据，不得把本轮视为可交付
+7. 若 `contract.json` 中 `ui.visualValidation.required=true`，额外确认当前会话 `artifacts/visual.json` 已存在、覆盖要求的关键 screens / states，且结论为 `PASS`；若没有视觉验收证据，不得把本轮视为 UI 可交付
 8. 发现遗漏 → 补充实现 → 重新验证
 
 ## 目标偏移检查

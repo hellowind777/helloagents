@@ -1,21 +1,11 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname } from 'node:path'
 
 import {
-  getProjectReplayDir,
-  getProjectSessionScope,
-} from './runtime-scope.mjs'
-
-const REPLAY_FILE_NAME = 'events.jsonl'
-
-export function getReplayDir(cwd, options = {}) {
-  return getProjectReplayDir(cwd, options)
-}
-
-function getReplayFilePath(cwd, options = {}) {
-  const replayDir = getReplayDir(cwd, options)
-  return replayDir ? join(replayDir, REPLAY_FILE_NAME) : ''
-}
+  appendSessionEvent,
+  getSessionEventsPath,
+  resetSessionEvents,
+} from './session-capsule.mjs'
+import { getProjectSessionScope } from './runtime-scope.mjs'
 
 function sanitizeReplayValue(value) {
   if (typeof value === 'string') {
@@ -59,6 +49,11 @@ function buildReplayRecommendation(recommendation) {
   }
 }
 
+export function getReplayDir(cwd, options = {}) {
+  const eventPath = getSessionEventsPath(cwd, options)
+  return eventPath ? dirname(eventPath) : ''
+}
+
 export function startReplaySession(cwd, {
   host = '',
   source = 'startup',
@@ -68,11 +63,10 @@ export function startReplaySession(cwd, {
   env,
   ppid,
 } = {}) {
-  const filePath = getReplayFilePath(cwd, { payload, env, ppid })
-  if (!filePath) return ''
+  const scope = getProjectSessionScope(cwd, { payload, env, ppid })
+  if (!scope.active) return ''
 
-  mkdirSync(getReplayDir(cwd, { payload, env, ppid }), { recursive: true })
-  writeFileSync(filePath, '', 'utf-8')
+  const filePath = resetSessionEvents(cwd, { payload, env, ppid })
   appendReplayEvent(cwd, {
     host,
     event: 'session_started',
@@ -101,16 +95,10 @@ export function appendReplayEvent(cwd, {
   env,
   ppid,
 } = {}) {
-  if (!event) return ''
-
-  const filePath = getReplayFilePath(cwd, { payload, env, ppid })
-  if (!filePath) return ''
-
   const scope = getProjectSessionScope(cwd, { payload, env, ppid })
-  mkdirSync(getReplayDir(cwd, { payload, env, ppid }), { recursive: true })
+  if (!scope.active || !event) return ''
 
-  const eventPayload = sanitizeReplayValue({
-    ts: new Date().toISOString(),
+  return appendSessionEvent(cwd, sanitizeReplayValue({
     event,
     host: host || 'unknown',
     source,
@@ -121,11 +109,5 @@ export function appendReplayEvent(cwd, {
     reason,
     artifacts,
     details,
-  })
-
-  writeFileSync(filePath, `${JSON.stringify(eventPayload)}\n`, {
-    encoding: 'utf-8',
-    flag: existsSync(filePath) ? 'a' : 'w',
-  })
-  return filePath
+  }), { payload, env, ppid })
 }

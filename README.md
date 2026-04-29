@@ -112,7 +112,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 
 All UI work first follows the shared UI quality baseline.
 In activated projects or explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation.
-When visual evidence is required, HelloAGENTS records it in the current session `evidence/visual.json`.
+When visual evidence is required, HelloAGENTS records it in the current session `artifacts/visual.json`.
 
 ### 2) Commands for different work styles
 
@@ -207,11 +207,13 @@ HelloAGENTS does not treat “tests passed” and “task complete” as the sam
 
 Runtime evidence files include:
 
-- `.helloagents/sessions/<branch>/<session>/evidence/review.json`
-- `.helloagents/sessions/<branch>/<session>/evidence/advisor.json`
-- `.helloagents/sessions/<branch>/<session>/evidence/visual.json`
-- `.helloagents/sessions/<branch>/<session>/evidence/closeout.json`
-- `.helloagents/sessions/<branch>/<session>/runtime/loop-results.tsv`
+- `.helloagents/sessions/<branch>/<session>/capsule.json`
+- `.helloagents/sessions/<branch>/<session>/events.jsonl`
+- `.helloagents/sessions/<branch>/<session>/artifacts/review.json`
+- `.helloagents/sessions/<branch>/<session>/artifacts/advisor.json`
+- `.helloagents/sessions/<branch>/<session>/artifacts/visual.json`
+- `.helloagents/sessions/<branch>/<session>/artifacts/closeout.json`
+- `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
 
 ### 7) Safer install, update, cleanup, and diagnostics
 
@@ -493,9 +495,10 @@ When `project_store_mode = "repo-shared"`:
 Runtime state and evidence remain local to the working project:
 
 - `state_path`
-- `.helloagents/sessions/<branch>/<session>/evidence/*.json`
-- `.helloagents/sessions/<branch>/<session>/runtime/*.json`
-- `.helloagents/sessions/<branch>/<session>/runtime/loop-results.tsv`
+- `.helloagents/sessions/<branch>/<session>/capsule.json`
+- `.helloagents/sessions/<branch>/<session>/events.jsonl`
+- `.helloagents/sessions/<branch>/<session>/artifacts/*.json`
+- `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
 
 ### Knowledge creation rules
 
@@ -549,7 +552,7 @@ For heavier UI work, `contract.json` can require:
 - `ui.styleAdvisor.required`
 - `ui.visualValidation.required`
 
-Those requirements are closed with the current session `evidence/advisor.json` and `evidence/visual.json`.
+Those requirements are closed with the current session `artifacts/advisor.json` and `artifacts/visual.json`.
 
 ### Verification sources
 

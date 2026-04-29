@@ -81,7 +81,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /visual-evaluator=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /evidence\/visual\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/visual\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,

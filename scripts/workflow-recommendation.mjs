@@ -63,7 +63,7 @@ function buildConsolidateAction(recommendation) {
       phase: 'consolidate',
       mode: recommendation.mode,
       routeHint: recommendation.guidance,
-      gateHint: '交付把关：审查与验证证据已满足；先写当前会话 `evidence/closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后才可交付。',
+      gateHint: '交付把关：审查与验证证据已满足；先写当前会话 `artifacts/closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后才可交付。',
     }
   }
 
@@ -81,10 +81,10 @@ function buildVerifyAction(plan, verifyMode) {
   const visualRequirement = getVisualValidationRequirement(plan.contract)
   const extraChecks = []
   if (advisorRequirement.required) {
-    extraChecks.push('完成独立 advisor / style advisor 复查并写入当前会话 `evidence/advisor.json`')
+    extraChecks.push('完成独立 advisor / style advisor 复查并写入当前会话 `artifacts/advisor.json`')
   }
   if (visualRequirement.required) {
-    extraChecks.push('完成视觉验收并写入当前会话 `evidence/visual.json`')
+    extraChecks.push('完成视觉验收并写入当前会话 `artifacts/visual.json`')
   }
   const gateSuffix = extraChecks.length > 0 ? ` ${extraChecks.join('，')}，再进入 CONSOLIDATE。` : ''
   if (verifyMode.mode === 'review-first') {
@@ -202,7 +202,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
       summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI 契约仍要求独立 advisor 复查与视觉验收。`,
-      guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `evidence/advisor.json`；再完成视觉验收并写入当前会话 `evidence/visual.json`，记录 reason、tooling、screensChecked、statesChecked、status 与 summary；两项都通过后再进入 CONSOLIDATE。',
+      guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `artifacts/advisor.json`；再完成视觉验收并写入当前会话 `artifacts/visual.json`，记录 reason、tooling、screensChecked、statesChecked、status 与 summary；两项都通过后再进入 CONSOLIDATE。',
     }
   }
 
@@ -214,7 +214,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
       summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前契约仍要求独立 advisor 复查。`,
-      guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `evidence/advisor.json` 记录复查原因、focus、来源与结论；advisor 通过后再进入 CONSOLIDATE。',
+      guidance: '先在 ~verify 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `artifacts/advisor.json` 记录复查原因、focus、来源与结论；advisor 通过后再进入 CONSOLIDATE。',
     }
   }
 
@@ -226,7 +226,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
       nextCommand: 'verify',
       nextPath: '~verify -> CONSOLIDATE',
       summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI 契约仍要求视觉验收。`,
-      guidance: '先在 ~verify 阶段完成视觉验收，并写入当前会话 `evidence/visual.json` 记录 reason、tooling、screensChecked、statesChecked、status 与 summary；视觉验收通过后再进入 CONSOLIDATE。',
+      guidance: '先在 ~verify 阶段完成视觉验收，并写入当前会话 `artifacts/visual.json` 记录 reason、tooling、screensChecked、statesChecked、status 与 summary；视觉验收通过后再进入 CONSOLIDATE。',
     }
   }
 
@@ -244,7 +244,7 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
         : `${scopeLabel} "${plan.planName}" 的任务、审查与验证已闭合。`,
       guidance: closedPlanEvidence.closeoutReady
         ? '当前进入 CONSOLIDATE：更新 `state_path`、知识文件并归档方案后即可交付；不要无故重开新的方案包或重新跑一遍无关验证。'
-        : '当前进入 CONSOLIDATE：先写当前会话 `evidence/closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后交付。',
+        : '当前进入 CONSOLIDATE：先写当前会话 `artifacts/closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后交付。',
     }
   }
 
