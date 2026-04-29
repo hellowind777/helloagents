@@ -26,14 +26,12 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(claudeMd, /HELLOAGENTS_START/)
   assert.match(claudeMd, /稳定运行根目录 `~\/\.helloagents\/helloagents`/)
   assert.match(claudeMd, /不要递归扫描 `\$HOME`、`Downloads`、项目目录或旧版本目录/)
-  assert.match(claudeMd, /## 当前用户设置/)
-  assert.match(claudeMd, /"output_format": true/)
+  assert.doesNotMatch(claudeMd, /## 当前用户设置/)
   assert.match(claudeMd, /# Claude custom/)
 
   const geminiMd = readText(join(home, '.gemini', 'GEMINI.md'))
   assert.match(geminiMd, /HELLOAGENTS_START/)
-  assert.match(geminiMd, /## 当前用户设置/)
-  assert.match(geminiMd, /"output_format": true/)
+  assert.doesNotMatch(geminiMd, /## 当前用户设置/)
   assert.match(geminiMd, /# Gemini custom/)
 
   const claudeSettingsText = JSON.stringify(readJson(join(home, '.claude', 'settings.json')))
@@ -47,8 +45,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const codexConfigPath = join(home, '.codex', 'config.toml')
   const codexAgents = readText(join(home, '.codex', 'AGENTS.md'))
-  assert.match(codexAgents, /## 当前用户设置/)
-  assert.match(codexAgents, /"output_format": true/)
+  assert.doesNotMatch(codexAgents, /## 当前用户设置/)
   const codexConfig = readText(codexConfigPath)
   assert.match(codexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.doesNotMatch(codexConfig, /developer_instructions\s*=/)
@@ -75,8 +72,8 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), pluginRoot)
   assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
-  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /## 当前用户设置/)
-  assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /"output_format": true/)
+  assert.doesNotMatch(readText(join(pluginRoot, 'AGENTS.md')), /## 当前用户设置/)
+  assert.doesNotMatch(readText(join(pluginCacheRoot, 'AGENTS.md')), /## 当前用户设置/)
 
   const globalCodexConfig = readText(codexConfigPath)
   assert.match(globalCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
@@ -143,7 +140,7 @@ test('postinstall can deploy from compact HELLOAGENTS spec', () => {
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.codex, 'global')
 })
 
-test('runtime carrier snapshots custom output settings from helloagents config', () => {
+test('runtime carrier does not snapshot helloagents config into persistent rules files', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   seedHostConfigs(home)
@@ -157,8 +154,7 @@ test('runtime carrier snapshots custom output settings from helloagents config',
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const codexAgents = readText(join(home, '.codex', 'AGENTS.md'))
-  assert.match(codexAgents, /## 当前用户设置/)
-  assert.match(codexAgents, /"output_format": false/)
-  assert.match(codexAgents, /"output_language": "zh-CN"/)
-  assert.doesNotMatch(codexAgents, /"output_format": true/)
+  assert.doesNotMatch(codexAgents, /## 当前用户设置/)
+  assert.doesNotMatch(codexAgents, /"output_format": false/)
+  assert.match(codexAgents, /最终收尾前必须读取一次该配置/)
 })
