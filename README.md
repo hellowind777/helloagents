@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.14-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.15-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -79,7 +79,7 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 
 ## What Changed Since v3.0.12
 
-These are the main user-visible changes in `v3.0.14`, compared with `v3.0.12`:
+These are the main user-visible changes in `v3.0.15`, compared with `v3.0.12`:
 
 - Install, update, uninstall, and branch switching now work through npm scripts and one-shot scripts, so host sync no longer depends on a stale `helloagents` executable during package updates.
 - Standby mode now reads from the stable runtime root `~/.helloagents/helloagents`; managed hooks use the `helloagents-js` entrypoint, and skills, templates, and runtime scripts no longer point at Node versioned global package paths.
@@ -88,6 +88,9 @@ These are the main user-visible changes in `v3.0.14`, compared with `v3.0.12`:
 - Runtime state now uses session capsules under `.helloagents/sessions/<branch>/<session>/`, separating turn state, events, and delivery artifacts for concurrent CLI windows and worktrees.
 - Runtime state is written only when a workflow needs it, using the stable `helloagents-turn-state write --kind complete --role main` entrypoint instead of package script paths.
 - Codex standby refresh and cleanup preserve user-owned config content while refreshing managed carriers, local plugin files, marketplace entries, and doctor checks.
+- Output-format settings stay aligned across carriers and runtime injection, reducing cases where the final closeout layout is missed.
+- Debugging, testing, verification, and planning flows now include feedback loops, vertical-slice TDD, domain language, and AFK/HITL task markers while reusing the existing skills and templates.
+- Runtime prompts now use more consistent wording, and the docs explicitly state that AI CLI sessions must be restarted after reinstalling, refreshing, or switching modes.
 
 ## Core Features
 
