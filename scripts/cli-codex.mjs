@@ -10,7 +10,6 @@ import {
   CODEX_MANAGED_TOML_COMMENT,
   CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   CODEX_PLUGIN_CONFIG_HEADER,
-  isManagedCodexHooks,
   installCodexManagedTopLevelConfig,
   isManagedCodexBackupInstruction,
   isManagedCodexModelInstruction,
@@ -22,9 +21,6 @@ import {
 import {
   readTopLevelTomlLine,
   readTopLevelTomlBlock,
-  readTomlKeyInSection,
-  removeTomlKeyInSection,
-  ensureTomlKeyInSection,
   removeTopLevelTomlLines,
 } from './cli-toml.mjs';
 
@@ -134,11 +130,9 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
 
   const currentModelInstructions = readTopLevelTomlLine(toml, 'model_instructions_file');
   const currentNotify = readTopLevelTomlBlock(toml, 'notify');
-  const currentCodexHooks = readTomlKeyInSection(toml, '[features]', 'codex_hooks');
 
   const shouldRestoreModelInstructions = isManagedCodexModelInstruction(currentModelInstructions);
   const shouldRestoreNotify = isManagedCodexNotify(currentNotify);
-  const shouldRestoreCodexHooks = isManagedCodexHooks(currentCodexHooks);
 
   if (removePluginConfig) {
     toml = removeCodexPluginConfig(toml);
@@ -151,13 +145,9 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
     toml = removeTopLevelTomlLines(toml, (line) =>
       line.startsWith('notify =') && isManagedCodexNotify(line)).text;
   }
-  if (shouldRestoreCodexHooks) {
-    toml = removeTomlKeyInSection(toml, '[features]', 'codex_hooks');
-  }
 
   const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
   const backupNotify = readTopLevelTomlBlock(backupToml, 'notify');
-  const backupCodexHooks = readTomlKeyInSection(backupToml, '[features]', 'codex_hooks');
 
   toml = restoreCodexTopLevelConfig(toml, {
     modelInstructionsLine: shouldRestoreModelInstructions && !isManagedCodexBackupInstruction(backupModelInstructions)
@@ -167,14 +157,6 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
       ? backupNotify
       : '',
   });
-  toml = ensureTomlKeyInSection(
-    toml,
-    '[features]',
-    'codex_hooks',
-    shouldRestoreCodexHooks && !isManagedCodexHooks(backupCodexHooks)
-      ? backupCodexHooks
-      : '',
-  );
 
   return toml;
 }
@@ -231,13 +213,8 @@ export function uninstallCodexStandby(home) {
     else removeIfExists(configPath);
     changed = true;
     removeCodexBackup(configPath, CODEX_CONFIG_BASENAME);
-    removeIfExists(join(codexDir, 'hooks.json'));
     removeLink(join(codexDir, 'helloagents'));
     changed = true;
-  }
-
-  for (const path of [join(codexDir, 'skills', 'helloagents'), join(home, '.agents', 'skills', 'helloagents')]) {
-    changed = removeLink(path) || changed;
   }
 
   return changed;

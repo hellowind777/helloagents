@@ -3,7 +3,6 @@ import { existsSync } from 'node:fs';
 import {
   ensureDir,
   safeRead,
-  removeIfExists,
   createLink,
   removeLink,
   injectMarkedContent,
@@ -72,7 +71,6 @@ export function uninstallGeminiStandby(home) {
   removeMarkedContent(join(geminiDir, 'GEMINI.md'));
   removeLink(join(geminiDir, 'helloagents'));
   cleanSettingsHooks(join(geminiDir, 'settings.json'));
-  removeIfExists(join(geminiDir, 'helloagents-hooks.json'));
 
   return true;
 }
