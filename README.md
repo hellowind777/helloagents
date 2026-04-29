@@ -502,6 +502,16 @@ Runtime state and evidence remain local to the working project:
 - `.helloagents/sessions/<branch>/<session>/artifacts/*.json`
 - `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
 
+### Unactivated or temporary sessions
+
+If neither the current directory nor its parents contain an activated `.helloagents/` directory, HelloAGENTS does not write project files automatically. Temporary runtime state is kept under the user-level directory:
+
+```text
+~/.helloagents/runtime/<scope-key>/
+```
+
+This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. It is not project knowledge. Expired transient sessions are removed by TTL cleanup, and legacy flat files such as `turn-state.json` and `replay-context.json` are also removed.
+
 ### Knowledge creation rules
 
 | Command or setting | Behavior |

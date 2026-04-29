@@ -504,6 +504,16 @@ Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 - `.helloagents/sessions/<branch>/<session>/artifacts/*.json`
 - `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
 
+### 未激活或临时会话
+
+如果当前目录及其父级没有项目激活目录 `.helloagents/`，HelloAGENTS 不会自动写入项目目录。临时运行态写到用户级目录：
+
+```text
+~/.helloagents/runtime/<scope-key>/
+```
+
+这里仅保存短期的 `capsule.json`、`events.jsonl` 和 `artifacts/`，不作为项目知识库。过期临时会话会按 TTL 清理，旧版扁平文件 `turn-state.json` 和 `replay-context.json` 也会被清理。
+
 ### 知识创建规则
 
 | 命令或配置 | 行为 |
