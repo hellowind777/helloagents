@@ -43,7 +43,7 @@ function buildBlockReason(routeContext, detail, cwd) {
     detail,
     workflowHint,
     '若无真实阻塞，请继续沿当前路径执行。',
-    `若确需停下，先调用 \`helloagents-turn-state write\` 写结构化状态：\`kind=waiting\` 或 \`kind=blocked\`，并同时填写 \`reasonCategory\` 与 \`reason\`。`,
+    `若确需停下，先调用 \`helloagents-turn-state write --kind waiting --role main --reason-category <category> --reason "..."\` 写结构化状态；阻塞则把 \`waiting\` 改为 \`blocked\`。`,
     `允许的 \`reasonCategory\`：${ALLOWED_STOP_REASON_CATEGORIES.join(' | ')}。`,
   ].filter(Boolean).join('\n')
 }

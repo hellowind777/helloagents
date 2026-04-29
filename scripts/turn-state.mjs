@@ -24,6 +24,26 @@ const VALID_REASON_CATEGORIES = new Set([
   'external-dependency',
   'error',
 ])
+const HELP_TEXT = `Usage:
+  helloagents-turn-state write --kind complete --role main
+  helloagents-turn-state write --kind waiting --role main --reason-category missing-input --reason "..."
+  echo {"kind":"complete","role":"main"} | helloagents-turn-state write
+  helloagents-turn-state read [--cwd <path>]
+  helloagents-turn-state clear [--cwd <path>]
+
+Options:
+  --cwd <path>
+  --kind <complete|waiting|blocked|progress>
+  --role <main|subagent>
+  --phase <name>
+  --source <name>
+  --reason-category <category>
+  --reason <text>
+  --requires-delivery-gate
+  --blocker-target <text>
+  --blocker-evidence <text>
+  --blocker-required-action <text>
+`
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
@@ -103,7 +123,7 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
   const scope = getRuntimeScope(cwd, runtimeOptions)
   const normalized = normalizeTurnState(input)
   if (!normalized.kind) {
-    throw new Error('turn-state requires cwd and a valid kind')
+    throw new Error('turn-state write requires a valid kind. Example: helloagents-turn-state write --kind complete --role main')
   }
   if (
     (normalized.kind === 'waiting' || normalized.kind === 'blocked')
@@ -138,16 +158,123 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
 }
 
 function readStdinJson() {
+  if (process.stdin.isTTY) return {}
   try {
-    return JSON.parse(readFileSync(0, 'utf-8'))
+    const text = readFileSync(0, 'utf-8').trim()
+    return text ? JSON.parse(text) : {}
   } catch {
     return {}
   }
 }
 
+function normalizeOptionName(rawName = '') {
+  return rawName.replace(/^-+/, '').replace(/-([a-z])/g, (_, char) => char.toUpperCase())
+}
+
+function readOptionValue(args, index, name) {
+  const raw = args[index]
+  const eqIndex = raw.indexOf('=')
+  if (eqIndex >= 0) {
+    return { value: raw.slice(eqIndex + 1), nextIndex: index }
+  }
+
+  const next = args[index + 1]
+  if (next === undefined || next.startsWith('--')) {
+    return { value: true, nextIndex: index }
+  }
+  return { value: next, nextIndex: index + 1 }
+}
+
+function assignCliOption(input, name, value) {
+  const key = normalizeOptionName(name)
+  const aliases = {
+    reasonCategory: 'reasonCategory',
+    requiresDeliveryGate: 'requiresDeliveryGate',
+    blockerTarget: 'blocker.target',
+    blockerEvidence: 'blocker.evidence',
+    blockerRequiredAction: 'blocker.requiredAction',
+  }
+  const target = aliases[key] || key
+  const allowed = new Set([
+    'cwd',
+    'kind',
+    'role',
+    'phase',
+    'source',
+    'reasonCategory',
+    'reason',
+    'requiresDeliveryGate',
+    'blocker.target',
+    'blocker.evidence',
+    'blocker.requiredAction',
+  ])
+  if (!allowed.has(target)) {
+    throw new Error(`unknown turn-state option: --${name}`)
+  }
+
+  if (target.startsWith('blocker.')) {
+    input.blocker = input.blocker || {}
+    input.blocker[target.slice('blocker.'.length)] = String(value)
+    return
+  }
+
+  input[target] = target === 'requiresDeliveryGate'
+    ? value === true || String(value).toLowerCase() === 'true'
+    : String(value)
+}
+
+function parseCliArgs(args = []) {
+  const input = {}
+  let wantsHelp = false
+
+  for (let index = 0; index < args.length; index += 1) {
+    const raw = args[index]
+    if (raw === '--help' || raw === '-h') {
+      wantsHelp = true
+      continue
+    }
+    if (!raw.startsWith('--')) {
+      throw new Error(`unexpected turn-state argument: ${raw}`)
+    }
+
+    const optionName = raw.slice(2).split('=')[0]
+    const { value, nextIndex } = readOptionValue(args, index, optionName)
+    assignCliOption(input, optionName, value)
+    index = nextIndex
+  }
+
+  return { input, wantsHelp }
+}
+
+function mergeInputs(stdinInput, cliInput) {
+  return {
+    ...stdinInput,
+    ...cliInput,
+    blocker: {
+      ...(stdinInput.blocker || {}),
+      ...(cliInput.blocker || {}),
+    },
+  }
+}
+
+function printHelp() {
+  process.stdout.write(HELP_TEXT)
+}
+
 function main() {
   const command = process.argv[2] || ''
-  const input = readStdinJson()
+  if (!command || command === '--help' || command === '-h' || command === 'help') {
+    printHelp()
+    return
+  }
+
+  const { input: cliInput, wantsHelp } = parseCliArgs(process.argv.slice(3))
+  if (wantsHelp) {
+    printHelp()
+    return
+  }
+
+  const input = mergeInputs(readStdinJson(), cliInput)
   const cwd = input.cwd || process.cwd()
 
   if (command === 'write') {
@@ -173,9 +300,17 @@ function main() {
       suppressOutput: true,
       state: readTurnState(cwd, input),
     }))
+    return
   }
+
+  throw new Error(`unknown turn-state command: ${command}`)
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  main()
+  try {
+    main()
+  } catch (error) {
+    process.stderr.write(`${error.message}\n\n${HELP_TEXT}`)
+    process.exit(1)
+  }
 }

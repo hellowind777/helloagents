@@ -370,6 +370,43 @@ test('stable turn-state command entry writes state', () => {
   assert.equal(payload.payload.role, 'main')
 })
 
+test('stable turn-state command entry supports flags and help', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-flags-')
+  const turnStateCli = join(pkgRoot, 'scripts', 'turn-state-cli.mjs')
+
+  let result = runNode(turnStateCli, ['--help'], {
+    cwd: project,
+    env,
+  })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.match(result.stdout, /helloagents-turn-state write --kind complete --role main/)
+
+  result = runNode(turnStateCli, [
+    'write',
+    '--cwd',
+    project,
+    '--kind',
+    'waiting',
+    '--role',
+    'main',
+    '--reason-category',
+    'missing-input',
+    '--reason',
+    '用户尚未提供必要信息。',
+  ], {
+    cwd: project,
+    env,
+  })
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.payload.kind, 'waiting')
+  assert.equal(payload.payload.role, 'main')
+  assert.equal(payload.payload.reasonCategory, 'missing-input')
+  assert.equal(payload.payload.reason, '用户尚未提供必要信息。')
+})
+
 test('stop blocks explicit auto when turn-state is missing', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
