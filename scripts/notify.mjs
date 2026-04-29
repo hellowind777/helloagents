@@ -254,7 +254,7 @@ function cmdStop() {
   }
 
   const settings = getSettings();
-  if (shouldProcess) {
+  if (shouldProcess || !turnState) {
     notifyByLevel('complete', buildNotifyExtra(payload), settings);
   }
   consumeMainTurnState(cwd, turnState, turnPayload);
@@ -291,7 +291,11 @@ function cmdCodexNotify() {
     if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
     return;
   }
-  if (!turnState) return;
+  if (!turnState) {
+    notifyByLevel('complete', buildNotifyExtra(data), getSettings());
+    clearRouteContext({ cwd, payload: turnPayload });
+    return;
+  }
   if (turnState.kind !== 'complete') {
     consumeMainTurnState(cwd, turnState, turnPayload);
     clearRouteContext({ cwd, payload: turnPayload });
