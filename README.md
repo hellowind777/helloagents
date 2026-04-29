@@ -589,7 +589,7 @@ Config file:
 ~/.helloagents/helloagents.json
 ```
 
-Default shape:
+Default shape. `host_install_modes` is added when per-CLI modes are tracked:
 
 ```json
 {
@@ -601,7 +601,8 @@ Default shape:
   "kb_create_mode": 1,
   "project_store_mode": "local",
   "commit_attribution": "",
-  "install_mode": "standby"
+  "install_mode": "standby",
+  "host_install_modes": {}
 }
 ```
 
@@ -616,6 +617,7 @@ Default shape:
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
 | `commit_attribution` | `""` | optional text appended to commit messages |
 | `install_mode` | `"standby"` | current default install mode |
+| `host_install_modes` | `{}` | managed per-CLI mode map, such as `{ "codex": "standby" }`; used before falling back to `install_mode` |
 
 ## How Each CLI Is Integrated
 

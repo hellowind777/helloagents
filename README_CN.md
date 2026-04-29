@@ -591,7 +591,7 @@ UI 任务遵循以下优先级：
 ~/.helloagents/helloagents.json
 ```
 
-默认结构：
+默认结构。`host_install_modes` 会在需要记录单个 CLI 模式时写入：
 
 ```json
 {
@@ -603,7 +603,8 @@ UI 任务遵循以下优先级：
   "kb_create_mode": 1,
   "project_store_mode": "local",
   "commit_attribution": "",
-  "install_mode": "standby"
+  "install_mode": "standby",
+  "host_install_modes": {}
 }
 ```
 
@@ -618,6 +619,7 @@ UI 任务遵循以下优先级：
 | `project_store_mode` | `"local"` | `local` 或 `repo-shared` |
 | `commit_attribution` | `""` | 提交信息附加署名 |
 | `install_mode` | `"standby"` | 当前默认安装模式 |
+| `host_install_modes` | `{}` | 受管的单 CLI 模式记录，如 `{ "codex": "standby" }`；优先于 `install_mode` |
 
 ## 各 CLI 集成方式
 
