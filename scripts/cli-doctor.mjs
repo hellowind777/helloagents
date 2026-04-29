@@ -8,6 +8,7 @@ import {
 } from './cli-codex-config.mjs'
 import { DEFAULTS } from './cli-config.mjs'
 import { printDoctorText } from './cli-doctor-render.mjs'
+import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
 import { readTopLevelTomlLine } from './cli-toml.mjs'
 import { loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
 
@@ -81,8 +82,9 @@ function managedHooksMatch(actualHooks, expectedHooks) {
   return stringifySorted(pickManagedHooks(actualHooks || {})) === stringifySorted(expectedHooks || {})
 }
 
-function readBootstrapContent(fileName) {
-  return normalizeText(safeRead(join(runtime.pkgRoot, fileName)) || '')
+function readExpectedCarrierContent(fileName, settings) {
+  const bootstrap = safeRead(join(runtime.pkgRoot, fileName)) || ''
+  return normalizeText(buildRuntimeCarrier(bootstrap, settings))
 }
 
 function buildDoctorIssue(code, cn, en) {
@@ -131,7 +133,8 @@ function inspectClaudeDoctor(settings) {
   const expectedHooks = readExpectedHooks('hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}')
   const checks = {
     carrierMarker: (safeRead(join(claudeDir, 'CLAUDE.md')) || '').includes('HELLOAGENTS_START'),
-    carrierContentMatch: extractManagedCarrierContent(join(claudeDir, 'CLAUDE.md')) === readBootstrapContent('bootstrap-lite.md'),
+    carrierContentMatch: extractManagedCarrierContent(join(claudeDir, 'CLAUDE.md'))
+      === readExpectedCarrierContent('bootstrap-lite.md', settings),
     homeLink: safeRealTarget(join(claudeDir, 'helloagents')) === runtime.pkgRoot,
     settingsHooks: JSON.stringify(claudeSettings.hooks || {}).includes('helloagents'),
     settingsHooksMatch: managedHooksMatch(claudeSettings.hooks || {}, expectedHooks),
@@ -181,7 +184,8 @@ function inspectGeminiDoctor(settings) {
   const expectedHooks = readExpectedHooks('hooks.json', '${extensionPath}')
   const checks = {
     carrierMarker: (safeRead(join(geminiDir, 'GEMINI.md')) || '').includes('HELLOAGENTS_START'),
-    carrierContentMatch: extractManagedCarrierContent(join(geminiDir, 'GEMINI.md')) === readBootstrapContent('bootstrap-lite.md'),
+    carrierContentMatch: extractManagedCarrierContent(join(geminiDir, 'GEMINI.md'))
+      === readExpectedCarrierContent('bootstrap-lite.md', settings),
     homeLink: safeRealTarget(join(geminiDir, 'helloagents')) === runtime.pkgRoot,
     settingsHooks: JSON.stringify(geminiSettings.hooks || {}).includes('helloagents'),
     settingsHooksMatch: managedHooksMatch(geminiSettings.hooks || {}, expectedHooks),
@@ -273,7 +277,8 @@ function inspectCodexDoctor(settings) {
     : 'bootstrap-lite.md'
   const checks = {
     carrierMarker: (safeRead(join(codexDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
-    carrierContentMatch: extractManagedCarrierContent(join(codexDir, 'AGENTS.md')) === readBootstrapContent(expectedHomeCarrier),
+    carrierContentMatch: extractManagedCarrierContent(join(codexDir, 'AGENTS.md'))
+      === readExpectedCarrierContent(expectedHomeCarrier, settings),
     homeLink: homeLinkTarget === pkgRootTarget,
     globalHomeLink: homeLinkTarget === pluginRootTarget,
     modelInstructionsFile: !!modelInstructionsLine,
@@ -283,8 +288,10 @@ function inspectCodexDoctor(settings) {
     notifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
     pluginRoot: existsSync(pluginRoot),
     pluginCache: existsSync(pluginCacheRoot),
-    pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '') === readBootstrapContent('bootstrap.md'),
-    pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '') === readBootstrapContent('bootstrap.md'),
+    pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '')
+      === readExpectedCarrierContent('bootstrap.md', settings),
+    pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '')
+      === readExpectedCarrierContent('bootstrap.md', settings),
     marketplaceEntry: Array.isArray(marketplace.plugins) && marketplace.plugins.some((plugin) => plugin?.name === CODEX_PLUGIN_NAME),
     pluginEnabled: codexConfig.includes(CODEX_PLUGIN_CONFIG_HEADER) && codexConfig.includes('enabled = true'),
     globalNotifyPath: codexConfig.includes('codex-notify'),

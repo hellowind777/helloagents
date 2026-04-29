@@ -11,6 +11,7 @@ import {
   cleanSettingsHooks,
   loadHooksWithCliEntry,
 } from './cli-utils.mjs';
+import { buildRuntimeCarrier, readCarrierSettings } from './cli-runtime-carrier.mjs';
 
 export function installClaudeStandby(home, pkgRoot) {
   const claudeDir = join(home, '.claude');
@@ -18,7 +19,10 @@ export function installClaudeStandby(home, pkgRoot) {
 
   const bootstrapContent = safeRead(join(pkgRoot, 'bootstrap-lite.md'));
   if (bootstrapContent) {
-    injectMarkedContent(join(claudeDir, 'CLAUDE.md'), bootstrapContent);
+    injectMarkedContent(
+      join(claudeDir, 'CLAUDE.md'),
+      buildRuntimeCarrier(bootstrapContent, readCarrierSettings(home)).trimEnd(),
+    );
   }
 
   createLink(pkgRoot, join(claudeDir, 'helloagents'));
@@ -52,7 +56,10 @@ export function installGeminiStandby(home, pkgRoot) {
 
   const bootstrapContent = safeRead(join(pkgRoot, 'bootstrap-lite.md'));
   if (bootstrapContent) {
-    injectMarkedContent(join(geminiDir, 'GEMINI.md'), bootstrapContent);
+    injectMarkedContent(
+      join(geminiDir, 'GEMINI.md'),
+      buildRuntimeCarrier(bootstrapContent, readCarrierSettings(home)).trimEnd(),
+    );
   }
 
   createLink(pkgRoot, join(geminiDir, 'helloagents'));
