@@ -21,6 +21,8 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /输出格式：/);
     assert.match(content, /使用约束：/);
     assert.match(content, /输出格式判定属于受配置影响的行为/);
+    assert.match(content, /会话级缓存优先/);
+    assert.match(content, /不要为了展示、确认、输出格式判定或同一结论重复读取/);
     assert.match(content, /主代理必须在本轮最后一条/);
     assert.match(content, /使用输出格式/);
     assert.match(content, /(某个|任何) skill 在本轮(?:如)?明确要求输出停顿、确认或总结/);
@@ -61,6 +63,7 @@ test('skill and help docs describe output_format as final-summary only', () => {
 
   const helpSkill = read('skills/commands/help/SKILL.md');
   assert.match(helpSkill, /缺少下表任一配置项/);
+  assert.match(helpSkill, /后续轮次复用/);
   assert.match(helpSkill, /主代理最终收尾必须使用 HelloAGENTS 格式/);
   assert.match(helpSkill, /流式\/中间输出及子代理输出保持自然/);
 });
