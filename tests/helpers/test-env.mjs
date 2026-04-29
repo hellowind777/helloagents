@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, existsSync, realpathSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, cpSync, existsSync, realpathSync, readdirSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join, dirname, parse, resolve } from 'node:path';
@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(__dirname, '..', '..');
+const CREATED_TEMP_DIRS = new Set();
 
 const PACKAGE_FIXTURE_ENTRIES = [
   '.claude-plugin',
@@ -28,8 +29,18 @@ const PACKAGE_FIXTURE_ENTRIES = [
 ];
 
 export function createTempDir(prefix = 'helloagents-test-') {
-  return mkdtempSync(join(tmpdir(), prefix));
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  CREATED_TEMP_DIRS.add(dir);
+  return dir;
 }
+
+process.once('exit', () => {
+  const dirs = [...CREATED_TEMP_DIRS].sort((a, b) => b.length - a.length);
+  CREATED_TEMP_DIRS.clear();
+  for (const dir of dirs) {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 export function createPackageFixture() {
   const root = createTempDir('helloagents-pkg-');
