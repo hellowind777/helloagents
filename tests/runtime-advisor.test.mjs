@@ -90,7 +90,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /missing fresh advisor evidence/)
+  assert.match(payload.reason, /缺少最新 advisor 证据/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -117,7 +117,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /latest advisor evidence still records blocking findings/)
+  assert.match(payload.reason, /最新 advisor 证据仍记录阻塞问题/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -144,7 +144,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /missing fresh closeout evidence/)
+  assert.match(payload.reason, /缺少最新收尾证据/)
 })
 
 test('ui style advisor reuses advisor evidence when the UI contract explicitly requires it', () => {
@@ -218,7 +218,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /missing fresh advisor evidence/)
+  assert.match(payload.reason, /缺少最新 advisor 证据/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -244,7 +244,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /advisor evidence must retain the requested advisor focus/)
+  assert.match(payload.reason, /advisor 证据必须保留已请求的 advisor focus/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -270,5 +270,5 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /missing fresh closeout evidence/)
+  assert.match(payload.reason, /缺少最新收尾证据/)
 })

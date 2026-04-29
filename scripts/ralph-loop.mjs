@@ -74,7 +74,7 @@ function runVerify(commands, cwd) {
   const failures = [];
   for (const cmd of commands) {
     if (hasUnsafeVerifyCommand([cmd])) {
-      failures.push({ cmd, output: 'Blocked: shell operators not allowed in verify commands' });
+      failures.push({ cmd, output: '已阻止：验证命令不允许使用 shell 组合操作符' });
       continue;
     }
     try {
@@ -85,8 +85,8 @@ function runVerify(commands, cwd) {
         continue;
       }
       let output = ((err.stdout || '') + (err.stderr || '')).trim();
-      if (output.length > 1000) output = output.slice(0, 1000) + '\n...(truncated)';
-      failures.push({ cmd, output: output || `exit code ${err.status}` });
+      if (output.length > 1000) output = output.slice(0, 1000) + '\n…已截断';
+      failures.push({ cmd, output: output || `退出码 ${err.status}` });
     }
   }
   return failures;
@@ -141,7 +141,7 @@ function handleFailure(failures, cwd, options = {}) {
   const details = failures.map(f => `\u2717 ${f.cmd}\n${f.output}`).join('\n\n');
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: `[Ralph Loop] Verification failed:\n\n${details}\n\nFix the issues above before completing.${breakerWarning}`,
+    reason: `[Ralph Loop] 验证失败：\n\n${details}\n\n请先修复以上问题，再报告完成。${breakerWarning}`,
     suppressOutput: true,
   }));
 }
@@ -193,6 +193,10 @@ async function main() {
   else handleFailure(failures, cwd, runtimeOptions);
 }
 
-main().catch(() => {
-  process.stdout.write(JSON.stringify({ suppressOutput: true }));
+main().catch((error) => {
+  process.stdout.write(JSON.stringify({
+    decision: 'block',
+    reason: `[Ralph Loop] 验证脚本执行异常，已暂停完成通知。\n原因：${error?.message || error}`,
+    suppressOutput: true,
+  }));
 });

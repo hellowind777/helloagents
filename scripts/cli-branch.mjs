@@ -15,14 +15,14 @@ function runCommand(command, args) {
   })
   if (result.error) throw result.error
   if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} failed with exit code ${result.status}`)
+    throw new Error(`${command} ${args.join(' ')} 执行失败，退出码 ${result.status}`)
   }
 }
 
 function parseModeFlag(args) {
   const hasGlobal = args.includes('--global')
   const hasStandby = args.includes('--standby')
-  if (hasGlobal && hasStandby) throw new Error('Cannot use --global and --standby together')
+  if (hasGlobal && hasStandby) throw new Error('不能同时使用 --global 和 --standby')
   if (hasGlobal) return 'global'
   if (hasStandby) return 'standby'
   return ''
@@ -31,15 +31,15 @@ function parseModeFlag(args) {
 function parseTarget(args) {
   const wantsAll = args.includes('--all')
   const positionals = args.filter((arg) => !arg.startsWith('--'))
-  if (!positionals.length) throw new Error('Missing branch or ref')
+  if (!positionals.length) throw new Error('缺少分支名或 npm ref')
   if (wantsAll && positionals.length > 1) {
-    throw new Error('`--all` cannot be combined with a specific CLI')
+    throw new Error('`--all` 不能和指定 CLI 同时使用')
   }
 
   const branch = positionals[0]
   const host = wantsAll ? 'all' : normalizeHost(positionals[1] || 'all')
-  if (!host) throw new Error(`Unsupported CLI: ${positionals[1]}`)
-  if (positionals.length > 2) throw new Error(`Too many arguments: ${positionals.join(' ')}`)
+  if (!host) throw new Error(`不支持的 CLI：${positionals[1]}`)
+  if (positionals.length > 2) throw new Error(`参数过多：${positionals.join(' ')}`)
   return { branch, host }
 }
 
@@ -47,7 +47,7 @@ function parseBranchArgs(args) {
   const unknownFlags = args.filter((arg) => (
     arg.startsWith('--') && !['--global', '--standby', '--all'].includes(arg)
   ))
-  if (unknownFlags.length) throw new Error(`Unknown flags: ${unknownFlags.join(', ')}`)
+  if (unknownFlags.length) throw new Error(`未知参数：${unknownFlags.join(', ')}`)
   return {
     ...parseTarget(args),
     mode: parseModeFlag(args),

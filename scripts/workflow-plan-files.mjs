@@ -167,7 +167,7 @@ function findTemplateIssues(fileName, filePath) {
   const content = readText(filePath)
   return (PLAN_TEMPLATE_MARKERS[fileName] || [])
     .filter((pattern) => pattern.test(content))
-    .map(() => `${fileName} still contains template placeholders`)
+    .map(() => `${fileName} 仍包含模板占位内容`)
 }
 
 function comparePlanEntries(a, b) {

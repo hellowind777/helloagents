@@ -2,29 +2,29 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 export const DANGEROUS_PATTERNS = [
-  { pattern: /(sudo\s+)?rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?(-[a-zA-Z]*r[a-zA-Z]*\s+)?(\/|~|\*)/, reason: 'Recursive delete of critical path' },
-  { pattern: /(sudo\s+)?rm\s+(-[a-zA-Z]*r[a-zA-Z]*\s+)?(-[a-zA-Z]*f[a-zA-Z]*\s+)?(\/|~|\*)/, reason: 'Recursive delete of critical path' },
-  { pattern: /(sudo\s+)?rm\s+--recursive/, reason: 'Recursive delete (long option)' },
-  { pattern: /(sudo\s+)?rm\s+-[a-zA-Z]*r[a-zA-Z]*\s+\.\.?(\s|$)/, reason: 'Recursive delete of current/parent directory' },
-  { pattern: /\bcmd(?:\.exe)?\s*\/c\b/i, reason: 'Nested cmd invocation bypasses PowerShell safety rules' },
-  { pattern: /\bStart-Process\s+cmd(?:\.exe)?\b/i, reason: 'Nested cmd invocation bypasses PowerShell safety rules' },
-  { pattern: /git\s+push\s+(-f|--force)/, reason: 'Force push (specify branch explicitly)' },
-  { pattern: /git\s+reset\s+--hard/, reason: 'Hard reset (destructive operation)' },
-  { pattern: /DROP\s+(DATABASE|TABLE|SCHEMA)/i, reason: 'Database destruction command' },
-  { pattern: /\bTRUNCATE(?:\s+TABLE)?\b/i, reason: 'Table truncation' },
-  { pattern: /chmod\s+777/, reason: 'World-writable permissions' },
-  { pattern: /mkfs\b/, reason: 'Filesystem format command' },
-  { pattern: /dd\s+.*of=\/dev\//, reason: 'Direct device write' },
-  { pattern: /FLUSHALL|FLUSHDB/i, reason: 'Redis data flush' },
+  { pattern: /(sudo\s+)?rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?(-[a-zA-Z]*r[a-zA-Z]*\s+)?(\/|~|\*)/, reason: '递归删除关键路径' },
+  { pattern: /(sudo\s+)?rm\s+(-[a-zA-Z]*r[a-zA-Z]*\s+)?(-[a-zA-Z]*f[a-zA-Z]*\s+)?(\/|~|\*)/, reason: '递归删除关键路径' },
+  { pattern: /(sudo\s+)?rm\s+--recursive/, reason: '递归删除命令' },
+  { pattern: /(sudo\s+)?rm\s+-[a-zA-Z]*r[a-zA-Z]*\s+\.\.?(\s|$)/, reason: '递归删除当前目录或父目录' },
+  { pattern: /\bcmd(?:\.exe)?\s*\/c\b/i, reason: '嵌套 cmd 会绕过 PowerShell 安全规则' },
+  { pattern: /\bStart-Process\s+cmd(?:\.exe)?\b/i, reason: '嵌套 cmd 会绕过 PowerShell 安全规则' },
+  { pattern: /git\s+push\s+(-f|--force)/, reason: '强制推送风险高，必须明确分支与授权' },
+  { pattern: /git\s+reset\s+--hard/, reason: '硬重置会丢弃本地变更' },
+  { pattern: /DROP\s+(DATABASE|TABLE|SCHEMA)/i, reason: '数据库破坏性命令' },
+  { pattern: /\bTRUNCATE(?:\s+TABLE)?\b/i, reason: '表数据清空命令' },
+  { pattern: /chmod\s+777/, reason: '全局可写权限风险高' },
+  { pattern: /mkfs\b/, reason: '文件系统格式化命令' },
+  { pattern: /dd\s+.*of=\/dev\//, reason: '直接写入设备' },
+  { pattern: /FLUSHALL|FLUSHDB/i, reason: 'Redis 数据清空命令' },
 ]
 
 export const HIGH_RISK_COMMAND_PATTERNS = [
-  { pattern: /\bnpm\s+publish\b/i, reason: 'Package publish command', gate: 'post-verify' },
-  { pattern: /\bgh\s+release\s+create\b/i, reason: 'Release publication command', gate: 'post-verify' },
-  { pattern: /\bterraform\s+(apply|destroy)\b/i, reason: 'Infrastructure apply/destroy command', gate: 'post-verify' },
-  { pattern: /\b(kubectl|helm)\s+(apply|delete|upgrade|rollback|set|rollout)\b/i, reason: 'Cluster deployment command', gate: 'post-verify' },
-  { pattern: /\b(prisma|drizzle-kit|sequelize-cli|typeorm)\b.*\b(migrate|migration)\b/i, reason: 'Database migration command', gate: 'plan-first' },
-  { pattern: /\b(vercel|wrangler|netlify|flyctl|fly)\b.*\b(deploy|publish)\b/i, reason: 'Deployment command', gate: 'post-verify' },
+  { pattern: /\bnpm\s+publish\b/i, reason: '包发布命令', gate: 'post-verify' },
+  { pattern: /\bgh\s+release\s+create\b/i, reason: '发布 release 命令', gate: 'post-verify' },
+  { pattern: /\bterraform\s+(apply|destroy)\b/i, reason: '基础设施变更命令', gate: 'post-verify' },
+  { pattern: /\b(kubectl|helm)\s+(apply|delete|upgrade|rollback|set|rollout)\b/i, reason: '集群变更命令', gate: 'post-verify' },
+  { pattern: /\b(prisma|drizzle-kit|sequelize-cli|typeorm)\b.*\b(migrate|migration)\b/i, reason: '数据库迁移命令', gate: 'plan-first' },
+  { pattern: /\b(vercel|wrangler|netlify|flyctl|fly)\b.*\b(deploy|publish)\b/i, reason: '部署命令', gate: 'post-verify' },
 ]
 
 export const IDEA_SIDE_EFFECT_COMMAND_PATTERNS = [
@@ -36,20 +36,20 @@ export const IDEA_SIDE_EFFECT_COMMAND_PATTERNS = [
 ]
 
 const SECRET_PATTERNS = [
-  { pattern: /AKIA[0-9A-Z]{16}/, reason: 'AWS Access Key ID detected' },
-  { pattern: /ghp_[a-zA-Z0-9]{36}/, reason: 'GitHub Personal Access Token detected' },
-  { pattern: /github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}/, reason: 'GitHub Fine-grained PAT detected' },
-  { pattern: /sk-[a-zA-Z0-9]{20,}/, reason: 'API secret key pattern detected (sk-)' },
-  { pattern: /key-[a-zA-Z0-9]{20,}/, reason: 'API key pattern detected (key-)' },
-  { pattern: /-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/, reason: 'Private key detected' },
-  { pattern: /password\s*[:=]\s*["'][^"']{4,}["']/i, reason: 'Hardcoded password detected' },
-  { pattern: /secret\s*[:=]\s*["'][^"']{4,}["']/i, reason: 'Hardcoded secret detected' },
-  { pattern: /AIza[0-9A-Za-z\-_]{35}/, reason: 'Google API Key detected' },
-  { pattern: /xox[bpras]-[0-9a-zA-Z\-]+/, reason: 'Slack Token detected' },
-  { pattern: /eyJ[A-Za-z0-9\-_]+\.eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.+/=]+/, reason: 'JWT token detected' },
-  { pattern: /(postgres|mysql|mongodb(\+srv)?):\/\/[^:]+:[^@]+@/i, reason: 'Database connection string with credentials detected' },
-  { pattern: /sk_live_[a-zA-Z0-9]{24,}/, reason: 'Stripe Secret Key detected' },
-  { pattern: /sk-ant-[a-zA-Z0-9\-]{20,}/, reason: 'Anthropic API Key detected' },
+  { pattern: /AKIA[0-9A-Z]{16}/, reason: '检测到 AWS Access Key ID' },
+  { pattern: /ghp_[a-zA-Z0-9]{36}/, reason: '检测到 GitHub Personal Access Token' },
+  { pattern: /github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}/, reason: '检测到 GitHub Fine-grained PAT' },
+  { pattern: /sk-[a-zA-Z0-9]{20,}/, reason: '检测到 API secret key（sk-）' },
+  { pattern: /key-[a-zA-Z0-9]{20,}/, reason: '检测到 API key（key-）' },
+  { pattern: /-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----/, reason: '检测到私钥' },
+  { pattern: /password\s*[:=]\s*["'][^"']{4,}["']/i, reason: '检测到硬编码密码' },
+  { pattern: /secret\s*[:=]\s*["'][^"']{4,}["']/i, reason: '检测到硬编码密钥' },
+  { pattern: /AIza[0-9A-Za-z\-_]{35}/, reason: '检测到 Google API Key' },
+  { pattern: /xox[bpras]-[0-9a-zA-Z\-]+/, reason: '检测到 Slack Token' },
+  { pattern: /eyJ[A-Za-z0-9\-_]+\.eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.+/=]+/, reason: '检测到 JWT token' },
+  { pattern: /(postgres|mysql|mongodb(\+srv)?):\/\/[^:]+:[^@]+@/i, reason: '检测到包含凭据的数据库连接串' },
+  { pattern: /sk_live_[a-zA-Z0-9]{24,}/, reason: '检测到 Stripe Secret Key' },
+  { pattern: /sk-ant-[a-zA-Z0-9\-]{20,}/, reason: '检测到 Anthropic API Key' },
 ]
 
 export function scanForSecrets(content) {
@@ -81,13 +81,13 @@ export function scanShellSafetyWarnings(command = '') {
       .map((entry) => entry.trim())
       .filter(Boolean)
     if (logicalLines.length > 3) {
-      warnings.push('PowerShell inline script exceeds 3 logical lines; prefer a temporary .ps1 file')
+      warnings.push('PowerShell 内联脚本超过 3 个逻辑行，建议改用临时 .ps1 文件')
     }
   }
 
   const fileOps = normalized.match(/\b(remove-item|move-item|copy-item|new-item|set-content|add-content|out-file|mkdir|md|touch|cp|copy|mv|move|ren|rename|del|erase|rm|rmdir)\b/ig) || []
   if (fileOps.length > 1 && /[;\r\n]/.test(normalized)) {
-    warnings.push('Multiple file operations are chained in one shell command; split them into separate commands')
+    warnings.push('单条 shell 命令串联了多个文件操作，建议拆成独立命令')
   }
 
   return warnings
@@ -99,11 +99,11 @@ export function scanUnrequestedFiles(filePath, toolName) {
   const warnings = []
 
   const patterns = [
-    { pattern: /^(SUMMARY|NOTES|TODO|SCRATCH|TEMP)\.(md|txt)$/i, reason: `Unrequested file creation: ${basename}` },
+    { pattern: /^(SUMMARY|NOTES|TODO|SCRATCH|TEMP)\.(md|txt)$/i, reason: `检测到未请求的文件创建：${basename}` },
     {
       pattern: /^README.*\.md$/i,
       matches: () => filePath.replace(/\\/g, '/').split('/').length > 4,
-      reason: `Suspicious README creation in nested path: ${basename}`,
+      reason: `检测到嵌套路径中的可疑 README 创建：${basename}`,
     },
   ]
 
@@ -120,12 +120,12 @@ export function scanDangerousPackages(content, filePath) {
   if (filePath.endsWith('package.json')) {
     const dangerousScripts = /("(preinstall|postinstall|preuninstall)")\s*:\s*"[^"]*\b(curl|wget|bash|sh|eval|exec)\b/i
     if (dangerousScripts.test(content)) {
-      warnings.push('Potentially dangerous lifecycle script in package.json (preinstall/postinstall with curl/wget/bash/eval)')
+      warnings.push('package.json 中存在潜在危险的生命周期脚本（preinstall/postinstall 调用 curl、wget、bash 或 eval）')
     }
   }
   const unsafeInstall = /npm install\s+[^-].*--ignore-scripts\s*=\s*false|pip install\s+--trusted-host|pip install\s+http:/i
   if (unsafeInstall.test(content)) {
-    warnings.push('Unsafe dependency installation pattern detected')
+    warnings.push('检测到不安全的依赖安装写法')
   }
   return warnings
 }
@@ -136,12 +136,12 @@ export function scanEnvCoverage(filePath) {
   for (let i = 0; i < 10; i += 1) {
     try {
       const gitignore = readFileSync(join(dir, '.gitignore'), 'utf-8')
-      return gitignore.includes('.env') ? [] : ['.env file written but .gitignore does not contain .env pattern']
+      return gitignore.includes('.env') ? [] : ['写入了 .env 文件，但 .gitignore 未包含 .env 规则']
     } catch {
       const parent = dirname(dir)
       if (parent === dir) break
       dir = parent
     }
   }
-  return ['.env file written but no .gitignore found']
+  return ['写入了 .env 文件，但未找到 .gitignore']
 }

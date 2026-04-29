@@ -134,14 +134,14 @@ function parseCompactLifecycleSpec() {
 
   const parts = raw.split(':')
   if (parts.length > 2 || !parts[0]) {
-    throw new Error('HELLOAGENTS must be target[:mode], for example codex:global')
+    throw new Error(msg('HELLOAGENTS 必须是 target[:mode]，例如 codex:global', 'HELLOAGENTS must be target[:mode], for example codex:global'))
   }
 
   const target = normalizeHost(parts[0].trim().toLowerCase())
   const mode = (parts[1] || '').trim().toLowerCase()
-  if (!target) throw new Error(`Unsupported HELLOAGENTS target: ${parts[0]}`)
+  if (!target) throw new Error(msg(`不支持的 HELLOAGENTS 目标：${parts[0]}`, `Unsupported HELLOAGENTS target: ${parts[0]}`))
   if (mode && !['standby', 'global'].includes(mode)) {
-    throw new Error(`Unsupported HELLOAGENTS mode: ${mode}`)
+    throw new Error(msg(`不支持的 HELLOAGENTS 模式：${mode}`, `Unsupported HELLOAGENTS mode: ${mode}`))
   }
 
   return { target, mode }

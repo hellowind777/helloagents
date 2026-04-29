@@ -259,6 +259,8 @@ helloagents --global
 helloagents install --all --global
 ```
 
+After reinstalling, refreshing, or switching modes, restart the target AI CLI or open a new session; already running sessions do not reload injected rules automatically.
+
 ### 3) Verify inside your AI CLI
 
 Type:

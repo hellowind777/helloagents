@@ -124,7 +124,7 @@ test('codex notify gates only main complete turns from turn-state', () => {
   })
   let payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /unfinished tasks|missing a trustworthy structured contract/)
+  assert.match(payload.reason, /未完成任务|缺少可信的结构化契约/)
 
   result = runNode(turnStateScript, ['read'], {
     cwd: project,
@@ -576,5 +576,5 @@ test('stop delivery gate prefers structured turn-state over completion text', ()
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /unfinished tasks/)
+  assert.match(payload.reason, /未完成任务/)
 })

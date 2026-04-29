@@ -63,7 +63,7 @@ export function validateEvidenceTimestamp(evidence, now, label) {
       required: true,
       status: 'invalid',
       evidence,
-      details: [`${label} timestamp is invalid`],
+      details: [`${label}时间戳无效`],
     }
   }
   if (now - updatedAt > EVIDENCE_MAX_AGE_MS) {
@@ -71,7 +71,7 @@ export function validateEvidenceTimestamp(evidence, now, label) {
       required: true,
       status: 'stale-time',
       evidence,
-      details: [`${label} is older than 30 minutes`],
+      details: [`${label}超过 30 分钟`],
     }
   }
   return null
@@ -88,7 +88,7 @@ export function validateEvidenceFingerprint(cwd, evidence, label) {
       required: true,
       status: 'stale-diff',
       evidence,
-      details: [`workspace diff changed after the last ${label}`],
+      details: [`工作区变更已不同于最近一次${label}后的状态`],
     }
   }
   return null

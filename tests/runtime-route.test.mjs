@@ -209,7 +209,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /side-effect command/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /有副作用命令/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
