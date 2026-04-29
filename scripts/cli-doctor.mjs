@@ -227,7 +227,7 @@ function appendCodexStandbyIssues(issues, checks) {
   if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('standby-model-instructions-drift', 'standby model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Standby model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
   if (!checks.codexNotify) issues.push(buildDoctorIssue('standby-notify-missing', 'standby notify 配置缺失', 'Standby notify configuration is missing'))
   if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 未使用受管命令入口', 'Standby notify does not use the managed command entrypoint'))
-  if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled || checks.legacyGlobalNotifyPath) {
+  if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled) {
     issues.push(buildDoctorIssue('standby-global-residue', 'standby 模式下仍残留 global 插件文件或配置', 'Global plugin artifacts still remain while Codex is in standby mode'))
   }
 }
@@ -287,7 +287,6 @@ function inspectCodexDoctor(settings) {
     pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '') === readBootstrapContent('bootstrap.md'),
     marketplaceEntry: Array.isArray(marketplace.plugins) && marketplace.plugins.some((plugin) => plugin?.name === CODEX_PLUGIN_NAME),
     pluginEnabled: codexConfig.includes(CODEX_PLUGIN_CONFIG_HEADER) && codexConfig.includes('enabled = true'),
-    legacyGlobalNotifyPath: codexConfig.includes('/plugins/helloagents/scripts/notify.mjs'),
     globalNotifyPath: codexConfig.includes('codex-notify'),
     globalNotifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
     pluginVersionMatch: pluginVersion ? pluginVersion === runtime.pkgVersion : false,

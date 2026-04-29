@@ -7,10 +7,6 @@ export function hasTimestampedBackup(home, baseName) {
   return listFiles(join(home, '.codex')).some((name) => new RegExp(`^${baseName}_\\d{8}-\\d{6}\\.bak$`).test(name))
 }
 
-export function writeTimestampedBackup(home, baseName, content) {
-  writeText(join(home, '.codex', `${baseName}_20260403-000000.bak`), content)
-}
-
 export function runCli(pkgRoot, home, args, env = {}) {
   const result = runNode(join(pkgRoot, 'cli.mjs'), args, {
     cwd: pkgRoot,

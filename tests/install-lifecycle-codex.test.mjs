@@ -8,7 +8,6 @@ import { createHomeFixture, createPackageFixture, readText, writeText } from './
 import {
   runCli,
   seedHostConfigs,
-  writeTimestampedBackup,
 } from './helpers/cli-test-helpers.mjs'
 
 test('Codex global cleanup still removes marketplace and plugin roots when .codex is gone', () => {
@@ -27,43 +26,26 @@ test('Codex global cleanup still removes marketplace and plugin roots when .code
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
 })
 
-test('Codex cleanup ignores contaminated backups and strips managed config lines', () => {
+test('Codex cleanup leaves unmarked package-script notify entries untouched', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
-  const codexAgentsPath = join(home, '.codex', 'AGENTS.md').replace(/\\/g, '/')
 
   writeText(
     join(home, '.codex', 'config.toml'),
     [
-      `model_instructions_file = "${codexAgentsPath}" # helloagents-managed`,
       'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
       '',
       '[features]',
-      'codex_hooks = true',
-      'unified_exec = true',
-      '',
-    ].join('\n'),
-  )
-  writeTimestampedBackup(
-    home,
-    'config.toml',
-    [
-      `model_instructions_file = "${codexAgentsPath}" # helloagents-managed`,
-      'notify = ["node", "D:/GitHub/dev/helloagents/scripts/notify.mjs", "codex-notify"]',
-      '',
-      '[features]',
-      'codex_hooks = true',
+      'experimental = true',
       '',
     ].join('\n'),
   )
 
-  runCli(pkgRoot, home, ['cleanup'])
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
 
   const cleaned = readText(join(home, '.codex', 'config.toml'))
-  assert.doesNotMatch(cleaned, /model_instructions_file\s*=/)
-  assert.doesNotMatch(cleaned, /codex-notify/)
-  assert.doesNotMatch(cleaned, /codex_hooks = true/)
-  assert.match(cleaned, /unified_exec = true/)
+  assert.match(cleaned, /notify = \["node", "D:\/GitHub\/dev\/helloagents\/scripts\/notify\.mjs", "codex-notify"\]/)
+  assert.match(cleaned, /\[features\]\nexperimental = true/)
 })
 
 test('Codex standby replaces a user-owned model_instructions_file with the managed home AGENTS carrier and restores it on cleanup', () => {

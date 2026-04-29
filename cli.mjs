@@ -198,9 +198,9 @@ if (cmd === 'codex-notify') {
   })
 } else if (cmd === 'branch' || cmd === 'switch-branch') {
   runSafely(() => runBranchSwitch(argv.slice(1)))
-} else if (['install', 'update', 'uninstall', 'cleanup', '--cleanup'].includes(cmd)) {
+} else if (['install', 'update', 'uninstall', 'cleanup'].includes(cmd)) {
   runSafely(() => {
-    const action = cmd === '--cleanup' ? 'cleanup' : cmd
+    const action = cmd
     const lifecycleArgs = argv.slice(1)
     if (cmd === 'install' || cmd === 'update') ensureRuntimeRoot()
     runScopedLifecycle(action, lifecycleArgs)

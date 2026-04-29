@@ -35,11 +35,6 @@ export function isManagedCodexNotify(line = '') {
       value.includes('helloagents-js')
       && value.includes('codex-notify')
     )
-    || (
-      value.includes('codex-notify')
-      && value.includes('/scripts/notify.mjs')
-      && /(^|[/\\])helloagents([/\\]|-|$)|[/\\]plugins[/\\]helloagents[/\\]/i.test(value)
-    )
 }
 
 export function isManagedCodexBackupInstruction(line = '') {
