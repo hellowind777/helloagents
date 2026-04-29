@@ -105,17 +105,17 @@ function readRequiredReviewEvidence(cwd, options = {}) {
     error: {
       required: true,
       status: 'missing',
-      details: ['missing successful review evidence for review-first closeout'],
+      details: ['缺少 review-first 收尾所需的成功审查证据'],
     },
   }
 }
 
 function validateReviewTimestamp(evidence, now) {
-  return validateEvidenceTimestamp(evidence, now, 'review evidence')
+  return validateEvidenceTimestamp(evidence, now, '审查证据')
 }
 
 function validateReviewFingerprint(cwd, evidence) {
-  return validateEvidenceFingerprint(cwd, evidence, 'successful review evidence')
+  return validateEvidenceFingerprint(cwd, evidence, '成功审查证据')
 }
 
 function validateReviewOutcome(evidence) {
@@ -124,7 +124,7 @@ function validateReviewOutcome(evidence) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['review evidence must record explicit outcome and conclusion'],
+      details: ['审查证据必须记录明确的 outcome 和 conclusion'],
     }
   }
   if (normalizeReviewOutcome(evidence.outcome) !== 'clean') {
@@ -132,7 +132,7 @@ function validateReviewOutcome(evidence) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['latest review evidence still records blocking findings'],
+      details: ['最新审查证据仍记录阻塞问题'],
     }
   }
   return null

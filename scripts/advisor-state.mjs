@@ -97,17 +97,17 @@ function readRequiredAdvisorEvidence(cwd, required, options = {}) {
     error: {
       required: true,
       status: 'missing',
-      details: ['missing advisor evidence required by the active contract'],
+      details: ['缺少当前契约要求的 advisor 证据'],
     },
   }
 }
 
 function validateAdvisorTimestamp(evidence, now) {
-  return validateEvidenceTimestamp(evidence, now, 'advisor evidence')
+  return validateEvidenceTimestamp(evidence, now, 'advisor 证据')
 }
 
 function validateAdvisorFingerprint(cwd, evidence) {
-  return validateEvidenceFingerprint(cwd, evidence, 'advisor evidence')
+  return validateEvidenceFingerprint(cwd, evidence, 'advisor 证据')
 }
 
 function validateAdvisorContent(evidence, focus = []) {
@@ -116,7 +116,7 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['advisor evidence must record explicit outcome, reason, and summary'],
+      details: ['advisor 证据必须记录明确的 outcome、reason 和 summary'],
     }
   }
   if (normalizeSources(evidence.consultedSources).length === 0) {
@@ -124,7 +124,7 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['advisor evidence must record at least one consulted source'],
+      details: ['advisor 证据必须记录至少一个参考来源'],
     }
   }
   if (normalizeStringArray(focus).length > 0 && normalizeStringArray(evidence.focus).length === 0) {
@@ -132,7 +132,7 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['advisor evidence must retain the requested advisor focus'],
+      details: ['advisor 证据必须保留已请求的 advisor focus'],
     }
   }
   if (normalizeOutcome(evidence.outcome) !== 'clean') {
@@ -140,7 +140,7 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['latest advisor evidence still records blocking findings'],
+      details: ['最新 advisor 证据仍记录阻塞问题'],
     }
   }
   return null

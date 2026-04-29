@@ -75,13 +75,13 @@ function readRequiredCloseoutEvidence(cwd, options = {}) {
     error: {
       required: true,
       status: 'missing',
-      details: ['missing closeout evidence for requirements coverage and delivery checklist'],
+      details: ['缺少需求覆盖和交付清单的收尾证据'],
     },
   }
 }
 
 function validateCloseoutTimestamp(evidence, now) {
-  return validateEvidenceTimestamp(evidence, now, 'closeout evidence')
+  return validateEvidenceTimestamp(evidence, now, '收尾证据')
 }
 
 function validateCloseoutEntries(evidence) {
@@ -98,7 +98,7 @@ function validateCloseoutEntries(evidence) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['closeout evidence must record requirements coverage and delivery checklist with explicit PASS/BLOCKED status plus summary'],
+      details: ['收尾证据必须记录需求覆盖和交付清单，并包含明确的 PASS/BLOCKED 状态和 summary'],
     }
   }
   if (requirementsCoverage.status !== 'PASS') {
@@ -106,7 +106,7 @@ function validateCloseoutEntries(evidence) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['requirements coverage is not marked as PASS in the latest closeout evidence'],
+      details: ['最新收尾证据中的需求覆盖未标记为 PASS'],
     }
   }
   if (deliveryChecklist.status !== 'PASS') {
@@ -114,7 +114,7 @@ function validateCloseoutEntries(evidence) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['delivery checklist is not marked as PASS in the latest closeout evidence'],
+      details: ['最新收尾证据中的交付清单未标记为 PASS'],
     }
   }
   return {
@@ -124,7 +124,7 @@ function validateCloseoutEntries(evidence) {
 }
 
 function validateCloseoutFingerprint(cwd, evidence) {
-  return validateEvidenceFingerprint(cwd, evidence, 'successful closeout evidence')
+  return validateEvidenceFingerprint(cwd, evidence, '成功收尾证据')
 }
 
 export function getCloseoutEvidenceStatus(cwd, { required = false, now = Date.now(), ...options } = {}) {

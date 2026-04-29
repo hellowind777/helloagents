@@ -33,7 +33,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   })
   let payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /Force push/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /强制推送/)
 
   result = runNode(guardScript, [], {
     env,
@@ -44,7 +44,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /Table truncation/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /表数据清空/)
 
   result = runNode(guardScript, [], {
     env,
@@ -55,7 +55,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /Nested cmd invocation/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /嵌套 cmd/)
 
   result = runNode(guardScript, [], {
     cwd: warnProject,
@@ -68,7 +68,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /高风险操作提醒/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /Package publish command/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /包发布命令/)
 
   result = runNode(guardScript, [], {
     cwd: warnProject,
@@ -82,7 +82,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, undefined)
   assert.match(payload.hookSpecificOutput.additionalContext, /Shell 安全提醒/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /PowerShell inline script exceeds 3 logical lines/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /PowerShell 内联脚本超过 3 个逻辑行/)
 
   writeText(
     getSessionStatePath(gateProject),
@@ -167,7 +167,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /still requires ~plan before risky schema changes/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /高风险 schema 变更前仍需先完成 ~plan/)
 
   result = runNode(guardScript, ['post-write'], {
     env,
@@ -180,6 +180,6 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
     }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /API secret key pattern detected/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.env file written but .*\.gitignore/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /检测到 API secret key/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /写入了 \.env 文件.*\.gitignore/)
 })

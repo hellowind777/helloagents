@@ -122,7 +122,7 @@ function validateVerifyEvidencePresence(commands, evidence) {
     required: true,
     status: 'missing',
     commands,
-    details: ['missing successful verification evidence for the current workflow'],
+    details: ['缺少当前工作流的成功验证证据'],
   }
 }
 
@@ -133,16 +133,16 @@ function validateVerifyEvidenceFreshness(cwd, commands, evidence, now) {
       status: 'fast-only',
       commands,
       evidence,
-      details: ['latest verification evidence only covers subagent fast checks'],
+      details: ['最新验证证据只覆盖子代理快速检查'],
     }
   }
 
-  const timestampError = validateEvidenceTimestamp(evidence, now, 'verification evidence')
+  const timestampError = validateEvidenceTimestamp(evidence, now, '验证证据')
   return timestampError ? { ...timestampError, commands } : null
 }
 
 function validateVerifyFingerprint(cwd, commands, evidence) {
-  const fingerprintError = validateEvidenceFingerprint(cwd, evidence, 'successful verification evidence')
+  const fingerprintError = validateEvidenceFingerprint(cwd, evidence, '成功验证证据')
   return fingerprintError ? { ...fingerprintError, commands } : null
 }
 

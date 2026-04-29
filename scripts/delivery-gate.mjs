@@ -12,22 +12,11 @@ import { getVisualEvidenceStatus } from './visual-state.mjs'
 import { buildDeliveryGateHint, getDeliveryAction, getWorkflowRecommendation, getWorkflowSnapshot } from './workflow-state.mjs'
 import { getReviewEvidenceStatus } from './review-state.mjs'
 import { getVerifyEvidenceStatus } from './verify-state.mjs'
+import { buildDeliveryBlockReason, buildUnderSpecifiedDetails } from './delivery-gate-messages.mjs'
 
 function selectGatePlans(snapshot) {
   if (snapshot.activePlans.length > 0) return snapshot.activePlans
   return snapshot.plans
-}
-
-function buildUnderSpecifiedDetails(entry) {
-  return entry.taskSummary.underSpecifiedItems
-    .slice(0, 3)
-    .map((item) => {
-      const missing = []
-      if (item.files.length === 0) missing.push('missing files')
-      if (!item.acceptance) missing.push('missing acceptance')
-      if (!item.validation) missing.push('missing validation')
-      return `${item.text} (${missing.join(', ')})`
-    })
 }
 
 function collectTaskMetadataIssues(entry, issues) {
@@ -48,7 +37,7 @@ function collectPlanIssues(planEntries) {
       issues.push({
         type: 'missing-files',
         planName: entry.planName,
-        details: entry.missingFiles.map((file) => `missing ${file}`),
+        details: entry.missingFiles.map((file) => `缺少 ${file}`),
       })
     }
 
@@ -64,7 +53,7 @@ function collectPlanIssues(planEntries) {
       issues.push({
         type: 'missing-task-checklist',
         planName: entry.planName,
-        details: ['tasks.md does not contain any checklist items'],
+        details: ['tasks.md 没有可执行检查项'],
       })
       continue
     }
@@ -140,65 +129,6 @@ function collectGateIssues(planEntries, verificationStatus, reviewStatus, adviso
   return issues
 }
 
-function issueHeading(issue) {
-  switch (issue.type) {
-    case 'missing-files':
-      return 'active plan package is missing required artifacts'
-    case 'template-placeholders':
-      return 'active plan package still contains template placeholders'
-    case 'missing-task-checklist':
-      return 'active plan package has no executable tasks'
-    case 'unfinished-tasks':
-      return 'active plan package still has unfinished tasks'
-    case 'under-specified-tasks':
-      return 'active plan package has under-specified task metadata'
-    case 'missing-contract':
-      return 'active plan package is missing a trustworthy structured contract'
-    case 'missing-verify-evidence':
-      return 'current workflow is missing fresh verification evidence'
-    case 'missing-review-evidence':
-      return 'current workflow is missing fresh review evidence'
-    case 'missing-advisor-evidence':
-      return 'current workflow is missing fresh advisor evidence'
-    case 'missing-visual-evidence':
-      return 'current workflow is missing fresh visual validation evidence'
-    case 'missing-closeout-evidence':
-      return 'current workflow is missing fresh closeout evidence'
-    default:
-      return 'active plan package is not ready for delivery'
-  }
-}
-
-function buildBlockReason(issues, recommendation, gateHint) {
-  const lines = ['[Delivery Gate] Delivery is blocked because the current workflow state is not closed yet:']
-
-  for (const issue of issues) {
-    lines.push(`- ${issue.planName}: ${issueHeading(issue)}`)
-    for (const detail of issue.details) {
-      lines.push(`  - ${detail}`)
-    }
-    if (issue.extraCount) {
-      lines.push(`  - ...and ${issue.extraCount} more`)
-    }
-  }
-
-  lines.push('')
-  if (recommendation?.nextPath) {
-    lines.push(`Recommended path: ${recommendation.nextPath}`)
-  }
-  if (issues.some((issue) => issue.type === 'missing-closeout-evidence')) {
-    lines.push('Next closeout step: write current session `artifacts/closeout.json` with `requirementsCoverage` and `deliveryChecklist` before reporting completion.')
-  }
-  if (issues.some((issue) => issue.type === 'missing-visual-evidence')) {
-    lines.push('Next visual step: write current session `artifacts/visual.json` with `tooling`, `screensChecked`, `statesChecked`, `status`, and `summary` before reporting completion.')
-  }
-  if (gateHint) {
-    lines.push(gateHint)
-  }
-  lines.push('Do not report completion yet. First finish or explicitly close the remaining tasks, or repair the active plan package so it becomes a trustworthy delivery record.')
-  return lines.join('\n')
-}
-
 function main() {
   let data = {}
   try {
@@ -253,7 +183,7 @@ function main() {
 
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: buildBlockReason(issues, recommendation, buildDeliveryGateHint(cwd, workflowOptions)),
+    reason: buildDeliveryBlockReason(issues, recommendation, buildDeliveryGateHint(cwd, workflowOptions)),
     suppressOutput: true,
   }))
 }

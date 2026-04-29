@@ -97,17 +97,17 @@ function readRequiredVisualEvidence(cwd, required, options = {}) {
     error: {
       required: true,
       status: 'missing',
-      details: ['missing visual validation evidence required by the active UI contract'],
+      details: ['缺少当前 UI 契约要求的视觉验收证据'],
     },
   }
 }
 
 function validateVisualTimestamp(evidence, now) {
-  return validateEvidenceTimestamp(evidence, now, 'visual validation evidence')
+  return validateEvidenceTimestamp(evidence, now, '视觉验收证据')
 }
 
 function validateVisualFingerprint(cwd, evidence) {
-  return validateEvidenceFingerprint(cwd, evidence, 'visual validation evidence')
+  return validateEvidenceFingerprint(cwd, evidence, '视觉验收证据')
 }
 
 function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
@@ -117,7 +117,7 @@ function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['visual validation evidence must record explicit status, reason, and summary'],
+      details: ['视觉验收证据必须记录明确的 status、reason 和 summary'],
     }
   }
   if (normalized.tooling.length === 0) {
@@ -125,7 +125,7 @@ function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['visual validation evidence must record the tooling used for the check'],
+      details: ['视觉验收证据必须记录使用的检查工具'],
     }
   }
   if (normalized.screensChecked.length === 0 && normalized.statesChecked.length === 0) {
@@ -133,7 +133,7 @@ function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['visual validation evidence must record at least one checked screen or state'],
+      details: ['视觉验收证据必须记录至少一个已检查视口或状态'],
     }
   }
 
@@ -143,7 +143,7 @@ function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
       required: true,
       status: 'invalid',
       evidence,
-      details: [`visual validation evidence does not cover requested screens: ${missingScreens.join(', ')}`],
+      details: [`视觉验收证据未覆盖要求的视口：${missingScreens.join(', ')}`],
     }
   }
 
@@ -153,7 +153,7 @@ function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
       required: true,
       status: 'invalid',
       evidence,
-      details: [`visual validation evidence does not cover requested states: ${missingStates.join(', ')}`],
+      details: [`视觉验收证据未覆盖要求的状态：${missingStates.join(', ')}`],
     }
   }
 
@@ -162,7 +162,7 @@ function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['latest visual validation evidence still records blocking findings'],
+      details: ['最新视觉验收证据仍记录阻塞问题'],
     }
   }
   return null

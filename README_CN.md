@@ -259,6 +259,8 @@ helloagents --global
 helloagents install --all --global
 ```
 
+重装、刷新或切换模式后，请重启对应 AI CLI 或新开会话；已运行会话不会自动重载注入规则。
+
 ### 3）在 AI CLI 里验证
 
 输入：

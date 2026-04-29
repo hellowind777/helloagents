@@ -90,7 +90,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /missing fresh visual validation evidence/)
+  assert.match(payload.reason, /缺少最新视觉验收证据/)
 
   result = runNode(visualScript, ['write'], {
     cwd: project,
@@ -117,7 +117,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /does not cover requested states: error/)
+  assert.match(payload.reason, /未覆盖要求的状态：error/)
 
   result = runNode(visualScript, ['write'], {
     cwd: project,
@@ -144,7 +144,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /latest visual validation evidence still records blocking findings/)
+  assert.match(payload.reason, /最新视觉验收证据仍记录阻塞问题/)
 
   result = runNode(visualScript, ['write'], {
     cwd: project,
@@ -171,5 +171,5 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /missing fresh closeout evidence/)
+  assert.match(payload.reason, /缺少最新收尾证据/)
 })
