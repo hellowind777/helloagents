@@ -1,12 +1,19 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { appendReplayEvent } from './replay-state.mjs'
-import { captureWorkspaceFingerprint } from './verify-state.mjs'
+import {
+  captureWorkspaceFingerprint,
+  clearRuntimeEvidence,
+  getRuntimeEvidencePath,
+  getRuntimeEvidenceRelativePath,
+  readRuntimeEvidence,
+  validateEvidenceFingerprint,
+  validateEvidenceTimestamp,
+  writeRuntimeEvidence,
+} from './runtime-artifacts.mjs'
 
-export const VISUAL_EVIDENCE_FILE_NAME = '.ralph-visual.json'
-const VISUAL_EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
+export const VISUAL_EVIDENCE_FILE_NAME = 'visual.json'
 const VALID_VISUAL_STATUSES = new Set(['PASS', 'BLOCKED'])
 
 function normalizeStringArray(values) {
@@ -24,20 +31,16 @@ function findMissingCoverage(requested = [], completed = []) {
   return normalizeStringArray(requested).filter((entry) => !completedSet.has(entry))
 }
 
-export function getVisualEvidencePath(cwd) {
-  return join(cwd, '.helloagents', VISUAL_EVIDENCE_FILE_NAME)
+export function getVisualEvidencePath(cwd, options = {}) {
+  return getRuntimeEvidencePath(cwd, VISUAL_EVIDENCE_FILE_NAME, options)
 }
 
-export function readVisualEvidence(cwd) {
-  try {
-    return JSON.parse(readFileSync(getVisualEvidencePath(cwd), 'utf-8'))
-  } catch {
-    return null
-  }
+export function readVisualEvidence(cwd, options = {}) {
+  return readRuntimeEvidence(cwd, VISUAL_EVIDENCE_FILE_NAME, options)
 }
 
-export function clearVisualEvidence(cwd) {
-  rmSync(getVisualEvidencePath(cwd), { force: true })
+export function clearVisualEvidence(cwd, options = {}) {
+  clearRuntimeEvidence(cwd, VISUAL_EVIDENCE_FILE_NAME, options)
 }
 
 export function normalizeVisualEvidence(input = {}) {
@@ -55,19 +58,19 @@ export function normalizeVisualEvidence(input = {}) {
   }
 }
 
-export function writeVisualEvidence(cwd, input = {}) {
-  mkdirSync(join(cwd, '.helloagents'), { recursive: true })
+export function writeVisualEvidence(cwd, input = {}, options = {}) {
   const normalized = normalizeVisualEvidence(input)
   const payload = {
     updatedAt: new Date().toISOString(),
     ...normalized,
     fingerprint: captureWorkspaceFingerprint(cwd),
   }
-  writeFileSync(getVisualEvidencePath(cwd), `${JSON.stringify(payload, null, 2)}\n`, 'utf-8')
+  writeRuntimeEvidence(cwd, VISUAL_EVIDENCE_FILE_NAME, payload, options)
   appendReplayEvent(cwd, {
     event: 'visual_evidence_written',
     source: normalized.source,
     skillName: normalized.originCommand,
+    payload: options.payload || {},
     details: {
       reason: normalized.reason,
       tooling: normalized.tooling,
@@ -75,12 +78,12 @@ export function writeVisualEvidence(cwd, input = {}) {
       statesChecked: normalized.statesChecked,
       status: normalized.status,
     },
-    artifacts: ['.helloagents/.ralph-visual.json'],
+    artifacts: [getRuntimeEvidenceRelativePath(cwd, VISUAL_EVIDENCE_FILE_NAME, options)],
   })
   return payload
 }
 
-function readRequiredVisualEvidence(cwd, required) {
+function readRequiredVisualEvidence(cwd, required, options = {}) {
   if (!required) {
     return {
       required: false,
@@ -88,7 +91,7 @@ function readRequiredVisualEvidence(cwd, required) {
     }
   }
 
-  const evidence = readVisualEvidence(cwd)
+  const evidence = readVisualEvidence(cwd, options)
   if (evidence) return { evidence }
   return {
     error: {
@@ -100,41 +103,11 @@ function readRequiredVisualEvidence(cwd, required) {
 }
 
 function validateVisualTimestamp(evidence, now) {
-  const updatedAt = Date.parse(evidence.updatedAt || '')
-  if (!Number.isFinite(updatedAt)) {
-    return {
-      required: true,
-      status: 'invalid',
-      evidence,
-      details: ['visual validation evidence timestamp is invalid'],
-    }
-  }
-  if (now - updatedAt > VISUAL_EVIDENCE_MAX_AGE_MS) {
-    return {
-      required: true,
-      status: 'stale-time',
-      evidence,
-      details: ['visual validation evidence is older than 30 minutes'],
-    }
-  }
-  return null
+  return validateEvidenceTimestamp(evidence, now, 'visual validation evidence')
 }
 
 function validateVisualFingerprint(cwd, evidence) {
-  const currentFingerprint = captureWorkspaceFingerprint(cwd)
-  if (
-    currentFingerprint.available
-    && evidence.fingerprint?.available
-    && currentFingerprint.combined !== evidence.fingerprint.combined
-  ) {
-    return {
-      required: true,
-      status: 'stale-diff',
-      evidence,
-      details: ['workspace diff changed after the last visual validation evidence'],
-    }
-  }
-  return null
+  return validateEvidenceFingerprint(cwd, evidence, 'visual validation evidence')
 }
 
 function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
@@ -195,8 +168,8 @@ function validateVisualContent(evidence, { screens = [], states = [] } = {}) {
   return null
 }
 
-export function getVisualEvidenceStatus(cwd, { required = false, screens = [], states = [], now = Date.now() } = {}) {
-  const requiredEvidence = readRequiredVisualEvidence(cwd, required)
+export function getVisualEvidenceStatus(cwd, { required = false, screens = [], states = [], now = Date.now(), ...options } = {}) {
+  const requiredEvidence = readRequiredVisualEvidence(cwd, required, options)
   if ('status' in requiredEvidence) return requiredEvidence
   if (requiredEvidence.error) return requiredEvidence.error
 
@@ -231,10 +204,10 @@ function main() {
 
   const input = readStdinJson()
   const cwd = input.cwd || process.cwd()
-  const payload = writeVisualEvidence(cwd, input)
+  const payload = writeVisualEvidence(cwd, input, { payload: input })
   process.stdout.write(JSON.stringify({
     suppressOutput: true,
-    path: getVisualEvidencePath(cwd),
+    path: getVisualEvidencePath(cwd, { payload: input }),
     payload,
   }))
 }

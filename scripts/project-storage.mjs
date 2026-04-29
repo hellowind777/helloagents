@@ -10,6 +10,7 @@ import { resolveSessionToken } from './session-token.mjs'
 export const PROJECT_DIR_NAME = '.helloagents'
 const PROJECTS_DIR_NAME = 'projects'
 const PROJECT_SESSIONS_DIR_NAME = 'sessions'
+const PROJECT_EVIDENCE_DIR_NAME = 'evidence'
 const PROJECT_STORE_MODES = new Set(['local', 'repo-shared'])
 const DEFAULT_STATE_SESSION_TOKEN = 'default'
 
@@ -122,6 +123,15 @@ function resolveGitBranchName(cwd) {
   return ''
 }
 
+function normalizeRuntimeOptions(options = {}) {
+  if (!options || typeof options !== 'object') return {}
+  if (options.payload && typeof options.payload === 'object') return options
+  return {
+    ...options,
+    payload: options,
+  }
+}
+
 export function normalizeProjectStoreMode(value) {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
   return PROJECT_STORE_MODES.has(normalized) ? normalized : DEFAULTS.project_store_mode
@@ -140,11 +150,12 @@ export function getProjectActivationDir(cwd) {
   return join(cwd, PROJECT_DIR_NAME)
 }
 
-export function getProjectSessionStateScope(cwd, {
-  payload = {},
-  env = process.env,
-  ppid = process.ppid,
-} = {}) {
+export function getProjectSessionStateScope(cwd, options = {}) {
+  const {
+    payload = {},
+    env = process.env,
+    ppid = process.ppid,
+  } = normalizeRuntimeOptions(options)
   const rawSessionToken = resolveSessionToken({
     payload,
     env,
@@ -174,6 +185,19 @@ export function getProjectStatePath(cwd, options = {}) {
   return getProjectSessionStateScope(cwd, options).statePath
 }
 
+export function getProjectEvidenceDir(cwd, options = {}) {
+  return join(getProjectSessionStateScope(cwd, options).sessionDir, PROJECT_EVIDENCE_DIR_NAME)
+}
+
+export function getProjectEvidencePath(cwd, fileName, options = {}) {
+  return join(getProjectEvidenceDir(cwd, options), fileName)
+}
+
+export function getProjectEvidenceRelativePath(cwd, fileName, options = {}) {
+  const stateScope = getProjectSessionStateScope(cwd, options)
+  return `.helloagents/sessions/${stateScope.stateBranch}/${stateScope.stateSessionToken}/${PROJECT_EVIDENCE_DIR_NAME}/${fileName}`
+}
+
 export function isRepoSharedProjectStore(cwd) {
   return getProjectStoreMode(cwd) === 'repo-shared'
 }
@@ -191,6 +215,7 @@ export function getProjectStoreSummary(cwd, options = {}) {
   const activationDir = getProjectActivationDir(cwd)
   const storeDir = getProjectStoreDir(cwd)
   const stateScope = getProjectSessionStateScope(cwd, options)
+  const evidenceDir = getProjectEvidenceDir(cwd, options)
   const projectKey = buildProjectKey(cwd)
   const projectStoreMode = getProjectStoreMode(cwd)
 
@@ -204,6 +229,7 @@ export function getProjectStoreSummary(cwd, options = {}) {
     stateSessionMode: stateScope.stateSessionMode,
     stateBranch: stateScope.stateBranch,
     sessionStateDir: stateScope.sessionDir,
+    evidenceDir,
     usesSharedStore: projectStoreMode === 'repo-shared',
     projectKey: projectKey.key,
     repoRoot: projectKey.repoRoot,
@@ -212,6 +238,7 @@ export function getProjectStoreSummary(cwd, options = {}) {
     promptStoreDir: formatPromptPath(storeDir),
     promptStatePath: formatPromptPath(stateScope.statePath),
     promptSessionStateDir: formatPromptPath(stateScope.sessionDir),
+    promptEvidenceDir: formatPromptPath(evidenceDir),
   }
 }
 
@@ -282,7 +309,7 @@ export function buildProjectStorageHint(cwd, options = {}) {
     hints.push(`当前宿主未提供稳定会话标识，因此使用分支默认位置 \`${summary.stateSessionToken}\``)
   }
   if (summary.usesSharedStore) {
-    hints.push(`项目存储：\`project_store_mode=repo-shared\`；本地激活/运行态目录仍是 \`${summary.promptActivationDir}\`，知识库/方案目录改为 \`${summary.promptStoreDir}\``)
+    hints.push(`项目存储：\`project_store_mode=repo-shared\`；本地激活/会话运行态目录仍是 \`${summary.promptActivationDir}\`，知识库/方案目录改为 \`${summary.promptStoreDir}\``)
   }
   return hints.join('。') + (hints.length > 0 ? '。' : '')
 }
@@ -302,6 +329,7 @@ export function buildProjectStorageBlock(cwd, options = {}) {
     state_session_token: summary.stateSessionToken,
     state_session_mode: summary.stateSessionMode,
     session_state_dir: summary.promptSessionStateDir,
+    evidence_dir: summary.promptEvidenceDir,
     knowledge_base_dir: summary.promptStoreDir,
     uses_shared_store: summary.usesSharedStore,
   }
@@ -312,7 +340,7 @@ export function buildProjectStorageBlock(cwd, options = {}) {
     explanations.push('说明：当前宿主未提供稳定会话标识，因此使用分支默认位置。')
   }
   if (summary.usesSharedStore) {
-    explanations.push('说明：状态文件与 `.ralph-*.json` 写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
+    explanations.push('说明：状态文件与会话证据写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
   } else {
     explanations.push('说明：当前使用项目本地 `.helloagents/` 作为激活目录、知识库目录和方案目录。')
   }

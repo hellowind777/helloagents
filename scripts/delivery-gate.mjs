@@ -187,10 +187,10 @@ function buildBlockReason(issues, recommendation, gateHint) {
     lines.push(`Recommended path: ${recommendation.nextPath}`)
   }
   if (issues.some((issue) => issue.type === 'missing-closeout-evidence')) {
-    lines.push('Next closeout step: write `.helloagents/.ralph-closeout.json` with `requirementsCoverage` and `deliveryChecklist` before reporting completion.')
+    lines.push('Next closeout step: write current session `evidence/closeout.json` with `requirementsCoverage` and `deliveryChecklist` before reporting completion.')
   }
   if (issues.some((issue) => issue.type === 'missing-visual-evidence')) {
-    lines.push('Next visual step: write `.helloagents/.ralph-visual.json` with `tooling`, `screensChecked`, `statesChecked`, `status`, and `summary` before reporting completion.')
+    lines.push('Next visual step: write current session `evidence/visual.json` with `tooling`, `screensChecked`, `statesChecked`, `status`, and `summary` before reporting completion.')
   }
   if (gateHint) {
     lines.push(gateHint)
@@ -208,11 +208,12 @@ function main() {
   const workflowOptions = { payload: data }
   const snapshot = getWorkflowSnapshot(cwd, workflowOptions)
   const recommendation = getWorkflowRecommendation(cwd, workflowOptions)
-  const verificationStatus = getVerifyEvidenceStatus(cwd)
+  const verificationStatus = getVerifyEvidenceStatus(cwd, workflowOptions)
   const deliveryAction = getDeliveryAction(cwd, workflowOptions)
   const gatePlans = selectGatePlans(snapshot)
   const reviewStatus = getReviewEvidenceStatus(cwd, {
     required: deliveryAction?.phase === 'verify' && deliveryAction?.mode === 'review-first',
+    ...workflowOptions,
   })
   if (gatePlans.length === 0) {
     process.stdout.write(JSON.stringify({ suppressOutput: true }))
@@ -223,12 +224,14 @@ function main() {
   const advisorStatus = getAdvisorEvidenceStatus(cwd, {
     required: advisorRequirements.some((entry) => entry.required),
     focus: advisorRequirements.flatMap((entry) => entry.focus || []),
+    ...workflowOptions,
   })
   const visualRequirements = gatePlans.map((entry) => getVisualValidationRequirement(entry.contract))
   const visualStatus = getVisualEvidenceStatus(cwd, {
     required: visualRequirements.some((entry) => entry.required),
     screens: visualRequirements.flatMap((entry) => entry.screens || []),
     states: visualRequirements.flatMap((entry) => entry.states || []),
+    ...workflowOptions,
   })
   const closeoutRequired = (
     gatePlans.every((entry) => entry.missingFiles.length === 0 && entry.templateIssues.length === 0 && entry.taskSummary.total > 0 && entry.taskSummary.open === 0 && entry.taskSummary.underSpecifiedCount === 0)
@@ -239,6 +242,7 @@ function main() {
   )
   const closeoutStatus = getCloseoutEvidenceStatus(cwd, {
     required: closeoutRequired,
+    ...workflowOptions,
   })
 
   const issues = collectGateIssues(gatePlans, verificationStatus, reviewStatus, advisorStatus, visualStatus, closeoutStatus)

@@ -1,11 +1,18 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
-import { captureWorkspaceFingerprint } from './verify-state.mjs'
 import { appendReplayEvent } from './replay-state.mjs'
+import {
+  captureWorkspaceFingerprint,
+  clearRuntimeEvidence,
+  getRuntimeEvidencePath,
+  getRuntimeEvidenceRelativePath,
+  readRuntimeEvidence,
+  validateEvidenceFingerprint,
+  validateEvidenceTimestamp,
+  writeRuntimeEvidence,
+} from './runtime-artifacts.mjs'
 
-export const REVIEW_EVIDENCE_FILE_NAME = '.ralph-review.json'
-const REVIEW_EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
+export const REVIEW_EVIDENCE_FILE_NAME = 'review.json'
 const VALID_REVIEW_OUTCOMES = new Set(['clean', 'findings'])
 
 function normalizeStringArray(values) {
@@ -20,20 +27,16 @@ function normalizeReviewOutcome(value) {
   return VALID_REVIEW_OUTCOMES.has(normalized) ? normalized : ''
 }
 
-export function getReviewEvidencePath(cwd) {
-  return join(cwd, '.helloagents', REVIEW_EVIDENCE_FILE_NAME)
+export function getReviewEvidencePath(cwd, options = {}) {
+  return getRuntimeEvidencePath(cwd, REVIEW_EVIDENCE_FILE_NAME, options)
 }
 
-export function readReviewEvidence(cwd) {
-  try {
-    return JSON.parse(readFileSync(getReviewEvidencePath(cwd), 'utf-8'))
-  } catch {
-    return null
-  }
+export function readReviewEvidence(cwd, options = {}) {
+  return readRuntimeEvidence(cwd, REVIEW_EVIDENCE_FILE_NAME, options)
 }
 
-export function clearReviewEvidence(cwd) {
-  rmSync(getReviewEvidencePath(cwd), { force: true })
+export function clearReviewEvidence(cwd, options = {}) {
+  clearRuntimeEvidence(cwd, REVIEW_EVIDENCE_FILE_NAME, options)
 }
 
 export function normalizeReviewEvidence(input = {}) {
@@ -56,8 +59,7 @@ export function writeReviewEvidence(cwd, {
   conclusion = '',
   findings = [],
   fileReferences = [],
-} = {}) {
-  mkdirSync(join(cwd, '.helloagents'), { recursive: true })
+} = {}, options = {}) {
   const normalized = normalizeReviewEvidence({
     source,
     originCommand,
@@ -78,11 +80,12 @@ export function writeReviewEvidence(cwd, {
     fileReferences: normalized.fileReferences,
     fingerprint: captureWorkspaceFingerprint(cwd),
   }
-  writeFileSync(getReviewEvidencePath(cwd), `${JSON.stringify(payload, null, 2)}\n`, 'utf-8')
+  writeRuntimeEvidence(cwd, REVIEW_EVIDENCE_FILE_NAME, payload, options)
   appendReplayEvent(cwd, {
     event: 'review_evidence_written',
     source: normalized.source,
     skillName: normalized.originCommand,
+    payload: options.payload || {},
     details: {
       reviewMode: normalized.reviewMode,
       outcome: normalized.outcome,
@@ -90,13 +93,13 @@ export function writeReviewEvidence(cwd, {
       findings: normalized.findings,
       fileReferences: normalized.fileReferences,
     },
-    artifacts: ['.helloagents/.ralph-review.json'],
+    artifacts: [getRuntimeEvidenceRelativePath(cwd, REVIEW_EVIDENCE_FILE_NAME, options)],
   })
   return payload
 }
 
-function readRequiredReviewEvidence(cwd) {
-  const evidence = readReviewEvidence(cwd)
+function readRequiredReviewEvidence(cwd, options = {}) {
+  const evidence = readReviewEvidence(cwd, options)
   if (evidence) return { evidence }
   return {
     error: {
@@ -108,41 +111,11 @@ function readRequiredReviewEvidence(cwd) {
 }
 
 function validateReviewTimestamp(evidence, now) {
-  const updatedAt = Date.parse(evidence.updatedAt || '')
-  if (!Number.isFinite(updatedAt)) {
-    return {
-      required: true,
-      status: 'invalid',
-      evidence,
-      details: ['review evidence timestamp is invalid'],
-    }
-  }
-  if (now - updatedAt > REVIEW_EVIDENCE_MAX_AGE_MS) {
-    return {
-      required: true,
-      status: 'stale-time',
-      evidence,
-      details: ['review evidence is older than 30 minutes'],
-    }
-  }
-  return null
+  return validateEvidenceTimestamp(evidence, now, 'review evidence')
 }
 
 function validateReviewFingerprint(cwd, evidence) {
-  const currentFingerprint = captureWorkspaceFingerprint(cwd)
-  if (
-    currentFingerprint.available
-    && evidence.fingerprint?.available
-    && currentFingerprint.combined !== evidence.fingerprint.combined
-  ) {
-    return {
-      required: true,
-      status: 'stale-diff',
-      evidence,
-      details: ['workspace diff changed after the last successful review evidence'],
-    }
-  }
-  return null
+  return validateEvidenceFingerprint(cwd, evidence, 'successful review evidence')
 }
 
 function validateReviewOutcome(evidence) {
@@ -165,7 +138,7 @@ function validateReviewOutcome(evidence) {
   return null
 }
 
-export function getReviewEvidenceStatus(cwd, { required = false, now = Date.now() } = {}) {
+export function getReviewEvidenceStatus(cwd, { required = false, now = Date.now(), ...options } = {}) {
   if (!required) {
     return {
       required: false,
@@ -173,7 +146,7 @@ export function getReviewEvidenceStatus(cwd, { required = false, now = Date.now(
     }
   }
 
-  const requiredEvidence = readRequiredReviewEvidence(cwd)
+  const requiredEvidence = readRequiredReviewEvidence(cwd, options)
   if (requiredEvidence.error) return requiredEvidence.error
 
   const { evidence } = requiredEvidence
@@ -207,10 +180,10 @@ function main() {
 
   const input = readStdinJson()
   const cwd = input.cwd || process.cwd()
-  const payload = writeReviewEvidence(cwd, input)
+  const payload = writeReviewEvidence(cwd, input, { payload: input })
   process.stdout.write(JSON.stringify({
     suppressOutput: true,
-    path: getReviewEvidencePath(cwd),
+    path: getReviewEvidencePath(cwd, { payload: input }),
     payload,
   }))
 }

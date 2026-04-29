@@ -11,7 +11,12 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getSessionEvidencePath,
+  getSessionStatePath,
+  parseStdoutJson,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('delivery gate blocks completion when plan packages stay open or malformed', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -130,7 +135,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   assert.match(payload.reason, /missing fresh verification evidence/)
   assert.match(payload.reason, /Recommended path: ~verify -> CONSOLIDATE/)
 
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: '2026-04-05T00:00:00.000Z',
     commands: ['npm run test', 'npm run build'],
     fastOnly: false,
@@ -150,7 +155,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   payload = parseStdoutJson(result)
   assert.match(payload.reason, /verification evidence is older than 30 minutes/)
 
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test', 'npm run build'],
     fastOnly: false,
@@ -170,7 +175,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   payload = parseStdoutJson(result)
   assert.match(payload.reason, /missing fresh review evidence/)
 
-  writeJson(join(project, '.helloagents', '.ralph-review.json'), {
+  writeJson(getSessionEvidencePath(project, 'review.json'), {
     updatedAt: new Date().toISOString(),
     source: 'manual',
     originCommand: 'review',
@@ -194,7 +199,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   payload = parseStdoutJson(result)
   assert.match(payload.reason, /blocking findings/)
 
-  writeJson(join(project, '.helloagents', '.ralph-review.json'), {
+  writeJson(getSessionEvidencePath(project, 'review.json'), {
     updatedAt: new Date().toISOString(),
     source: 'stop',
     originCommand: 'review',
@@ -218,7 +223,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   payload = parseStdoutJson(result)
   assert.match(payload.reason, /missing fresh closeout evidence/)
 
-  writeJson(join(project, '.helloagents', '.ralph-closeout.json'), {
+  writeJson(getSessionEvidencePath(project, 'closeout.json'), {
     updatedAt: new Date().toISOString(),
     source: 'manual',
     originCommand: 'verify',

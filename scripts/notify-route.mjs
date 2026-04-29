@@ -37,6 +37,7 @@ function routeExplicitCommand({
     cwd,
     skillName: canonicalSkillName,
     sourceSkillName: skillName,
+    payload,
   })
   appendReplayEvent(cwd, {
     host,
@@ -44,6 +45,7 @@ function routeExplicitCommand({
     source: 'route',
     skillName: canonicalSkillName,
     sourceSkillName: skillName,
+    payload,
   })
   suppress(buildRouteInstruction({
     skillName,
@@ -75,7 +77,7 @@ export function handleRouteCommand({
   const prompt = (payload.prompt || '').trim()
   const cwd = payload.cwd || process.cwd()
   if (shouldBypassRoute(prompt)) {
-    clearRouteContext()
+    clearRouteContext({ cwd, payload })
     emptySuppress()
     return
   }
@@ -98,17 +100,18 @@ export function handleRouteCommand({
 
   const bootstrapFile = resolveBootstrapFile(cwd, settings.install_mode)
   if (bootstrapFile === 'bootstrap.md') {
-    clearRouteContext()
+    clearRouteContext({ cwd, payload })
     appendReplayEvent(cwd, {
       host,
       event: 'semantic_route_prompted',
       source: 'route',
       recommendation: getWorkflowRecommendation(cwd, { payload }),
+      payload,
     })
     suppress(buildSemanticRouteInstruction(cwd, payload))
     return
   }
 
-  clearRouteContext()
+  clearRouteContext({ cwd, payload })
   emptySuppress()
 }

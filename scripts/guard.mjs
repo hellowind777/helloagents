@@ -52,13 +52,14 @@ function emitHookPayload(payload) {
   process.stdout.write(JSON.stringify(payload))
 }
 
-function emitGuardEvent(cwd, event, source, reason, details = {}) {
+function emitGuardEvent(cwd, event, source, reason, details = {}, payload = {}) {
   appendReplayEvent(cwd, {
     host: HOST,
     event,
     source,
     reason,
     details,
+    payload,
   })
 }
 
@@ -94,6 +95,7 @@ function detectIdeaBoundaryContext(data) {
   return getApplicableRouteContext({
     cwd: data.cwd || process.cwd(),
     filePath: data.tool_input?.file_path || '',
+    payload: data,
   })
 }
 
@@ -106,11 +108,18 @@ function emitIdeaBoundaryBlock(data, kind, target) {
       permissionDecisionReason: reason,
     },
   })
-  emitGuardEvent(data.cwd || process.cwd(), 'guard_blocked', kind === 'write' ? 'pre-write' : 'command', buildIdeaBoundaryReason(kind), {
-    command: kind === 'side-effect command' ? target.replace(/^Command:\s*/, '') : '',
-    target: kind === 'write' ? target.replace(/^Target:\s*/, '') : '',
-    guardType: kind === 'write' ? 'idea-write-boundary' : 'idea-command-boundary',
-  })
+  emitGuardEvent(
+    data.cwd || process.cwd(),
+    'guard_blocked',
+    kind === 'write' ? 'pre-write' : 'command',
+    buildIdeaBoundaryReason(kind),
+    {
+      command: kind === 'side-effect command' ? target.replace(/^Command:\s*/, '') : '',
+      target: kind === 'write' ? target.replace(/^Target:\s*/, '') : '',
+      guardType: kind === 'write' ? 'idea-write-boundary' : 'idea-command-boundary',
+    },
+    data,
+  )
 }
 
 function preWriteGuard(data) {
@@ -146,7 +155,7 @@ function postWriteScan(data) {
   emitGuardEvent(data.cwd || process.cwd(), 'guard_warning', 'post-write', '', {
     warnings,
     guardType: 'post-write-l2',
-  })
+  }, data)
 }
 
 function handleDangerousCommand(data, command) {
@@ -162,7 +171,7 @@ function handleDangerousCommand(data, command) {
     emitGuardEvent(data.cwd || process.cwd(), 'guard_blocked', 'command', reason, {
       command: command.slice(0, 200),
       guardType: 'dangerous-command',
-    })
+    }, data)
     return true
   }
   return false
@@ -186,7 +195,7 @@ function handleHighRiskCommand(data, command) {
       command: command.slice(0, 200),
       guardType: 'high-risk-gate',
       matches: warnings.map((warning) => warning.reason),
-    })
+    }, data)
     return null
   }
   return warnings.map((warning) => warning.reason)
@@ -215,14 +224,14 @@ function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings)
       guardType: 'high-risk-warning',
       command: command.slice(0, 200),
       warnings: highRiskWarnings,
-    })
+    }, data)
   }
   if (shellSafetyWarnings.length > 0) {
     emitGuardEvent(cwd, 'guard_warning', 'command', '', {
       guardType: 'shell-safety-warning',
       command: command.slice(0, 200),
       warnings: shellSafetyWarnings,
-    })
+    }, data)
   }
 }
 

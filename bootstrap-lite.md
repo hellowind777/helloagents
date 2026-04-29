@@ -206,7 +206,7 @@
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
 - `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
-- `state_path` 指向的状态文件、`.ralph-*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- `state_path` 指向的状态文件、当前会话 `evidence/*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
@@ -232,7 +232,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
   - “关键上下文”只保留恢复所需的信息，已不再相关的决策和变更移除
 - DESIGN.md — 项目级稳定 UI 契约（仅 UI 项目），`~plan` / `~auto` / `~prd` 创建或更新；不存在且当前任务涉及 UI → 按 templates/DESIGN.md 创建；不替代单次需求的 `plan.md`
 - plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md` + `contract.json`
-- .ralph-advisor.json — 可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
+- evidence/advisor.json — 当前会话的可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
 - archive/YYYY-MM/ — 已归档的方案包（整个 plans/{feature}/ 目录移入）
 - archive/_index.md — 归档索引
 
@@ -245,10 +245,10 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 
 ### 临时文件（流程产物，~clean 时清理）
 - loop-results.tsv — ~loop 迭代记录
-- .ralph-breaker.json — hello-verify 断路器状态
-- .ralph-verify.json — 最近一次成功验证的证据快照
-- .ralph-review.json — 最近一次成功审查的证据快照
-- .ralph-closeout.json — 最近一次成功收尾的交付证据快照
+- evidence/loop-breaker.json — 当前会话的 hello-verify 断路器状态，仅在 `~loop` 或自动验证触发时写入
+- evidence/verify.json — 当前会话最近一次成功验证的证据快照
+- evidence/review.json — 当前会话最近一次成功审查的证据快照
+- evidence/closeout.json — 当前会话最近一次成功收尾的交付证据快照
 
 ## 项目上下文
 

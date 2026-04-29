@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { dirname, join, normalize, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
+import { resolveSessionToken } from './session-token.mjs'
+
 const RUNTIME_DIR = join(homedir(), '.helloagents', 'runtime')
 const REPLAY_CONTEXT_PATH = join(RUNTIME_DIR, 'replay-context.json')
 const REPLAY_SESSION_TTL_MS = 12 * 60 * 60 * 1000
@@ -28,8 +30,17 @@ function writeReplayContext(context) {
   writeFileSync(REPLAY_CONTEXT_PATH, `${JSON.stringify(context, null, 2)}\n`, 'utf-8')
 }
 
-function getReplayKey(cwd, host = '') {
-  return `${normalizePath(cwd)}::${host || 'unknown'}`
+function resolveReplaySessionToken({ payload = {}, env = process.env, ppid = process.ppid } = {}) {
+  return resolveSessionToken({
+    payload,
+    env,
+    ppid,
+    allowPpidFallback: true,
+  }) || 'default'
+}
+
+function getReplayKey(cwd, host = '', options = {}) {
+  return `${normalizePath(cwd)}::${host || 'unknown'}::${resolveReplaySessionToken(options)}`
 }
 
 function findLatestReplaySession(context, cwd) {
@@ -102,11 +113,11 @@ function sanitizeReplayValue(value) {
   return value
 }
 
-function getReplaySession(cwd, { host = '', create = false, reset = false } = {}) {
+function getReplaySession(cwd, { host = '', create = false, reset = false, payload = {}, env, ppid } = {}) {
   const replayDir = ensureReplayDir(cwd)
   if (!replayDir) return null
 
-  const key = getReplayKey(cwd, host)
+  const key = getReplayKey(cwd, host, { payload, env, ppid })
   const context = readReplayContext()
   const current = context[key] || (!host ? findLatestReplaySession(context, cwd) : null)
   const isExpired = !current?.updatedAt || (Date.now() - current.updatedAt > REPLAY_SESSION_TTL_MS)
@@ -156,8 +167,11 @@ export function startReplaySession(cwd, {
   source = 'startup',
   bootstrapFile = '',
   installMode = '',
+  payload = {},
+  env,
+  ppid,
 } = {}) {
-  const session = getReplaySession(cwd, { host, create: true, reset: true })
+  const session = getReplaySession(cwd, { host, create: true, reset: true, payload, env, ppid })
   if (!session) return ''
 
   appendReplayEvent(cwd, {
@@ -167,6 +181,9 @@ export function startReplaySession(cwd, {
     bootstrapFile,
     installMode,
     sessionId: session.sessionId,
+    payload,
+    env,
+    ppid,
   })
   return session.filePath
 }
@@ -182,12 +199,15 @@ export function appendReplayEvent(cwd, {
   artifacts = [],
   details = {},
   sessionId = '',
+  payload = {},
+  env,
+  ppid,
 } = {}) {
   if (!event) return ''
-  const session = getReplaySession(cwd, { host, create: true })
+  const session = getReplaySession(cwd, { host, create: true, payload, env, ppid })
   if (!session?.filePath) return ''
 
-  const payload = sanitizeReplayValue({
+  const eventPayload = sanitizeReplayValue({
     ts: new Date().toISOString(),
     event,
     host: host || session.host,
@@ -201,7 +221,7 @@ export function appendReplayEvent(cwd, {
     details,
   })
 
-  writeFileSync(session.filePath, `${JSON.stringify(payload)}\n`, {
+  writeFileSync(session.filePath, `${JSON.stringify(eventPayload)}\n`, {
     encoding: 'utf-8',
     flag: 'a',
   })

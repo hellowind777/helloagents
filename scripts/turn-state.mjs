@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
 import { appendReplayEvent } from './replay-state.mjs'
+import { resolveSessionToken } from './session-token.mjs'
 
 const TURN_STATE_PATH = join(homedir(), '.helloagents', 'runtime', 'turn-state.json')
 const TURN_STATE_TTL_MS = 30 * 60 * 1000
@@ -47,8 +48,15 @@ function writeStore(store) {
   writeFileSync(TURN_STATE_PATH, `${JSON.stringify(store, null, 2)}\n`, 'utf-8')
 }
 
-function getTurnStateKey(cwd = process.cwd()) {
-  return normalizePath(cwd)
+function getTurnStateKey(cwd = process.cwd(), options = {}) {
+  const payload = options.payload && typeof options.payload === 'object' ? options.payload : options
+  const sessionToken = resolveSessionToken({
+    payload,
+    env: options.env || process.env,
+    ppid: options.ppid ?? process.ppid,
+    allowPpidFallback: true,
+  }) || 'default'
+  return `${normalizePath(cwd)}::${sessionToken}`
 }
 
 function normalizeTurnState(input = {}) {
@@ -90,8 +98,8 @@ function pruneInvalidEntry(store, key) {
   writeStore(store)
 }
 
-export function clearTurnState(cwd = process.cwd()) {
-  const key = getTurnStateKey(cwd)
+export function clearTurnState(cwd = process.cwd(), options = {}) {
+  const key = getTurnStateKey(cwd, options)
   if (!key) return false
   const store = readStore()
   if (!(key in store)) return false
@@ -100,8 +108,8 @@ export function clearTurnState(cwd = process.cwd()) {
   return true
 }
 
-export function readTurnState(cwd = process.cwd(), { now = Date.now() } = {}) {
-  const key = getTurnStateKey(cwd)
+export function readTurnState(cwd = process.cwd(), { now = Date.now(), ...options } = {}) {
+  const key = getTurnStateKey(cwd, options)
   if (!key) return null
 
   const store = readStore()
@@ -131,7 +139,7 @@ export function readTurnState(cwd = process.cwd(), { now = Date.now() } = {}) {
 }
 
 export function writeTurnState(cwd = process.cwd(), input = {}) {
-  const key = getTurnStateKey(cwd)
+  const key = getTurnStateKey(cwd, input)
   const normalized = normalizeTurnState(input)
   if (!key || !normalized.kind) {
     throw new Error('turn-state requires cwd and a valid kind')
@@ -155,6 +163,7 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
   appendReplayEvent(cwd, {
     event: 'turn_state_written',
     source: normalized.source,
+    payload: input,
     details: {
       kind: normalized.kind,
       role: normalized.role,
@@ -194,7 +203,7 @@ function main() {
   if (command === 'clear') {
     process.stdout.write(JSON.stringify({
       suppressOutput: true,
-      cleared: clearTurnState(cwd),
+      cleared: clearTurnState(cwd, input),
     }))
     return
   }
@@ -202,7 +211,7 @@ function main() {
   if (command === 'read') {
     process.stdout.write(JSON.stringify({
       suppressOutput: true,
-      state: readTurnState(cwd),
+      state: readTurnState(cwd, input),
     }))
   }
 }

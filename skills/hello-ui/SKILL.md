@@ -4,7 +4,7 @@ description: 已进入显式 UI 工作流、已激活项目的视觉变更、设
 ---
 
 本 skill 不是 UI 质量的唯一来源。当前已加载 bootstrap 中的 UI 质量基线负责所有 UI 任务的基础水准；本 skill 在显式 UI 工作流和复杂 UI 任务中，补充更明确的契约执行、实现映射与视觉验收。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：`.ralph-*.json` 等运行态证据保持项目本地；若 `project_store_mode=repo-shared`，`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：会话证据使用当前 `state_path` 所在目录下的 `evidence/*.json`；若 `project_store_mode=repo-shared`，`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 适用边界
 已进入显式 UI 规划/实现/验证路径，或当前项目已激活且任务涉及整页新建、跨多个组件的视觉重做、设计系统改造、需要截图验收的界面任务时，读取本 skill。
@@ -19,7 +19,7 @@ description: 已进入显式 UI 工作流、已激活项目的视觉变更、设
 
 ## 核心职责
 - 遵循上游契约：把 `plan.md` / PRD / `DESIGN.md` 中已确认的 UI 决策视为强约束，而不是建议
-- 处理可选 UI 契约：若 `contract.json` 启用 `ui.styleAdvisor`，复用 `.helloagents/.ralph-advisor.json` 记录设计方向复查证据；若启用 `ui.visualValidation`，用 `.helloagents/.ralph-visual.json` 记录视觉验收证据
+- 处理可选 UI 契约：若 `contract.json` 启用 `ui.styleAdvisor`，复用当前会话 `evidence/advisor.json` 记录设计方向复查证据；若启用 `ui.visualValidation`，用当前会话 `evidence/visual.json` 记录视觉验收证据
 - 映射到代码结构：明确 token 放在哪里、组件边界如何划分、状态组件如何组织、动效与主题如何实现
 - 做视觉验收闭环：优先使用截图/浏览器工具做桌面与移动端检查；没有工具时也要完成结构化视觉自检
 - 回写稳定决策：只把跨 feature 稳定成立的设计系统规则同步回 `.helloagents/DESIGN.md`（按当前项目存储模式解析），不要把一次性页面细节全部写成项目级契约
@@ -218,8 +218,8 @@ Hero 区域：
 1. 截图渲染结果（桌面 + 移动端视口）
 2. 对照设计原则审查截图：构图是否完整？品牌感是否到位？配色是否一致？
 3. 发现问题 → 修复 → 再截图验证
-4. 若当前契约要求 `ui.visualValidation.required=true`，调用 `scripts/visual-state.mjs write` 写 `.helloagents/.ralph-visual.json`，记录 `reason`、`tooling`、`screensChecked`、`statesChecked`、`status` 与 `summary`
+4. 若当前契约要求 `ui.visualValidation.required=true`，调用 `scripts/visual-state.mjs write` 写当前会话 `evidence/visual.json`，记录 `reason`、`tooling`、`screensChecked`、`statesChecked`、`status` 与 `summary`
 5. 确认截图与设计意图一致后才能报告完成
 
 无浏览器工具时，仔细审查生成的代码，确认样式、布局、动效的实现与设计意图一致。
-若当前契约要求 `ui.visualValidation.required=true`，仍需用结构化结论调用 `scripts/visual-state.mjs write` 写 `.helloagents/.ralph-visual.json`，并明确标记所用 tooling 与已检查的 screens / states。
+若当前契约要求 `ui.visualValidation.required=true`，仍需用结构化结论调用 `scripts/visual-state.mjs write` 写当前会话 `evidence/visual.json`，并明确标记所用 tooling 与已检查的 screens / states。

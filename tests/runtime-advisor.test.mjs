@@ -11,7 +11,12 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getSessionEvidencePath,
+  getSessionStatePath,
+  parseStdoutJson,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('advisor contract stays optional but blocks closeout when explicitly required', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -55,7 +60,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test'],
     fastOnly: false,
@@ -76,7 +81,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /按需能力：/)
   assert.match(payload.hookSpecificOutput.additionalContext, /advisor-artifact=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-advisor\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /evidence\/advisor\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,
@@ -184,7 +189,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test'],
     fastOnly: false,
@@ -204,7 +209,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /advisor-artifact=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-advisor\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /evidence\/advisor\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,
