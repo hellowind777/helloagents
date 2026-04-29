@@ -41,10 +41,6 @@ export function isManagedCodexBackupInstruction(line = '') {
   return line.includes(CODEX_MANAGED_TOML_COMMENT)
 }
 
-export function isManagedCodexHooks(line = '') {
-  return /^\s*codex_hooks\s*=\s*true(?:\s+#.*)?\s*$/i.test(String(line || ''))
-}
-
 function formatManagedCodexModelInstructionsValue(filePath) {
   return `"${normalizePath(filePath)}" ${CODEX_MANAGED_TOML_COMMENT}`
 }
@@ -78,12 +74,6 @@ function upsertOrderedCodexTopLevelLines(toml, lines) {
     removeTopLevelLinesBeingReplaced(toml, lines),
     lines,
   )
-}
-
-export function installCodexModelInstructions(toml, filePath) {
-  return upsertOrderedCodexTopLevelLines(toml, [
-    formatManagedCodexModelInstructionsLine(filePath),
-  ])
 }
 
 export function installCodexManagedTopLevelConfig(toml, { modelInstructionsPath } = {}) {

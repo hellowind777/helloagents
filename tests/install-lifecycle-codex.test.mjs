@@ -151,7 +151,7 @@ test('Codex cleanup preserves user-owned config replacements written after insta
       'notify = ["node", "D:/custom/notify.mjs", "custom-notify"]',
       '',
       '[features]',
-      'codex_hooks = false',
+      'codex_hooks = true',
       'experimental = true',
       '',
       '[plugins."helloagents@local-plugins"]',
@@ -165,7 +165,7 @@ test('Codex cleanup preserves user-owned config replacements written after insta
   const cleaned = readText(join(home, '.codex', 'config.toml'))
   assert.match(cleaned, /model_instructions_file = "D:\/custom\/AGENTS\.md"/)
   assert.match(cleaned, /notify = \["node", "D:\/custom\/notify\.mjs", "custom-notify"\]/)
-  assert.match(cleaned, /codex_hooks = false/)
+  assert.match(cleaned, /codex_hooks = true/)
   assert.doesNotMatch(cleaned, /C:\/original\/bootstrap\.md/)
   assert.doesNotMatch(cleaned, /\[plugins\."helloagents@local-plugins"\]/)
 })
