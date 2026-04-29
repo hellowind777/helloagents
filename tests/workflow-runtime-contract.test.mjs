@@ -224,12 +224,22 @@ test('workflow templates and bootstrap stay aligned with runtime artifacts', () 
 
   const planTemplate = readText(join(REPO_ROOT, 'templates', 'plans', 'plan.md'))
   assert.match(planTemplate, /## 完成定义/)
+  assert.match(planTemplate, /## 领域语言/)
   assert.match(planTemplate, /验证主路径（test-first \/ review-first）/)
   assert.match(planTemplate, /reviewer \/ tester 关注边界/)
 
   const tasksTemplate = readText(join(REPO_ROOT, 'templates', 'plans', 'tasks.md'))
+  assert.match(tasksTemplate, /端到端垂直切片/)
+  assert.match(tasksTemplate, /AFK/)
+  assert.match(tasksTemplate, /HITL/)
+  assert.match(tasksTemplate, /预期变更：/)
   assert.match(tasksTemplate, /完成标准：/)
   assert.match(tasksTemplate, /验证方式：/)
+
+  const contextTemplate = readText(join(REPO_ROOT, 'templates', 'context.md'))
+  assert.match(contextTemplate, /## 领域语言/)
+  assert.match(contextTemplate, /标准术语/)
+  assert.match(contextTemplate, /已消除歧义/)
 
   const contractTemplate = readText(join(REPO_ROOT, 'templates', 'plans', 'contract.json'))
   assert.match(contractTemplate, /"verifyMode": "\{test-first \| review-first\}"/)
