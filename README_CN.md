@@ -605,7 +605,7 @@ UI 任务遵循以下优先级：
 | 键 | 默认值 | 含义 |
 |----|--------|------|
 | `output_language` | `""` | 默认跟随用户语言 |
-| `output_format` | `true` | 只有主代理最终收尾消息可以使用 HelloAGENTS 格式 |
+| `output_format` | `true` | 主代理最终收尾必须使用 HelloAGENTS 格式；中间输出和子代理输出保持自然 |
 | `notify_level` | `0` | `0` 关闭，`1` 桌面通知，`2` 声音，`3` 两者 |
 | `ralph_loop_enabled` | `true` | 显式 `~verify` / `~loop` 或收尾要求时运行验证 |
 | `guard_enabled` | `true` | 拦截危险命令 |

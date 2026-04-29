@@ -15,7 +15,7 @@ Trigger: ~commit [message]
 3. 生成 conventional commit message（如未提供）
    - 格式: type(scope): description
    - type: feat|fix|refactor|docs|test|chore|style|perf
-4. 先一次性解析本轮设置：优先使用当前上下文中已注入的“当前用户设置”；只有上下文不存在时才读取一次 `~/.helloagents/helloagents.json`
+4. 先一次性解析本轮设置：优先使用当前上下文中已注入的“当前用户设置”；上下文不存在或缺少 `commit_attribution` / `kb_create_mode` 时，读取一次 `~/.helloagents/helloagents.json`
 5. 复用上一步已解析的设置获取 `commit_attribution`：
    - ""（空，默认）→ 不添加归属
    - 有内容（如 "Co-Authored-By: HelloAGENTS"）→ 添加该内容到 commit message
