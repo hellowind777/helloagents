@@ -196,6 +196,101 @@ test('stop allows structured waiting turn-state and clears it', () => {
   assert.equal(payload.state, null)
 })
 
+test('ordinary complete turns skip automatic Ralph Loop verification', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-fast-complete-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeSettings(home, { ralph_loop_enabled: true })
+  writeJson(join(project, 'package.json'), {
+    name: 'fast-complete-project',
+    scripts: {
+      test: 'node -e "process.exit(1)"',
+    },
+  })
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'closeout',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['stop'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '任务已完成。',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.decision, undefined)
+})
+
+test('explicit verify route still runs Ralph Loop verification', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-verify-route-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeSettings(home, { ralph_loop_enabled: true })
+  writeJson(join(project, 'package.json'), {
+    name: 'verify-route-project',
+    scripts: {
+      test: 'node -e "process.exit(1)"',
+    },
+  })
+
+  let result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      prompt: '~verify run checks',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'verify',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['stop'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '验证完成。',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.decision, 'block')
+  assert.match(payload.reason, /Ralph Loop/)
+  assert.match(payload.reason, /npm run test/)
+})
+
 test('turn-state rejects waiting without blocker details', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

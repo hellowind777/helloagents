@@ -13,7 +13,7 @@ import { shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
 import { runGateScript } from './notify-gates.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
-import { clearRouteContext, writeRouteContext } from './runtime-context.mjs';
+import { clearRouteContext, getApplicableRouteContext, writeRouteContext } from './runtime-context.mjs';
 import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
 import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
@@ -35,6 +35,7 @@ const EVENT_NAME = {
   UserPromptSubmit: IS_GEMINI ? 'BeforeAgent' : 'UserPromptSubmit',
   PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
 };
+const RALPH_LOOP_ROUTE_COMMANDS = new Set(['verify', 'loop']);
 
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
@@ -66,9 +67,18 @@ function getSettings() {
   return readSettings(CONFIG_FILE);
 }
 
-function runRalphLoop(payload) {
+function shouldRunRalphLoop(cwd, turnState, payload = {}) {
+  if (!turnState || turnState.kind !== 'complete') return false;
+  if (turnState.requiresDeliveryGate) return true;
+  const routeContext = getApplicableRouteContext({ cwd, payload });
+  return RALPH_LOOP_ROUTE_COMMANDS.has(routeContext?.skillName);
+}
+
+function runRalphLoop(payload, { turnState } = {}) {
   const settings = getSettings();
   if (settings.ralph_loop_enabled === false) return false;
+  const cwd = payload.cwd || process.cwd();
+  if (!shouldRunRalphLoop(cwd, turnState, payload)) return false;
   return runGateScript({
     payload,
     host: HOST,
@@ -232,12 +242,12 @@ function cmdStop() {
     return;
   }
   const shouldProcess = shouldProcessCloseout(turnState);
-  if (shouldProcess && runRalphLoop(payload)) {
+  if (shouldProcess && runRalphLoop(turnPayload, { turnState })) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
-  if (shouldProcess && runDeliveryGate(payload)) {
+  if (shouldProcess && runDeliveryGate(turnPayload)) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
     return;
@@ -289,12 +299,12 @@ function cmdCodexNotify() {
   }
 
   const settings = getSettings();
-  if (runRalphLoop(data)) {
+  if (runRalphLoop(turnPayload, { turnState })) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
   }
-  if (runDeliveryGate(data)) {
+  if (runDeliveryGate(turnPayload)) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
