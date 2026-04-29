@@ -510,7 +510,7 @@ If neither the current directory nor its parents contain an activated `.helloage
 ~/.helloagents/runtime/<scope-key>/
 ```
 
-This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. It is not project knowledge. Expired transient sessions are removed by TTL cleanup, and legacy flat files such as `turn-state.json` and `replay-context.json` are also removed.
+This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
 
 ### Knowledge creation rules
 
