@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.13-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.14-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -79,12 +79,14 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 
 ## What Changed Since v3.0.12
 
-These are the main user-visible changes in `v3.0.13`, compared with `v3.0.12`:
+These are the main user-visible changes in `v3.0.14`, compared with `v3.0.12`:
 
 - Install, update, uninstall, and branch switching now work through npm scripts and one-shot scripts, so host sync no longer depends on a stale `helloagents` executable during package updates.
 - Standby mode now reads from the stable runtime root `~/.helloagents/helloagents`; managed hooks use the `helloagents-js` entrypoint, and skills, templates, and runtime scripts no longer point at Node versioned global package paths.
 - Global mode now attempts Claude Code plugin and Gemini extension installation automatically, while Codex keeps using the managed local-plugin chain with marketplace and cache refresh.
 - Structured turn-state gating is stricter for `~auto` and `~loop`, so incomplete hand-offs must include concrete blocker evidence before the runtime accepts a pause.
+- Runtime state now uses session capsules under `.helloagents/sessions/<branch>/<session>/`, separating turn state, events, and delivery artifacts for concurrent CLI windows and worktrees.
+- Closeout state is written through the stable `helloagents-turn-state write` entrypoint, so prompts no longer need to resolve or concatenate package script paths.
 - Codex standby refresh and cleanup preserve user-owned config content while refreshing managed carriers, local plugin files, marketplace entries, and doctor checks.
 
 ## Core Features
