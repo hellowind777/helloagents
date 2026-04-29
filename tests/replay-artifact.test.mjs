@@ -101,9 +101,9 @@ test('replay artifact stays inactive until project activation and records event-
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
 
-  const replayDir = join(project, '.helloagents', 'replay')
+  const replayDir = join(project, '.helloagents', 'sessions', 'detached', 'default', 'replay')
   let replayFiles = listFiles(replayDir).filter((name) => name.endsWith('.jsonl'))
-  assert.equal(replayFiles.length, 1)
+  assert.deepEqual(replayFiles, ['events.jsonl'])
 
   let events = readJsonl(join(replayDir, replayFiles[0]))
   assert.ok(events.some((entry) => entry.event === 'session_started'))
@@ -122,5 +122,5 @@ test('replay artifact stays inactive until project activation and records event-
   }
 
   replayFiles = listFiles(replayDir).filter((name) => name.endsWith('.jsonl'))
-  assert.equal(replayFiles.length, 3)
+  assert.deepEqual(replayFiles, ['events.jsonl'])
 })

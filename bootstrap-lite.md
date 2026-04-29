@@ -206,7 +206,7 @@
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
 - `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
-- `state_path` 指向的状态文件、当前会话 `evidence/*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- `state_path` 指向的状态文件、当前会话 `evidence/*.json`、`runtime/*.json`、`runtime/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{branch}/{session}/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
@@ -244,7 +244,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - modules/*.md — 模块文档和经验
 
 ### 临时文件（流程产物，~clean 时清理）
-- loop-results.tsv — ~loop 迭代记录
+- runtime/loop-results.tsv — 当前会话的 ~loop 迭代记录
 - evidence/loop-breaker.json — 当前会话的 hello-verify 断路器状态，仅在 `~loop` 或自动验证触发时写入
 - evidence/verify.json — 当前会话最近一次成功验证的证据快照
 - evidence/review.json — 当前会话最近一次成功审查的证据快照
@@ -261,11 +261,11 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
 说明：
-- Tier 1 始终读取当前 `state_path`
+- Tier 1 在恢复、压缩、连续流程或活跃方案包场景读取当前 `state_path`；普通问答和一次性只读任务不强制读取
 - Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认按项目级存储路径解析；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 
 Tier 1 — 恢复当前任务时优先读取：
-- 当前状态文件（`state_path`）→ 先确认当前消息仍是同一任务，再用它找回最近进度
+- 当前状态文件（`state_path`）→ 仅在恢复、压缩、连续流程或活跃方案包场景读取；先确认当前消息仍是同一任务，再用它找回最近进度
 
 Tier 2 — 理解项目时读取：
 - .helloagents/context.md → 项目架构、技术栈、目录结构、模块索引

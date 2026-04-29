@@ -1,12 +1,17 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, normalize, resolve } from 'node:path'
-import { homedir } from 'node:os'
+import { existsSync, readFileSync } from 'node:fs'
+import { normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { appendReplayEvent } from './replay-state.mjs'
-import { resolveSessionToken } from './session-token.mjs'
+import {
+  getRuntimeFilePath,
+  getRuntimeScope,
+  readJsonFile,
+  removeRuntimeFile,
+  writeJsonFileAtomic,
+} from './runtime-scope.mjs'
 
-const TURN_STATE_PATH = join(homedir(), '.helloagents', 'runtime', 'turn-state.json')
+const TURN_STATE_FILE_NAME = 'turn-state.json'
 const TURN_STATE_TTL_MS = 30 * 60 * 1000
 const VALID_KINDS = new Set(['complete', 'waiting', 'blocked', 'progress'])
 const VALID_ROLES = new Set(['main', 'subagent'])
@@ -25,38 +30,13 @@ function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
 }
 
-function ensureRuntimeDir() {
-  mkdirSync(dirname(TURN_STATE_PATH), { recursive: true })
-}
-
-function readStore() {
-  try {
-    return JSON.parse(readFileSync(TURN_STATE_PATH, 'utf-8'))
-  } catch {
-    return {}
-  }
-}
-
-function writeStore(store) {
-  const keys = Object.keys(store)
-  if (keys.length === 0) {
-    rmSync(TURN_STATE_PATH, { force: true })
-    return
-  }
-
-  ensureRuntimeDir()
-  writeFileSync(TURN_STATE_PATH, `${JSON.stringify(store, null, 2)}\n`, 'utf-8')
-}
-
-function getTurnStateKey(cwd = process.cwd(), options = {}) {
+function getTurnStatePath(cwd = process.cwd(), options = {}) {
   const payload = options.payload && typeof options.payload === 'object' ? options.payload : options
-  const sessionToken = resolveSessionToken({
+  return getRuntimeFilePath(cwd, TURN_STATE_FILE_NAME, {
     payload,
     env: options.env || process.env,
     ppid: options.ppid ?? process.ppid,
-    allowPpidFallback: true,
-  }) || 'default'
-  return `${normalizePath(cwd)}::${sessionToken}`
+  })
 }
 
 function normalizeTurnState(input = {}) {
@@ -93,55 +73,53 @@ function normalizeBlocker(input = {}) {
   return { target, evidence, requiredAction }
 }
 
-function pruneInvalidEntry(store, key) {
-  delete store[key]
-  writeStore(store)
-}
-
 export function clearTurnState(cwd = process.cwd(), options = {}) {
-  const key = getTurnStateKey(cwd, options)
-  if (!key) return false
-  const store = readStore()
-  if (!(key in store)) return false
-  delete store[key]
-  writeStore(store)
+  const filePath = getTurnStatePath(cwd, options)
+  if (!existsSync(filePath)) return false
+  removeRuntimeFile(filePath)
   return true
 }
 
 export function readTurnState(cwd = process.cwd(), { now = Date.now(), ...options } = {}) {
-  const key = getTurnStateKey(cwd, options)
-  if (!key) return null
+  const filePath = getTurnStatePath(cwd, options)
+  if (!existsSync(filePath)) return null
 
-  const store = readStore()
-  const entry = store[key]
+  const entry = readJsonFile(filePath, null)
   if (!entry?.cwd || !entry?.kind || !entry?.updatedAt) {
-    if (entry) pruneInvalidEntry(store, key)
+    removeRuntimeFile(filePath)
     return null
   }
 
   const updatedAt = Date.parse(entry.updatedAt)
   if (!Number.isFinite(updatedAt) || (now - updatedAt > TURN_STATE_TTL_MS)) {
-    pruneInvalidEntry(store, key)
+    removeRuntimeFile(filePath)
     return null
   }
 
   const normalized = normalizeTurnState(entry)
   if (!normalized.kind) {
-    pruneInvalidEntry(store, key)
+    removeRuntimeFile(filePath)
     return null
   }
 
   return {
     cwd: normalizePath(entry.cwd),
+    key: entry.key || '',
+    path: filePath,
     updatedAt: entry.updatedAt,
     ...normalized,
   }
 }
 
 export function writeTurnState(cwd = process.cwd(), input = {}) {
-  const key = getTurnStateKey(cwd, input)
+  const runtimeOptions = {
+    payload: input.payload && typeof input.payload === 'object' ? input.payload : input,
+    env: input.env || process.env,
+    ppid: input.ppid ?? process.ppid,
+  }
+  const scope = getRuntimeScope(cwd, runtimeOptions)
   const normalized = normalizeTurnState(input)
-  if (!key || !normalized.kind) {
+  if (!normalized.kind) {
     throw new Error('turn-state requires cwd and a valid kind')
   }
   if (
@@ -151,14 +129,15 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
     throw new Error('turn-state waiting/blocked requires reasonCategory and reason')
   }
 
-  const store = readStore()
+  const filePath = getTurnStatePath(cwd, runtimeOptions)
   const payload = {
-    cwd: key,
+    cwd: normalizePath(cwd),
+    key: scope.key,
+    scope: scope.scope,
     updatedAt: new Date().toISOString(),
     ...normalized,
   }
-  store[key] = payload
-  writeStore(store)
+  writeJsonFileAtomic(filePath, payload)
 
   appendReplayEvent(cwd, {
     event: 'turn_state_written',
@@ -194,7 +173,7 @@ function main() {
     const payload = writeTurnState(cwd, input)
     process.stdout.write(JSON.stringify({
       suppressOutput: true,
-      path: TURN_STATE_PATH,
+      path: getTurnStatePath(cwd, input),
       payload,
     }))
     return

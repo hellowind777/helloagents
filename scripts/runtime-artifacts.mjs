@@ -1,11 +1,11 @@
 import { execSync } from 'node:child_process'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { readFileSync, rmSync } from 'node:fs'
 
 import {
   getProjectEvidencePath,
   getProjectEvidenceRelativePath,
 } from './project-storage.mjs'
+import { writeJsonFileAtomic } from './runtime-scope.mjs'
 
 export const EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
 
@@ -57,8 +57,7 @@ export function clearRuntimeEvidence(cwd, fileName, options = {}) {
 
 export function writeRuntimeEvidence(cwd, fileName, payload, options = {}) {
   const evidencePath = getRuntimeEvidencePath(cwd, fileName, options)
-  mkdirSync(dirname(evidencePath), { recursive: true })
-  writeFileSync(evidencePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf-8')
+  writeJsonFileAtomic(evidencePath, payload)
   return evidencePath
 }
 
