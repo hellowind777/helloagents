@@ -72,6 +72,7 @@ test('package exposes npm-script and one-shot script entry points', () => {
   assert.equal(pkg.scripts['sync-hosts'], 'node cli.mjs update')
   assert.equal(pkg.scripts['cleanup-hosts'], 'node cli.mjs cleanup')
   assert.equal(pkg.scripts['switch-branch'], 'node cli.mjs switch-branch')
+  assert.equal(pkg.bin['helloagents-turn-state'], 'scripts/turn-state-cli.mjs')
   assert.ok(pkg.files.includes('install.sh'))
   assert.ok(pkg.files.includes('install.ps1'))
   assert.match(readText(join(REPO_ROOT, 'README.md')), /HELLOAGENTS=codex:global/)

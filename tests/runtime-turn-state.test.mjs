@@ -252,6 +252,29 @@ test('turn-state writes pure cwd into the session capsule', () => {
   assert.equal(payload.state.key.endsWith('::detached::default'), true)
 })
 
+test('stable turn-state command entry writes state', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-cli-')
+  const turnStateCli = join(pkgRoot, 'scripts', 'turn-state-cli.mjs')
+
+  const result = runNode(turnStateCli, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'consolidate',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.payload.kind, 'complete')
+  assert.equal(payload.payload.role, 'main')
+})
+
 test('stop blocks explicit auto when turn-state is missing', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

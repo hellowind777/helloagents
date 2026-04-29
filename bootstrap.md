@@ -120,8 +120,8 @@
 - `🔄 下一步` 必须写真实下一步，不改写成条件式能力表述或空泛询问。若正在等待确认，写清待确认动作；若存在自然后续动作，直接给出明确引导；若当前任务已完整结束且确无合理后续，可填写“当前任务已完成；无后续动作。”
 
 ### 收尾状态信号
-- 为避免运行时从自然语言、图标或格式反推“完成 / 等待输入”，主代理在本轮最终收尾前必须先调用 `node "{HELLOAGENTS_READ_ROOT}/scripts/turn-state.mjs" write`
-- `turn-state.mjs` 是可执行收尾脚本，不是需要预读的规则文件；普通对话、选路和收尾只按上述路径执行，不要用 `Get-Content` / Read 打开源码。只有用户明确要求分析、修改该脚本，或正在排查运行时问题时，才按需读取源码
+- 为避免运行时从自然语言、图标或格式反推“完成 / 等待输入”，主代理在本轮最终收尾前必须先调用稳定入口 `helloagents-turn-state write`
+- `turn-state.mjs` 是该入口内部使用的脚本，不是需要预读的规则文件；普通对话、选路和收尾不要查找、读取或拼接它的源码路径。只有用户明确要求分析、修改该脚本，或正在排查运行时问题时，才按需读取源码
 - 本轮已完成且不再等待用户输入 → 写 `kind=complete`、`role=main`
 - 因阻塞判定等待用户输入、确认、授权或补充信息（含未授权的外部副作用确认） → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
@@ -206,7 +206,7 @@
 
 ### 3. PLAN — 规划与上下文准备
 根据 skills/ 目录下各 hello-* 技能的 SKILL.md frontmatter（name + description），标记本次任务可能需要的技能（不读取文件内容，仅记录名称）。
-路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/`、`templates/` 和调用 `scripts/`
+路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/` 与 `templates/`
 先确定当前技能根目录：
 - 优先使用当前上下文中已注入的“本轮 HelloAGENTS 读取根目录”
 - 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
@@ -215,7 +215,7 @@
 - 已激活项目或全局模式下，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
 路径确定一次即可，不预读、不扫描整个目录，也不重复探测同一路径。
 hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.md`
-包内脚本调用路径：`{HELLOAGENTS_READ_ROOT}/scripts/{脚本名}.mjs`；例如收尾状态脚本为 `{HELLOAGENTS_READ_ROOT}/scripts/turn-state.mjs`
+包内脚本优先使用稳定命令入口；收尾状态统一调用 `helloagents-turn-state write`，不要拼接 `turn-state.mjs` 路径。
 
 命令职责：
 - `~plan` 生成 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`
