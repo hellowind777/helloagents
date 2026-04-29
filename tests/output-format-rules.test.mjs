@@ -53,7 +53,14 @@ test('skill and help docs describe output_format as final-summary only', () => {
   assert.match(subagentSkill, /团队协作中的进度与状态汇报都属于中间输出/);
   assert.match(subagentSkill, /本轮最终收尾时才可使用 HelloAGENTS 外层输出格式/);
 
+  const readmeEn = read('README.md');
+  assert.match(readmeEn, /main-agent final closeout must use the HelloAGENTS layout/);
+
+  const readmeCn = read('README_CN.md');
+  assert.match(readmeCn, /主代理最终收尾必须使用 HelloAGENTS 格式/);
+
   const helpSkill = read('skills/commands/help/SKILL.md');
-  assert.match(helpSkill, /仅主代理在最终收尾回复使用 HelloAGENTS 格式/);
-  assert.match(helpSkill, /所有流式\/中间输出及子代理输出保持自然/);
+  assert.match(helpSkill, /缺少下表任一配置项/);
+  assert.match(helpSkill, /主代理最终收尾必须使用 HelloAGENTS 格式/);
+  assert.match(helpSkill, /流式\/中间输出及子代理输出保持自然/);
 });

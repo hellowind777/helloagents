@@ -251,6 +251,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
 
   const commit = readText(join(REPO_ROOT, 'skills', 'commands', 'commit', 'SKILL.md'))
   assert.match(commit, /知识库同步与状态文件更新范围按当前已加载 bootstrap 的 CONSOLIDATE \/ 流程状态规则执行/)
+  assert.match(commit, /缺少 `commit_attribution` \/ `kb_create_mode`/)
   assert.match(commit, /按 bootstrap 的“已有则更新”规则同步当前已提交状态/)
   assert.match(commit, /同步范围与更新格式按当前已加载 bootstrap 的 CONSOLIDATE 阶段执行/)
 })

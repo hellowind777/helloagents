@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { createHomeFixture, createPackageFixture, readJson, readText, realTarget, writeText } from './helpers/test-env.mjs'
+import { createHomeFixture, createPackageFixture, readJson, readText, realTarget, writeJson, writeText } from './helpers/test-env.mjs'
 import { hasTimestampedBackup, runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
 test('CLI lifecycle covers standby, global, update, cleanup, and config preservation', () => {
@@ -141,4 +141,24 @@ test('postinstall can deploy from compact HELLOAGENTS spec', () => {
   assert.ok(existsSync(pluginRoot))
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), pluginRoot)
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.codex, 'global')
+})
+
+test('runtime carrier snapshots custom output settings from helloagents config', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  seedHostConfigs(home)
+
+  writeJson(join(home, '.helloagents', 'helloagents.json'), {
+    output_format: false,
+    output_language: 'zh-CN',
+  })
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  const codexAgents = readText(join(home, '.codex', 'AGENTS.md'))
+  assert.match(codexAgents, /## 当前用户设置/)
+  assert.match(codexAgents, /"output_format": false/)
+  assert.match(codexAgents, /"output_language": "zh-CN"/)
+  assert.doesNotMatch(codexAgents, /"output_format": true/)
 })

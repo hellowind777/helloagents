@@ -11,7 +11,7 @@ function shouldBypassRoute(prompt) {
 
 function buildHelpExtraRules(skillName) {
   if (skillName !== 'help') return ''
-  return ' 这是 HelloAGENTS 的帮助命令，不是宿主 CLI 的内置帮助。仅显示 HelloAGENTS 的帮助和当前设置；优先使用当前上下文中已注入的“当前用户设置”，只有上下文不存在该信息时才尝试读取 ~/.helloagents/helloagents.json；自动激活技能说明仅在全局模式或已激活项目中生效。不要调用宿主 CLI 的帮助工具（如 cli_help 或 /help），不要使用子代理，不要读取项目文件；若受工作区限制无法读取配置，必须明确说明并按已知默认值或已注入设置展示。'
+  return ' 这是 HelloAGENTS 的帮助命令，不是宿主 CLI 的内置帮助。仅显示 HelloAGENTS 的帮助和当前设置；优先使用当前上下文中已注入的“当前用户设置”，上下文不存在或缺少要展示的配置项时才读取 ~/.helloagents/helloagents.json；自动激活技能说明仅在全局模式或已激活项目中生效。不要调用宿主 CLI 的帮助工具（如 cli_help 或 /help），不要使用子代理，不要读取项目文件；若受工作区限制无法读取配置，必须明确说明并按已知默认值或已注入设置展示。'
 }
 
 function routeExplicitCommand({
