@@ -86,7 +86,7 @@ These are the main user-visible changes in `v3.0.14`, compared with `v3.0.12`:
 - Global mode now attempts Claude Code plugin and Gemini extension installation automatically, while Codex keeps using the managed local-plugin chain with marketplace and cache refresh.
 - Structured turn-state gating is stricter for `~auto` and `~loop`, so incomplete hand-offs must include concrete blocker evidence before the runtime accepts a pause.
 - Runtime state now uses session capsules under `.helloagents/sessions/<branch>/<session>/`, separating turn state, events, and delivery artifacts for concurrent CLI windows and worktrees.
-- Closeout state is written through the stable `helloagents-turn-state write` entrypoint, so prompts no longer need to resolve or concatenate package script paths.
+- Runtime state is written only when a workflow needs it, using the stable `helloagents-turn-state write --kind complete --role main` entrypoint instead of package script paths.
 - Codex standby refresh and cleanup preserve user-owned config content while refreshing managed carriers, local plugin files, marketplace entries, and doctor checks.
 
 ## Core Features

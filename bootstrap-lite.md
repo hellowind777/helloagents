@@ -120,9 +120,10 @@
 - `🔄 下一步` 必须写真实下一步，不改写成条件式能力表述或空泛询问。若正在等待确认，写清待确认动作；若存在自然后续动作，直接给出明确引导；若当前任务已完整结束且确无合理后续，可填写“当前任务已完成；无后续动作。”
 
 ### 收尾状态信号
-- 为避免运行时从自然语言、图标或格式反推“完成 / 等待输入”，主代理在本轮最终收尾前必须先调用稳定入口 `helloagents-turn-state write`
-- `turn-state.mjs` 是该入口内部使用的脚本，不是需要预读的规则文件；普通对话、选路和收尾不要查找、读取或拼接它的源码路径。只有用户明确要求分析、修改该脚本，或正在排查运行时问题时，才按需读取源码
-- 本轮已完成且不再等待用户输入 → 写 `kind=complete`、`role=main`
+- `turn-state` 只在运行时必须识别本轮“完成 / 等待输入 / 阻塞”时写入；普通问候、普通问答、T0 只读分析和一次性解释不调用
+- 必须调用场景：显式 `~auto` / `~loop`；非只读任务完成验证并进入收尾；需要 delivery gate / Ralph Loop / closeout evidence；需要等待或阻塞且运行时必须识别状态；已进入项目连续流程或方案包闭环
+- 首选参数式调用，保证一次完成：`helloagents-turn-state write --kind complete --role main`；也可用 stdin JSON。不要查找、读取或拼接 `turn-state.mjs` 源码路径
+- 本轮已完成且不再等待用户输入 → `helloagents-turn-state write --kind complete --role main`
 - 因阻塞判定等待用户输入、确认、授权或补充信息（含未授权的外部副作用确认） → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - `reasonCategory` 只允许：`ambiguity`、`missing-input`、`missing-file`、`missing-credential`、`unauthorized-side-effect`、`high-risk-confirmation`、`external-dependency`、`error`
@@ -199,7 +200,7 @@
   - 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`）只作为兼容别名，不作为优先探测路径
   - 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
   确定根目录后读取其中的 `skills/commands/{name}/SKILL.md`；标准模式下即使项目目录存在本地 HelloAGENTS skills，也不要读取项目路径。不要扫描整个目录，也不要对同一命令重复探测多个路径。
-包内脚本优先使用稳定命令入口；收尾状态统一调用 `helloagents-turn-state write`，不要拼接 `turn-state.mjs` 路径。
+包内脚本优先使用稳定命令入口；需要写收尾状态时优先调用 `helloagents-turn-state write --kind complete --role main`，不要拼接 `turn-state.mjs` 路径。
 
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
