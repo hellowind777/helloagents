@@ -218,6 +218,40 @@ test('turn-state rejects waiting without blocker details', () => {
   assert.match(`${result.stderr}${result.stdout}`, /requires reasonCategory and reason/)
 })
 
+test('turn-state writes pure cwd into session-scoped runtime file', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-scope-')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'verify',
+    }),
+  })
+  let payload = parseStdoutJson(result)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]detached[\\/]default[\\/]runtime[\\/]turn-state\.json$/)
+  assert.equal(payload.payload.cwd, project)
+  assert.equal(payload.payload.key.endsWith('::detached::default'), true)
+
+  result = runNode(turnStateScript, ['read'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.state.cwd, project)
+  assert.equal(payload.state.key.endsWith('::detached::default'), true)
+})
+
 test('stop blocks explicit auto when turn-state is missing', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

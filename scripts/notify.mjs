@@ -18,6 +18,7 @@ import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
 import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
 import { resolveSessionToken } from './session-token.mjs';
+import { isProjectRuntimeActive } from './runtime-scope.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -107,12 +108,12 @@ function runTurnStopGate(payload) {
   });
 }
 
-function attachTurnSession(payload = {}) {
+function attachTurnSession(payload = {}, cwd = payload.cwd || process.cwd()) {
   const sessionId = resolveSessionToken({
     payload,
     env: process.env,
     ppid: process.ppid,
-    allowPpidFallback: true,
+    allowPpidFallback: !isProjectRuntimeActive(cwd),
   });
   if (!sessionId || payload.sessionId) return payload;
   return { ...payload, sessionId };
@@ -224,7 +225,7 @@ function cmdInject() {
 function cmdStop() {
   const payload = readStdinJson();
   const cwd = payload.cwd || process.cwd();
-  const turnPayload = attachTurnSession(payload);
+  const turnPayload = attachTurnSession(payload, cwd);
   const turnState = readMainTurnState(cwd, turnPayload);
   if (runTurnStopGate(turnPayload)) {
     if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
@@ -262,7 +263,8 @@ function cmdDesktop() {
 function cmdCodexNotify() {
   let data = {};
   try { data = JSON.parse(process.argv[3] || '{}'); } catch {}
-  const turnPayload = attachTurnSession(data);
+  const cwd = data.cwd || process.cwd();
+  const turnPayload = attachTurnSession(data, cwd);
 
   const type = data.type || '';
   const client = data.client || '';
@@ -274,7 +276,6 @@ function cmdCodexNotify() {
   }
   if (type !== 'agent-turn-complete') return;
 
-  const cwd = data.cwd || process.cwd();
   const turnState = readMainTurnState(cwd, turnPayload);
   if (runTurnStopGate(turnPayload)) {
     if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);

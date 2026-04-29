@@ -1,103 +1,65 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, normalize, resolve } from 'node:path'
-import { homedir } from 'node:os'
+import { existsSync } from 'node:fs'
+import { normalize, resolve } from 'node:path'
 
-import { resolveSessionToken } from './session-token.mjs'
+import {
+  getRuntimeFilePath,
+  getRuntimeScope,
+  readJsonFile,
+  removeRuntimeFile,
+  writeJsonFileAtomic,
+} from './runtime-scope.mjs'
 
-const RUNTIME_DIR = join(homedir(), '.helloagents', 'runtime')
-const ROUTE_CONTEXT_PATH = join(RUNTIME_DIR, 'route-context.json')
+const ROUTE_CONTEXT_FILE_NAME = 'route-context.json'
 const ROUTE_CONTEXT_TTL_MS = 30 * 60 * 1000
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
 }
 
-function ensureRuntimeDir() {
-  mkdirSync(dirname(ROUTE_CONTEXT_PATH), { recursive: true })
-}
-
-function readStore() {
-  try {
-    return JSON.parse(readFileSync(ROUTE_CONTEXT_PATH, 'utf-8'))
-  } catch {
-    return {}
-  }
-}
-
-function writeStore(store) {
-  const keys = Object.keys(store)
-  if (keys.length === 0) {
-    rmSync(ROUTE_CONTEXT_PATH, { force: true })
-    return
-  }
-
-  ensureRuntimeDir()
-  writeFileSync(ROUTE_CONTEXT_PATH, `${JSON.stringify(store, null, 2)}\n`, 'utf-8')
-}
-
 function resolvePayload(options = {}) {
   return options.payload && typeof options.payload === 'object' ? options.payload : options
 }
 
-function getRouteContextKey({ cwd = process.cwd(), payload = {}, env = process.env, ppid = process.ppid } = {}) {
-  const sessionToken = resolveSessionToken({
-    payload,
-    env,
-    ppid,
-    allowPpidFallback: true,
-  }) || 'default'
-  return `${normalizePath(cwd)}::${sessionToken}`
+function getRouteContextPath({ cwd = process.cwd(), payload = {}, env, ppid } = {}) {
+  return getRuntimeFilePath(cwd, ROUTE_CONTEXT_FILE_NAME, { payload, env, ppid })
 }
 
 export function clearRouteContext(options = {}) {
   const payload = resolvePayload(options)
-  const cwd = options.cwd || payload.cwd || ''
-
-  if (!cwd) {
-    rmSync(ROUTE_CONTEXT_PATH, { force: true })
-    return
-  }
-
-  const store = readStore()
-  delete store[getRouteContextKey({ cwd, payload, env: options.env, ppid: options.ppid })]
-  writeStore(store)
+  const cwd = options.cwd || payload.cwd || process.cwd()
+  removeRuntimeFile(getRouteContextPath({ cwd, payload, env: options.env, ppid: options.ppid }))
 }
 
 export function writeRouteContext({ cwd, skillName, sourceSkillName = skillName, payload = {}, env, ppid }) {
-  const store = readStore()
-  const key = getRouteContextKey({ cwd, payload, env, ppid })
+  const scope = getRuntimeScope(cwd, { payload, env, ppid })
   const context = {
     cwd: normalizePath(cwd),
     skillName,
     sourceSkillName,
     zeroSideEffect: skillName === 'idea',
-    key,
+    scope: scope.scope,
+    key: scope.key,
     updatedAt: Date.now(),
   }
-  store[key] = context
-  writeStore(store)
+  writeJsonFileAtomic(getRouteContextPath({ cwd, payload, env, ppid }), context)
 }
 
 export function readRouteContext(options = {}) {
-  if (!existsSync(ROUTE_CONTEXT_PATH)) return null
-
   const payload = resolvePayload(options)
   const cwd = options.cwd || payload.cwd || process.cwd()
-  const key = getRouteContextKey({ cwd, payload, env: options.env, ppid: options.ppid })
-  const store = readStore()
-  const context = store[key]
+  const filePath = getRouteContextPath({ cwd, payload, env: options.env, ppid: options.ppid })
+  if (!existsSync(filePath)) return null
+
+  const context = readJsonFile(filePath, null)
   if (!context?.cwd || !context?.skillName || !context?.updatedAt) {
-    if (context) {
-      delete store[key]
-      writeStore(store)
-    }
+    removeRuntimeFile(filePath)
     return null
   }
   if (Date.now() - context.updatedAt > ROUTE_CONTEXT_TTL_MS) {
-    delete store[key]
-    writeStore(store)
+    removeRuntimeFile(filePath)
     return null
   }
+
   return {
     ...context,
     cwd: normalizePath(context.cwd),

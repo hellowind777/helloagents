@@ -249,7 +249,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 所有任务：
 - 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `evidence/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
-- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`loop-results.tsv`、`evidence/loop-breaker.json`、`evidence/verify.json`、`evidence/review.json`、`evidence/closeout.json`）
+- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`runtime/loop-results.tsv`、`runtime/turn-state.json`、`runtime/route-context.json`、`evidence/loop-breaker.json`、`evidence/verify.json`、`evidence/review.json`、`evidence/closeout.json`）
 - 按 `kb_create_mode` 同步知识库（0=关闭 / 1=已激活项目或全局模式中编码自动 / 2=已激活项目或全局模式中始终）：
   - `.helloagents/` 不存在则按 templates/ 创建知识库文件（`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`）
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
@@ -275,7 +275,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
 - `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
-- `state_path` 指向的状态文件、当前会话 `evidence/*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- `state_path` 指向的状态文件、当前会话 `evidence/*.json`、`runtime/*.json`、`runtime/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{branch}/{session}/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
@@ -313,7 +313,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - modules/*.md — 模块文档和经验
 
 ### 临时文件（流程产物，~clean 时清理）
-- loop-results.tsv — ~loop 迭代记录
+- runtime/loop-results.tsv — 当前会话的 ~loop 迭代记录
 - evidence/loop-breaker.json — 当前会话的 hello-verify 断路器状态，仅在 `~loop` 或自动验证触发时写入
 - evidence/verify.json — 当前会话最近一次成功验证的证据快照
 - evidence/review.json — 当前会话最近一次成功审查的证据快照
@@ -330,11 +330,11 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
 说明：
-- Tier 1 始终读取当前 `state_path`
+- Tier 1 在恢复、压缩、连续流程或活跃方案包场景读取当前 `state_path`；普通问答和一次性只读任务不强制读取
 - Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认按项目级存储路径解析；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 
 Tier 1 — 恢复当前任务时优先读取：
-- 当前状态文件（`state_path`）→ 先确认当前消息仍是同一任务，再用它找回最近进度
+- 当前状态文件（`state_path`）→ 仅在恢复、压缩、连续流程或活跃方案包场景读取；先确认当前消息仍是同一任务，再用它找回最近进度
 
 Tier 2 — 理解项目时读取：
 - .helloagents/context.md → 项目架构、技术栈、目录结构、模块索引

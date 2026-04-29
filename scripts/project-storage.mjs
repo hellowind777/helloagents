@@ -5,14 +5,16 @@ import { homedir } from 'node:os'
 import { basename, dirname, isAbsolute, join, normalize, resolve } from 'node:path'
 
 import { DEFAULTS } from './cli-config.mjs'
-import { resolveSessionToken } from './session-token.mjs'
+import {
+  PROJECT_DIR_NAME,
+  PROJECT_EVIDENCE_DIR_NAME,
+  getProjectActivationDir,
+  getProjectSessionScope,
+  normalizeRuntimeOptions,
+} from './runtime-scope.mjs'
 
-export const PROJECT_DIR_NAME = '.helloagents'
 const PROJECTS_DIR_NAME = 'projects'
-const PROJECT_SESSIONS_DIR_NAME = 'sessions'
-const PROJECT_EVIDENCE_DIR_NAME = 'evidence'
 const PROJECT_STORE_MODES = new Set(['local', 'repo-shared'])
-const DEFAULT_STATE_SESSION_TOKEN = 'default'
 
 function safeJson(filePath) {
   try {
@@ -25,19 +27,6 @@ function safeJson(filePath) {
 function runGitRevParse(cwd, args = []) {
   try {
     return execFileSync('git', ['rev-parse', ...args], {
-      cwd,
-      encoding: 'utf-8',
-      timeout: 5_000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim()
-  } catch {
-    return ''
-  }
-}
-
-function runGitCommand(cwd, args = []) {
-  try {
-    return execFileSync('git', args, {
       cwd,
       encoding: 'utf-8',
       timeout: 5_000,
@@ -69,16 +58,6 @@ function resolveGitCommonDir(cwd, repoRoot = '') {
 function sanitizeRepoName(value = '') {
   const normalized = String(value).trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
   return normalized || 'project'
-}
-
-function sanitizeStateScopeSegment(value = '', fallback = '') {
-  const normalized = String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48)
-  return normalized || fallback
 }
 
 function buildProjectKey(cwd) {
@@ -114,24 +93,6 @@ function formatPromptPath(pathValue = '') {
   return pathValue ? normalize(pathValue).replace(/\\/g, '/') : ''
 }
 
-function resolveGitBranchName(cwd) {
-  const branchName = runGitRevParse(cwd, ['--abbrev-ref', 'HEAD'])
-  if (branchName && branchName !== 'HEAD') return branchName
-
-  const symbolicBranchName = runGitCommand(cwd, ['symbolic-ref', '--quiet', '--short', 'HEAD'])
-  if (symbolicBranchName && symbolicBranchName !== 'HEAD') return symbolicBranchName
-  return ''
-}
-
-function normalizeRuntimeOptions(options = {}) {
-  if (!options || typeof options !== 'object') return {}
-  if (options.payload && typeof options.payload === 'object') return options
-  return {
-    ...options,
-    payload: options,
-  }
-}
-
 export function normalizeProjectStoreMode(value) {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
   return PROJECT_STORE_MODES.has(normalized) ? normalized : DEFAULTS.project_store_mode
@@ -146,38 +107,16 @@ export function getProjectStoreMode() {
   return normalizeProjectStoreMode(settings.project_store_mode)
 }
 
-export function getProjectActivationDir(cwd) {
-  return join(cwd, PROJECT_DIR_NAME)
-}
-
 export function getProjectSessionStateScope(cwd, options = {}) {
-  const {
-    payload = {},
-    env = process.env,
-    ppid = process.ppid,
-  } = normalizeRuntimeOptions(options)
-  const rawSessionToken = resolveSessionToken({
-    payload,
-    env,
-    ppid,
-    allowPpidFallback: false,
-  })
-  const branchName = sanitizeStateScopeSegment(resolveGitBranchName(cwd), 'detached')
-  const sessionToken = sanitizeStateScopeSegment(rawSessionToken, DEFAULT_STATE_SESSION_TOKEN)
-  const sessionDir = join(
-    getProjectActivationDir(cwd),
-    PROJECT_SESSIONS_DIR_NAME,
-    branchName,
-    sessionToken,
-  )
+  const scope = getProjectSessionScope(cwd, normalizeRuntimeOptions(options))
 
   return {
     stateScope: 'session',
-    stateSessionToken: sessionToken,
-    stateSessionMode: rawSessionToken ? 'host-session' : 'default',
-    stateBranch: branchName,
-    sessionDir,
-    statePath: join(sessionDir, 'STATE.md'),
+    stateSessionToken: scope.session,
+    stateSessionMode: scope.sessionMode,
+    stateBranch: scope.branch,
+    sessionDir: scope.sessionDir,
+    statePath: scope.statePath,
   }
 }
 
@@ -186,7 +125,7 @@ export function getProjectStatePath(cwd, options = {}) {
 }
 
 export function getProjectEvidenceDir(cwd, options = {}) {
-  return join(getProjectSessionStateScope(cwd, options).sessionDir, PROJECT_EVIDENCE_DIR_NAME)
+  return getProjectSessionScope(cwd, normalizeRuntimeOptions(options)).evidenceDir
 }
 
 export function getProjectEvidencePath(cwd, fileName, options = {}) {

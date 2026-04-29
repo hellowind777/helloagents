@@ -211,7 +211,7 @@ Runtime evidence files include:
 - `.helloagents/sessions/<branch>/<session>/evidence/advisor.json`
 - `.helloagents/sessions/<branch>/<session>/evidence/visual.json`
 - `.helloagents/sessions/<branch>/<session>/evidence/closeout.json`
-- `.helloagents/loop-results.tsv`
+- `.helloagents/sessions/<branch>/<session>/runtime/loop-results.tsv`
 
 ### 7) Safer install, update, cleanup, and diagnostics
 
@@ -494,7 +494,8 @@ Runtime state and evidence remain local to the working project:
 
 - `state_path`
 - `.helloagents/sessions/<branch>/<session>/evidence/*.json`
-- `loop-results.tsv`
+- `.helloagents/sessions/<branch>/<session>/runtime/*.json`
+- `.helloagents/sessions/<branch>/<session>/runtime/loop-results.tsv`
 
 ### Knowledge creation rules
 
@@ -638,7 +639,7 @@ The current test suite covers:
 - Codex managed `model_instructions_file`, `notify`, local plugin, marketplace, and cache behavior
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
-- session-scoped `state_path`
+- session-scoped `state_path`, runtime signals, and evidence
 - runtime routing, guard, verification, visual evidence, and delivery gates
 - README and skill contract alignment
 
