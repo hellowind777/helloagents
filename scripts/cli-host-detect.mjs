@@ -75,7 +75,6 @@ function detectCodexMode(home) {
     || existsSync(join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME))
     || marketplace.includes(`"name": "${CODEX_PLUGIN_NAME}"`)
     || codexConfig.includes(CODEX_PLUGIN_KEY)
-    || codexConfig.includes(`/plugins/${CODEX_PLUGIN_NAME}/scripts/notify.mjs`)
     || codexHomeLinkTarget === globalPluginRoot
   ) {
     return 'global'

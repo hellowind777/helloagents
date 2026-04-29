@@ -130,14 +130,6 @@ export function cleanSettingsHooks(settingsPath, cleanPermissions = false) {
   }
 }
 
-/** Read hooks source file and replace path variable with absolute PKG_ROOT. */
-export function loadHooksWithAbsPath(pkgRoot, hooksFile, pathVar) {
-  const src = safeRead(join(pkgRoot, 'hooks', hooksFile));
-  if (!src) return null;
-  const absRoot = pkgRoot.replace(/\\/g, '/');
-  return JSON.parse(src.replace(new RegExp(pathVar.replace(/[{}$]/g, '\\$&'), 'g'), absRoot));
-}
-
 function rewriteHookCommandToCli(command = '', pathVar = '') {
   const replacements = new Map([
     [`node "${pathVar}/scripts/notify.mjs"`, 'helloagents-js notify'],
