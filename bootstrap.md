@@ -239,7 +239,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 ### 5. VERIFY — 审查与验证
 编码任务：
 - 读取 `skills/hello-verify/SKILL.md`，执行完整验证循环（Ralph Loop）→ 失败则修复 → 循环直到通过
-- 审查优先或显式使用 `~review` 时，先读取 `skills/hello-review/SKILL.md` 做范围审查；审查完成后调用 `scripts/review-state.mjs write` 写当前会话 `evidence/review.json`，再进入验证
+- 审查优先或显式使用 `~review` 时，先读取 `skills/hello-review/SKILL.md` 做范围审查；审查完成后调用 `scripts/review-state.mjs write` 写当前会话 `artifacts/review.json`，再进入验证
 - 通过后收集已读取技能的交付检查清单，逐项附带证据确认，并确认用户目标已达成
 
 非编码任务（文档 / 方案 / 审查等）：
@@ -247,9 +247,9 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 
 ### 6. CONSOLIDATE — 状态、资料与归档
 所有任务：
-- 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `evidence/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
+- 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
-- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`runtime/loop-results.tsv`、`runtime/turn-state.json`、`runtime/route-context.json`、`evidence/loop-breaker.json`、`evidence/verify.json`、`evidence/review.json`、`evidence/closeout.json`）
+- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`artifacts/loop-results.tsv`、`capsule.json`、`events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/verify.json`、`artifacts/review.json`、`artifacts/closeout.json`）
 - 按 `kb_create_mode` 同步知识库（0=关闭 / 1=已激活项目或全局模式中编码自动 / 2=已激活项目或全局模式中始终）：
   - `.helloagents/` 不存在则按 templates/ 创建知识库文件（`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`）
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
@@ -275,7 +275,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
 - `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
-- `state_path` 指向的状态文件、当前会话 `evidence/*.json`、`runtime/*.json`、`runtime/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{branch}/{session}/`
+- `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{branch}/{session}/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
@@ -301,7 +301,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
   - “关键上下文”只保留恢复所需的信息，已不再相关的决策和变更移除
 - DESIGN.md — 项目级稳定 UI 契约（仅 UI 项目），`~plan` / `~auto` / `~prd` 创建或更新；不存在且当前任务涉及 UI → 按 templates/DESIGN.md 创建；不替代单次需求的 `plan.md`
 - plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md` + `contract.json`
-- evidence/advisor.json — 当前会话的可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
+- artifacts/advisor.json — 当前会话的可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
 - archive/YYYY-MM/ — 已归档的方案包（整个 plans/{feature}/ 目录移入）
 - archive/_index.md — 归档索引
 
@@ -313,11 +313,11 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - modules/*.md — 模块文档和经验
 
 ### 临时文件（流程产物，~clean 时清理）
-- runtime/loop-results.tsv — 当前会话的 ~loop 迭代记录
-- evidence/loop-breaker.json — 当前会话的 hello-verify 断路器状态，仅在 `~loop` 或自动验证触发时写入
-- evidence/verify.json — 当前会话最近一次成功验证的证据快照
-- evidence/review.json — 当前会话最近一次成功审查的证据快照
-- evidence/closeout.json — 当前会话最近一次成功收尾的交付证据快照
+- artifacts/loop-results.tsv — 当前会话的 ~loop 迭代记录
+- artifacts/loop-breaker.json — 当前会话的 hello-verify 断路器状态，仅在 `~loop` 或自动验证触发时写入
+- artifacts/verify.json — 当前会话最近一次成功验证的证据快照
+- artifacts/review.json — 当前会话最近一次成功审查的证据快照
+- artifacts/closeout.json — 当前会话最近一次成功收尾的交付证据快照
 
 ## 项目上下文
 

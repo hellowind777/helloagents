@@ -8,7 +8,7 @@ Trigger: ~build [description]
 
 `~build` 是执行实现命令。它负责读取现有需求、方案包与项目上下文，完成实现、局部验证、修复循环，并把结果交给后续验证与收尾。
 执行 `~build` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充实现前定位、实现约束，以及进入 `~verify` / 收尾前的实现边界。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；会话证据使用当前 `state_path` 所在目录下的 `evidence/*.json`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md`、`verify.yaml` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；会话证据使用当前 `state_path` 所在目录下的 `artifacts/*.json`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md`、`verify.yaml` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
 - 默认先定位上下文与范围，再修改代码

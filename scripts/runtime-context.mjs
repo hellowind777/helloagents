@@ -1,15 +1,12 @@
-import { existsSync } from 'node:fs'
 import { normalize, resolve } from 'node:path'
 
 import {
-  getRuntimeFilePath,
+  clearCapsuleSection,
   getRuntimeScope,
-  readJsonFile,
-  removeRuntimeFile,
-  writeJsonFileAtomic,
-} from './runtime-scope.mjs'
+  readCapsuleSection,
+  writeCapsuleSection,
+} from './session-capsule.mjs'
 
-const ROUTE_CONTEXT_FILE_NAME = 'route-context.json'
 const ROUTE_CONTEXT_TTL_MS = 30 * 60 * 1000
 
 function normalizePath(filePath = '') {
@@ -20,14 +17,10 @@ function resolvePayload(options = {}) {
   return options.payload && typeof options.payload === 'object' ? options.payload : options
 }
 
-function getRouteContextPath({ cwd = process.cwd(), payload = {}, env, ppid } = {}) {
-  return getRuntimeFilePath(cwd, ROUTE_CONTEXT_FILE_NAME, { payload, env, ppid })
-}
-
 export function clearRouteContext(options = {}) {
   const payload = resolvePayload(options)
   const cwd = options.cwd || payload.cwd || process.cwd()
-  removeRuntimeFile(getRouteContextPath({ cwd, payload, env: options.env, ppid: options.ppid }))
+  clearCapsuleSection(cwd, 'route', { payload, env: options.env, ppid: options.ppid })
 }
 
 export function writeRouteContext({ cwd, skillName, sourceSkillName = skillName, payload = {}, env, ppid }) {
@@ -41,22 +34,18 @@ export function writeRouteContext({ cwd, skillName, sourceSkillName = skillName,
     key: scope.key,
     updatedAt: Date.now(),
   }
-  writeJsonFileAtomic(getRouteContextPath({ cwd, payload, env, ppid }), context)
+  writeCapsuleSection(cwd, 'route', context, { payload, env, ppid })
 }
 
 export function readRouteContext(options = {}) {
   const payload = resolvePayload(options)
   const cwd = options.cwd || payload.cwd || process.cwd()
-  const filePath = getRouteContextPath({ cwd, payload, env: options.env, ppid: options.ppid })
-  if (!existsSync(filePath)) return null
-
-  const context = readJsonFile(filePath, null)
+  const context = readCapsuleSection(cwd, 'route', { payload, env: options.env, ppid: options.ppid })
   if (!context?.cwd || !context?.skillName || !context?.updatedAt) {
-    removeRuntimeFile(filePath)
     return null
   }
   if (Date.now() - context.updatedAt > ROUTE_CONTEXT_TTL_MS) {
-    removeRuntimeFile(filePath)
+    clearRouteContext({ cwd, payload, env: options.env, ppid: options.ppid })
     return null
   }
 

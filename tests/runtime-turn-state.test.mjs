@@ -218,7 +218,7 @@ test('turn-state rejects waiting without blocker details', () => {
   assert.match(`${result.stderr}${result.stdout}`, /requires reasonCategory and reason/)
 })
 
-test('turn-state writes pure cwd into session-scoped runtime file', () => {
+test('turn-state writes pure cwd into the session capsule', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
@@ -238,7 +238,7 @@ test('turn-state writes pure cwd into session-scoped runtime file', () => {
     }),
   })
   let payload = parseStdoutJson(result)
-  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]detached[\\/]default[\\/]runtime[\\/]turn-state\.json$/)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]detached[\\/]default[\\/]capsule\.json$/)
   assert.equal(payload.payload.cwd, project)
   assert.equal(payload.payload.key.endsWith('::detached::default'), true)
 

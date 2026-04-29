@@ -26,8 +26,8 @@ export function selectCapabilities({ cwd, skillName = '', options = {} }) {
     capabilities.push({
       id: 'advisor-artifact',
       description: advisorRequirement.styleRequired
-        ? '风格 advisor：当前 UI 契约要求进入收尾前复查设计方向，并写当前会话 `evidence/advisor.json` 记录 reason、focus、consultedSources 与结论。'
-        : '独立 advisor：当前契约要求进入收尾前写当前会话 `evidence/advisor.json`，记录 advisor reason、focus、consultedSources 与结论。',
+        ? '风格 advisor：当前 UI 契约要求进入收尾前复查设计方向，并写当前会话 `artifacts/advisor.json` 记录 reason、focus、consultedSources 与结论。'
+        : '独立 advisor：当前契约要求进入收尾前写当前会话 `artifacts/advisor.json`，记录 advisor reason、focus、consultedSources 与结论。',
     })
   }
   if (plan?.contract?.verifyMode === 'review-first') {
@@ -45,7 +45,7 @@ export function selectCapabilities({ cwd, skillName = '', options = {} }) {
   if (visualRequirement.required) {
     capabilities.push({
       id: 'visual-evaluator',
-      description: '视觉验收：当前 UI 契约要求进入收尾前写当前会话 `evidence/visual.json`，记录 tooling、screensChecked、statesChecked、status 与 summary。',
+      description: '视觉验收：当前 UI 契约要求进入收尾前写当前会话 `artifacts/visual.json`，记录 tooling、screensChecked、statesChecked、status 与 summary。',
     })
   }
 

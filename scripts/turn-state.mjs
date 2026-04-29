@@ -1,17 +1,16 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { appendReplayEvent } from './replay-state.mjs'
 import {
-  getRuntimeFilePath,
+  appendSessionEvent,
+  clearCapsuleSection,
+  getSessionCapsulePath,
   getRuntimeScope,
-  readJsonFile,
-  removeRuntimeFile,
-  writeJsonFileAtomic,
-} from './runtime-scope.mjs'
+  readCapsuleSection,
+  writeCapsuleSection,
+} from './session-capsule.mjs'
 
-const TURN_STATE_FILE_NAME = 'turn-state.json'
 const TURN_STATE_TTL_MS = 30 * 60 * 1000
 const VALID_KINDS = new Set(['complete', 'waiting', 'blocked', 'progress'])
 const VALID_ROLES = new Set(['main', 'subagent'])
@@ -28,15 +27,6 @@ const VALID_REASON_CATEGORIES = new Set([
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
-}
-
-function getTurnStatePath(cwd = process.cwd(), options = {}) {
-  const payload = options.payload && typeof options.payload === 'object' ? options.payload : options
-  return getRuntimeFilePath(cwd, TURN_STATE_FILE_NAME, {
-    payload,
-    env: options.env || process.env,
-    ppid: options.ppid ?? process.ppid,
-  })
 }
 
 function normalizeTurnState(input = {}) {
@@ -74,38 +64,31 @@ function normalizeBlocker(input = {}) {
 }
 
 export function clearTurnState(cwd = process.cwd(), options = {}) {
-  const filePath = getTurnStatePath(cwd, options)
-  if (!existsSync(filePath)) return false
-  removeRuntimeFile(filePath)
-  return true
+  return clearCapsuleSection(cwd, 'turn', options)
 }
 
 export function readTurnState(cwd = process.cwd(), { now = Date.now(), ...options } = {}) {
-  const filePath = getTurnStatePath(cwd, options)
-  if (!existsSync(filePath)) return null
-
-  const entry = readJsonFile(filePath, null)
+  const entry = readCapsuleSection(cwd, 'turn', options)
   if (!entry?.cwd || !entry?.kind || !entry?.updatedAt) {
-    removeRuntimeFile(filePath)
     return null
   }
 
   const updatedAt = Date.parse(entry.updatedAt)
   if (!Number.isFinite(updatedAt) || (now - updatedAt > TURN_STATE_TTL_MS)) {
-    removeRuntimeFile(filePath)
+    clearTurnState(cwd, options)
     return null
   }
 
   const normalized = normalizeTurnState(entry)
   if (!normalized.kind) {
-    removeRuntimeFile(filePath)
+    clearTurnState(cwd, options)
     return null
   }
 
   return {
     cwd: normalizePath(entry.cwd),
     key: entry.key || '',
-    path: filePath,
+    path: getSessionCapsulePath(cwd, options),
     updatedAt: entry.updatedAt,
     ...normalized,
   }
@@ -129,7 +112,6 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
     throw new Error('turn-state waiting/blocked requires reasonCategory and reason')
   }
 
-  const filePath = getTurnStatePath(cwd, runtimeOptions)
   const payload = {
     cwd: normalizePath(cwd),
     key: scope.key,
@@ -137,12 +119,11 @@ export function writeTurnState(cwd = process.cwd(), input = {}) {
     updatedAt: new Date().toISOString(),
     ...normalized,
   }
-  writeJsonFileAtomic(filePath, payload)
+  writeCapsuleSection(cwd, 'turn', payload, runtimeOptions)
 
-  appendReplayEvent(cwd, {
+  appendSessionEvent(cwd, {
     event: 'turn_state_written',
     source: normalized.source,
-    payload: input,
     details: {
       kind: normalized.kind,
       role: normalized.role,
@@ -173,7 +154,7 @@ function main() {
     const payload = writeTurnState(cwd, input)
     process.stdout.write(JSON.stringify({
       suppressOutput: true,
-      path: getTurnStatePath(cwd, input),
+      path: getSessionCapsulePath(cwd, input),
       payload,
     }))
     return

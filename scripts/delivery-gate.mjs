@@ -187,10 +187,10 @@ function buildBlockReason(issues, recommendation, gateHint) {
     lines.push(`Recommended path: ${recommendation.nextPath}`)
   }
   if (issues.some((issue) => issue.type === 'missing-closeout-evidence')) {
-    lines.push('Next closeout step: write current session `evidence/closeout.json` with `requirementsCoverage` and `deliveryChecklist` before reporting completion.')
+    lines.push('Next closeout step: write current session `artifacts/closeout.json` with `requirementsCoverage` and `deliveryChecklist` before reporting completion.')
   }
   if (issues.some((issue) => issue.type === 'missing-visual-evidence')) {
-    lines.push('Next visual step: write current session `evidence/visual.json` with `tooling`, `screensChecked`, `statesChecked`, `status`, and `summary` before reporting completion.')
+    lines.push('Next visual step: write current session `artifacts/visual.json` with `tooling`, `screensChecked`, `statesChecked`, `status`, and `summary` before reporting completion.')
   }
   if (gateHint) {
     lines.push(gateHint)

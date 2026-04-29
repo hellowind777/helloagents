@@ -81,7 +81,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /按需能力：/)
   assert.match(payload.hookSpecificOutput.additionalContext, /advisor-artifact=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /evidence\/advisor\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/advisor\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,
@@ -209,7 +209,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /advisor-artifact=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /evidence\/advisor\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/advisor\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,

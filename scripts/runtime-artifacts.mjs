@@ -1,11 +1,12 @@
 import { execSync } from 'node:child_process'
-import { readFileSync, rmSync } from 'node:fs'
 
 import {
-  getProjectEvidencePath,
-  getProjectEvidenceRelativePath,
-} from './project-storage.mjs'
-import { writeJsonFileAtomic } from './runtime-scope.mjs'
+  clearSessionArtifact,
+  getSessionArtifactPath,
+  getSessionArtifactRelativePath,
+  readSessionArtifact,
+  writeSessionArtifact,
+} from './session-capsule.mjs'
 
 export const EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
 
@@ -36,29 +37,23 @@ export function captureWorkspaceFingerprint(cwd) {
 }
 
 export function getRuntimeEvidencePath(cwd, fileName, options = {}) {
-  return getProjectEvidencePath(cwd, fileName, options)
+  return getSessionArtifactPath(cwd, fileName, options)
 }
 
 export function getRuntimeEvidenceRelativePath(cwd, fileName, options = {}) {
-  return getProjectEvidenceRelativePath(cwd, fileName, options)
+  return getSessionArtifactRelativePath(cwd, fileName, options)
 }
 
 export function readRuntimeEvidence(cwd, fileName, options = {}) {
-  try {
-    return JSON.parse(readFileSync(getRuntimeEvidencePath(cwd, fileName, options), 'utf-8'))
-  } catch {
-    return null
-  }
+  return readSessionArtifact(cwd, fileName, options)
 }
 
 export function clearRuntimeEvidence(cwd, fileName, options = {}) {
-  rmSync(getRuntimeEvidencePath(cwd, fileName, options), { force: true })
+  clearSessionArtifact(cwd, fileName, options)
 }
 
 export function writeRuntimeEvidence(cwd, fileName, payload, options = {}) {
-  const evidencePath = getRuntimeEvidencePath(cwd, fileName, options)
-  writeJsonFileAtomic(evidencePath, payload)
-  return evidencePath
+  return writeSessionArtifact(cwd, fileName, payload, options)
 }
 
 export function validateEvidenceTimestamp(evidence, now, label) {

@@ -7,11 +7,14 @@ import { basename, dirname, isAbsolute, join, normalize, resolve } from 'node:pa
 import { DEFAULTS } from './cli-config.mjs'
 import {
   PROJECT_DIR_NAME,
-  PROJECT_EVIDENCE_DIR_NAME,
   getProjectActivationDir,
   getProjectSessionScope,
   normalizeRuntimeOptions,
 } from './runtime-scope.mjs'
+import {
+  getSessionArtifactPath,
+  getSessionArtifactRelativePath,
+} from './session-capsule.mjs'
 
 const PROJECTS_DIR_NAME = 'projects'
 const PROJECT_STORE_MODES = new Set(['local', 'repo-shared'])
@@ -125,16 +128,15 @@ export function getProjectStatePath(cwd, options = {}) {
 }
 
 export function getProjectEvidenceDir(cwd, options = {}) {
-  return getProjectSessionScope(cwd, normalizeRuntimeOptions(options)).evidenceDir
+  return getProjectSessionScope(cwd, normalizeRuntimeOptions(options)).artifactsDir
 }
 
 export function getProjectEvidencePath(cwd, fileName, options = {}) {
-  return join(getProjectEvidenceDir(cwd, options), fileName)
+  return getSessionArtifactPath(cwd, fileName, options)
 }
 
 export function getProjectEvidenceRelativePath(cwd, fileName, options = {}) {
-  const stateScope = getProjectSessionStateScope(cwd, options)
-  return `.helloagents/sessions/${stateScope.stateBranch}/${stateScope.stateSessionToken}/${PROJECT_EVIDENCE_DIR_NAME}/${fileName}`
+  return getSessionArtifactRelativePath(cwd, fileName, options)
 }
 
 export function isRepoSharedProjectStore(cwd) {
@@ -154,7 +156,7 @@ export function getProjectStoreSummary(cwd, options = {}) {
   const activationDir = getProjectActivationDir(cwd)
   const storeDir = getProjectStoreDir(cwd)
   const stateScope = getProjectSessionStateScope(cwd, options)
-  const evidenceDir = getProjectEvidenceDir(cwd, options)
+  const artifactsDir = getProjectEvidenceDir(cwd, options)
   const projectKey = buildProjectKey(cwd)
   const projectStoreMode = getProjectStoreMode(cwd)
 
@@ -168,7 +170,7 @@ export function getProjectStoreSummary(cwd, options = {}) {
     stateSessionMode: stateScope.stateSessionMode,
     stateBranch: stateScope.stateBranch,
     sessionStateDir: stateScope.sessionDir,
-    evidenceDir,
+    artifactsDir,
     usesSharedStore: projectStoreMode === 'repo-shared',
     projectKey: projectKey.key,
     repoRoot: projectKey.repoRoot,
@@ -177,7 +179,7 @@ export function getProjectStoreSummary(cwd, options = {}) {
     promptStoreDir: formatPromptPath(storeDir),
     promptStatePath: formatPromptPath(stateScope.statePath),
     promptSessionStateDir: formatPromptPath(stateScope.sessionDir),
-    promptEvidenceDir: formatPromptPath(evidenceDir),
+    promptArtifactsDir: formatPromptPath(artifactsDir),
   }
 }
 
@@ -268,7 +270,7 @@ export function buildProjectStorageBlock(cwd, options = {}) {
     state_session_token: summary.stateSessionToken,
     state_session_mode: summary.stateSessionMode,
     session_state_dir: summary.promptSessionStateDir,
-    evidence_dir: summary.promptEvidenceDir,
+    artifacts_dir: summary.promptArtifactsDir,
     knowledge_base_dir: summary.promptStoreDir,
     uses_shared_store: summary.usesSharedStore,
   }
@@ -279,7 +281,7 @@ export function buildProjectStorageBlock(cwd, options = {}) {
     explanations.push('说明：当前宿主未提供稳定会话标识，因此使用分支默认位置。')
   }
   if (summary.usesSharedStore) {
-    explanations.push('说明：状态文件与会话证据写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
+    explanations.push('说明：状态文件与会话产物写本地激活目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
   } else {
     explanations.push('说明：当前使用项目本地 `.helloagents/` 作为激活目录、知识库目录和方案目录。')
   }

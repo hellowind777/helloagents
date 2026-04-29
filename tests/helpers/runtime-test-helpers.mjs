@@ -13,7 +13,7 @@ export function getSessionStatePath(project, { branch = 'detached', session = 'd
 }
 
 export function getSessionEvidencePath(project, fileName, { branch = 'detached', session = 'default' } = {}) {
-  return join(project, '.helloagents', 'sessions', branch, session, 'evidence', fileName)
+  return join(project, '.helloagents', 'sessions', branch, session, 'artifacts', fileName)
 }
 
 export function writeSettings(home, overrides = {}) {
