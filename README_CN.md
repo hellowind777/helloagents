@@ -597,7 +597,7 @@ UI 任务遵循以下优先级：
 | `output_language` | `""` | 默认跟随用户语言 |
 | `output_format` | `true` | 只有主代理最终收尾消息可以使用 HelloAGENTS 格式 |
 | `notify_level` | `0` | `0` 关闭，`1` 桌面通知，`2` 声音，`3` 两者 |
-| `ralph_loop_enabled` | `true` | 任务完成后运行验证 |
+| `ralph_loop_enabled` | `true` | 显式 `~verify` / `~loop` 或收尾要求时运行验证 |
 | `guard_enabled` | `true` | 拦截危险命令 |
 | `kb_create_mode` | `1` | 控制知识库自动更新 |
 | `project_store_mode` | `"local"` | `local` 或 `repo-shared` |

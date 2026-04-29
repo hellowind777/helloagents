@@ -68,6 +68,10 @@ test('workflow runtime contract keeps route and state scripts aligned', () => {
   assert.doesNotMatch(notify, /playSound\('warning'\)/)
   assert.doesNotMatch(notify, /desktopNotify\('warning'/)
 
+  const notifyUi = readText(join(REPO_ROOT, 'scripts', 'notify-ui.mjs'))
+  assert.match(notifyUi, /detached: true/)
+  assert.doesNotMatch(notifyUi, /spawnSync/)
+
   const cliCodex = readText(join(REPO_ROOT, 'scripts', 'cli-codex.mjs'))
   assert.match(cliCodex, /cleanupCodexGlobalResidueForStandby/)
   const residueCleanup = cliCodex.slice(

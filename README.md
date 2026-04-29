@@ -595,7 +595,7 @@ Default shape:
 | `output_language` | `""` | follow the user language unless set |
 | `output_format` | `true` | only the main agent's final closeout message may use the HelloAGENTS layout |
 | `notify_level` | `0` | `0` off, `1` desktop, `2` sound, `3` both |
-| `ralph_loop_enabled` | `true` | run verification after task completion |
+| `ralph_loop_enabled` | `true` | run verification for explicit `~verify` / `~loop` or required closeout gates |
 | `guard_enabled` | `true` | block dangerous commands |
 | `kb_create_mode` | `1` | control automatic knowledge base updates |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
