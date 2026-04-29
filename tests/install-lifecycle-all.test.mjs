@@ -156,5 +156,5 @@ test('runtime carrier does not snapshot helloagents config into persistent rules
   const codexAgents = readText(join(home, '.codex', 'AGENTS.md'))
   assert.doesNotMatch(codexAgents, /## 当前用户设置/)
   assert.doesNotMatch(codexAgents, /"output_format": false/)
-  assert.match(codexAgents, /最终收尾前必须读取一次该配置/)
+  assert.match(codexAgents, /当前会话上下文没有 `output_format` 的已知值/)
 })
