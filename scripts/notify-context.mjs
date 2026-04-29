@@ -31,7 +31,7 @@ function buildReadRootBlock(readRoot) {
   const block = {
     ...readRoot,
     scriptRoot: join(readRoot.root, 'scripts'),
-    turnStateScript: join(readRoot.root, 'scripts', 'turn-state.mjs'),
+    turnStateCommand: 'helloagents-turn-state write',
   };
   return `## 本轮 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(block, null, 2)}\n\`\`\``;
 }

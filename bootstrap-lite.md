@@ -120,8 +120,8 @@
 - `🔄 下一步` 必须写真实下一步，不改写成条件式能力表述或空泛询问。若正在等待确认，写清待确认动作；若存在自然后续动作，直接给出明确引导；若当前任务已完整结束且确无合理后续，可填写“当前任务已完成；无后续动作。”
 
 ### 收尾状态信号
-- 为避免运行时从自然语言、图标或格式反推“完成 / 等待输入”，主代理在本轮最终收尾前必须先调用 `node "{HELLOAGENTS_READ_ROOT}/scripts/turn-state.mjs" write`
-- `turn-state.mjs` 是可执行收尾脚本，不是需要预读的规则文件；普通对话、选路和收尾只按上述路径执行，不要用 `Get-Content` / Read 打开源码。只有用户明确要求分析、修改该脚本，或正在排查运行时问题时，才按需读取源码
+- 为避免运行时从自然语言、图标或格式反推“完成 / 等待输入”，主代理在本轮最终收尾前必须先调用稳定入口 `helloagents-turn-state write`
+- `turn-state.mjs` 是该入口内部使用的脚本，不是需要预读的规则文件；普通对话、选路和收尾不要查找、读取或拼接它的源码路径。只有用户明确要求分析、修改该脚本，或正在排查运行时问题时，才按需读取源码
 - 本轮已完成且不再等待用户输入 → 写 `kind=complete`、`role=main`
 - 因阻塞判定等待用户输入、确认、授权或补充信息（含未授权的外部副作用确认） → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
@@ -192,14 +192,14 @@
 ## 路由
 - `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名；`~review` 是 `~verify` 的兼容别名
 - `~test` — 为指定模块或最近变更编写测试
-- 路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/`、`templates/` 和调用 `scripts/`
+- 路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/` 与 `templates/`
 - `~command` 路由：用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。若当前上下文已解析出具体命令技能文件路径，直接使用它；否则先确定当前技能根目录：
   - 优先使用当前上下文中已注入的“本轮 HelloAGENTS 读取根目录”
   - 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
   - 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`）只作为兼容别名，不作为优先探测路径
   - 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
   确定根目录后读取其中的 `skills/commands/{name}/SKILL.md`；标准模式下即使项目目录存在本地 HelloAGENTS skills，也不要读取项目路径。不要扫描整个目录，也不要对同一命令重复探测多个路径。
-包内脚本调用路径：`{HELLOAGENTS_READ_ROOT}/scripts/{脚本名}.mjs`；例如收尾状态脚本为 `{HELLOAGENTS_READ_ROOT}/scripts/turn-state.mjs`
+包内脚本优先使用稳定命令入口；收尾状态统一调用 `helloagents-turn-state write`，不要拼接 `turn-state.mjs` 路径。
 
 ## .helloagents/ 目录
 路径: {CWD}/.helloagents/
