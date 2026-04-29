@@ -26,10 +26,14 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(claudeMd, /HELLOAGENTS_START/)
   assert.match(claudeMd, /稳定运行根目录 `~\/\.helloagents\/helloagents`/)
   assert.match(claudeMd, /不要递归扫描 `\$HOME`、`Downloads`、项目目录或旧版本目录/)
+  assert.match(claudeMd, /## 当前用户设置/)
+  assert.match(claudeMd, /"output_format": true/)
   assert.match(claudeMd, /# Claude custom/)
 
   const geminiMd = readText(join(home, '.gemini', 'GEMINI.md'))
   assert.match(geminiMd, /HELLOAGENTS_START/)
+  assert.match(geminiMd, /## 当前用户设置/)
+  assert.match(geminiMd, /"output_format": true/)
   assert.match(geminiMd, /# Gemini custom/)
 
   const claudeSettingsText = JSON.stringify(readJson(join(home, '.claude', 'settings.json')))
@@ -42,6 +46,9 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.doesNotMatch(geminiSettingsText, /scripts\/notify\.mjs/)
 
   const codexConfigPath = join(home, '.codex', 'config.toml')
+  const codexAgents = readText(join(home, '.codex', 'AGENTS.md'))
+  assert.match(codexAgents, /## 当前用户设置/)
+  assert.match(codexAgents, /"output_format": true/)
   const codexConfig = readText(codexConfigPath)
   assert.match(codexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.doesNotMatch(codexConfig, /developer_instructions\s*=/)
@@ -68,6 +75,8 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), pluginRoot)
   assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /## 当前用户设置/)
+  assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /"output_format": true/)
 
   const globalCodexConfig = readText(codexConfigPath)
   assert.match(globalCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)

@@ -23,6 +23,7 @@ import {
   readTopLevelTomlBlock,
   removeTopLevelTomlLines,
 } from './cli-toml.mjs';
+import { buildRuntimeCarrier, readCarrierSettings } from './cli-runtime-carrier.mjs';
 
 export const CODEX_MARKETPLACE_NAME = 'local-plugins';
 export const CODEX_PLUGIN_NAME = 'helloagents';
@@ -105,22 +106,17 @@ function removeCodexMarketplaceEntry(marketplaceFile) {
   return true;
 }
 
-function buildCodexRuntimeCarrier(bootstrapContent) {
-  const normalized = String(bootstrapContent || '').trim();
-  return normalized ? `${normalized}\n` : '';
-}
-
-function injectCodexRuntimeCarrier(filePath, bootstrapPath) {
+function injectCodexRuntimeCarrier(filePath, bootstrapPath, settings) {
   const bootstrapContent = safeRead(bootstrapPath);
   if (!bootstrapContent) return false;
-  injectMarkedContent(filePath, buildCodexRuntimeCarrier(bootstrapContent).trimEnd());
+  injectMarkedContent(filePath, buildRuntimeCarrier(bootstrapContent, settings).trimEnd());
   return true;
 }
 
-function writeCodexRuntimeCarrier(filePath, bootstrapPath) {
+function writeCodexRuntimeCarrier(filePath, bootstrapPath, settings) {
   const bootstrapContent = safeRead(bootstrapPath);
   if (!bootstrapContent) return false;
-  safeWrite(filePath, buildCodexRuntimeCarrier(bootstrapContent));
+  safeWrite(filePath, buildRuntimeCarrier(bootstrapContent, settings));
   return true;
 }
 
@@ -166,8 +162,9 @@ export function installCodexStandby(home, pkgRoot) {
   if (!existsSync(codexDir)) return false;
   ensureDir(codexDir);
 
+  const settings = readCarrierSettings(home);
   const codexAgentsPath = join(codexDir, CODEX_RUNTIME_CARRIER);
-  injectCodexRuntimeCarrier(codexAgentsPath, join(pkgRoot, 'bootstrap-lite.md'));
+  injectCodexRuntimeCarrier(codexAgentsPath, join(pkgRoot, 'bootstrap-lite.md'), settings);
 
   const configPath = join(codexDir, 'config.toml');
   let toml = safeRead(configPath) || '';
@@ -243,19 +240,22 @@ export function installCodexGlobal(home, pkgRoot) {
   ensureDir(join(home, 'plugins'));
   ensureDir(installedPluginRoot);
 
+  const settings = readCarrierSettings(home);
   copyEntries(pkgRoot, pluginRoot, CODEX_RUNTIME_ENTRIES);
   copyEntries(pkgRoot, installedPluginRoot, CODEX_RUNTIME_ENTRIES);
   createLink(pluginRoot, join(codexDir, 'helloagents'));
   writeCodexRuntimeCarrier(
     join(pluginRoot, CODEX_RUNTIME_CARRIER),
     join(pluginRoot, 'bootstrap.md'),
+    settings,
   );
   writeCodexRuntimeCarrier(
     join(installedPluginRoot, CODEX_RUNTIME_CARRIER),
     join(installedPluginRoot, 'bootstrap.md'),
+    settings,
   );
   const homeCarrierPath = join(codexDir, CODEX_RUNTIME_CARRIER);
-  injectCodexRuntimeCarrier(homeCarrierPath, join(pkgRoot, 'bootstrap.md'));
+  injectCodexRuntimeCarrier(homeCarrierPath, join(pkgRoot, 'bootstrap.md'), settings);
 
   ensureDir(join(home, '.agents', 'plugins'));
   updateCodexMarketplace(marketplaceFile);
