@@ -33,8 +33,9 @@ function runHostCommand(command, args) {
 }
 
 function buildNativeResult(result, successCN, successEN, manualCN, manualEN) {
-  if (result.ok) return { noteCN: successCN, noteEN: successEN }
+  if (result.ok) return { ok: true, noteCN: successCN, noteEN: successEN }
   return {
+    ok: false,
     noteCN: `${manualCN}${result.output ? `；原因：${result.output}` : ''}`,
     noteEN: `${manualEN}${result.output ? `; reason: ${result.output}` : ''}`,
   }
@@ -64,6 +65,8 @@ function reportHostAction(runtime, action, host, mode, result = {}) {
   const isCleanup = action === 'cleanup' || action === 'uninstall'
   if (result.skipped) {
     console.log(runtime.msg(`  - ${label} 未检测到，跳过`, `  - ${label} not detected, skipped`))
+  } else if (result.ok === false && !isCleanup) {
+    console.log(runtime.msg(`  - ${label} 自动配置未完成`, `  - ${label} automatic setup did not complete`))
   } else if (isCleanup) {
     runtime.ok(runtime.msg(`${label} 已清理（${mode} 模式）`, `${label} cleaned (${mode} mode)`))
   } else if (mode === 'standby') {
@@ -151,24 +154,43 @@ function cleanupHostGlobal(runtime, host) {
 }
 
 function installStandby(runtime) {
-  if (installClaudeStandby(runtime.home, runtime.pkgRoot)) runtime.ok(runtime.msg('Claude Code 已配置（standby 模式）', 'Claude Code configured (standby mode)'))
-  if (installGeminiStandby(runtime.home, runtime.pkgRoot)) runtime.ok(runtime.msg('Gemini CLI 已配置（standby 模式）', 'Gemini CLI configured (standby mode)'))
+  const results = {}
+  if (installClaudeStandby(runtime.home, runtime.pkgRoot)) {
+    runtime.ok(runtime.msg('Claude Code 已配置（standby 模式）', 'Claude Code configured (standby mode)'))
+    results.claude = {}
+  } else {
+    results.claude = { skipped: true }
+  }
+  if (installGeminiStandby(runtime.home, runtime.pkgRoot)) {
+    runtime.ok(runtime.msg('Gemini CLI 已配置（standby 模式）', 'Gemini CLI configured (standby mode)'))
+    results.gemini = {}
+  } else {
+    results.gemini = { skipped: true }
+  }
   if (installCodexStandby(runtime.home, runtime.pkgRoot)) {
     cleanupCodexGlobalResidueForStandby(runtime.home)
     runtime.ok(runtime.msg('Codex CLI 已配置（standby 模式）', 'Codex CLI configured (standby mode)'))
+    results.codex = {}
+  } else {
+    console.log(runtime.msg('  - Codex CLI 未检测到，跳过', '  - Codex CLI not detected, skipped'))
+    results.codex = { skipped: true }
   }
-  else console.log(runtime.msg('  - Codex CLI 未检测到，跳过', '  - Codex CLI not detected, skipped'))
+  return results
 }
 
 function installGlobal(runtime) {
+  const results = {}
   for (const host of ['claude', 'gemini', 'codex']) {
-    reportHostAction(runtime, 'install', host, 'global', installHostGlobal(runtime, host))
+    const result = installHostGlobal(runtime, host)
+    reportHostAction(runtime, 'install', host, 'global', result)
+    results[host] = result
   }
+  return results
 }
 
 export function installAllHosts(runtime, mode) {
-  if (mode === 'global') installGlobal(runtime)
-  else installStandby(runtime)
+  if (mode === 'global') return installGlobal(runtime)
+  return installStandby(runtime)
 }
 
 export function uninstallAllHosts(runtime) {

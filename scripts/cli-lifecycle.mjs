@@ -115,7 +115,6 @@ function resolveHostMode(host, explicitMode, settings) {
   if (explicitMode) return explicitMode
   return detectHostMode(host)
     || getTrackedHostMode(settings, host)
-    || (!hasTrackedHostModes(settings) ? (settings.install_mode || '') : '')
     || DEFAULTS.install_mode
 }
 
@@ -183,21 +182,31 @@ function runAllHostsLifecycle(action, explicitMode) {
   }
 
   const settings = readSettings(true)
-  if (action === 'update' && !explicitMode) {
+  if (!explicitMode) {
     for (const host of HOSTS) {
       const mode = resolveHostMode(host, '', settings)
       const result = runHostLifecycle(runtime, action, host, mode)
-      if (!result.skipped) setTrackedHostMode(settings, host, mode)
+      if (!result.skipped && result.ok !== false) setTrackedHostMode(settings, host, mode)
+      else clearTrackedHostMode(settings, host)
     }
     writeSettings(settings)
-    runtime.printInstallMsg(settings.install_mode || DEFAULTS.install_mode, 'refresh')
+    const modes = Object.values(settings.host_install_modes || {})
+    const displayMode = modes.length && modes.every((mode) => mode === modes[0])
+      ? modes[0]
+      : settings.install_mode || DEFAULTS.install_mode
+    runtime.printInstallMsg(displayMode, action === 'update' ? 'refresh' : 'install')
     return
   }
 
   const mode = resolveInstallMode(explicitMode, settings)
   if (explicitMode) settings.install_mode = explicitMode
-  installAllHosts(runtime, mode)
-  setAllTrackedHostModes(settings, mode)
+  const results = installAllHosts(runtime, mode)
+  settings.host_install_modes = {}
+  for (const host of HOSTS) {
+    if (!results?.[host]?.skipped && results?.[host]?.ok !== false) {
+      settings.host_install_modes[host] = mode
+    }
+  }
   writeSettings(settings)
   runtime.printInstallMsg(mode, action === 'update' ? 'refresh' : 'install')
 }

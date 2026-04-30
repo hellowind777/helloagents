@@ -47,8 +47,12 @@ function normalizeNotifyLevel(value) {
 
 function notifyByLevel(event, extra, settings = getSettings()) {
   const level = normalizeNotifyLevel(settings.notify_level ?? 0);
-  if (level === 2 || level === 3) playSound(event);
-  if (level === 1 || level === 3) desktopNotify(event, extra);
+  if (level === 1) desktopNotify(event, extra);
+  if (level === 2) playSound(event);
+  if (level === 3) {
+    desktopNotify(event, extra);
+    playSound(event);
+  }
 }
 
 function buildNotifyExtra(payload = {}, options = {}) {
