@@ -54,8 +54,8 @@
 - 项目已有技术栈、设计系统或方案包时必须遵循既有决策
 
 ### UI 质量基线（涉及视觉/交互任务时，全阶段生效）
-任务涉及界面视觉、交互体验、页面结构、组件外观、信息呈现或设计需求时，统一遵循以下基线；适用于标准模式、标准模式+已激活项目与全局模式。
-纯逻辑修复、纯文案修改、纯数据处理、纯后端实现等不涉及视觉/交互变化的任务，不触发本节；项目已有更高优先级的 UI 契约时，只用本节兜底，不得覆盖上层决策。
+任务涉及界面视觉、交互体验、页面结构、组件外观、信息呈现或设计需求时，统一遵循以下基线；适用于标准模式未激活项目、标准模式已激活项目与全局模式。
+纯逻辑修复、纯文案修改、纯数据处理、纯后端实现等不涉及视觉/交互变化的任务，不触发本节。本基线是最低质量线；已有 `plan.md` / PRD、`DESIGN.md` 或 `hello-ui` 约束时，与其共同生效，不覆盖上层决策。
 
 - 先判断本次视觉变更是延续既有风格、演进式优化还是探索性方案，再形成简短但明确的内部设计简报：界面目的、目标用户与场景、主要视口、情绪方向、记忆点；不得直接滑入泛化风格标签或模型默认审美
 - 已有项目优先复用现有组件、token、品牌资产、内容语气与交互模式；先建立最小设计系统：至少明确背景/表面/正文/弱化/强调/语义色，以及 display/headline/body/caption 等排版角色；缺少关键设计上下文时明确说明，不凭空发明视觉语言
@@ -275,7 +275,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
-- `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
+- `.helloagents/` 表示项目级存储路径，也是标准模式的项目激活信号
 - `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{branch}/{session}/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中

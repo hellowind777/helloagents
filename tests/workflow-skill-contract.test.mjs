@@ -198,7 +198,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
 
   const readme = readText(join(REPO_ROOT, 'README.md'))
   assert.match(readme, /UI quality baseline/)
-  assert.match(readme, /hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation/)
+  assert.match(readme, /hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline/)
   assert.match(readme, /artifacts\/visual\.json/)
   assert.match(readme, /refreshes host-native project skill links/)
   assert.match(readme, /project-level rule files/)
@@ -207,7 +207,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
 
   const readmeCn = readText(join(REPO_ROOT, 'README_CN.md'))
   assert.match(readmeCn, /UI 质量基线/)
-  assert.match(readmeCn, /`hello-ui` 会进一步补充设计契约执行、设计系统映射与视觉验收/)
+  assert.match(readmeCn, /`hello-ui` 会在该基线之上补充设计契约执行、设计系统映射与视觉验收/)
   assert.match(readmeCn, /artifacts\/visual\.json/)
   assert.match(readmeCn, /刷新各宿主项目级原生 skills 链接/)
   assert.match(readmeCn, /项目级规则文件/)
