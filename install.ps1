@@ -2,7 +2,7 @@
 #
 # Environment:
 #   HELLOAGENTS=all|claude|gemini|codex[:standby|global]
-#   HELLOAGENTS_ACTION=install|update|uninstall|switch-branch|branch
+#   HELLOAGENTS_ACTION=install|update|cleanup|uninstall|switch-branch|branch
 #   HELLOAGENTS_TARGET=all|claude|gemini|codex
 #   HELLOAGENTS_MODE=standby|global
 #   HELLOAGENTS_BRANCH=main|beta|...
@@ -96,6 +96,9 @@ switch ($Action) {
             }
         }
         Sync-Hosts
+    }
+    "cleanup" {
+        Cleanup-Hosts
     }
     "switch-branch" {
         if (-not $Branch -and -not $env:HELLOAGENTS_PACKAGE) {
