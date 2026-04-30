@@ -1,6 +1,5 @@
 import { join } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { buildCommandRouteHint, buildStateSyncHint, buildWorkflowRouteHint, readStateSnapshot } from './workflow-state.mjs';
 import { buildCapabilityHint } from './capability-registry.mjs';
 import {
@@ -15,35 +14,27 @@ const COMMAND_ALIASES = {
   review: 'verify',
 };
 
-function buildPackageRootBlock(pkgRoot) {
+function buildRuntimeRootBlock(pkgRoot) {
   if (!pkgRoot) return '';
-  return `## 当前 HelloAGENTS 包根目录\n\`\`\`text\n${pkgRoot}\n\`\`\``;
-}
-
-function resolveStandbyHostRoot(host) {
-  const home = homedir();
-  const map = {
-    claude: join(home, '.claude', 'helloagents'),
-    codex: join(home, '.codex', 'helloagents'),
-    gemini: join(home, '.gemini', 'helloagents'),
-  };
-  return map[host] || '';
+  return `## 当前 HelloAGENTS 运行根目录\n\`\`\`text\n${pkgRoot}\n\`\`\``;
 }
 
 function resolveReadRoot({ cwd, pkgRoot, host, settings }) {
-  if (settings.install_mode === 'standby') {
-    const standbyRoot = resolveStandbyHostRoot(host);
-    if (standbyRoot && existsSync(standbyRoot)) {
-      return { source: 'standby-home', root: standbyRoot };
-    }
-  }
-
-  return { source: 'package', root: pkgRoot };
+  void cwd
+  void host
+  void settings
+  return { source: 'runtime-root', root: pkgRoot }
 }
 
 function buildReadRootBlock(readRoot) {
   if (!readRoot?.root) return '';
-  return `## 本轮 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(readRoot, null, 2)}\n\`\`\``;
+  const block = {
+    ...readRoot,
+    scriptRoot: join(readRoot.root, 'scripts'),
+    turnStateCommand: 'helloagents-turn-state write --kind complete --role main',
+    turnStateUsage: '仅在运行时需要识别完成、等待或阻塞时调用；普通问答不调用',
+  };
+  return `## 本轮 HelloAGENTS 读取根目录\n\`\`\`json\n${JSON.stringify(block, null, 2)}\n\`\`\``;
 }
 
 export function resolveCanonicalCommandSkill(skillName) {
@@ -89,10 +80,10 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
     summaryParts.push(bootstrap);
   }
 
-  const packageRootBlock = buildPackageRootBlock(pkgRoot);
-  if (packageRootBlock) {
+  const runtimeRootBlock = buildRuntimeRootBlock(pkgRoot);
+  if (runtimeRootBlock) {
     summaryParts.push('');
-    summaryParts.push(packageRootBlock);
+    summaryParts.push(runtimeRootBlock);
   }
 
   const readRootBlock = buildReadRootBlock(resolveReadRoot({ cwd, pkgRoot, host, settings }));
@@ -123,7 +114,7 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
 
 export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host, cwd, payload = {} }) {
   const workflowOptions = { payload };
-  const packageRootBlock = buildPackageRootBlock(pkgRoot);
+  const runtimeRootBlock = buildRuntimeRootBlock(pkgRoot);
   const readRootBlock = buildReadRootBlock(resolveReadRoot({ cwd, pkgRoot, host, settings }));
   const workflowHint = buildWorkflowRouteHint(cwd, workflowOptions);
   const capabilityHint = buildCapabilityHint({ cwd, options: workflowOptions });
@@ -135,7 +126,7 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
     : '';
 
   let context = bootstrap;
-  if (packageRootBlock) context += `\n\n${packageRootBlock}`;
+  if (runtimeRootBlock) context += `\n\n${runtimeRootBlock}`;
   if (readRootBlock) context += `\n\n${readRootBlock}`;
   if (projectStorageBlock) context += `\n\n${projectStorageBlock}`;
   if (workflowHint) context += `\n\n## 当前工作流提示\n${workflowHint}`;

@@ -1,12 +1,19 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
 
 import { appendReplayEvent } from './replay-state.mjs'
-import { captureWorkspaceFingerprint } from './verify-state.mjs'
+import {
+  captureWorkspaceFingerprint,
+  clearRuntimeEvidence,
+  getRuntimeEvidencePath,
+  getRuntimeEvidenceRelativePath,
+  readRuntimeEvidence,
+  validateEvidenceFingerprint,
+  validateEvidenceTimestamp,
+  writeRuntimeEvidence,
+} from './runtime-artifacts.mjs'
 
-export const ADVISOR_EVIDENCE_FILE_NAME = '.ralph-advisor.json'
-const ADVISOR_EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
+export const ADVISOR_EVIDENCE_FILE_NAME = 'advisor.json'
 const VALID_ADVISOR_OUTCOMES = new Set(['clean', 'findings'])
 const VALID_SOURCES = new Set(['claude', 'codex', 'gemini'])
 
@@ -24,20 +31,16 @@ function normalizeOutcome(value) {
   return VALID_ADVISOR_OUTCOMES.has(normalized) ? normalized : ''
 }
 
-export function getAdvisorEvidencePath(cwd) {
-  return join(cwd, '.helloagents', ADVISOR_EVIDENCE_FILE_NAME)
+export function getAdvisorEvidencePath(cwd, options = {}) {
+  return getRuntimeEvidencePath(cwd, ADVISOR_EVIDENCE_FILE_NAME, options)
 }
 
-export function readAdvisorEvidence(cwd) {
-  try {
-    return JSON.parse(readFileSync(getAdvisorEvidencePath(cwd), 'utf-8'))
-  } catch {
-    return null
-  }
+export function readAdvisorEvidence(cwd, options = {}) {
+  return readRuntimeEvidence(cwd, ADVISOR_EVIDENCE_FILE_NAME, options)
 }
 
-export function clearAdvisorEvidence(cwd) {
-  rmSync(getAdvisorEvidencePath(cwd), { force: true })
+export function clearAdvisorEvidence(cwd, options = {}) {
+  clearRuntimeEvidence(cwd, ADVISOR_EVIDENCE_FILE_NAME, options)
 }
 
 export function normalizeAdvisorEvidence(input = {}) {
@@ -55,19 +58,19 @@ export function normalizeAdvisorEvidence(input = {}) {
   }
 }
 
-export function writeAdvisorEvidence(cwd, input = {}) {
-  mkdirSync(join(cwd, '.helloagents'), { recursive: true })
+export function writeAdvisorEvidence(cwd, input = {}, options = {}) {
   const normalized = normalizeAdvisorEvidence(input)
   const payload = {
     updatedAt: new Date().toISOString(),
     ...normalized,
     fingerprint: captureWorkspaceFingerprint(cwd),
   }
-  writeFileSync(getAdvisorEvidencePath(cwd), `${JSON.stringify(payload, null, 2)}\n`, 'utf-8')
+  writeRuntimeEvidence(cwd, ADVISOR_EVIDENCE_FILE_NAME, payload, options)
   appendReplayEvent(cwd, {
     event: 'advisor_evidence_written',
     source: normalized.source,
     skillName: normalized.originCommand,
+    payload: options.payload || {},
     details: {
       reason: normalized.reason,
       focus: normalized.focus,
@@ -75,12 +78,12 @@ export function writeAdvisorEvidence(cwd, input = {}) {
       consultedSources: normalized.consultedSources,
       outcome: normalized.outcome,
     },
-    artifacts: ['.helloagents/.ralph-advisor.json'],
+    artifacts: [getRuntimeEvidenceRelativePath(cwd, ADVISOR_EVIDENCE_FILE_NAME, options)],
   })
   return payload
 }
 
-function readRequiredAdvisorEvidence(cwd, required) {
+function readRequiredAdvisorEvidence(cwd, required, options = {}) {
   if (!required) {
     return {
       required: false,
@@ -88,53 +91,23 @@ function readRequiredAdvisorEvidence(cwd, required) {
     }
   }
 
-  const evidence = readAdvisorEvidence(cwd)
+  const evidence = readAdvisorEvidence(cwd, options)
   if (evidence) return { evidence }
   return {
     error: {
       required: true,
       status: 'missing',
-      details: ['missing advisor evidence required by the active contract'],
+      details: ['缺少当前契约要求的 advisor 证据'],
     },
   }
 }
 
 function validateAdvisorTimestamp(evidence, now) {
-  const updatedAt = Date.parse(evidence.updatedAt || '')
-  if (!Number.isFinite(updatedAt)) {
-    return {
-      required: true,
-      status: 'invalid',
-      evidence,
-      details: ['advisor evidence timestamp is invalid'],
-    }
-  }
-  if (now - updatedAt > ADVISOR_EVIDENCE_MAX_AGE_MS) {
-    return {
-      required: true,
-      status: 'stale-time',
-      evidence,
-      details: ['advisor evidence is older than 30 minutes'],
-    }
-  }
-  return null
+  return validateEvidenceTimestamp(evidence, now, 'advisor 证据')
 }
 
 function validateAdvisorFingerprint(cwd, evidence) {
-  const currentFingerprint = captureWorkspaceFingerprint(cwd)
-  if (
-    currentFingerprint.available
-    && evidence.fingerprint?.available
-    && currentFingerprint.combined !== evidence.fingerprint.combined
-  ) {
-    return {
-      required: true,
-      status: 'stale-diff',
-      evidence,
-      details: ['workspace diff changed after the last advisor evidence'],
-    }
-  }
-  return null
+  return validateEvidenceFingerprint(cwd, evidence, 'advisor 证据')
 }
 
 function validateAdvisorContent(evidence, focus = []) {
@@ -143,7 +116,7 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['advisor evidence must record explicit outcome, reason, and summary'],
+      details: ['advisor 证据必须记录明确的 outcome、reason 和 summary'],
     }
   }
   if (normalizeSources(evidence.consultedSources).length === 0) {
@@ -151,7 +124,7 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['advisor evidence must record at least one consulted source'],
+      details: ['advisor 证据必须记录至少一个参考来源'],
     }
   }
   if (normalizeStringArray(focus).length > 0 && normalizeStringArray(evidence.focus).length === 0) {
@@ -159,7 +132,7 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['advisor evidence must retain the requested advisor focus'],
+      details: ['advisor 证据必须保留已请求的 advisor focus'],
     }
   }
   if (normalizeOutcome(evidence.outcome) !== 'clean') {
@@ -167,14 +140,14 @@ function validateAdvisorContent(evidence, focus = []) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['latest advisor evidence still records blocking findings'],
+      details: ['最新 advisor 证据仍记录阻塞问题'],
     }
   }
   return null
 }
 
-export function getAdvisorEvidenceStatus(cwd, { required = false, focus = [], now = Date.now() } = {}) {
-  const requiredEvidence = readRequiredAdvisorEvidence(cwd, required)
+export function getAdvisorEvidenceStatus(cwd, { required = false, focus = [], now = Date.now(), ...options } = {}) {
+  const requiredEvidence = readRequiredAdvisorEvidence(cwd, required, options)
   if ('status' in requiredEvidence) return requiredEvidence
   if (requiredEvidence.error) return requiredEvidence.error
 
@@ -209,10 +182,10 @@ function main() {
 
   const input = readStdinJson()
   const cwd = input.cwd || process.cwd()
-  const payload = writeAdvisorEvidence(cwd, input)
+  const payload = writeAdvisorEvidence(cwd, input, { payload: input })
   process.stdout.write(JSON.stringify({
     suppressOutput: true,
-    path: getAdvisorEvidencePath(cwd),
+    path: getAdvisorEvidencePath(cwd, { payload: input }),
     payload,
   }))
 }

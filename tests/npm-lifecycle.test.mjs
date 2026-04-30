@@ -14,8 +14,10 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs';
+import { CODEX_MANAGED_NOTIFY_VALUE } from '../scripts/cli-codex-config.mjs';
 
 const npmCli = process.env.npm_execpath;
+const MANAGED_NOTIFY_PREFIX = `notify = ${CODEX_MANAGED_NOTIFY_VALUE}`;
 
 function runNpm(args, cwd, env) {
   assert.ok(npmCli, 'npm_execpath is required for lifecycle testing');
@@ -24,12 +26,13 @@ function runNpm(args, cwd, env) {
   return result;
 }
 
-test('npm global install plus explicit cleanup command removes lifecycle artifacts', { skip: !npmCli }, () => {
+test('npm global install plus explicit uninstall command removes lifecycle artifacts', { skip: !npmCli }, () => {
   const { root: pkgRoot } = createPackageFixture();
   const home = createHomeFixture();
   const prefix = createTempDir('helloagents-prefix-');
   const packDir = createTempDir('helloagents-pack-');
   const env = buildHomeEnv(home);
+  const runtimeRoot = join(home, '.helloagents', 'helloagents');
 
   writeText(join(home, '.claude', 'CLAUDE.md'), '# Claude custom\n');
   writeJson(join(home, '.claude', 'settings.json'), { permissions: { allow: ['Read(*)'] } });
@@ -41,6 +44,7 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
 
   runNpm(['install', '-g', '--prefix', prefix, tarball], pkgRoot, env);
 
+  assert.ok(existsSync(runtimeRoot));
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')));
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')));
   assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
@@ -56,7 +60,8 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.ok(existsSync(join(home, '.codex', 'helloagents')));
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
   const installedCodexConfig = readText(join(home, '.codex', 'config.toml'));
-  assert.match(installedCodexConfig, /model_instructions_file = ".*\/\.codex\/AGENTS\.md"/);
+  assert.match(installedCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md"/);
+  assert.ok(installedCodexConfig.includes(MANAGED_NOTIFY_PREFIX), installedCodexConfig);
   assert.doesNotMatch(installedCodexConfig, /developer_instructions\s*=/);
 
   const cleanup = runCommand(process.execPath, [join(pkgRoot, 'cli.mjs'), 'cleanup'], {
@@ -72,5 +77,20 @@ test('npm global install plus explicit cleanup command removes lifecycle artifac
   assert.doesNotMatch(readText(join(home, '.codex', 'config.toml')), /developer_instructions\s*=/);
   assert.match(readText(join(home, '.codex', 'config.toml')), /model_instructions_file = "C:\/original\/bootstrap\.md"/);
 
+  runNpm([
+    'explore',
+    '-g',
+    '--prefix',
+    prefix,
+    'helloagents',
+    '--',
+    'npm',
+    'run',
+    'uninstall',
+    '--',
+    '--all',
+    '--standby',
+  ], pkgRoot, env);
+  assert.ok(!existsSync(runtimeRoot));
   runNpm(['uninstall', '-g', '--prefix', prefix, 'helloagents'], pkgRoot, env);
 });

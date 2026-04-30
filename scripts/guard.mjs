@@ -52,13 +52,14 @@ function emitHookPayload(payload) {
   process.stdout.write(JSON.stringify(payload))
 }
 
-function emitGuardEvent(cwd, event, source, reason, details = {}) {
+function emitGuardEvent(cwd, event, source, reason, details = {}, payload = {}) {
   appendReplayEvent(cwd, {
     host: HOST,
     event,
     source,
     reason,
     details,
+    payload,
   })
 }
 
@@ -67,7 +68,7 @@ function buildHighRiskGate(matches, cwd, payload = {}) {
   const stateSyncHint = buildStateSyncHint(cwd, workflowOptions)
   if (stateSyncHint) {
     return {
-      reason: `[HelloAGENTS Guard] Blocked T3 command until project recovery state is synced.\n${stateSyncHint}`,
+      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：项目恢复状态尚未同步。\n${stateSyncHint}`,
     }
   }
 
@@ -75,25 +76,26 @@ function buildHighRiskGate(matches, cwd, payload = {}) {
   if (!recommendation) return null
   if (matches.some((match) => match.gate === 'post-verify')) {
     return {
-      reason: `[HelloAGENTS Guard] Blocked T3 command until workflow reaches VERIFY / CONSOLIDATE.\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
+      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：当前工作流尚未进入 VERIFY / CONSOLIDATE。\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
     }
   }
   if (matches.some((match) => match.gate === 'plan-first') && recommendation.nextCommand === 'plan') {
     return {
-      reason: `[HelloAGENTS Guard] Blocked T3 command because the current workflow still requires ~plan before risky schema changes.\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
+      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：高风险 schema 变更前仍需先完成 ~plan。\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
     }
   }
   return null
 }
 
 function buildIdeaBoundaryReason(kind) {
-  return `[HelloAGENTS Guard] Blocked ${kind} during ~idea.\n当前路由：~idea 是只读探索；先停留在比较方案。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
+  return `[HelloAGENTS Guard] 已阻止 ~idea 中的${kind}。\n当前路由：~idea 是只读探索；先停留在比较方案。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
 }
 
 function detectIdeaBoundaryContext(data) {
   return getApplicableRouteContext({
     cwd: data.cwd || process.cwd(),
     filePath: data.tool_input?.file_path || '',
+    payload: data,
   })
 }
 
@@ -106,17 +108,24 @@ function emitIdeaBoundaryBlock(data, kind, target) {
       permissionDecisionReason: reason,
     },
   })
-  emitGuardEvent(data.cwd || process.cwd(), 'guard_blocked', kind === 'write' ? 'pre-write' : 'command', buildIdeaBoundaryReason(kind), {
-    command: kind === 'side-effect command' ? target.replace(/^Command:\s*/, '') : '',
-    target: kind === 'write' ? target.replace(/^Target:\s*/, '') : '',
-    guardType: kind === 'write' ? 'idea-write-boundary' : 'idea-command-boundary',
-  })
+  emitGuardEvent(
+    data.cwd || process.cwd(),
+    'guard_blocked',
+    kind === 'write' ? 'pre-write' : 'command',
+    buildIdeaBoundaryReason(kind),
+    {
+      command: kind === '有副作用命令' ? target.replace(/^命令：\s*/, '') : '',
+      target: kind === '写入操作' ? target.replace(/^目标：\s*/, '') : '',
+      guardType: kind === '写入操作' ? 'idea-write-boundary' : 'idea-command-boundary',
+    },
+    data,
+  )
 }
 
 function preWriteGuard(data) {
   if (readSettings().guard_enabled === false) return
   if (!detectIdeaBoundaryContext(data)?.zeroSideEffect) return
-  emitIdeaBoundaryBlock(data, 'write', `Target: ${data.tool_input?.file_path || '(unknown file)'}`)
+  emitIdeaBoundaryBlock(data, '写入操作', `目标：${data.tool_input?.file_path || '未知文件'}`)
 }
 
 function buildPostWriteWarnings(data) {
@@ -146,23 +155,23 @@ function postWriteScan(data) {
   emitGuardEvent(data.cwd || process.cwd(), 'guard_warning', 'post-write', '', {
     warnings,
     guardType: 'post-write-l2',
-  })
+  }, data)
 }
 
 function handleDangerousCommand(data, command) {
   for (const { pattern, reason } of DANGEROUS_PATTERNS) {
     if (!pattern.test(command)) continue
     emitHookPayload({
-      hookSpecificOutput: {
-        hookEventName: HOOK_EVENT,
-        permissionDecision: 'deny',
-        permissionDecisionReason: `[HelloAGENTS Guard] Blocked: ${reason}\nCommand: ${command.slice(0, 200)}`,
-      },
+        hookSpecificOutput: {
+          hookEventName: HOOK_EVENT,
+          permissionDecision: 'deny',
+          permissionDecisionReason: `[HelloAGENTS Guard] 已阻止：${reason}\n命令：${command.slice(0, 200)}`,
+        },
     })
     emitGuardEvent(data.cwd || process.cwd(), 'guard_blocked', 'command', reason, {
       command: command.slice(0, 200),
       guardType: 'dangerous-command',
-    })
+    }, data)
     return true
   }
   return false
@@ -179,14 +188,14 @@ function handleHighRiskCommand(data, command) {
       hookSpecificOutput: {
         hookEventName: HOOK_EVENT,
         permissionDecision: 'deny',
-        permissionDecisionReason: `${gate.reason}\nCommand: ${command.slice(0, 200)}`,
+        permissionDecisionReason: `${gate.reason}\n命令：${command.slice(0, 200)}`,
       },
     })
     emitGuardEvent(cwd, 'guard_blocked', 'command', gate.reason, {
       command: command.slice(0, 200),
       guardType: 'high-risk-gate',
       matches: warnings.map((warning) => warning.reason),
-    })
+    }, data)
     return null
   }
   return warnings.map((warning) => warning.reason)
@@ -215,14 +224,14 @@ function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings)
       guardType: 'high-risk-warning',
       command: command.slice(0, 200),
       warnings: highRiskWarnings,
-    })
+    }, data)
   }
   if (shellSafetyWarnings.length > 0) {
     emitGuardEvent(cwd, 'guard_warning', 'command', '', {
       guardType: 'shell-safety-warning',
       command: command.slice(0, 200),
       warnings: shellSafetyWarnings,
-    })
+    }, data)
   }
 }
 
@@ -236,7 +245,7 @@ function handleShellCommand(data) {
   if (detectIdeaBoundaryContext(data)?.zeroSideEffect) {
     for (const pattern of IDEA_SIDE_EFFECT_COMMAND_PATTERNS) {
       if (!pattern.test(command)) continue
-      emitIdeaBoundaryBlock(data, 'side-effect command', `Command: ${command.slice(0, 200)}`)
+      emitIdeaBoundaryBlock(data, '有副作用命令', `命令：${command.slice(0, 200)}`)
       return
     }
   }
@@ -265,4 +274,15 @@ async function main() {
   handleShellCommand(data)
 }
 
-main().catch(() => {})
+main().catch((error) => {
+  const reason = `[HelloAGENTS Guard] 守卫脚本执行异常，已阻止本次操作以避免静默放行。\n原因：${error?.message || error}`
+  emitHookPayload({
+    hookSpecificOutput: {
+      hookEventName: HOOK_EVENT,
+      permissionDecision: 'deny',
+      permissionDecisionReason: reason,
+    },
+  })
+  process.stderr.write(`${reason}\n`)
+  process.exitCode = 1
+})

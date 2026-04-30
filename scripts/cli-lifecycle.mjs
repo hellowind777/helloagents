@@ -15,6 +15,7 @@ export const HOSTS = ['claude', 'gemini', 'codex']
 const runtime = {
   home: '',
   pkgRoot: '',
+  sourceRoot: '',
   helloagentsHome: '',
   configFile: '',
   pkgVersion: '',
@@ -114,7 +115,6 @@ function resolveHostMode(host, explicitMode, settings) {
   if (explicitMode) return explicitMode
   return detectHostMode(host)
     || getTrackedHostMode(settings, host)
-    || (!hasTrackedHostModes(settings) ? (settings.install_mode || '') : '')
     || DEFAULTS.install_mode
 }
 
@@ -124,10 +124,11 @@ function resolveInstallMode(explicitMode, settings) {
 
 
 export function syncVersion() {
+  const packageRoot = runtime.sourceRoot || runtime.pkgRoot
   const targets = [
-    join(runtime.pkgRoot, '.claude-plugin', 'plugin.json'),
-    join(runtime.pkgRoot, '.codex-plugin', 'plugin.json'),
-    join(runtime.pkgRoot, 'gemini-extension.json'),
+    join(packageRoot, '.claude-plugin', 'plugin.json'),
+    join(packageRoot, '.codex-plugin', 'plugin.json'),
+    join(packageRoot, 'gemini-extension.json'),
   ]
   for (const path of targets) {
     const obj = safeJson(path)
@@ -135,9 +136,9 @@ export function syncVersion() {
     obj.version = runtime.pkgVersion
     safeWrite(path, JSON.stringify(obj, null, 2) + '\n')
   }
-  const marketPath = join(runtime.pkgRoot, '.claude-plugin', 'marketplace.json')
+  const marketPath = join(packageRoot, '.claude-plugin', 'marketplace.json')
   const market = safeJson(marketPath)
-  if (market?.plugins?.[0]) {
+  if (market?.plugins?.[0]?.version) {
     market.plugins[0].version = runtime.pkgVersion
     safeWrite(marketPath, JSON.stringify(market, null, 2) + '\n')
   }
@@ -173,29 +174,39 @@ function runAllHostsLifecycle(action, explicitMode) {
     }
     runtime.ok(runtime.msg('所有 CLI 配置已清理', 'All CLI configurations cleaned'))
     console.log(runtime.msg(
-      '  ℹ ~/.helloagents/ 已保留（如需彻底清理请手动删除）\n  ℹ 如已安装 Claude Code 插件，请手动执行: /plugin remove helloagents\n  ℹ 如已安装 Gemini CLI 扩展，请手动执行: gemini extensions uninstall helloagents',
-      '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n  ℹ If Claude Code plugin installed, run: /plugin remove helloagents\n  ℹ If Gemini CLI extension installed, run: gemini extensions uninstall helloagents',
+      '  ℹ ~/.helloagents/ 已保留（如需彻底清理请手动删除）\n  ℹ 已自动尝试移除 Claude/Gemini 插件或扩展；如宿主命令不可用，请手动执行对应移除命令',
+      '  ℹ ~/.helloagents/ preserved (delete manually if desired)\n  ℹ Claude/Gemini plugin or extension removal was attempted automatically; if host commands are unavailable, remove them manually',
     ))
     console.log()
     return
   }
 
   const settings = readSettings(true)
-  if (action === 'update' && !explicitMode) {
+  if (!explicitMode) {
     for (const host of HOSTS) {
       const mode = resolveHostMode(host, '', settings)
       const result = runHostLifecycle(runtime, action, host, mode)
-      if (!result.skipped) setTrackedHostMode(settings, host, mode)
+      if (!result.skipped && result.ok !== false) setTrackedHostMode(settings, host, mode)
+      else clearTrackedHostMode(settings, host)
     }
     writeSettings(settings)
-    runtime.printInstallMsg(settings.install_mode || DEFAULTS.install_mode, 'refresh')
+    const modes = Object.values(settings.host_install_modes || {})
+    const displayMode = modes.length && modes.every((mode) => mode === modes[0])
+      ? modes[0]
+      : settings.install_mode || DEFAULTS.install_mode
+    runtime.printInstallMsg(displayMode, action === 'update' ? 'refresh' : 'install')
     return
   }
 
   const mode = resolveInstallMode(explicitMode, settings)
   if (explicitMode) settings.install_mode = explicitMode
-  installAllHosts(runtime, mode)
-  setAllTrackedHostModes(settings, mode)
+  const results = installAllHosts(runtime, mode)
+  settings.host_install_modes = {}
+  for (const host of HOSTS) {
+    if (!results?.[host]?.skipped && results?.[host]?.ok !== false) {
+      settings.host_install_modes[host] = mode
+    }
+  }
   writeSettings(settings)
   runtime.printInstallMsg(mode, action === 'update' ? 'refresh' : 'install')
 }

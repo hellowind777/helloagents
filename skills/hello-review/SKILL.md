@@ -32,8 +32,8 @@ description: 审查代码变更、检查 PR、review 代码质量，或用户要
 - 审查结束时必须单独给出一行“审查结论：...”
 - 若发现阻塞问题，结论中明确写出存在问题，并在正文中为每个问题附文件定位
 - 若未发现阻塞问题，明确写“审查结论：未发现阻塞问题。”
-- 若当前项目已激活，且本轮审查结果需要进入后续交付检查或收尾，审查结论确定后立即调用 `scripts/review-state.mjs write` 写 `.helloagents/.ralph-review.json`
-- `.ralph-review.json` 必须使用结构化字段记录：`outcome`（`clean` / `findings`）、`conclusion`、`findings`、`fileReferences`
+- 若当前项目已激活，且本轮审查结果需要进入后续交付检查或收尾，审查结论确定后立即调用 `scripts/review-state.mjs write` 写当前会话 `artifacts/review.json`
+- `artifacts/review.json` 必须使用结构化字段记录：`outcome`（`clean` / `findings`）、`conclusion`、`findings`、`fileReferences`
 - 不要依赖“审查结论：...”这行让运行时再从自然语言里猜机器结论；这行只服务于人类阅读
 
 ## 交付检查

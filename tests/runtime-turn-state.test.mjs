@@ -124,7 +124,7 @@ test('codex notify gates only main complete turns from turn-state', () => {
   })
   let payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /unfinished tasks|missing a trustworthy structured contract/)
+  assert.match(payload.reason, /未完成任务|缺少可信的结构化契约/)
 
   result = runNode(turnStateScript, ['read'], {
     cwd: project,
@@ -196,6 +196,101 @@ test('stop allows structured waiting turn-state and clears it', () => {
   assert.equal(payload.state, null)
 })
 
+test('ordinary complete turns skip automatic Ralph Loop verification', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-fast-complete-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeSettings(home, { ralph_loop_enabled: true })
+  writeJson(join(project, 'package.json'), {
+    name: 'fast-complete-project',
+    scripts: {
+      test: 'node -e "process.exit(1)"',
+    },
+  })
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'closeout',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['stop'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '任务已完成。',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.decision, undefined)
+})
+
+test('explicit verify route still runs Ralph Loop verification', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-verify-route-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeSettings(home, { ralph_loop_enabled: true })
+  writeJson(join(project, 'package.json'), {
+    name: 'verify-route-project',
+    scripts: {
+      test: 'node -e "process.exit(1)"',
+    },
+  })
+
+  let result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      prompt: '~verify run checks',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'verify',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['stop'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '验证完成。',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.decision, 'block')
+  assert.match(payload.reason, /Ralph Loop/)
+  assert.match(payload.reason, /npm run test/)
+})
+
 test('turn-state rejects waiting without blocker details', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
@@ -216,6 +311,100 @@ test('turn-state rejects waiting without blocker details', () => {
 
   assert.notEqual(result.status, 0)
   assert.match(`${result.stderr}${result.stdout}`, /requires reasonCategory and reason/)
+})
+
+test('turn-state writes pure cwd into the session capsule', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-scope-')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'verify',
+    }),
+  })
+  let payload = parseStdoutJson(result)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]detached[\\/]default[\\/]capsule\.json$/)
+  assert.equal(payload.payload.cwd, project)
+  assert.equal(payload.payload.key.endsWith('::detached::default'), true)
+
+  result = runNode(turnStateScript, ['read'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.state.cwd, project)
+  assert.equal(payload.state.key.endsWith('::detached::default'), true)
+})
+
+test('stable turn-state command entry writes state', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-cli-')
+  const turnStateCli = join(pkgRoot, 'scripts', 'turn-state-cli.mjs')
+
+  const result = runNode(turnStateCli, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+      phase: 'consolidate',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.payload.kind, 'complete')
+  assert.equal(payload.payload.role, 'main')
+})
+
+test('stable turn-state command entry supports flags and help', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-flags-')
+  const turnStateCli = join(pkgRoot, 'scripts', 'turn-state-cli.mjs')
+
+  let result = runNode(turnStateCli, ['--help'], {
+    cwd: project,
+    env,
+  })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.match(result.stdout, /helloagents-turn-state write --kind complete --role main/)
+
+  result = runNode(turnStateCli, [
+    'write',
+    '--cwd',
+    project,
+    '--kind',
+    'waiting',
+    '--role',
+    'main',
+    '--reason-category',
+    'missing-input',
+    '--reason',
+    '用户尚未提供必要信息。',
+  ], {
+    cwd: project,
+    env,
+  })
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.payload.kind, 'waiting')
+  assert.equal(payload.payload.role, 'main')
+  assert.equal(payload.payload.reasonCategory, 'missing-input')
+  assert.equal(payload.payload.reason, '用户尚未提供必要信息。')
 })
 
 test('stop blocks explicit auto when turn-state is missing', () => {
@@ -387,5 +576,5 @@ test('stop delivery gate prefers structured turn-state over completion text', ()
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /unfinished tasks/)
+  assert.match(payload.reason, /未完成任务/)
 })

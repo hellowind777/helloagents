@@ -1,27 +1,33 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { appendReplayEvent } from './replay-state.mjs'
-import { getProjectVerifyYamlPath } from './project-storage.mjs'
+import {
+  getProjectVerifyYamlPath,
+} from './project-storage.mjs'
+import {
+  captureWorkspaceFingerprint,
+  clearRuntimeEvidence,
+  getRuntimeEvidencePath,
+  getRuntimeEvidenceRelativePath,
+  readRuntimeEvidence,
+  validateEvidenceFingerprint,
+  validateEvidenceTimestamp,
+  writeRuntimeEvidence,
+} from './runtime-artifacts.mjs'
 
-export const VERIFY_EVIDENCE_FILE_NAME = '.ralph-verify.json'
-const VERIFY_EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
+export const VERIFY_EVIDENCE_FILE_NAME = 'verify.json'
 const SHELL_OPERATORS = /[;&|`$(){}\n\r]/
 
-export function getVerifyEvidencePath(cwd) {
-  return join(cwd, '.helloagents', VERIFY_EVIDENCE_FILE_NAME)
+export function getVerifyEvidencePath(cwd, options = {}) {
+  return getRuntimeEvidencePath(cwd, VERIFY_EVIDENCE_FILE_NAME, options)
 }
 
-export function readVerifyEvidence(cwd) {
-  try {
-    return JSON.parse(readFileSync(getVerifyEvidencePath(cwd), 'utf-8'))
-  } catch {
-    return null
-  }
+export function readVerifyEvidence(cwd, options = {}) {
+  return readRuntimeEvidence(cwd, VERIFY_EVIDENCE_FILE_NAME, options)
 }
 
-export function clearVerifyEvidence(cwd) {
-  rmSync(getVerifyEvidencePath(cwd), { force: true })
+export function clearVerifyEvidence(cwd, options = {}) {
+  clearRuntimeEvidence(cwd, VERIFY_EVIDENCE_FILE_NAME, options)
 }
 
 function loadVerifyYaml(cwd) {
@@ -89,34 +95,7 @@ export function hasUnsafeVerifyCommand(commands = []) {
   return commands.some((cmd) => SHELL_OPERATORS.test(cmd))
 }
 
-function readGitDiffStat(cwd, args) {
-  try {
-    return execSync(`git diff --stat ${args}`.trim(), {
-      cwd,
-      encoding: 'utf-8',
-      timeout: 10_000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim()
-  } catch {
-    return null
-  }
-}
-
-export function captureWorkspaceFingerprint(cwd) {
-  const unstaged = readGitDiffStat(cwd, 'HEAD')
-  const staged = readGitDiffStat(cwd, '--cached')
-  const available = unstaged !== null || staged !== null
-
-  return {
-    available,
-    unstaged: unstaged || '',
-    staged: staged || '',
-    combined: `${unstaged || ''}\n---\n${staged || ''}`.trim(),
-  }
-}
-
-export function writeVerifyEvidence(cwd, { commands = [], fastOnly = false, source = 'ralph-loop' } = {}) {
-  mkdirSync(join(cwd, '.helloagents'), { recursive: true })
+export function writeVerifyEvidence(cwd, { commands = [], fastOnly = false, source = 'ralph-loop' } = {}, options = {}) {
   const payload = {
     updatedAt: new Date().toISOString(),
     commands,
@@ -124,15 +103,16 @@ export function writeVerifyEvidence(cwd, { commands = [], fastOnly = false, sour
     source,
     fingerprint: captureWorkspaceFingerprint(cwd),
   }
-  writeFileSync(getVerifyEvidencePath(cwd), `${JSON.stringify(payload, null, 2)}\n`, 'utf-8')
+  writeRuntimeEvidence(cwd, VERIFY_EVIDENCE_FILE_NAME, payload, options)
   appendReplayEvent(cwd, {
     event: 'verify_evidence_written',
     source,
+    payload: options.payload || {},
     details: {
       commands,
       fastOnly,
     },
-    artifacts: ['.helloagents/.ralph-verify.json'],
+    artifacts: [getRuntimeEvidenceRelativePath(cwd, VERIFY_EVIDENCE_FILE_NAME, options)],
   })
 }
 
@@ -142,7 +122,7 @@ function validateVerifyEvidencePresence(commands, evidence) {
     required: true,
     status: 'missing',
     commands,
-    details: ['missing successful verification evidence for the current workflow'],
+    details: ['缺少当前工作流的成功验证证据'],
   }
 }
 
@@ -153,51 +133,20 @@ function validateVerifyEvidenceFreshness(cwd, commands, evidence, now) {
       status: 'fast-only',
       commands,
       evidence,
-      details: ['latest verification evidence only covers subagent fast checks'],
+      details: ['最新验证证据只覆盖子代理快速检查'],
     }
   }
 
-  const updatedAt = Date.parse(evidence.updatedAt || '')
-  if (!Number.isFinite(updatedAt)) {
-    return {
-      required: true,
-      status: 'invalid',
-      commands,
-      evidence,
-      details: ['verification evidence timestamp is invalid'],
-    }
-  }
-  if (now - updatedAt > VERIFY_EVIDENCE_MAX_AGE_MS) {
-    return {
-      required: true,
-      status: 'stale-time',
-      commands,
-      evidence,
-      details: ['verification evidence is older than 30 minutes'],
-    }
-  }
-  return null
+  const timestampError = validateEvidenceTimestamp(evidence, now, '验证证据')
+  return timestampError ? { ...timestampError, commands } : null
 }
 
 function validateVerifyFingerprint(cwd, commands, evidence) {
-  const currentFingerprint = captureWorkspaceFingerprint(cwd)
-  if (
-    currentFingerprint.available
-    && evidence.fingerprint?.available
-    && currentFingerprint.combined !== evidence.fingerprint.combined
-  ) {
-    return {
-      required: true,
-      status: 'stale-diff',
-      commands,
-      evidence,
-      details: ['workspace diff changed after the last successful verification evidence'],
-    }
-  }
-  return null
+  const fingerprintError = validateEvidenceFingerprint(cwd, evidence, '成功验证证据')
+  return fingerprintError ? { ...fingerprintError, commands } : null
 }
 
-export function getVerifyEvidenceStatus(cwd, now = Date.now()) {
+export function getVerifyEvidenceStatus(cwd, { now = Date.now(), ...options } = {}) {
   const commands = detectCommands(cwd)
   if (!commands.length) {
     return {
@@ -207,7 +156,7 @@ export function getVerifyEvidenceStatus(cwd, now = Date.now()) {
     }
   }
 
-  const evidence = readVerifyEvidence(cwd)
+  const evidence = readVerifyEvidence(cwd, options)
   const missingError = validateVerifyEvidencePresence(commands, evidence)
   if (missingError) return missingError
 

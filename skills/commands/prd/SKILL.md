@@ -8,7 +8,7 @@ Trigger: ~prd [description]
 
 执行 `~prd` 时，不读取 `~plan` 的 command skill；只有当前流程明确需要时，才继续读取对应的 hello-* 技能。
 执行 `~prd` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充规格探索、PRD 写入与继续执行要求。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`，`.ralph-*.json` 保持项目本地；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；会话证据使用当前 `state_path` 所在目录下的 `artifacts/*.json`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
 - 在用户确认方案之前，禁止编写任何实现代码、创建任何文件、或执行任何实现操作。
@@ -60,6 +60,7 @@ Trigger: ~prd [description]
 已有项目：
 - 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息明确要继续上次任务，或会话刚经历恢复 / 压缩，先读取 `state_path`，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实确认当前任务
 - 在进入维度探索前，至少确认 `.helloagents/context.md`、`.helloagents/guidelines.md`，并只扫描与当前产品范围直接相关的代码和配置
+- 若 `.helloagents/context.md` 已有领域语言，PRD 中统一沿用；发现术语冲突或歧义时，先澄清再写入
 
 全新项目（无 .helloagents/ 目录）：
 - 跳过，直接进入项目定位
@@ -88,6 +89,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 用户说"默认" → AI 按推荐方案填充，快速过
 - 用户说"展开" → 深入讨论该维度的子项
 - 维度之间可以回溯：用户说"回到 03" → 重新讨论 UI/UX 设计
+- 涉及项目特有概念时，确认标准术语、避免用语和关键关系；不要把泛化技术词写入领域语言
 
 选项质量要求：
 - 涉及视觉/交互/体验的问题时，选项必须体现当前前沿设计水准
@@ -100,7 +102,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 按当前已加载 bootstrap 的 `.helloagents/` 与流程状态规则，确保最小项目状态已建立；这是方案包写入的前置操作，不受 kb_create_mode 开关控制
 - 创建 `.helloagents/plans/YYYYMMDDHHMM_{feature}/prd/`（按当前项目存储模式解析）
 - 按 templates/plans/prd/ 的模板格式，仅写入用户未跳过的维度文件
-- 生成 tasks.md（每个任务包含具体文件路径、预期变更、完成标准、验证方式；任务独立可验证；依赖顺序明确）
+- 生成 tasks.md（每个任务默认是端到端垂直切片，标注 AFK / HITL、依赖、具体文件路径、预期变更、完成标准与验证方式；任务独立可验证）
 - 生成 decisions.md（贯穿全程的决策日志）
 - 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需先明确审美方向时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要只把验证路径留在自然语言说明里
@@ -140,7 +142,7 @@ plans/YYYYMMDDHHMM_{feature}/
 │   ├── 02-functional.md
 │   └── ...
 ├── contract.json           # 机器可消费的验证 / 审查契约
-├── tasks.md                # 任务分解
+├── tasks.md                # 端到端垂直切片任务
 └── decisions.md            # 决策日志
 ```
 

@@ -1,10 +1,22 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { chmodSync, existsSync } from 'node:fs'
+import { delimiter, join } from 'node:path'
 
-import { createHomeFixture, createPackageFixture, readJson, readText, writeJson, writeText } from './helpers/test-env.mjs'
+import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, writeJson, writeText } from './helpers/test-env.mjs'
 import { runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
+
+function writeFakeCommand(binDir, name, logPath) {
+  if (process.platform === 'win32') {
+    const commandPath = join(binDir, `${name}.cmd`)
+    writeText(commandPath, `@echo off\r\necho %*>>"${logPath}"\r\nexit /b 0\r\n`)
+    return commandPath
+  }
+  const commandPath = join(binDir, name)
+  writeText(commandPath, `#!/bin/sh\necho "$@" >> "${logPath}"\nexit 0\n`)
+  chmodSync(commandPath, 0o755)
+  return commandPath
+}
 
 test('single-host install and cleanup only touch the targeted CLI in standby mode by default', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -103,6 +115,47 @@ test('all-host update preserves each CLI tracked mode when no mode flag is passe
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /# refreshed standby mode/)
 })
 
+test('all-host install without a mode falls back to standby for untracked CLIs', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+  runCli(pkgRoot, home, ['postinstall'])
+
+  writeJson(configFile, {
+    ...readJson(configFile),
+    install_mode: 'global',
+    host_install_modes: {},
+  })
+
+  runCli(pkgRoot, home, ['install', '--all'])
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.claude, 'standby')
+  assert.equal(settings.host_install_modes.gemini, 'standby')
+  assert.equal(settings.host_install_modes.codex, 'standby')
+  assert.ok(existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(!existsSync(join(home, 'plugins', 'helloagents')))
+})
+
+test('all-host global install records only successful host setup', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', '--all', '--global'], {
+    HELLOAGENTS_CLAUDE_CMD: join(home, 'missing-claude.cmd'),
+    HELLOAGENTS_GEMINI_CMD: join(home, 'missing-gemini.cmd'),
+  })
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.claude, undefined)
+  assert.equal(settings.host_install_modes.gemini, undefined)
+  assert.equal(settings.host_install_modes.codex, 'global')
+})
+
 test('standby refresh updates injected carrier files for every CLI after bootstrap changes', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
@@ -134,4 +187,28 @@ test('codex cleanup removes an empty local marketplace file left behind by prior
   runCli(pkgRoot, home, ['cleanup', 'codex'])
 
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
+})
+
+test('global install attempts Claude and Gemini native installers when commands exist', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const fakeBin = createTempDir('helloagents-fake-bin-')
+  const claudeLog = join(home, 'claude.log')
+  const geminiLog = join(home, 'gemini.log')
+
+  const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
+  const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  runCli(pkgRoot, home, ['install', '--all', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_CLAUDE_CMD: claudeCommand,
+    HELLOAGENTS_GEMINI_CMD: geminiCommand,
+  })
+
+  assert.match(readText(claudeLog), /plugin marketplace add hellowind777\/helloagents/)
+  assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
+  assert.match(readText(geminiLog), /extensions install https:\/\/github\.com\/hellowind777\/helloagents/)
+  assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'global')
+  assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.gemini, 'global')
 })

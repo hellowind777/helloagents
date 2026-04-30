@@ -39,15 +39,17 @@ Trigger: ~help
 完成时：hello-verify, hello-reflect
 
 ### 当前设置
-优先使用当前上下文中已注入的“当前用户设置”显示；仅在上下文不存在该信息时，才尝试读取 `~/.helloagents/helloagents.json`。
+优先使用当前会话上下文中已注入的“当前用户设置”、该配置文件原始 JSON 或此前读取结果摘要显示；若会话上下文不存在该信息，或缺少下表任一配置项，才读取一次 `~/.helloagents/helloagents.json`，并在后续轮次复用。
 如果当前 CLI 存在工作区限制导致家目录不可读，则明确说明“无法直接读取配置文件，以下按已注入设置或默认值展示”，不要改用无关工具或伪造已读取结果。
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
 | output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
-| output_format | true | true=仅主代理在最终收尾回复使用 HelloAGENTS 格式，所有流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
+| output_format | true | true=主代理最终收尾必须使用 HelloAGENTS 格式，流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
-| ralph_loop_enabled | true | 自动验证循环（任务完成时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
+| ralph_loop_enabled | true | 自动验证循环（显式 ~verify / ~loop 或收尾要求时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
 | kb_create_mode | 1 | 0=关闭/1=已激活项目或全局模式中编码自动/2=已激活项目或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
 | project_store_mode | "local" | "local"=知识库/方案包保留在项目本地 `.helloagents/`；"repo-shared"=本地 `.helloagents/` 仅保留激活/STATE/运行态，知识库与方案包改写到 `~/.helloagents/projects/<repo-key>/` | Claude Code + Gemini CLI + Codex CLI |
 | commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |
+| install_mode | "standby" | 当前默认安装模式 | Claude Code + Gemini CLI + Codex CLI |
+| host_install_modes | {} | 单 CLI 模式记录，优先于 install_mode | Claude Code + Gemini CLI + Codex CLI |

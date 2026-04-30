@@ -2,14 +2,20 @@ import { existsSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_CONFIG_HEADER, CODEX_PLUGIN_NAME } from './cli-codex.mjs'
+import {
+  CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
+  CODEX_MANAGED_NOTIFY_VALUE,
+} from './cli-codex-config.mjs'
 import { DEFAULTS } from './cli-config.mjs'
 import { printDoctorText } from './cli-doctor-render.mjs'
+import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
 import { readTopLevelTomlLine } from './cli-toml.mjs'
-import { loadHooksWithAbsPath, safeJson, safeRead } from './cli-utils.mjs'
+import { loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
 
 const runtime = {
   home: '',
   pkgRoot: '',
+  sourceRoot: '',
   pkgVersion: '',
   msg: (cn, en) => en || cn,
   readSettings: () => ({}),
@@ -69,15 +75,16 @@ function pickManagedHooks(hooks) {
 }
 
 function readExpectedHooks(hooksFile, pathVar) {
-  return pickManagedHooks(loadHooksWithAbsPath(runtime.pkgRoot, hooksFile, pathVar)?.hooks || {})
+  return pickManagedHooks(loadHooksWithCliEntry(runtime.pkgRoot, hooksFile, pathVar)?.hooks || {})
 }
 
 function managedHooksMatch(actualHooks, expectedHooks) {
   return stringifySorted(pickManagedHooks(actualHooks || {})) === stringifySorted(expectedHooks || {})
 }
 
-function readBootstrapContent(fileName) {
-  return normalizeText(safeRead(join(runtime.pkgRoot, fileName)) || '')
+function readExpectedCarrierContent(fileName, settings) {
+  const bootstrap = safeRead(join(runtime.pkgRoot, fileName)) || ''
+  return normalizeText(buildRuntimeCarrier(bootstrap, settings))
 }
 
 function buildDoctorIssue(code, cn, en) {
@@ -104,7 +111,7 @@ function suggestDoctorFix(host, status, trackedMode) {
     return `helloagents update ${host}${trackedMode && trackedMode !== 'none' ? ` --${trackedMode}` : ''}`
   }
   if (status === 'manual-plugin') {
-    if (host === 'claude') return '/plugin marketplace add hellowind777/helloagents'
+    if (host === 'claude') return '/plugin marketplace add hellowind777/helloagents; /plugin install helloagents@helloagents'
     if (host === 'gemini') return 'gemini extensions install https://github.com/hellowind777/helloagents'
   }
   if (status === 'not-installed') {
@@ -126,12 +133,13 @@ function inspectClaudeDoctor(settings) {
   const expectedHooks = readExpectedHooks('hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}')
   const checks = {
     carrierMarker: (safeRead(join(claudeDir, 'CLAUDE.md')) || '').includes('HELLOAGENTS_START'),
-    carrierContentMatch: extractManagedCarrierContent(join(claudeDir, 'CLAUDE.md')) === readBootstrapContent('bootstrap-lite.md'),
+    carrierContentMatch: extractManagedCarrierContent(join(claudeDir, 'CLAUDE.md'))
+      === readExpectedCarrierContent('bootstrap-lite.md', settings),
     homeLink: safeRealTarget(join(claudeDir, 'helloagents')) === runtime.pkgRoot,
     settingsHooks: JSON.stringify(claudeSettings.hooks || {}).includes('helloagents'),
     settingsHooksMatch: managedHooksMatch(claudeSettings.hooks || {}, expectedHooks),
     settingsPermission: Array.isArray(claudeSettings.permissions?.allow)
-      && claudeSettings.permissions.allow.includes('Read(~/.claude/helloagents/**)'),
+      && claudeSettings.permissions.allow.includes('Read(~/.helloagents/helloagents/**)'),
   }
 
   const issues = []
@@ -142,15 +150,15 @@ function inspectClaudeDoctor(settings) {
   if (detectedMode === 'standby') {
     if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
     if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
-    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
+    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
     if (!checks.settingsPermission) issues.push(buildDoctorIssue('standby-permission-missing', 'standby Claude 权限注入缺失', 'Standby Claude permission injection is missing'))
   }
   if (trackedMode === 'global') {
     notes.push(runtime.msg(
-      'Claude Code 的 global 模式插件需手动安装；doctor 只检查 standby 残留，不直接探测插件状态。',
-      'Claude Code global-mode plugins are manual; doctor only checks for standby residue and does not inspect plugin state directly.',
+      'Claude Code 的 global 模式由宿主插件系统管理；doctor 只检查 standby 残留，不直接探测插件状态。',
+      'Claude Code global mode is managed by the host plugin system; doctor only checks for standby residue and does not inspect plugin state directly.',
     ))
     if (checks.carrierMarker || checks.homeLink || checks.settingsHooks || checks.settingsPermission) {
       issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is tracked as global'))
@@ -176,7 +184,8 @@ function inspectGeminiDoctor(settings) {
   const expectedHooks = readExpectedHooks('hooks.json', '${extensionPath}')
   const checks = {
     carrierMarker: (safeRead(join(geminiDir, 'GEMINI.md')) || '').includes('HELLOAGENTS_START'),
-    carrierContentMatch: extractManagedCarrierContent(join(geminiDir, 'GEMINI.md')) === readBootstrapContent('bootstrap-lite.md'),
+    carrierContentMatch: extractManagedCarrierContent(join(geminiDir, 'GEMINI.md'))
+      === readExpectedCarrierContent('bootstrap-lite.md', settings),
     homeLink: safeRealTarget(join(geminiDir, 'helloagents')) === runtime.pkgRoot,
     settingsHooks: JSON.stringify(geminiSettings.hooks || {}).includes('helloagents'),
     settingsHooksMatch: managedHooksMatch(geminiSettings.hooks || {}, expectedHooks),
@@ -190,14 +199,14 @@ function inspectGeminiDoctor(settings) {
   if (detectedMode === 'standby') {
     if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
     if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
-    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
+    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
   }
   if (trackedMode === 'global') {
     notes.push(runtime.msg(
-      'Gemini CLI 的 global 模式扩展需手动安装；doctor 只检查 standby 残留，不直接探测扩展状态。',
-      'Gemini CLI global-mode extensions are manual; doctor only checks for standby residue and does not inspect extension state directly.',
+      'Gemini CLI 的 global 模式由宿主扩展系统管理；doctor 只检查 standby 残留，不直接探测扩展状态。',
+      'Gemini CLI global mode is managed by the host extension system; doctor only checks for standby residue and does not inspect extension state directly.',
     ))
     if (checks.carrierMarker || checks.homeLink || checks.settingsHooks) {
       issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is tracked as global'))
@@ -217,12 +226,12 @@ function inspectGeminiDoctor(settings) {
 function appendCodexStandbyIssues(issues, checks) {
   if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
   if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
-  if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向当前包根目录', 'Standby home link is missing or points to a different package root'))
+  if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
   if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('standby-model-instructions-missing', 'standby config 缺少受管 model_instructions_file', 'Standby config is missing the managed model_instructions_file'))
   if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('standby-model-instructions-drift', 'standby model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Standby model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
   if (!checks.codexNotify) issues.push(buildDoctorIssue('standby-notify-missing', 'standby notify 配置缺失', 'Standby notify configuration is missing'))
-  if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 路径未指向当前包根目录', 'Standby notify path does not point to the current package root'))
-  if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled || checks.globalNotifyPath) {
+  if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 未使用受管命令入口', 'Standby notify does not use the managed command entrypoint'))
+  if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled) {
     issues.push(buildDoctorIssue('standby-global-residue', 'standby 模式下仍残留 global 插件文件或配置', 'Global plugin artifacts still remain while Codex is in standby mode'))
   }
 }
@@ -239,8 +248,8 @@ function appendCodexGlobalIssues(issues, checks, pluginVersion, cacheVersion) {
   if (!checks.pluginEnabled) issues.push(buildDoctorIssue('global-plugin-disabled', 'global config 中缺少插件启用段', 'Global plugin enablement block is missing from config'))
   if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('global-model-instructions-missing', 'global config 缺少受管 model_instructions_file', 'Global config is missing the managed model_instructions_file'))
   if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('global-model-instructions-drift', 'global model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Global model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
-  if (!checks.globalNotifyPath) issues.push(buildDoctorIssue('global-notify-missing', 'global notify 路径缺失', 'Global notify path is missing'))
-  if (checks.globalNotifyPath && !checks.globalNotifyPathMatch) issues.push(buildDoctorIssue('global-notify-drift', 'global notify 路径未指向当前插件根目录', 'Global notify path does not point to the current plugin root'))
+  if (!checks.codexNotify) issues.push(buildDoctorIssue('global-notify-missing', 'global notify 配置缺失', 'Global notify configuration is missing'))
+  if (checks.codexNotify && !checks.globalNotifyPathMatch) issues.push(buildDoctorIssue('global-notify-drift', 'global notify 未使用受管命令入口', 'Global notify does not use the managed command entrypoint'))
   if (pluginVersion && !checks.pluginVersionMatch) issues.push(buildDoctorIssue('global-plugin-version-drift', 'global 插件根目录版本与当前包版本不一致', 'Global plugin root version does not match the current package version'))
   if (cacheVersion && !checks.pluginCacheVersionMatch) issues.push(buildDoctorIssue('global-plugin-cache-version-drift', 'global 插件缓存版本与当前包版本不一致', 'Global plugin cache version does not match the current package version'))
   if (checks.homeLink) {
@@ -262,31 +271,31 @@ function inspectCodexDoctor(settings) {
   const homeLinkTarget = safeRealTarget(join(codexDir, 'helloagents'))
   const pkgRootTarget = safeRealTarget(runtime.pkgRoot) || normalizePath(runtime.pkgRoot)
   const pluginRootTarget = safeRealTarget(pluginRoot) || normalizePath(pluginRoot)
-  const standbyNotifyPath = normalizePath(join(runtime.pkgRoot, 'scripts', 'notify.mjs'))
-  const globalNotifyPath = normalizePath(join(pluginRoot, 'scripts', 'notify.mjs'))
-  const managedHomeCarrierPath = normalizePath(join(codexDir, 'AGENTS.md'))
   const modelInstructionsLine = readTopLevelTomlLine(codexConfig, 'model_instructions_file')
   const expectedHomeCarrier = (detectedMode === 'global' || (detectedMode === 'none' && trackedMode === 'global'))
     ? 'bootstrap.md'
     : 'bootstrap-lite.md'
   const checks = {
     carrierMarker: (safeRead(join(codexDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
-    carrierContentMatch: extractManagedCarrierContent(join(codexDir, 'AGENTS.md')) === readBootstrapContent(expectedHomeCarrier),
+    carrierContentMatch: extractManagedCarrierContent(join(codexDir, 'AGENTS.md'))
+      === readExpectedCarrierContent(expectedHomeCarrier, settings),
     homeLink: homeLinkTarget === pkgRootTarget,
     globalHomeLink: homeLinkTarget === pluginRootTarget,
     modelInstructionsFile: !!modelInstructionsLine,
     modelInstructionsPathMatch: !!modelInstructionsLine
-      && normalizePath(modelInstructionsLine).includes(`"${managedHomeCarrierPath}"`),
+      && normalizePath(modelInstructionsLine).includes(`"${CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH}"`),
     codexNotify: codexConfig.includes('codex-notify'),
-    notifyPathMatch: codexConfig.includes(standbyNotifyPath),
+    notifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
     pluginRoot: existsSync(pluginRoot),
     pluginCache: existsSync(pluginCacheRoot),
-    pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '') === readBootstrapContent('bootstrap.md'),
-    pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '') === readBootstrapContent('bootstrap.md'),
+    pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '')
+      === readExpectedCarrierContent('bootstrap.md', settings),
+    pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '')
+      === readExpectedCarrierContent('bootstrap.md', settings),
     marketplaceEntry: Array.isArray(marketplace.plugins) && marketplace.plugins.some((plugin) => plugin?.name === CODEX_PLUGIN_NAME),
     pluginEnabled: codexConfig.includes(CODEX_PLUGIN_CONFIG_HEADER) && codexConfig.includes('enabled = true'),
-    globalNotifyPath: codexConfig.includes('/plugins/helloagents/scripts/notify.mjs'),
-    globalNotifyPathMatch: codexConfig.includes(globalNotifyPath),
+    globalNotifyPath: codexConfig.includes('codex-notify'),
+    globalNotifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
     pluginVersionMatch: pluginVersion ? pluginVersion === runtime.pkgVersion : false,
     pluginCacheVersionMatch: cacheVersion ? cacheVersion === runtime.pkgVersion : false,
   }
@@ -355,7 +364,8 @@ function buildDoctorReport(host) {
   return {
     config: {
       packageVersion: runtime.pkgVersion,
-      packageRoot: runtime.pkgRoot,
+      runtimeRoot: runtime.pkgRoot,
+      packageRoot: runtime.sourceRoot || runtime.pkgRoot,
       installMode: settings.install_mode || DEFAULTS.install_mode,
       trackedHostModes: settings.host_install_modes || {},
     },

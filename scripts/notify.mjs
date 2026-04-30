@@ -3,7 +3,7 @@
 // Zero external dependencies, ES module, cross-platform
 
 import { join, dirname } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
@@ -13,10 +13,12 @@ import { shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
 import { runGateScript } from './notify-gates.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
-import { clearRouteContext, writeRouteContext } from './runtime-context.mjs';
+import { clearRouteContext, getApplicableRouteContext, writeRouteContext } from './runtime-context.mjs';
 import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
 import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
+import { resolveSessionToken } from './session-token.mjs';
+import { isProjectRuntimeActive } from './runtime-scope.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,6 +35,7 @@ const EVENT_NAME = {
   UserPromptSubmit: IS_GEMINI ? 'BeforeAgent' : 'UserPromptSubmit',
   PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
 };
+const RALPH_LOOP_ROUTE_COMMANDS = new Set(['verify', 'loop']);
 
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
@@ -44,8 +47,12 @@ function normalizeNotifyLevel(value) {
 
 function notifyByLevel(event, extra, settings = getSettings()) {
   const level = normalizeNotifyLevel(settings.notify_level ?? 0);
-  if (level === 2 || level === 3) playSound(event);
-  if (level === 1 || level === 3) desktopNotify(event, extra);
+  if (level === 1) desktopNotify(event, extra);
+  if (level === 2) playSound(event);
+  if (level === 3) {
+    desktopNotify(event, extra);
+    playSound(event);
+  }
 }
 
 function buildNotifyExtra(payload = {}, options = {}) {
@@ -64,9 +71,18 @@ function getSettings() {
   return readSettings(CONFIG_FILE);
 }
 
-function runRalphLoop(payload) {
+function shouldRunRalphLoop(cwd, turnState, payload = {}) {
+  if (!turnState || turnState.kind !== 'complete') return false;
+  if (turnState.requiresDeliveryGate) return true;
+  const routeContext = getApplicableRouteContext({ cwd, payload });
+  return RALPH_LOOP_ROUTE_COMMANDS.has(routeContext?.skillName);
+}
+
+function runRalphLoop(payload, { turnState } = {}) {
   const settings = getSettings();
   if (settings.ralph_loop_enabled === false) return false;
+  const cwd = payload.cwd || process.cwd();
+  if (!shouldRunRalphLoop(cwd, turnState, payload)) return false;
   return runGateScript({
     payload,
     host: HOST,
@@ -106,13 +122,24 @@ function runTurnStopGate(payload) {
   });
 }
 
-function readMainTurnState(cwd) {
-  const turnState = readTurnState(cwd);
+function attachTurnSession(payload = {}, cwd = payload.cwd || process.cwd()) {
+  const sessionId = resolveSessionToken({
+    payload,
+    env: process.env,
+    ppid: process.ppid,
+    allowPpidFallback: !isProjectRuntimeActive(cwd),
+  });
+  if (!sessionId || payload.sessionId) return payload;
+  return { ...payload, sessionId };
+}
+
+function readMainTurnState(cwd, payload = {}) {
+  const turnState = readTurnState(cwd, { payload });
   return turnState?.role === 'main' ? turnState : null;
 }
 
-function consumeMainTurnState(cwd, turnState) {
-  if (turnState?.role === 'main') clearTurnState(cwd);
+function consumeMainTurnState(cwd, turnState, payload = {}) {
+  if (turnState?.role === 'main') clearTurnState(cwd, { payload });
 }
 
 function shouldProcessCloseout(turnState) {
@@ -136,6 +163,7 @@ function cmdPreCompact() {
     host: HOST,
     event: 'pre_compact_snapshot',
     source: 'pre-compact',
+    payload,
     details: {
       bootstrapFile,
       installMode: settings.install_mode || '',
@@ -146,7 +174,7 @@ function cmdPreCompact() {
 
 function cmdRoute() {
   const payload = readStdinJson();
-  clearTurnState(payload.cwd || process.cwd());
+  clearTurnState(payload.cwd || process.cwd(), { payload });
   handleRouteCommand({
     payload,
     host: HOST,
@@ -181,15 +209,17 @@ function cmdInject() {
     source,
     bootstrapFile,
     installMode: settings.install_mode || '',
+    payload,
   });
   appendReplayEvent(cwd, {
     host: HOST,
     event: 'session_injected',
     source,
+    payload,
     details: {
       bootstrapFile,
       installMode: settings.install_mode || '',
-      activatedProject: existsSync(join(cwd, '.helloagents')),
+      activatedProject: isProjectRuntimeActive(cwd),
     },
   });
   const context = buildInjectContext({
@@ -201,37 +231,38 @@ function cmdInject() {
     cwd,
     payload,
   });
-  clearRouteContext();
-  clearTurnState(cwd);
+  clearRouteContext({ cwd, payload });
+  clearTurnState(cwd, { payload });
   suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
 }
 
 function cmdStop() {
   const payload = readStdinJson();
   const cwd = payload.cwd || process.cwd();
-  const turnState = readMainTurnState(cwd);
-  if (runTurnStopGate(payload)) {
-    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState);
+  const turnPayload = attachTurnSession(payload, cwd);
+  const turnState = readMainTurnState(cwd, turnPayload);
+  if (runTurnStopGate(turnPayload)) {
+    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
     return;
   }
   const shouldProcess = shouldProcessCloseout(turnState);
-  if (shouldProcess && runRalphLoop(payload)) {
-    consumeMainTurnState(cwd, turnState);
+  if (shouldProcess && runRalphLoop(turnPayload, { turnState })) {
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
-  if (shouldProcess && runDeliveryGate(payload)) {
-    consumeMainTurnState(cwd, turnState);
+  if (shouldProcess && runDeliveryGate(turnPayload)) {
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
     return;
   }
 
   const settings = getSettings();
-  if (shouldProcess) {
+  if (shouldProcess || !turnState) {
     notifyByLevel('complete', buildNotifyExtra(payload), settings);
   }
-  consumeMainTurnState(cwd, turnState);
-  clearRouteContext();
+  consumeMainTurnState(cwd, turnState, turnPayload);
+  clearRouteContext({ cwd, payload: turnPayload });
   emptySuppress();
 }
 
@@ -246,6 +277,8 @@ function cmdDesktop() {
 function cmdCodexNotify() {
   let data = {};
   try { data = JSON.parse(process.argv[3] || '{}'); } catch {}
+  const cwd = data.cwd || process.cwd();
+  const turnPayload = attachTurnSession(data, cwd);
 
   const type = data.type || '';
   const client = data.client || '';
@@ -257,34 +290,37 @@ function cmdCodexNotify() {
   }
   if (type !== 'agent-turn-complete') return;
 
-  const cwd = data.cwd || process.cwd();
-  const turnState = readMainTurnState(cwd);
-  if (runTurnStopGate(data)) {
-    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState);
+  const turnState = readMainTurnState(cwd, turnPayload);
+  if (runTurnStopGate(turnPayload)) {
+    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
     return;
   }
-  if (!turnState) return;
+  if (!turnState) {
+    notifyByLevel('complete', buildNotifyExtra(data), getSettings());
+    clearRouteContext({ cwd, payload: turnPayload });
+    return;
+  }
   if (turnState.kind !== 'complete') {
-    consumeMainTurnState(cwd, turnState);
-    clearRouteContext();
+    consumeMainTurnState(cwd, turnState, turnPayload);
+    clearRouteContext({ cwd, payload: turnPayload });
     return;
   }
 
   const settings = getSettings();
-  if (runRalphLoop(data)) {
-    consumeMainTurnState(cwd, turnState);
+  if (runRalphLoop(turnPayload, { turnState })) {
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
   }
-  if (runDeliveryGate(data)) {
-    consumeMainTurnState(cwd, turnState);
+  if (runDeliveryGate(turnPayload)) {
+    consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(data), settings);
     return;
   }
 
   notifyByLevel('complete', buildNotifyExtra(data), settings);
-  consumeMainTurnState(cwd, turnState);
-  clearRouteContext();
+  consumeMainTurnState(cwd, turnState, turnPayload);
+  clearRouteContext({ cwd, payload: turnPayload });
 }
 
 const cmd = process.argv[2] || '';

@@ -11,7 +11,12 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getSessionEvidencePath,
+  getSessionStatePath,
+  parseStdoutJson,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('advisor contract stays optional but blocks closeout when explicitly required', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -55,7 +60,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test'],
     fastOnly: false,
@@ -76,7 +81,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /按需能力：/)
   assert.match(payload.hookSpecificOutput.additionalContext, /advisor-artifact=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-advisor\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/advisor\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,
@@ -85,7 +90,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /missing fresh advisor evidence/)
+  assert.match(payload.reason, /缺少最新 advisor 证据/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -112,7 +117,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /latest advisor evidence still records blocking findings/)
+  assert.match(payload.reason, /最新 advisor 证据仍记录阻塞问题/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -139,7 +144,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /missing fresh closeout evidence/)
+  assert.match(payload.reason, /缺少最新收尾证据/)
 })
 
 test('ui style advisor reuses advisor evidence when the UI contract explicitly requires it', () => {
@@ -184,7 +189,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test'],
     fastOnly: false,
@@ -204,7 +209,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /advisor-artifact=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-advisor\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/advisor\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,
@@ -213,7 +218,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /missing fresh advisor evidence/)
+  assert.match(payload.reason, /缺少最新 advisor 证据/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -239,7 +244,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /advisor evidence must retain the requested advisor focus/)
+  assert.match(payload.reason, /advisor 证据必须保留已请求的 advisor focus/)
 
   result = runNode(advisorScript, ['write'], {
     cwd: project,
@@ -265,5 +270,5 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /missing fresh closeout evidence/)
+  assert.match(payload.reason, /缺少最新收尾证据/)
 })
