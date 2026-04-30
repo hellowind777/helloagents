@@ -60,13 +60,13 @@ test('bootstrap path rules no longer depend on host-name placeholders or wrong c
     assert.match(content, /## 项目上下文/);
     assert.match(content, /路径定义：`\{HELLOAGENTS_READ_ROOT\}`/);
     assert.match(content, /不要读取项目路径|不要.*项目目录.*HelloAGENTS skills 路径/);
-    assert.match(content, /同一会话内对同一配置文件、模块、SKILL、模板只读取一次/);
-    assert.match(content, /当前会话上下文没有 `output_format` 的已知值/);
+    assert.match(content, /同一路径的配置文件、模块、SKILL、模板只读一次/);
+    assert.match(content, /输出格式只在缺少 `output_format` 已知值时触发读取/);
   }
 
   const helloagentsSkill = read('skills/helloagents/SKILL.md');
   assert.doesNotMatch(helloagentsSkill, /当前CLI名称/);
   assert.match(helloagentsSkill, /路径定义：`\{HELLOAGENTS_READ_ROOT\}`/);
   assert.match(helloagentsSkill, /不要.*项目目录.*HelloAGENTS skills 路径/);
-  assert.match(helloagentsSkill, /同一会话内对同一配置文件、模块、SKILL、模板只读取一次/);
+  assert.match(helloagentsSkill, /同一路径的配置文件、模块、SKILL、模板只读一次/);
 });

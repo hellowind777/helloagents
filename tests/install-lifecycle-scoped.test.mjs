@@ -115,6 +115,47 @@ test('all-host update preserves each CLI tracked mode when no mode flag is passe
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /# refreshed standby mode/)
 })
 
+test('all-host install without a mode falls back to standby for untracked CLIs', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+  runCli(pkgRoot, home, ['postinstall'])
+
+  writeJson(configFile, {
+    ...readJson(configFile),
+    install_mode: 'global',
+    host_install_modes: {},
+  })
+
+  runCli(pkgRoot, home, ['install', '--all'])
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.claude, 'standby')
+  assert.equal(settings.host_install_modes.gemini, 'standby')
+  assert.equal(settings.host_install_modes.codex, 'standby')
+  assert.ok(existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(!existsSync(join(home, 'plugins', 'helloagents')))
+})
+
+test('all-host global install records only successful host setup', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', '--all', '--global'], {
+    HELLOAGENTS_CLAUDE_CMD: join(home, 'missing-claude.cmd'),
+    HELLOAGENTS_GEMINI_CMD: join(home, 'missing-gemini.cmd'),
+  })
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.claude, undefined)
+  assert.equal(settings.host_install_modes.gemini, undefined)
+  assert.equal(settings.host_install_modes.codex, 'global')
+})
+
 test('standby refresh updates injected carrier files for every CLI after bootstrap changes', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
