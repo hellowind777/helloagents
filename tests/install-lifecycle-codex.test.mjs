@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CODEX_MANAGED_NOTIFY_VALUE, isManagedCodexModelInstruction } from '../scripts/cli-codex-config.mjs'
+import { CODEX_MANAGED_NOTIFY_VALUE, isManagedCodexModelInstruction, isManagedCodexNotify } from '../scripts/cli-codex-config.mjs'
 import { createHomeFixture, createPackageFixture, readText, writeText } from './helpers/test-env.mjs'
 import {
   runCli,
@@ -11,6 +11,12 @@ import {
 } from './helpers/cli-test-helpers.mjs'
 
 const MANAGED_NOTIFY_LINE = `notify = ${CODEX_MANAGED_NOTIFY_VALUE} # helloagents-managed`
+
+test('Codex managed notify uses a cross-platform .cmd entrypoint', () => {
+  assert.equal(CODEX_MANAGED_NOTIFY_VALUE, '["helloagents-js.cmd", "codex-notify"]')
+  assert.equal(isManagedCodexNotify('notify = ["helloagents-js", "codex-notify"]'), false)
+  assert.equal(isManagedCodexNotify('notify = ["helloagents-js", "codex-notify"] # helloagents-managed'), true)
+})
 
 test('Codex global cleanup still removes marketplace and plugin roots when .codex is gone', () => {
   const { root: pkgRoot } = createPackageFixture()

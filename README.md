@@ -235,10 +235,10 @@ The CLI manages host files explicitly:
 npm install -g helloagents
 ```
 
-If another executable named `helloagents` already exists in your `PATH`, use the stable alias:
+If another executable named `helloagents` already exists in your `PATH`, use the stable managed-entry alias:
 
 ```bash
-helloagents-js
+helloagents-js.cmd
 ```
 
 By default, `postinstall` installs the package command, initializes `~/.helloagents/helloagents.json`, and syncs runtime files to `~/.helloagents/helloagents`. No host CLI is deployed unless you set `HELLOAGENTS=target[:mode]`, such as `HELLOAGENTS=codex:global`.
@@ -316,7 +316,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
 
-Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`.
+Host configs use the stable `helloagents-js.cmd` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. The same managed `config.toml` works across Windows, macOS, and Linux.
 
 #### npm commands
 
@@ -643,7 +643,7 @@ Codex is rules-file driven by default.
 
 - standby writes `~/.codex/AGENTS.md`
 - standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
-- standby writes a managed `notify = ["helloagents-js", "codex-notify"]` command for closeout notification
+- standby writes a managed `notify = ["helloagents-js.cmd", "codex-notify"]` command for closeout notification
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain
 - HelloAGENTS does not enable Codex hooks by default

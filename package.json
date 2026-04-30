@@ -13,6 +13,7 @@
   "bin": {
     "helloagents": "cli.mjs",
     "helloagents-js": "cli.mjs",
+    "helloagents-js.cmd": "cli.mjs",
     "helloagents-turn-state": "scripts/turn-state-cli.mjs"
   },
   "scripts": {
