@@ -3,8 +3,11 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { CODEX_MANAGED_NOTIFY_VALUE } from '../scripts/cli-codex-config.mjs'
 import { createHomeFixture, createPackageFixture, readJson, readText, realTarget, writeJson, writeText } from './helpers/test-env.mjs'
 import { hasTimestampedBackup, runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
+
+const MANAGED_NOTIFY_LINE = `notify = ${CODEX_MANAGED_NOTIFY_VALUE} # helloagents-managed`
 
 test('CLI lifecycle covers standby, global, update, cleanup, and config preservation', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -50,7 +53,14 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(codexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.doesNotMatch(codexConfig, /developer_instructions\s*=/)
   assert.match(codexConfig, /codex-notify/)
-  assert.match(codexConfig, /^model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["helloagents-js", "codex-notify"\] # helloagents-managed\n\n\[features\]\nexperimental = true\n/m)
+  assert.ok(codexConfig.startsWith([
+    'model_instructions_file = "~/.codex/AGENTS.md" # helloagents-managed',
+    MANAGED_NOTIFY_LINE,
+    '',
+    '[features]',
+    'experimental = true',
+    '',
+  ].join('\n')), codexConfig)
   assert.ok(hasTimestampedBackup(home, 'config.toml'))
   assert.equal(realTarget(join(home, '.claude', 'helloagents')), runtimeRoot)
   assert.equal(realTarget(join(home, '.gemini', 'helloagents')), runtimeRoot)
@@ -77,7 +87,14 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const globalCodexConfig = readText(codexConfigPath)
   assert.match(globalCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
-  assert.match(globalCodexConfig, /^model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed\nnotify = \["helloagents-js", "codex-notify"\] # helloagents-managed\n\n\[features\]\nexperimental = true\n/m)
+  assert.ok(globalCodexConfig.startsWith([
+    'model_instructions_file = "~/.codex/AGENTS.md" # helloagents-managed',
+    MANAGED_NOTIFY_LINE,
+    '',
+    '[features]',
+    'experimental = true',
+    '',
+  ].join('\n')), globalCodexConfig)
   assert.match(globalCodexConfig, /\[plugins\."helloagents@local-plugins"\]\s+enabled = true/)
   assert.doesNotMatch(globalCodexConfig, /developer_instructions\s*=/)
 
