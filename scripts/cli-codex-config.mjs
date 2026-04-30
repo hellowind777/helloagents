@@ -7,9 +7,7 @@ import {
 export const CODEX_PLUGIN_CONFIG_HEADER = '[plugins."helloagents@local-plugins"]'
 export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed'
 export const CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH = '~/.codex/AGENTS.md'
-export const CODEX_MANAGED_NOTIFY_COMMAND = process.platform === 'win32'
-  ? 'helloagents-js.cmd'
-  : 'helloagents-js'
+export const CODEX_MANAGED_NOTIFY_COMMAND = 'helloagents-js.cmd'
 export const CODEX_MANAGED_NOTIFY_VALUE = `["${CODEX_MANAGED_NOTIFY_COMMAND}", "codex-notify"]`
 
 function normalizePath(value = '') {
@@ -34,10 +32,7 @@ export function isManagedCodexModelInstruction(line = '') {
 export function isManagedCodexNotify(line = '') {
   const value = String(line || '').replace(/\\/g, '/')
   return value.includes(CODEX_MANAGED_TOML_COMMENT)
-    || (
-      value.includes('helloagents-js')
-      && value.includes('codex-notify')
-    )
+    || value.includes(CODEX_MANAGED_NOTIFY_VALUE)
 }
 
 export function isManagedCodexBackupInstruction(line = '') {

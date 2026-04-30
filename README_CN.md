@@ -235,10 +235,10 @@ CLI 显式管理宿主文件：
 npm install -g helloagents
 ```
 
-如果系统里已经有别的 `helloagents` 可执行文件，可以使用稳定别名：
+如果系统里已经有别的 `helloagents` 可执行文件，可以使用稳定的受管入口别名：
 
 ```bash
-helloagents-js
+helloagents-js.cmd
 ```
 
 默认情况下，`postinstall` 会安装包命令、初始化 `~/.helloagents/helloagents.json`，并把运行时文件同步到 `~/.helloagents/helloagents`。如果希望 npm 在安装或更新后直接部署，设置 `HELLOAGENTS=目标[:模式]`，例如 `HELLOAGENTS=codex:global`。
@@ -316,7 +316,7 @@ helloagents doctor codex --json
 
 当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`，省略时默认 `standby`。
 
-宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。
+宿主配置使用稳定的 `helloagents-js.cmd` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。同一份受管 `config.toml` 可在 Windows、macOS 和 Linux 之间同步。
 
 #### npm 命令
 
@@ -645,7 +645,7 @@ Codex 默认走规则文件驱动。
 
 - 标准模式写入 `~/.codex/AGENTS.md`
 - 标准模式写入受管 `model_instructions_file = "~/.codex/AGENTS.md"`
-- 标准模式写入受管 `notify = ["helloagents-js", "codex-notify"]` 命令用于收尾通知
+- 标准模式写入受管 `notify = ["helloagents-js.cmd", "codex-notify"]` 命令用于收尾通知
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件流程
 - HelloAGENTS 默认不启用 Codex hooks

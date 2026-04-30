@@ -43,6 +43,26 @@ function samePath(left, right) {
   return process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b
 }
 
+function wait(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+function retryTransientFs(operation) {
+  let lastError
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      return operation()
+    } catch (error) {
+      lastError = error
+      if (!['EPERM', 'EBUSY', 'ENOTEMPTY'].includes(error?.code) || attempt === 5) {
+        throw error
+      }
+      wait(40 * (attempt + 1))
+    }
+  }
+  throw lastError
+}
+
 /** Sync package runtime files into the stable root without copying repo-only files. */
 export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
   const source = resolve(sourceRoot)
@@ -57,8 +77,10 @@ export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
 
   try {
     copyEntries(source, staging, RUNTIME_ROOT_ENTRIES)
-    removeIfExists(target)
-    renameSync(staging, target)
+    retryTransientFs(() => {
+      removeIfExists(target)
+      renameSync(staging, target)
+    })
     return { synced: true, root: target }
   } catch (error) {
     removeIfExists(staging)
