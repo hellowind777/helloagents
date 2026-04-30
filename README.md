@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.15-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.16-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -30,7 +30,7 @@
 ## Contents
 
 - [What HelloAGENTS Does](#what-helloagents-does)
-- [What Changed Since v3.0.12](#what-changed-since-v3012)
+- [What Changed Since v3.0.15](#what-changed-since-v3015)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [CLI Management](#cli-management)
@@ -77,20 +77,17 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 | Completion is vague | Natural language says “done” | Delivery checks use state, evidence, and verification |
 | Config writes are risky | CLI files can drift | Install, update, cleanup, and doctor flows check managed files |
 
-## What Changed Since v3.0.12
+## What Changed Since v3.0.15
 
-These are the main user-visible changes in `v3.0.15`, compared with `v3.0.12`:
+These are the main user-visible changes in `v3.0.16`, compared with `v3.0.15 beta`:
 
-- Install, update, uninstall, and branch switching now work through npm scripts and one-shot scripts, so host sync no longer depends on a stale `helloagents` executable during package updates.
-- Standby mode now reads from the stable runtime root `~/.helloagents/helloagents`; managed hooks use the `helloagents-js` entrypoint, and skills, templates, and runtime scripts no longer point at Node versioned global package paths.
-- Global mode now attempts Claude Code plugin and Gemini extension installation automatically, while Codex keeps using the managed local-plugin chain with marketplace and cache refresh.
-- Structured turn-state gating is stricter for `~auto` and `~loop`, so incomplete hand-offs must include concrete blocker evidence before the runtime accepts a pause.
-- Runtime state now uses session capsules under `.helloagents/sessions/<branch>/<session>/`, separating turn state, events, and delivery artifacts for concurrent CLI windows and worktrees.
-- Runtime state is written only when a workflow needs it, using the stable `helloagents-turn-state write --kind complete --role main` entrypoint instead of package script paths.
-- Codex standby refresh and cleanup preserve user-owned config content while refreshing managed carriers, local plugin files, marketplace entries, and doctor checks.
-- Output-format settings stay aligned across carriers and runtime injection, reducing cases where the final closeout layout is missed.
-- Debugging, testing, verification, and planning flows now include feedback loops, vertical-slice TDD, domain language, and AFK/HITL task markers while reusing the existing skills and templates.
-- Runtime prompts now use more consistent wording, and the docs explicitly state that AI CLI sessions must be restarted after reinstalling, refreshing, or switching modes.
+- Codex notifications now handle both Codex TUI and `codex exec` completion events, so turn-state gates, delivery checks, and completion notifications stay consistent across Codex entrypoints.
+- Codex on Windows now writes the managed notify command through the command shim, reducing failures caused by direct script paths or shell-specific resolution.
+- Runtime configuration reads now reuse the current session cache when available, reducing repeated `~/.helloagents/helloagents.json` reads while preserving explicit refresh behavior.
+- Persistent carrier files no longer snapshot user settings; runtime injection and final output formatting resolve current settings at execution time.
+- Install tracking is stricter after partial host setup, so `helloagents update --all` can preserve each CLI’s detected or tracked mode more reliably.
+- UI rule boundaries are clearer: the shared UI baseline is the minimum quality line, and `hello-ui` adds concrete design, implementation, and visual validation rules in global mode, activated projects, or explicit UI workflows.
+- One-shot installers now support `HELLOAGENTS_ACTION=cleanup` for host cleanup without uninstalling the package.
 
 ## Core Features
 
@@ -386,6 +383,9 @@ HELLOAGENTS=claude:standby HELLOAGENTS_ACTION=update curl -fsSL https://raw.gith
 # Switch branch
 HELLOAGENTS=all:global HELLOAGENTS_ACTION=switch-branch HELLOAGENTS_BRANCH=beta curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
 
+# Cleanup host integration without uninstalling the package
+HELLOAGENTS=codex:standby HELLOAGENTS_ACTION=cleanup curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
+
 # Uninstall
 HELLOAGENTS=gemini HELLOAGENTS_ACTION=uninstall curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/main/install.sh | sh
 ```
@@ -401,6 +401,9 @@ $env:HELLOAGENTS="claude:standby"; $env:HELLOAGENTS_ACTION="update"; irm https:/
 
 # Switch branch
 $env:HELLOAGENTS="all:global"; $env:HELLOAGENTS_ACTION="switch-branch"; $env:HELLOAGENTS_BRANCH="beta"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
+
+# Cleanup host integration without uninstalling the package
+$env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 
 # Uninstall
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
