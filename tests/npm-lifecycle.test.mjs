@@ -14,8 +14,10 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs';
+import { CODEX_MANAGED_NOTIFY_VALUE } from '../scripts/cli-codex-config.mjs';
 
 const npmCli = process.env.npm_execpath;
+const MANAGED_NOTIFY_PREFIX = `notify = ${CODEX_MANAGED_NOTIFY_VALUE}`;
 
 function runNpm(args, cwd, env) {
   assert.ok(npmCli, 'npm_execpath is required for lifecycle testing');
@@ -59,7 +61,7 @@ test('npm global install plus explicit uninstall command removes lifecycle artif
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/);
   const installedCodexConfig = readText(join(home, '.codex', 'config.toml'));
   assert.match(installedCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md"/);
-  assert.match(installedCodexConfig, /notify = \["helloagents-js", "codex-notify"\]/);
+  assert.ok(installedCodexConfig.includes(MANAGED_NOTIFY_PREFIX), installedCodexConfig);
   assert.doesNotMatch(installedCodexConfig, /developer_instructions\s*=/);
 
   const cleanup = runCommand(process.execPath, [join(pkgRoot, 'cli.mjs'), 'cleanup'], {
