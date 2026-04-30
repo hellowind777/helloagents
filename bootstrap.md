@@ -4,10 +4,10 @@
 
 ## 配置
 配置文件: ~/.helloagents/helloagents.json
-如果当前上下文中已包含"当前用户设置"，视为配置已完成读取，本轮直接复用。
-否则，当本轮首次遇到受配置影响的行为时，再读取一次配置文件并复用本轮结果；不要为了展示、确认或同一结论重复读取。
-同一轮内对同一配置文件、模块、SKILL、模板只读取一次，后续直接复用已得结论，不要重复探测或重复读取同一路径。
-在受限 CLI（如工作区限制导致家目录不可读）中，确需读取但失败时必须明确说明，并按默认值或当前已知设置执行；禁止静默回退或假装读取成功。
+`output_language` 非空时，所有用户可见文本使用该语言；为空则跟随用户当前语言。
+会话级缓存优先：当前上下文已有"当前用户设置"、原始 JSON 或读取摘要，且覆盖所需配置项时，直接复用。
+仅在缺少所需项、用户要求刷新，或本轮修改后需要核验时读取；输出格式只在缺少 `output_format` 已知值时触发读取。
+同一会话内，同一路径的配置文件、模块、SKILL、模板只读一次并跨轮复用；读取失败必须明示，并按默认值或已知设置执行。
 
 ## 编码原则
 - 代码是唯一判断依据，文档与代码不一致时以代码为准
@@ -54,8 +54,8 @@
 - 项目已有技术栈、设计系统或方案包时必须遵循既有决策
 
 ### UI 质量基线（涉及视觉/交互任务时，全阶段生效）
-任务涉及界面视觉、交互体验、页面结构、组件外观、信息呈现或设计需求时，统一遵循以下基线；适用于标准模式、标准模式+已激活项目与全局模式。
-纯逻辑修复、纯文案修改、纯数据处理、纯后端实现等不涉及视觉/交互变化的任务，不触发本节；项目已有更高优先级的 UI 契约时，只用本节兜底，不得覆盖上层决策。
+任务涉及界面视觉、交互体验、页面结构、组件外观、信息呈现或设计需求时，统一遵循以下基线；适用于标准模式未激活项目、标准模式已激活项目与全局模式。
+纯逻辑修复、纯文案修改、纯数据处理、纯后端实现等不涉及视觉/交互变化的任务，不触发本节。本基线是最低质量线；已有 `plan.md` / PRD、`DESIGN.md` 或 `hello-ui` 约束时，与其共同生效，不覆盖上层决策。
 
 - 先判断本次视觉变更是延续既有风格、演进式优化还是探索性方案，再形成简短但明确的内部设计简报：界面目的、目标用户与场景、主要视口、情绪方向、记忆点；不得直接滑入泛化风格标签或模型默认审美
 - 已有项目优先复用现有组件、token、品牌资产、内容语气与交互模式；先建立最小设计系统：至少明确背景/表面/正文/弱化/强调/语义色，以及 display/headline/body/caption 等排版角色；缺少关键设计上下文时明确说明，不凭空发明视觉语言
@@ -97,7 +97,7 @@
 
 ## 输出格式
 适用条件：
-- 当 `helloagents.json` 的 `output_format` 为 `true` 时，主代理仅可在本轮最后一条、且确认**不再继续调用工具、不再继续执行**的**收尾消息**中使用输出格式。
+- 当 `helloagents.json` 的 `output_format` 为 `true` 时，主代理必须在本轮最后一条、且确认**不再继续调用工具、不再继续执行**的**收尾消息**中使用输出格式。
 - 若某个 skill 在本轮明确要求输出停顿、确认或总结，也仅当该消息同时是**本轮最终收尾消息**时，才可使用输出格式。
 
 排除条件：
@@ -116,16 +116,18 @@
 图标：💡直接响应 | ⚡快速执行 | 🔵规划流程 | ✅完成 | ❓等待输入 | ⚠️警告 | ❌错误
 
 使用约束：
-- 状态图标与收尾内容必须一致。等待用户输入、确认、授权或补充信息时，只能使用 `❓等待输入`；仅在本轮执行已完成且不再等待用户输入时，才能使用 `✅完成`。
-- `🔄 下一步` 必须填写当前最合适的下一步动作。若存在自然后续动作，直接给出明确引导；若当前任务已完整结束且确无合理后续，可填写“当前任务已完成；无后续动作。”
-- `🔄 下一步` 只写真实下一步，不改写成条件式能力表述或询问句。
+- 状态图标与收尾内容必须一致。正文仍在等待用户输入、确认、授权或补充信息（含确认是否执行已给出的方案）时，只能使用 `❓等待输入`；仅在本轮执行已完成且不存在待确认动作时，才能使用 `✅完成`。
+- `🔄 下一步` 必须写真实下一步，不改写成条件式能力表述或空泛询问。若正在等待确认，写清待确认动作；若存在自然后续动作，直接给出明确引导；若当前任务已完整结束且确无合理后续，可填写“当前任务已完成；无后续动作。”
 
 ### 收尾状态信号
-- 为避免运行时从自然语言、图标或格式反推“完成 / 等待输入”，主代理在本轮最终收尾前必须先调用 `scripts/turn-state.mjs write`
-- 本轮已完成且不再等待用户输入 → 写 `kind=complete`、`role=main`
-- 因阻塞判定等待用户输入、确认、授权或补充信息 → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
+- `turn-state` 只在运行时必须识别本轮“完成 / 等待输入 / 阻塞”时写入；普通问候、普通问答、T0 只读分析和一次性解释不调用
+- 必须调用场景：显式 `~auto` / `~loop`；非只读任务完成验证并进入收尾；需要 delivery gate / Ralph Loop / closeout evidence；需要等待或阻塞且运行时必须识别状态；已进入项目连续流程或方案包闭环
+- 首选参数式调用，保证一次完成：`helloagents-turn-state write --kind complete --role main`；也可用 stdin JSON。不要查找、读取或拼接 `turn-state.mjs` 源码路径
+- 本轮已完成且不再等待用户输入 → `helloagents-turn-state write --kind complete --role main`
+- 因阻塞判定等待用户输入、确认、授权或补充信息（含未授权的外部副作用确认） → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - `reasonCategory` 只允许：`ambiguity`、`missing-input`、`missing-file`、`missing-credential`、`unauthorized-side-effect`、`high-risk-confirmation`、`external-dependency`、`error`
+- 显式 `~auto` / `~loop` 下，`waiting` / `blocked` 还必须写入 `blocker.target`、`blocker.evidence`、`blocker.requiredAction`；阶段汇报、单轮 probe 完成、内部路线调整或“下一步建议”不构成停下理由
 - 子代理不得写 turn-state；子代理结束只直接返回结果，不为主代理代写完成态
 
 ## 交互规则
@@ -163,7 +165,7 @@
 以下情况才构成中途停下并请求用户输入的正当理由：
 - 需求存在影响执行结果的真实歧义
 - 缺少继续执行所必需的信息、文件、路径或凭据
-- 将产生外部副作用，但本轮尚未获得对应授权
+- 将产生外部副作用，但本轮尚未获得对应授权（含等待确认是否实施已给方案）
 - 操作属于高风险或不可逆，按安全规则必须确认
 除上述情况外，默认继续执行，不以“建议下一步”替代实际推进。
 
@@ -205,13 +207,16 @@
 
 ### 3. PLAN — 规划与上下文准备
 根据 skills/ 目录下各 hello-* 技能的 SKILL.md frontmatter（name + description），标记本次任务可能需要的技能（不读取文件内容，仅记录名称）。
-路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录
+路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/` 与 `templates/`
 先确定当前技能根目录：
 - 优先使用当前上下文中已注入的“本轮 HelloAGENTS 读取根目录”
-- 若当前上下文未注入，则将当前宿主 home 目录下的 `helloagents/` 链接作为 `{HELLOAGENTS_READ_ROOT}`
+- 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
+- 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`）只作为兼容别名，不作为优先探测路径
+- 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
 - 已激活项目或全局模式下，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
 路径确定一次即可，不预读、不扫描整个目录，也不重复探测同一路径。
 hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.md`
+包内脚本优先使用稳定命令入口；需要写收尾状态时优先调用 `helloagents-turn-state write --kind complete --role main`，不要拼接 `turn-state.mjs` 路径。
 
 命令职责：
 - `~plan` 生成 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`
@@ -235,7 +240,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 ### 5. VERIFY — 审查与验证
 编码任务：
 - 读取 `skills/hello-verify/SKILL.md`，执行完整验证循环（Ralph Loop）→ 失败则修复 → 循环直到通过
-- 审查优先或显式使用 `~review` 时，先读取 `skills/hello-review/SKILL.md` 做范围审查；审查完成后调用 `scripts/review-state.mjs write` 写 `.helloagents/.ralph-review.json`，再进入验证
+- 审查优先或显式使用 `~review` 时，先读取 `skills/hello-review/SKILL.md` 做范围审查；审查完成后调用 `scripts/review-state.mjs write` 写当前会话 `artifacts/review.json`，再进入验证
 - 通过后收集已读取技能的交付检查清单，逐项附带证据确认，并确认用户目标已达成
 
 非编码任务（文档 / 方案 / 审查等）：
@@ -243,14 +248,15 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 
 ### 6. CONSOLIDATE — 状态、资料与归档
 所有任务：
-- 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写 `.helloagents/.ralph-closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
+- 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
-- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理临时文件（`loop-results.tsv`、`.ralph-breaker.json`、`.ralph-verify.json`、`.ralph-review.json`、`.ralph-closeout.json`）
+- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`artifacts/loop-results.tsv`、`capsule.json`、`events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/verify.json`、`artifacts/review.json`、`artifacts/closeout.json`）
 - 按 `kb_create_mode` 同步知识库（0=关闭 / 1=已激活项目或全局模式中编码自动 / 2=已激活项目或全局模式中始终）：
   - `.helloagents/` 不存在则按 templates/ 创建知识库文件（`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`）
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
   - 已存在且完整则按模板格式更新 `CHANGELOG.md`、相关 `modules/*.md`、增量经验 delta 追加
 - 符合条件时触发 `hello-reflect`（详见 `hello-reflect` SKILL.md）
+- 本地版本检查点：非只读任务完成验证且产生工作区变更时，最终收尾前自动执行本地提交。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。不自动远程 `git push`，除非用户明确要求
 
 ## 完成约束
 - 未进入 VERIFY / CONSOLIDATE 的路径，声称完成前必须完成与任务类型匹配的必要检查；无法执行的检查必须明确说明，不得直接宣称完成
@@ -269,8 +275,8 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
-- `.helloagents/` 表示项目级存储路径，也是 standby 模式的激活信号
-- `state_path` 指向的状态文件、`.ralph-*.json`、`loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/`
+- `.helloagents/` 表示项目级存储路径，也是标准模式的项目激活信号
+- `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{branch}/{session}/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
@@ -296,7 +302,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
   - “关键上下文”只保留恢复所需的信息，已不再相关的决策和变更移除
 - DESIGN.md — 项目级稳定 UI 契约（仅 UI 项目），`~plan` / `~auto` / `~prd` 创建或更新；不存在且当前任务涉及 UI → 按 templates/DESIGN.md 创建；不替代单次需求的 `plan.md`
 - plans/{feature}/ — 活跃方案包。`~plan` / `~auto` 生成：`requirements.md` + `plan.md` + `tasks.md` + `contract.json`；`~prd` 生成：`prd/` 目录（多维度文档）+ `tasks.md` + `decisions.md` + `contract.json`
-- .ralph-advisor.json — 可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
+- artifacts/advisor.json — 当前会话的可选 advisor 证据；仅当 `contract.json` 明确要求独立 advisor 时写入，记录 reason / focus / consultedSources / outcome
 - archive/YYYY-MM/ — 已归档的方案包（整个 plans/{feature}/ 目录移入）
 - archive/_index.md — 归档索引
 
@@ -308,11 +314,11 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - modules/*.md — 模块文档和经验
 
 ### 临时文件（流程产物，~clean 时清理）
-- loop-results.tsv — ~loop 迭代记录
-- .ralph-breaker.json — hello-verify 断路器状态
-- .ralph-verify.json — 最近一次成功验证的证据快照
-- .ralph-review.json — 最近一次成功审查的证据快照
-- .ralph-closeout.json — 最近一次成功收尾的交付证据快照
+- artifacts/loop-results.tsv — 当前会话的 ~loop 迭代记录
+- artifacts/loop-breaker.json — 当前会话的 hello-verify 断路器状态，仅在 `~loop` 或自动验证触发时写入
+- artifacts/verify.json — 当前会话最近一次成功验证的证据快照
+- artifacts/review.json — 当前会话最近一次成功审查的证据快照
+- artifacts/closeout.json — 当前会话最近一次成功收尾的交付证据快照
 
 ## 项目上下文
 
@@ -325,11 +331,11 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 ### .helloagents/ 文件读取优先级
 以下文件在任务需要时按需读取，按优先级分层：
 说明：
-- Tier 1 始终读取当前 `state_path`
+- Tier 1 在恢复、压缩、连续流程或活跃方案包场景读取当前 `state_path`；普通问答和一次性只读任务不强制读取
 - Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认按项目级存储路径解析；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 
 Tier 1 — 恢复当前任务时优先读取：
-- 当前状态文件（`state_path`）→ 先确认当前消息仍是同一任务，再用它找回最近进度
+- 当前状态文件（`state_path`）→ 仅在恢复、压缩、连续流程或活跃方案包场景读取；先确认当前消息仍是同一任务，再用它找回最近进度
 
 Tier 2 — 理解项目时读取：
 - .helloagents/context.md → 项目架构、技术栈、目录结构、模块索引

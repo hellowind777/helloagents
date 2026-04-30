@@ -1,56 +1,62 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, normalize, resolve } from 'node:path'
-import { homedir } from 'node:os'
+import { normalize, resolve } from 'node:path'
 
-const RUNTIME_DIR = join(homedir(), '.helloagents', 'runtime')
-const ROUTE_CONTEXT_PATH = join(RUNTIME_DIR, 'route-context.json')
+import {
+  clearCapsuleSection,
+  getRuntimeScope,
+  readCapsuleSection,
+  writeCapsuleSection,
+} from './session-capsule.mjs'
+
 const ROUTE_CONTEXT_TTL_MS = 30 * 60 * 1000
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
 }
 
-function ensureRuntimeDir() {
-  mkdirSync(dirname(ROUTE_CONTEXT_PATH), { recursive: true })
+function resolvePayload(options = {}) {
+  return options.payload && typeof options.payload === 'object' ? options.payload : options
 }
 
-export function clearRouteContext() {
-  rmSync(ROUTE_CONTEXT_PATH, { force: true })
+export function clearRouteContext(options = {}) {
+  const payload = resolvePayload(options)
+  const cwd = options.cwd || payload.cwd || process.cwd()
+  clearCapsuleSection(cwd, 'route', { payload, env: options.env, ppid: options.ppid })
 }
 
-export function writeRouteContext({ cwd, skillName, sourceSkillName = skillName }) {
-  ensureRuntimeDir()
+export function writeRouteContext({ cwd, skillName, sourceSkillName = skillName, payload = {}, env, ppid }) {
+  const scope = getRuntimeScope(cwd, { payload, env, ppid })
   const context = {
     cwd: normalizePath(cwd),
     skillName,
     sourceSkillName,
     zeroSideEffect: skillName === 'idea',
+    scope: scope.scope,
+    key: scope.key,
     updatedAt: Date.now(),
   }
-  writeFileSync(ROUTE_CONTEXT_PATH, `${JSON.stringify(context, null, 2)}\n`, 'utf-8')
+  writeCapsuleSection(cwd, 'route', context, { payload, env, ppid })
 }
 
-export function readRouteContext() {
-  if (!existsSync(ROUTE_CONTEXT_PATH)) return null
-
-  try {
-    const context = JSON.parse(readFileSync(ROUTE_CONTEXT_PATH, 'utf-8'))
-    if (!context?.cwd || !context?.skillName || !context?.updatedAt) return null
-    if (Date.now() - context.updatedAt > ROUTE_CONTEXT_TTL_MS) {
-      clearRouteContext()
-      return null
-    }
-    return {
-      ...context,
-      cwd: normalizePath(context.cwd),
-    }
-  } catch {
+export function readRouteContext(options = {}) {
+  const payload = resolvePayload(options)
+  const cwd = options.cwd || payload.cwd || process.cwd()
+  const context = readCapsuleSection(cwd, 'route', { payload, env: options.env, ppid: options.ppid })
+  if (!context?.cwd || !context?.skillName || !context?.updatedAt) {
     return null
+  }
+  if (Date.now() - context.updatedAt > ROUTE_CONTEXT_TTL_MS) {
+    clearRouteContext({ cwd, payload, env: options.env, ppid: options.ppid })
+    return null
+  }
+
+  return {
+    ...context,
+    cwd: normalizePath(context.cwd),
   }
 }
 
-export function getApplicableRouteContext({ cwd = '', filePath = '' } = {}) {
-  const context = readRouteContext()
+export function getApplicableRouteContext({ cwd = '', filePath = '', payload = {}, env, ppid } = {}) {
+  const context = readRouteContext({ cwd, payload, env, ppid })
   if (!context) return null
 
   const normalizedCwd = normalizePath(cwd)

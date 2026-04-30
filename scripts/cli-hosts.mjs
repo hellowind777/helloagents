@@ -3,15 +3,15 @@ import { existsSync } from 'node:fs';
 import {
   ensureDir,
   safeRead,
-  removeIfExists,
   createLink,
   removeLink,
   injectMarkedContent,
   removeMarkedContent,
   mergeSettingsHooks,
   cleanSettingsHooks,
-  loadHooksWithAbsPath,
+  loadHooksWithCliEntry,
 } from './cli-utils.mjs';
+import { buildRuntimeCarrier, readCarrierSettings } from './cli-runtime-carrier.mjs';
 
 export function installClaudeStandby(home, pkgRoot) {
   const claudeDir = join(home, '.claude');
@@ -19,15 +19,21 @@ export function installClaudeStandby(home, pkgRoot) {
 
   const bootstrapContent = safeRead(join(pkgRoot, 'bootstrap-lite.md'));
   if (bootstrapContent) {
-    injectMarkedContent(join(claudeDir, 'CLAUDE.md'), bootstrapContent);
+    injectMarkedContent(
+      join(claudeDir, 'CLAUDE.md'),
+      buildRuntimeCarrier(bootstrapContent, readCarrierSettings(home)).trimEnd(),
+    );
   }
 
   createLink(pkgRoot, join(claudeDir, 'helloagents'));
 
   const settingsPath = join(claudeDir, 'settings.json');
-  const hooksData = loadHooksWithAbsPath(pkgRoot, 'hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}');
+  const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}');
   if (hooksData) {
-    mergeSettingsHooks(settingsPath, hooksData, ['Read(~/.claude/helloagents/**)']);
+    mergeSettingsHooks(settingsPath, hooksData, [
+      'Read(~/.helloagents/helloagents/**)',
+      'Read(~/.claude/helloagents/**)',
+    ]);
   }
 
   return true;
@@ -50,13 +56,16 @@ export function installGeminiStandby(home, pkgRoot) {
 
   const bootstrapContent = safeRead(join(pkgRoot, 'bootstrap-lite.md'));
   if (bootstrapContent) {
-    injectMarkedContent(join(geminiDir, 'GEMINI.md'), bootstrapContent);
+    injectMarkedContent(
+      join(geminiDir, 'GEMINI.md'),
+      buildRuntimeCarrier(bootstrapContent, readCarrierSettings(home)).trimEnd(),
+    );
   }
 
   createLink(pkgRoot, join(geminiDir, 'helloagents'));
 
   const settingsPath = join(geminiDir, 'settings.json');
-  const hooksData = loadHooksWithAbsPath(pkgRoot, 'hooks.json', '${extensionPath}');
+  const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks.json', '${extensionPath}');
   if (hooksData) mergeSettingsHooks(settingsPath, hooksData);
 
   return true;
@@ -69,7 +78,6 @@ export function uninstallGeminiStandby(home) {
   removeMarkedContent(join(geminiDir, 'GEMINI.md'));
   removeLink(join(geminiDir, 'helloagents'));
   cleanSettingsHooks(join(geminiDir, 'settings.json'));
-  removeIfExists(join(geminiDir, 'helloagents-hooks.json'));
 
   return true;
 }

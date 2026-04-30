@@ -4,11 +4,16 @@
  * Runs on SubagentStop (Claude Code) and Stop (Codex CLI).
  * Auto-detects lint/test commands and blocks if they fail.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { clearVerifyEvidence, detectCommands, hasUnsafeVerifyCommand, writeVerifyEvidence } from './verify-state.mjs';
+import {
+  getRuntimeEvidencePath,
+  readRuntimeEvidence,
+  writeRuntimeEvidence,
+} from './runtime-artifacts.mjs';
 
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 const CMD_TIMEOUT = 60_000; // 60s
@@ -27,28 +32,23 @@ function readSettings() {
 }
 
 // ── Circuit Breaker (consecutive failure tracking) ───────────────────
-const BREAKER_FILE_NAME = '.ralph-breaker.json';
+const BREAKER_FILE_NAME = 'loop-breaker.json';
 
-function getBreakerPath(cwd) {
-  return join(cwd, '.helloagents', BREAKER_FILE_NAME);
+function getBreakerPath(cwd, options = {}) {
+  return getRuntimeEvidencePath(cwd, BREAKER_FILE_NAME, options);
 }
 
-function readBreaker(cwd) {
-  try {
-    return JSON.parse(readFileSync(getBreakerPath(cwd), 'utf-8'));
-  } catch {
-    return { consecutive_failures: 0, last_failure: null };
-  }
+function readBreaker(cwd, options = {}) {
+  return readRuntimeEvidence(cwd, BREAKER_FILE_NAME, options)
+    || { consecutive_failures: 0, last_failure: null };
 }
 
-function writeBreaker(cwd, state) {
-  const dir = join(cwd, '.helloagents');
-  try { mkdirSync(dir, { recursive: true }); } catch {}
-  writeFileSync(getBreakerPath(cwd), JSON.stringify(state, null, 2));
+function writeBreaker(cwd, state, options = {}) {
+  writeRuntimeEvidence(cwd, BREAKER_FILE_NAME, state, options);
 }
 
-function resetBreaker(cwd) {
-  writeBreaker(cwd, { consecutive_failures: 0, last_failure: null });
+function resetBreaker(cwd, options = {}) {
+  writeBreaker(cwd, { consecutive_failures: 0, last_failure: null }, options);
 }
 
 // ── Progress Detection (git diff check) ──────────────────────────────
@@ -74,7 +74,7 @@ function runVerify(commands, cwd) {
   const failures = [];
   for (const cmd of commands) {
     if (hasUnsafeVerifyCommand([cmd])) {
-      failures.push({ cmd, output: 'Blocked: shell operators not allowed in verify commands' });
+      failures.push({ cmd, output: '已阻止：验证命令不允许使用 shell 组合操作符' });
       continue;
     }
     try {
@@ -85,8 +85,8 @@ function runVerify(commands, cwd) {
         continue;
       }
       let output = ((err.stdout || '') + (err.stderr || '')).trim();
-      if (output.length > 1000) output = output.slice(0, 1000) + '\n...(truncated)';
-      failures.push({ cmd, output: output || `exit code ${err.status}` });
+      if (output.length > 1000) output = output.slice(0, 1000) + '\n…已截断';
+      failures.push({ cmd, output: output || `退出码 ${err.status}` });
     }
   }
   return failures;
@@ -94,13 +94,13 @@ function runVerify(commands, cwd) {
 
 // ── Result Handlers ──────────────────────────────────────────────────
 
-function handleSuccess(cwd, isSubagent) {
-  resetBreaker(cwd);
+function handleSuccess(cwd, isSubagent, options = {}) {
+  resetBreaker(cwd, options);
   writeVerifyEvidence(cwd, {
     commands: detectCommands(cwd),
     fastOnly: isSubagent,
     source: isSubagent ? 'subagent' : 'stop',
-  });
+  }, options);
 
   if (isSubagent) {
     process.stdout.write(JSON.stringify({
@@ -127,12 +127,12 @@ function handleSuccess(cwd, isSubagent) {
   }
 }
 
-function handleFailure(failures, cwd) {
-  clearVerifyEvidence(cwd);
-  const breaker = readBreaker(cwd);
+function handleFailure(failures, cwd, options = {}) {
+  clearVerifyEvidence(cwd, options);
+  const breaker = readBreaker(cwd, options);
   breaker.consecutive_failures += 1;
   breaker.last_failure = new Date().toISOString();
-  writeBreaker(cwd, breaker);
+  writeBreaker(cwd, breaker, options);
 
   const breakerWarning = breaker.consecutive_failures >= 3
     ? `\n\n⚠️ [断路器] 已连续 ${breaker.consecutive_failures} 次验证失败。当前修复思路可能有误，建议：\n  1. 重新分析根因，不要继续在同一方向上硬修\n  2. 检查是否存在架构层面的问题\n  3. 考虑回退到上一个正常状态重新开始`
@@ -141,7 +141,7 @@ function handleFailure(failures, cwd) {
   const details = failures.map(f => `\u2717 ${f.cmd}\n${f.output}`).join('\n\n');
   process.stdout.write(JSON.stringify({
     decision: 'block',
-    reason: `[Ralph Loop] Verification failed:\n\n${details}\n\nFix the issues above before completing.${breakerWarning}`,
+    reason: `[Ralph Loop] 验证失败：\n\n${details}\n\n请先修复以上问题，再报告完成。${breakerWarning}`,
     suppressOutput: true,
   }));
 }
@@ -175,6 +175,7 @@ async function main() {
   let data = {};
   try { data = JSON.parse(readFileSync(0, 'utf-8')); } catch {}
   const cwd = data.cwd || process.cwd();
+  const runtimeOptions = { payload: data };
 
   let commands = detectCommands(cwd);
   if (!commands?.length) {
@@ -188,10 +189,14 @@ async function main() {
   }
 
   const failures = runVerify(commands, cwd);
-  if (failures.length === 0) handleSuccess(cwd, IS_SUBAGENT);
-  else handleFailure(failures, cwd);
+  if (failures.length === 0) handleSuccess(cwd, IS_SUBAGENT, runtimeOptions);
+  else handleFailure(failures, cwd, runtimeOptions);
 }
 
-main().catch(() => {
-  process.stdout.write(JSON.stringify({ suppressOutput: true }));
+main().catch((error) => {
+  process.stdout.write(JSON.stringify({
+    decision: 'block',
+    reason: `[Ralph Loop] 验证脚本执行异常，已暂停完成通知。\n原因：${error?.message || error}`,
+    suppressOutput: true,
+  }));
 });

@@ -6,6 +6,9 @@ import {
 
 export const CODEX_PLUGIN_CONFIG_HEADER = '[plugins."helloagents@local-plugins"]'
 export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed'
+export const CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH = '~/.codex/AGENTS.md'
+export const CODEX_MANAGED_NOTIFY_COMMAND = 'helloagents-js.cmd'
+export const CODEX_MANAGED_NOTIFY_VALUE = `["${CODEX_MANAGED_NOTIFY_COMMAND}", "codex-notify"]`
 
 function normalizePath(value = '') {
   return String(value || '').replace(/\\/g, '/')
@@ -28,36 +31,27 @@ export function isManagedCodexModelInstruction(line = '') {
 
 export function isManagedCodexNotify(line = '') {
   const value = String(line || '').replace(/\\/g, '/')
-  return value.includes(CODEX_MANAGED_TOML_COMMENT)
-    || (
-      value.includes('codex-notify')
-      && value.includes('/scripts/notify.mjs')
-      && /(^|[/\\])helloagents([/\\]|-|$)|[/\\]plugins[/\\]helloagents[/\\]/i.test(value)
-    )
+  return value.includes(CODEX_MANAGED_NOTIFY_VALUE)
 }
 
 export function isManagedCodexBackupInstruction(line = '') {
   return line.includes(CODEX_MANAGED_TOML_COMMENT)
 }
 
-export function isManagedCodexHooks(line = '') {
-  return /^\s*codex_hooks\s*=\s*true(?:\s+#.*)?\s*$/i.test(String(line || ''))
-}
-
 function formatManagedCodexModelInstructionsValue(filePath) {
   return `"${normalizePath(filePath)}" ${CODEX_MANAGED_TOML_COMMENT}`
 }
 
-function formatManagedCodexModelInstructionsLine(filePath) {
+function formatManagedCodexModelInstructionsLine(filePath = CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH) {
   return `model_instructions_file = ${formatManagedCodexModelInstructionsValue(filePath)}`
 }
 
-function formatManagedCodexNotifyValue(notifyScriptPath) {
-  return `["node", "${normalizePath(notifyScriptPath)}", "codex-notify"]`
+function formatManagedCodexNotifyValue() {
+  return CODEX_MANAGED_NOTIFY_VALUE
 }
 
-function formatManagedCodexNotifyLine(notifyScriptPath) {
-  return `notify = ${formatManagedCodexNotifyValue(notifyScriptPath)} ${CODEX_MANAGED_TOML_COMMENT}`
+function formatManagedCodexNotifyLine() {
+  return `notify = ${formatManagedCodexNotifyValue()} ${CODEX_MANAGED_TOML_COMMENT}`
 }
 
 function removeTopLevelLinesBeingReplaced(toml, lines) {
@@ -79,16 +73,10 @@ function upsertOrderedCodexTopLevelLines(toml, lines) {
   )
 }
 
-export function installCodexModelInstructions(toml, filePath) {
-  return upsertOrderedCodexTopLevelLines(toml, [
-    formatManagedCodexModelInstructionsLine(filePath),
-  ])
-}
-
-export function installCodexManagedTopLevelConfig(toml, { modelInstructionsPath, notifyScriptPath }) {
+export function installCodexManagedTopLevelConfig(toml, { modelInstructionsPath } = {}) {
   return upsertOrderedCodexTopLevelLines(toml, [
     formatManagedCodexModelInstructionsLine(modelInstructionsPath),
-    formatManagedCodexNotifyLine(notifyScriptPath),
+    formatManagedCodexNotifyLine(),
   ])
 }
 

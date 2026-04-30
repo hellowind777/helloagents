@@ -12,7 +12,12 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getSessionEvidencePath,
+  getSessionStatePath,
+  parseStdoutJson,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('notify workflow hints cover active plans, aliases, and consolidate transitions', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -147,7 +152,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     }),
   })
   payload = parseStdoutJson(result)
-  assert.equal(readJson(join(project, '.helloagents', '.ralph-review.json')).outcome, 'clean')
+  assert.equal(readJson(getSessionEvidencePath(project, 'review.json')).outcome, 'clean')
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -188,7 +193,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   assert.match(payload.hookSpecificOutput.additionalContext, /当前不该继续 ~build/)
   assert.match(payload.hookSpecificOutput.additionalContext, /除非用户明确提出新增实现范围，否则直接进入 CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前已进入 CONSOLIDATE/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-closeout\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/closeout\.json/)
   assert.match(payload.hookSpecificOutput.additionalContext, /UI 约束提示/)
 
   writeText(
@@ -225,7 +230,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
 
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test', 'npm run build'],
     fastOnly: false,

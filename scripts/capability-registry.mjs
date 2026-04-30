@@ -26,8 +26,8 @@ export function selectCapabilities({ cwd, skillName = '', options = {} }) {
     capabilities.push({
       id: 'advisor-artifact',
       description: advisorRequirement.styleRequired
-        ? '风格 advisor：当前 UI 契约要求进入收尾前复查设计方向，并复用 `.helloagents/.ralph-advisor.json` 记录 reason、focus、consultedSources 与结论。'
-        : '独立 advisor：当前契约要求进入收尾前写 `.helloagents/.ralph-advisor.json`，记录 advisor reason、focus、consultedSources 与结论。',
+        ? '风格 advisor：当前 UI 契约要求进入收尾前复查设计方向，并写当前会话 `artifacts/advisor.json` 记录 reason、focus、consultedSources 与结论。'
+        : '独立 advisor：当前契约要求进入收尾前写当前会话 `artifacts/advisor.json`，记录 advisor reason、focus、consultedSources 与结论。',
     })
   }
   if (plan?.contract?.verifyMode === 'review-first') {
@@ -39,13 +39,13 @@ export function selectCapabilities({ cwd, skillName = '', options = {} }) {
   if (plan?.contract?.ui?.required || existsSync(getProjectDesignContractPath(cwd))) {
     capabilities.push({
       id: 'design-contract',
-      description: `UI 契约：仅在 UI 场景按需读取当前 plan.md / prd/03-ui-design.md、${describeProjectStoreFile(cwd, 'DESIGN.md')} 与 hello-ui，不全局常驻。`,
+      description: `UI 契约：仅在 UI 场景按需读取当前 plan.md / prd/03-ui-design.md、${describeProjectStoreFile(cwd, 'DESIGN.md')} 与 hello-ui，并与 UI 质量基线共同生效。`,
     })
   }
   if (visualRequirement.required) {
     capabilities.push({
       id: 'visual-evaluator',
-      description: '视觉验收：当前 UI 契约要求进入收尾前写 `.helloagents/.ralph-visual.json`，记录 tooling、screensChecked、statesChecked、status 与 summary。',
+      description: '视觉验收：当前 UI 契约要求进入收尾前写当前会话 `artifacts/visual.json`，记录 tooling、screensChecked、statesChecked、status 与 summary。',
     })
   }
 

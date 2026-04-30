@@ -106,21 +106,3 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public --tag ${{ needs.prepare.outputs.channel }}
-
-  release:
-    needs: [prepare, npm]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          name: ${{ needs.prepare.outputs.version }}
-          prerelease: ${{ needs.prepare.outputs.is_beta == 'true' }}
-          generate_release_notes: true

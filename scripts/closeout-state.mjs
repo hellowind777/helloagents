@@ -1,11 +1,18 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
-import { captureWorkspaceFingerprint } from './verify-state.mjs'
 import { appendReplayEvent } from './replay-state.mjs'
+import {
+  captureWorkspaceFingerprint,
+  clearRuntimeEvidence,
+  getRuntimeEvidencePath,
+  getRuntimeEvidenceRelativePath,
+  readRuntimeEvidence,
+  validateEvidenceFingerprint,
+  validateEvidenceTimestamp,
+  writeRuntimeEvidence,
+} from './runtime-artifacts.mjs'
 
-export const CLOSEOUT_EVIDENCE_FILE_NAME = '.ralph-closeout.json'
-const CLOSEOUT_EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
+export const CLOSEOUT_EVIDENCE_FILE_NAME = 'closeout.json'
 const ALLOWED_STATUSES = new Set(['PASS', 'BLOCKED'])
 
 function normalizeEntry(entry = {}) {
@@ -15,20 +22,16 @@ function normalizeEntry(entry = {}) {
   }
 }
 
-export function getCloseoutEvidencePath(cwd) {
-  return join(cwd, '.helloagents', CLOSEOUT_EVIDENCE_FILE_NAME)
+export function getCloseoutEvidencePath(cwd, options = {}) {
+  return getRuntimeEvidencePath(cwd, CLOSEOUT_EVIDENCE_FILE_NAME, options)
 }
 
-export function readCloseoutEvidence(cwd) {
-  try {
-    return JSON.parse(readFileSync(getCloseoutEvidencePath(cwd), 'utf-8'))
-  } catch {
-    return null
-  }
+export function readCloseoutEvidence(cwd, options = {}) {
+  return readRuntimeEvidence(cwd, CLOSEOUT_EVIDENCE_FILE_NAME, options)
 }
 
-export function clearCloseoutEvidence(cwd) {
-  rmSync(getCloseoutEvidencePath(cwd), { force: true })
+export function clearCloseoutEvidence(cwd, options = {}) {
+  clearRuntimeEvidence(cwd, CLOSEOUT_EVIDENCE_FILE_NAME, options)
 }
 
 export function normalizeCloseoutEvidence(input = {}) {
@@ -40,8 +43,7 @@ export function normalizeCloseoutEvidence(input = {}) {
   }
 }
 
-export function writeCloseoutEvidence(cwd, input = {}) {
-  mkdirSync(join(cwd, '.helloagents'), { recursive: true })
+export function writeCloseoutEvidence(cwd, input = {}, options = {}) {
   const normalized = normalizeCloseoutEvidence(input)
   const payload = {
     updatedAt: new Date().toISOString(),
@@ -51,51 +53,35 @@ export function writeCloseoutEvidence(cwd, input = {}) {
     deliveryChecklist: normalized.deliveryChecklist,
     fingerprint: captureWorkspaceFingerprint(cwd),
   }
-  writeFileSync(getCloseoutEvidencePath(cwd), `${JSON.stringify(payload, null, 2)}\n`, 'utf-8')
+  writeRuntimeEvidence(cwd, CLOSEOUT_EVIDENCE_FILE_NAME, payload, options)
   appendReplayEvent(cwd, {
     event: 'closeout_evidence_written',
     source: normalized.source || 'manual',
     skillName: normalized.originCommand,
+    payload: options.payload || {},
     details: {
       requirementsCoverage: normalized.requirementsCoverage,
       deliveryChecklist: normalized.deliveryChecklist,
     },
-    artifacts: ['.helloagents/.ralph-closeout.json'],
+    artifacts: [getRuntimeEvidenceRelativePath(cwd, CLOSEOUT_EVIDENCE_FILE_NAME, options)],
   })
   return payload
 }
 
-function readRequiredCloseoutEvidence(cwd) {
-  const evidence = readCloseoutEvidence(cwd)
+function readRequiredCloseoutEvidence(cwd, options = {}) {
+  const evidence = readCloseoutEvidence(cwd, options)
   if (evidence) return { evidence }
   return {
     error: {
       required: true,
       status: 'missing',
-      details: ['missing closeout evidence for requirements coverage and delivery checklist'],
+      details: ['缺少需求覆盖和交付清单的收尾证据'],
     },
   }
 }
 
 function validateCloseoutTimestamp(evidence, now) {
-  const updatedAt = Date.parse(evidence.updatedAt || '')
-  if (!Number.isFinite(updatedAt)) {
-    return {
-      required: true,
-      status: 'invalid',
-      evidence,
-      details: ['closeout evidence timestamp is invalid'],
-    }
-  }
-  if (now - updatedAt > CLOSEOUT_EVIDENCE_MAX_AGE_MS) {
-    return {
-      required: true,
-      status: 'stale-time',
-      evidence,
-      details: ['closeout evidence is older than 30 minutes'],
-    }
-  }
-  return null
+  return validateEvidenceTimestamp(evidence, now, '收尾证据')
 }
 
 function validateCloseoutEntries(evidence) {
@@ -112,7 +98,7 @@ function validateCloseoutEntries(evidence) {
       required: true,
       status: 'invalid',
       evidence,
-      details: ['closeout evidence must record requirements coverage and delivery checklist with explicit PASS/BLOCKED status plus summary'],
+      details: ['收尾证据必须记录需求覆盖和交付清单，并包含明确的 PASS/BLOCKED 状态和 summary'],
     }
   }
   if (requirementsCoverage.status !== 'PASS') {
@@ -120,7 +106,7 @@ function validateCloseoutEntries(evidence) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['requirements coverage is not marked as PASS in the latest closeout evidence'],
+      details: ['最新收尾证据中的需求覆盖未标记为 PASS'],
     }
   }
   if (deliveryChecklist.status !== 'PASS') {
@@ -128,7 +114,7 @@ function validateCloseoutEntries(evidence) {
       required: true,
       status: 'blocked',
       evidence,
-      details: ['delivery checklist is not marked as PASS in the latest closeout evidence'],
+      details: ['最新收尾证据中的交付清单未标记为 PASS'],
     }
   }
   return {
@@ -138,23 +124,10 @@ function validateCloseoutEntries(evidence) {
 }
 
 function validateCloseoutFingerprint(cwd, evidence) {
-  const currentFingerprint = captureWorkspaceFingerprint(cwd)
-  if (
-    currentFingerprint.available
-    && evidence.fingerprint?.available
-    && currentFingerprint.combined !== evidence.fingerprint.combined
-  ) {
-    return {
-      required: true,
-      status: 'stale-diff',
-      evidence,
-      details: ['workspace diff changed after the last successful closeout evidence'],
-    }
-  }
-  return null
+  return validateEvidenceFingerprint(cwd, evidence, '成功收尾证据')
 }
 
-export function getCloseoutEvidenceStatus(cwd, { required = false, now = Date.now() } = {}) {
+export function getCloseoutEvidenceStatus(cwd, { required = false, now = Date.now(), ...options } = {}) {
   if (!required) {
     return {
       required: false,
@@ -162,7 +135,7 @@ export function getCloseoutEvidenceStatus(cwd, { required = false, now = Date.no
     }
   }
 
-  const requiredEvidence = readRequiredCloseoutEvidence(cwd)
+  const requiredEvidence = readRequiredCloseoutEvidence(cwd, options)
   if (requiredEvidence.error) return requiredEvidence.error
 
   const { evidence } = requiredEvidence
@@ -200,10 +173,10 @@ function main() {
 
   const input = readStdinJson()
   const cwd = input.cwd || process.cwd()
-  const payload = writeCloseoutEvidence(cwd, input)
+  const payload = writeCloseoutEvidence(cwd, input, { payload: input })
   process.stdout.write(JSON.stringify({
     suppressOutput: true,
-    path: getCloseoutEvidencePath(cwd),
+    path: getCloseoutEvidencePath(cwd, { payload: input }),
     payload,
   }))
 }

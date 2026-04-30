@@ -55,47 +55,50 @@ function resolveWav(pkgRoot, event) {
   return existsSync(p) ? p : null;
 }
 
+function runSync(command, args) {
+  try {
+    const result = spawnSync(command, args, {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    return !result.error && result.status === 0;
+  } catch {
+    return false;
+  }
+}
+
 export function playSound(pkgRoot, event) {
   if (DISABLE_OS_NOTIFICATIONS) return;
   const wav = resolveWav(pkgRoot, event);
   if (!wav) { process.stderr.write('\x07'); return; }
   try {
     if (PLAT === 'win32') {
-      spawnSync('powershell', ['-NoProfile', '-c',
-        `(New-Object Media.SoundPlayer '${wav.replace(/'/g, "''")}').PlaySync()`],
-        { stdio: 'ignore', windowsHide: true });
+      runSync('powershell', [
+        '-NoProfile',
+        '-c',
+        `(New-Object Media.SoundPlayer '${wav.replace(/'/g, "''")}').PlaySync()`,
+      ]);
     } else if (PLAT === 'darwin') {
-      spawnSync('afplay', [wav], { stdio: 'ignore' });
+      runSync('afplay', [wav]);
     } else {
-      const result = spawnSync('aplay', ['-q', wav], { stdio: 'ignore' });
-      if (result.status !== 0) {
-        const pa = spawnSync('paplay', [wav], { stdio: 'ignore' });
-        if (pa.status !== 0) process.stderr.write('\x07');
-      }
+      if (!runSync('aplay', ['-q', wav]) && !runSync('paplay', [wav])) process.stderr.write('\x07');
     }
   } catch { process.stderr.write('\x07'); }
 }
 
-function ensureWinAppId(pkgRoot) {
-  if (PLAT !== 'win32') return;
+function buildWindowsToastScript(notification, iconPath) {
   const regKey = `HKCU:\\Software\\Classes\\AppUserModelId\\${WIN_APPID}`;
-  spawnSync('powershell', ['-NoProfile', '-c',
-    `if (-not (Test-Path '${regKey}')) { New-Item -Path '${regKey}' -Force | Out-Null; Set-ItemProperty -Path '${regKey}' -Name 'DisplayName' -Value 'HelloAgents 通知' -Force }`],
-    { stdio: 'ignore', windowsHide: true });
+  const iconXml = existsSync(iconPath)
+    ? `<image placement="appLogoOverride" src="${escapeToastText(iconPath)}" />`
+    : '';
+  const textXml = notification.toastLines
+    .map((line) => `<text>${escapeToastText(line)}</text>`)
+    .join('\n      ');
+  return `
+if (-not (Test-Path '${regKey}')) {
+  New-Item -Path '${regKey}' -Force | Out-Null
+  Set-ItemProperty -Path '${regKey}' -Name 'DisplayName' -Value 'HelloAgents 通知' -Force
 }
-
-export function desktopNotify(pkgRoot, event, extra) {
-  if (DISABLE_OS_NOTIFICATIONS) return;
-  const notification = buildDesktopNotificationContent(event, extra);
-  try {
-    if (PLAT === 'win32') {
-      ensureWinAppId(pkgRoot);
-      const iconPath = join(pkgRoot, 'assets', 'icons', 'icon.png').replace(/\//g, '\\');
-      const iconXml = existsSync(iconPath) ? `<image placement="appLogoOverride" src="${iconPath}" />` : '';
-      const textXml = notification.toastLines
-        .map((line) => `<text>${escapeToastText(line)}</text>`)
-        .join('\n      ');
-      const ps = `
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom, ContentType = WindowsRuntime] | Out-Null
 $xml = @"
@@ -113,17 +116,24 @@ $doc.LoadXml($xml)
 $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('${WIN_APPID}').Show($toast)
 `.trim();
-      spawnSync('powershell', ['-NoProfile', '-c', ps], { stdio: 'ignore', windowsHide: true });
+}
+
+export function desktopNotify(pkgRoot, event, extra) {
+  if (DISABLE_OS_NOTIFICATIONS) return;
+  const notification = buildDesktopNotificationContent(event, extra);
+  try {
+    if (PLAT === 'win32') {
+      const iconPath = join(pkgRoot, 'assets', 'icons', 'icon.png').replace(/\//g, '\\');
+      runSync('powershell', ['-NoProfile', '-c', buildWindowsToastScript(notification, iconPath)]);
     } else if (PLAT === 'darwin') {
       const subtitle = notification.sourceLabel
         ? ` subtitle "${escapeAppleScriptText(notification.sourceLabel)}"`
         : '';
-      spawnSync('osascript', ['-e',
+      runSync('osascript', ['-e',
         `display notification "${escapeAppleScriptText(notification.message)}" with title "${escapeAppleScriptText(notification.title)}"${subtitle}`],
-        { stdio: 'ignore' });
+      );
     } else {
-      const result = spawnSync('notify-send', [notification.title, notification.body], { stdio: 'ignore' });
-      if (result.status !== 0) process.stderr.write('\x07');
+      if (!runSync('notify-send', [notification.title, notification.body])) process.stderr.write('\x07');
     }
   } catch { process.stderr.write('\x07'); }
 }

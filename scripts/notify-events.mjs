@@ -1,5 +1,7 @@
 export function shouldIgnoreCodexNotifyClient(client) {
-  return !!client && client !== 'codex-tui';
+  if (!client) return false;
+  const normalized = String(client).trim().toLowerCase().replace(/[_\s]+/g, '-');
+  return normalized !== 'codex' && !normalized.startsWith('codex-');
 }
 
 export function shouldIgnoreFormattedSubagent(lastMsg, outputFormatEnabled) {

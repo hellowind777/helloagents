@@ -37,7 +37,7 @@ test('replay artifact stays inactive until project activation and records event-
     input: JSON.stringify({ cwd: project, source: 'startup' }),
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
-  assert.equal(existsSync(join(project, '.helloagents', 'replay')), false)
+  assert.equal(existsSync(join(project, '.helloagents')), false)
 
   writeText(
     getSessionStatePath(project),
@@ -101,11 +101,11 @@ test('replay artifact stays inactive until project activation and records event-
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
 
-  const replayDir = join(project, '.helloagents', 'replay')
-  let replayFiles = listFiles(replayDir).filter((name) => name.endsWith('.jsonl'))
-  assert.equal(replayFiles.length, 1)
+  const sessionDir = join(project, '.helloagents', 'sessions', 'detached', 'default')
+  const eventPath = join(sessionDir, 'events.jsonl')
+  assert.equal(existsSync(eventPath), true)
 
-  let events = readJsonl(join(replayDir, replayFiles[0]))
+  let events = readJsonl(eventPath)
   assert.ok(events.some((entry) => entry.event === 'session_started'))
   assert.ok(events.some((entry) => entry.event === 'session_injected'))
   assert.ok(events.some((entry) => entry.event === 'command_route_selected'))
@@ -121,6 +121,5 @@ test('replay artifact stays inactive until project activation and records event-
     assert.equal(result.status, 0, result.stderr || result.stdout)
   }
 
-  replayFiles = listFiles(replayDir).filter((name) => name.endsWith('.jsonl'))
-  assert.equal(replayFiles.length, 3)
+  assert.deepEqual(listFiles(sessionDir).filter((name) => name.endsWith('.jsonl')), ['events.jsonl'])
 })

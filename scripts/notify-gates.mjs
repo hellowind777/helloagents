@@ -27,6 +27,7 @@ function emitGateError({
     event: 'runtime_gate_error',
     source,
     reason,
+    payload,
   })
   output({
     decision: 'block',
@@ -119,6 +120,7 @@ export function runGateScript({
       event: blockEvent,
       source,
       reason: gateOutput.reason || '',
+      payload,
     })
     output(gateOutput)
     return true

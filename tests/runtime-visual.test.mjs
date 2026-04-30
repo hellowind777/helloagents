@@ -11,7 +11,12 @@ import {
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getSessionEvidencePath,
+  getSessionStatePath,
+  parseStdoutJson,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('visual validation stays optional but blocks closeout when the UI contract explicitly requires it', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -56,7 +61,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(join(project, '.helloagents', '.ralph-verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),
     commands: ['npm run test'],
     fastOnly: false,
@@ -76,7 +81,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /visual-evaluator=/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /\.helloagents\/\.ralph-visual\.json/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/visual\.json/)
 
   result = runNode(gateScript, [], {
     cwd: project,
@@ -85,7 +90,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /missing fresh visual validation evidence/)
+  assert.match(payload.reason, /缺少最新视觉验收证据/)
 
   result = runNode(visualScript, ['write'], {
     cwd: project,
@@ -112,7 +117,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /does not cover requested states: error/)
+  assert.match(payload.reason, /未覆盖要求的状态：error/)
 
   result = runNode(visualScript, ['write'], {
     cwd: project,
@@ -139,7 +144,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /latest visual validation evidence still records blocking findings/)
+  assert.match(payload.reason, /最新视觉验收证据仍记录阻塞问题/)
 
   result = runNode(visualScript, ['write'], {
     cwd: project,
@@ -166,5 +171,5 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /missing fresh closeout evidence/)
+  assert.match(payload.reason, /缺少最新收尾证据/)
 })

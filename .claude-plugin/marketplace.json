@@ -1,6 +1,6 @@
 {
-  "name": "helloagents-dev",
-  "description": "Development marketplace for HelloAGENTS quality-driven orchestration kernel",
+  "name": "helloagents",
+  "description": "Official marketplace for the HelloAGENTS quality-driven orchestration kernel",
   "owner": {
     "name": "HelloWind",
     "email": "hellowind777@gmail.com"
@@ -9,8 +9,10 @@
     {
       "name": "helloagents",
       "description": "Quality-driven orchestration kernel for AI CLIs: intelligent routing, quality verification, safety guards, and notifications",
-      "version": "3.0.12",
-      "source": "./",
+      "source": {
+        "source": "github",
+        "repo": "hellowind777/helloagents"
+      },
       "author": {
         "name": "HelloWind",
         "email": "hellowind777@gmail.com"
