@@ -31,8 +31,7 @@ export function isManagedCodexModelInstruction(line = '') {
 
 export function isManagedCodexNotify(line = '') {
   const value = String(line || '').replace(/\\/g, '/')
-  return value.includes(CODEX_MANAGED_TOML_COMMENT)
-    || value.includes(CODEX_MANAGED_NOTIFY_VALUE)
+  return value.includes(CODEX_MANAGED_NOTIFY_VALUE)
 }
 
 export function isManagedCodexBackupInstruction(line = '') {

@@ -15,7 +15,8 @@ const MANAGED_NOTIFY_LINE = `notify = ${CODEX_MANAGED_NOTIFY_VALUE} # helloagent
 test('Codex managed notify uses a cross-platform .cmd entrypoint', () => {
   assert.equal(CODEX_MANAGED_NOTIFY_VALUE, '["helloagents-js.cmd", "codex-notify"]')
   assert.equal(isManagedCodexNotify('notify = ["helloagents-js", "codex-notify"]'), false)
-  assert.equal(isManagedCodexNotify('notify = ["helloagents-js", "codex-notify"] # helloagents-managed'), true)
+  assert.equal(isManagedCodexNotify('notify = ["helloagents-js", "codex-notify"] # helloagents-managed'), false)
+  assert.equal(isManagedCodexNotify(`${MANAGED_NOTIFY_LINE}`), true)
 })
 
 test('Codex global cleanup still removes marketplace and plugin roots when .codex is gone', () => {
@@ -111,14 +112,14 @@ test('Codex standby keeps model_instructions_file before notify and separates ma
   ].join('\n')), installedConfig)
 })
 
-test('Codex standby refreshes legacy managed notify command', () => {
+test('Codex standby replaces existing top-level notify with the managed command', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
 
   writeText(
     join(home, '.codex', 'config.toml'),
     [
-      'notify = ["helloagents-js", "codex-notify"] # helloagents-managed',
+      'notify = ["node", "C:/custom/notify.mjs", "custom-notify"]',
       '',
       '[features]',
       'experimental = true',
