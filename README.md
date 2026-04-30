@@ -116,7 +116,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-reflect` | reusable lessons and knowledge updates |
 
 All UI work first follows the shared UI quality baseline.
-In activated projects or explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation.
+In global mode, activated projects, or explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
 When visual evidence is required, HelloAGENTS records it in the current session `artifacts/visual.json`.
 
 ### 2) Commands for different work styles
@@ -561,8 +561,7 @@ UI work follows this priority:
 
 1. current `plan.md` or PRD UI decisions
 2. `.helloagents/DESIGN.md`
-3. shared UI quality baseline
-4. `hello-ui` implementation and validation rules
+3. `hello-ui` implementation and validation rules, together with the shared UI quality baseline
 
 For heavier UI work, `contract.json` can require:
 
@@ -666,6 +665,10 @@ The current test suite covers:
 - README and skill contract alignment
 
 ## FAQ
+
+### What is the role of `docs/`?
+
+`docs/` is reference material for users and AI agents. It may lag behind implementation; runtime behavior is defined by source code, bootstrap files, skills, templates, and tests.
 
 ### Is this a CLI tool or a prompt framework?
 

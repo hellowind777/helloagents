@@ -39,7 +39,7 @@ export function selectCapabilities({ cwd, skillName = '', options = {} }) {
   if (plan?.contract?.ui?.required || existsSync(getProjectDesignContractPath(cwd))) {
     capabilities.push({
       id: 'design-contract',
-      description: `UI 契约：仅在 UI 场景按需读取当前 plan.md / prd/03-ui-design.md、${describeProjectStoreFile(cwd, 'DESIGN.md')} 与 hello-ui，不全局常驻。`,
+      description: `UI 契约：仅在 UI 场景按需读取当前 plan.md / prd/03-ui-design.md、${describeProjectStoreFile(cwd, 'DESIGN.md')} 与 hello-ui，并与 UI 质量基线共同生效。`,
     })
   }
   if (visualRequirement.required) {
