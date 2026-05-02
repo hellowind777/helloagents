@@ -127,7 +127,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
 | `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
 | `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Full project bootstrap: knowledge base plus project-level rule files and skill links |
+| `~init` | Full project bootstrap: knowledge base plus project-level rule files and package-root links |
 | `~test` | Write tests for a target module or recent change |
 | `~verify` | Review, run verification commands, fix failures, and close out |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -159,7 +159,7 @@ The knowledge base helps future turns understand the repo without re-discovering
 
 `~wiki` creates or updates the knowledge base only.
 
-`~init` does more: it creates or updates the knowledge base, writes project-level rule files, and refreshes host-native project skill links for supported hosts.
+`~init` does more: it creates or updates the knowledge base, writes project-level rule files, and refreshes project-level HelloAGENTS package-root links for supported hosts.
 
 ### 4) Structured plan packages
 
@@ -523,7 +523,7 @@ This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. I
 | Command or setting | Behavior |
 |--------------------|----------|
 | `~wiki` | creates or syncs the knowledge base only |
-| `~init` | creates knowledge base plus project-level rule files and skill links |
+| `~init` | creates knowledge base plus project-level rule files and package-root links |
 | `kb_create_mode = 0` | disables automatic knowledge updates |
 | `kb_create_mode = 1` | updates knowledge automatically for coding tasks in activated projects or global mode |
 | `kb_create_mode = 2` | updates knowledge more aggressively in activated projects or global mode |
@@ -684,7 +684,7 @@ Both.
 
 Use `~wiki` when you only want project knowledge.
 
-Use `~init` when you also want project-level rule files and host-native project skill links.
+Use `~init` when you also want project-level rule files and project-level HelloAGENTS package-root links.
 
 ### What is the difference between standby and global?
 
