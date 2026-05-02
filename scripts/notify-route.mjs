@@ -1,6 +1,18 @@
 import { isProjectRuntimeActive } from './runtime-scope.mjs'
 
-export function resolveBootstrapFile(cwd, installMode) {
+export function resolveRuntimeInstallMode(settings = {}, host = '') {
+  if (!settings || typeof settings !== 'object') return 'standby'
+  const hostModes = settings.host_install_modes
+  const trackedMode = hostModes && typeof hostModes === 'object' && !Array.isArray(hostModes)
+    ? hostModes[host] || ''
+    : ''
+  return trackedMode || settings.install_mode || 'standby'
+}
+
+export function resolveBootstrapFile(cwd, settings = {}, host = '') {
+  const installMode = typeof settings === 'string'
+    ? settings
+    : resolveRuntimeInstallMode(settings, host)
   const isActivated = isProjectRuntimeActive(cwd)
   return (installMode === 'global' || isActivated) ? 'bootstrap.md' : 'bootstrap-lite.md'
 }
@@ -97,7 +109,7 @@ export function handleRouteCommand({
     return
   }
 
-  const bootstrapFile = resolveBootstrapFile(cwd, settings.install_mode)
+  const bootstrapFile = resolveBootstrapFile(cwd, settings, host)
   if (bootstrapFile === 'bootstrap.md') {
     clearRouteContext({ cwd, payload })
     appendReplayEvent(cwd, {

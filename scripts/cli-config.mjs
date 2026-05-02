@@ -10,6 +10,7 @@ export const DEFAULTS = {
   project_store_mode: 'local',
   commit_attribution: '',
   install_mode: 'standby',
+  host_install_modes: {},
 };
 
 export function loadPackageVersion(pkgRoot) {
