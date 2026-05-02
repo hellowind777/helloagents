@@ -31,6 +31,7 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /以下内容一律视为中间输出/);
     assert.match(content, /不得使用输出格式/);
     assert.match(content, /子代理在任何场景下都不得使用输出格式/);
+    assert.match(content, /首行必须保留 `【HelloAGENTS】` 和连字符 `-`，不得省略/);
     assert.match(content, /状态图标与收尾内容必须一致/);
     assert.match(content, /仅在本轮执行已完成且不存在待确认动作时，才能使用 `✅完成`/);
     assert.match(content, /含确认是否执行已给出的方案/);
