@@ -9,7 +9,7 @@ import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
 import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
-import { shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
+import { resolveNotifyHost, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
 import { runGateScript } from './notify-gates.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
@@ -24,11 +24,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PKG_ROOT = join(__dirname, '..');
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
-const HOST = process.argv.includes('--gemini')
-  ? 'gemini'
-  : process.argv.includes('--codex')
-    ? 'codex'
-    : 'claude';
+const cmd = process.argv[2] || '';
+const HOST = resolveNotifyHost(process.argv);
 const IS_GEMINI = HOST === 'gemini';
 const EVENT_NAME = {
   SessionStart: 'SessionStart',
@@ -151,7 +148,7 @@ function cmdPreCompact() {
   const payload = readStdinJson();
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
-  const bootstrapFile = resolveBootstrapFile(cwd, settings.install_mode);
+  const bootstrapFile = resolveBootstrapFile(cwd, settings, HOST);
   const context = buildCompactionContext({
     payload,
     pkgRoot: PKG_ROOT,
@@ -197,7 +194,7 @@ function cmdInject() {
   const source = payload.source || 'startup';
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
-  const bootstrapFile = resolveBootstrapFile(cwd, settings.install_mode);
+  const bootstrapFile = resolveBootstrapFile(cwd, settings, HOST);
 
   let bootstrap = '';
   try {
@@ -322,8 +319,6 @@ function cmdCodexNotify() {
   consumeMainTurnState(cwd, turnState, turnPayload);
   clearRouteContext({ cwd, payload: turnPayload });
 }
-
-const cmd = process.argv[2] || '';
 
 switch (cmd) {
   case 'inject':        cmdInject(); break;
