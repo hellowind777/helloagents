@@ -220,6 +220,38 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /~verify=审查\/验证/)
 })
 
+test('notify runtime uses host_install_modes before global install_mode', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-route-host-mode-')
+  const env = buildHomeEnv(home)
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, {
+    install_mode: 'standby',
+    host_install_modes: {
+      codex: 'global',
+    },
+  })
+
+  let result = runNode(notifyScript, ['inject', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, source: 'startup' }),
+  })
+  let payload = parseStdoutJson(result)
+  assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /HelloAGENTS \(Standby\)/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /## 统一执行流程/)
+
+  result = runNode(notifyScript, ['route', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: 'create a new app for expenses' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
+})
+
 test('notify route keeps command skills on the runtime root even if project-level skill dirs exist', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

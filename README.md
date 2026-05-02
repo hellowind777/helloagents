@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.17-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.18-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -30,7 +30,6 @@
 ## Contents
 
 - [What HelloAGENTS Does](#what-helloagents-does)
-- [What Changed Since v3.0.16](#what-changed-since-v3016)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [CLI Management](#cli-management)
@@ -77,16 +76,6 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 | Completion is vague | Natural language says “done” | Delivery checks use state, evidence, and verification |
 | Config writes are risky | CLI files can drift | Install, update, cleanup, and doctor flows check managed files |
 
-## What Changed Since v3.0.16
-
-These are the main user-visible changes in `v3.0.17`, compared with `v3.0.16 beta`:
-
-- Managed host configuration now uses `helloagents-js.cmd` as the single stable entrypoint across Windows, macOS, and Linux.
-- Codex `notify` now writes `notify = ["helloagents-js.cmd", "codex-notify"]`, so a synced `config.toml` no longer needs OS-specific command names.
-- Claude Code and Gemini CLI standby hooks now use the same managed entrypoint as Codex, keeping host configuration wording and behavior consistent.
-- The package exposes `helloagents-js.cmd` as an npm bin alias while keeping the runtime command path independent of Node global package locations.
-- Runtime-root refresh now retries transient Windows filesystem rename errors, reducing occasional update/install failures when files are still being released.
-
 ## Core Features
 
 ### 1) 14 task-aware quality skills
@@ -127,7 +116,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
 | `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
 | `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Full project bootstrap: knowledge base plus project-level rule files and skill links |
+| `~init` | Full project bootstrap: knowledge base plus project-level rule files and package-root links |
 | `~test` | Write tests for a target module or recent change |
 | `~verify` | Review, run verification commands, fix failures, and close out |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -159,7 +148,7 @@ The knowledge base helps future turns understand the repo without re-discovering
 
 `~wiki` creates or updates the knowledge base only.
 
-`~init` does more: it creates or updates the knowledge base, writes project-level rule files, and refreshes host-native project skill links for supported hosts.
+`~init` does more: it creates or updates the knowledge base, writes project-level rule files, and refreshes project-level HelloAGENTS package-root links for supported hosts.
 
 ### 4) Structured plan packages
 
@@ -523,7 +512,7 @@ This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. I
 | Command or setting | Behavior |
 |--------------------|----------|
 | `~wiki` | creates or syncs the knowledge base only |
-| `~init` | creates knowledge base plus project-level rule files and skill links |
+| `~init` | creates knowledge base plus project-level rule files and package-root links |
 | `kb_create_mode = 0` | disables automatic knowledge updates |
 | `kb_create_mode = 1` | updates knowledge automatically for coding tasks in activated projects or global mode |
 | `kb_create_mode = 2` | updates knowledge more aggressively in activated projects or global mode |
@@ -589,7 +578,7 @@ Config file:
 ~/.helloagents/helloagents.json
 ```
 
-Default shape. `host_install_modes` is added when per-CLI modes are tracked:
+Default shape:
 
 ```json
 {
@@ -684,7 +673,7 @@ Both.
 
 Use `~wiki` when you only want project knowledge.
 
-Use `~init` when you also want project-level rule files and host-native project skill links.
+Use `~init` when you also want project-level rule files and project-level HelloAGENTS package-root links.
 
 ### What is the difference between standby and global?
 
