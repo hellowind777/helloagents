@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.17-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.18-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -30,7 +30,6 @@
 ## Contents
 
 - [What HelloAGENTS Does](#what-helloagents-does)
-- [What Changed Since v3.0.16](#what-changed-since-v3016)
 - [Core Features](#core-features)
 - [Quick Start](#quick-start)
 - [CLI Management](#cli-management)
@@ -76,16 +75,6 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 | Context is scattered | Plans live in chat history | Project knowledge and plan files stay on disk |
 | Completion is vague | Natural language says “done” | Delivery checks use state, evidence, and verification |
 | Config writes are risky | CLI files can drift | Install, update, cleanup, and doctor flows check managed files |
-
-## What Changed Since v3.0.16
-
-These are the main user-visible changes in `v3.0.17`, compared with `v3.0.16 beta`:
-
-- Managed host configuration now uses `helloagents-js.cmd` as the single stable entrypoint across Windows, macOS, and Linux.
-- Codex `notify` now writes `notify = ["helloagents-js.cmd", "codex-notify"]`, so a synced `config.toml` no longer needs OS-specific command names.
-- Claude Code and Gemini CLI standby hooks now use the same managed entrypoint as Codex, keeping host configuration wording and behavior consistent.
-- The package exposes `helloagents-js.cmd` as an npm bin alias while keeping the runtime command path independent of Node global package locations.
-- Runtime-root refresh now retries transient Windows filesystem rename errors, reducing occasional update/install failures when files are still being released.
 
 ## Core Features
 
@@ -589,7 +578,7 @@ Config file:
 ~/.helloagents/helloagents.json
 ```
 
-Default shape. `host_install_modes` is added when per-CLI modes are tracked:
+Default shape:
 
 ```json
 {
