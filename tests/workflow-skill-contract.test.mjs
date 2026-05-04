@@ -277,6 +277,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /主线目标=当前优化目标/)
   assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /除非达到迭代上限或命中阻塞判定，否则继续执行/)
   assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /不把 `🔄 下一步` 当作单轮结果或继续执行占位/)
+  assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /\/goal` 只作为外层长程续跑与预算控制/)
   assert.doesNotMatch(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /不要停止。不要询问是否继续。/)
 
   const commit = readText(join(REPO_ROOT, 'skills', 'commands', 'commit', 'SKILL.md'))

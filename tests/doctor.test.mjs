@@ -47,6 +47,8 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   assert.equal(codex.checks.codexNotify, true)
   assert.equal(codex.checks.notifyPathMatch, true)
   assert.equal(codex.checks.codexHooksFeature, true)
+  assert.equal(codex.checks.codexGoalsFeature, false)
+  assert.ok(codex.notes.some((note) => /Codex \/goal/.test(note)))
   assert.equal(codex.checks.standaloneHooks, true)
   assert.equal(codex.checks.standaloneHooksMatch, true)
 
@@ -128,8 +130,37 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   assert.equal(codex.checks.modelInstructionsFile, true)
   assert.equal(codex.checks.modelInstructionsPathMatch, true)
   assert.equal(codex.checks.codexHooksFeature, true)
+  assert.equal(codex.checks.codexGoalsFeature, false)
   assert.equal(codex.checks.pluginRoot, true)
   assert.equal(codex.checks.pluginCache, true)
   assert.equal(codex.checks.standaloneHooks, true)
   assert.equal(codex.checks.standaloneHooksMatch, true)
+})
+
+test('doctor treats latest Codex hooks=false as drift and legacy codex_hooks as a note', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      '[features]',
+      'hooks = false',
+      'codex_hooks = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  const report = JSON.parse(result.stdout)
+  const codex = report.hosts.find((entry) => entry.host === 'codex')
+
+  assert.equal(codex.status, 'drift')
+  assert.equal(codex.checks.codexHooksFeature, false)
+  assert.equal(codex.checks.legacyCodexHooksFeature, true)
+  assert.ok(codex.issues.some((issue) => issue.code === 'codex-hooks-feature-disabled'))
+  assert.ok(codex.notes.some((note) => /codex_hooks/.test(note)))
 })

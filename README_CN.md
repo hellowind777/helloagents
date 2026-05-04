@@ -633,11 +633,11 @@ Codex 默认走规则文件驱动。
 - 标准模式写入 `~/.codex/AGENTS.md`
 - 标准模式写入受管 `model_instructions_file = "~/.codex/AGENTS.md"`
 - 标准模式写入受管 `notify = ["helloagents-js.cmd", "codex-notify"]` 命令用于收尾通知
-- 标准模式和全局模式只在 `config.toml` 写入必要的 `codex_hooks = true` 功能开关
 - 标准模式把静默 Codex hooks 写入 `~/.codex/hooks.json`
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件流程，并同样用 `~/.codex/hooks.json` 加载静默 hooks
 - Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 bootstrap 或路由说明
+- `/goal` 保持 Codex 原生能力；需要长程执行时，用 `helloagents codex goals enable` 显式启用
 
 ## 验证
 

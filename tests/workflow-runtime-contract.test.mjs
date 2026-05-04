@@ -249,6 +249,8 @@ test('workflow templates and bootstrap stay aligned with runtime artifacts', () 
   assert.match(tasksTemplate, /预期变更：/)
   assert.match(tasksTemplate, /完成标准：/)
   assert.match(tasksTemplate, /验证方式：/)
+  assert.match(tasksTemplate, /Codex \/goal 执行入口/)
+  assert.match(tasksTemplate, /不要把完整 PRD 原文直接当作/)
 
   const contextTemplate = readText(join(REPO_ROOT, 'templates', 'context.md'))
   assert.match(contextTemplate, /## 领域语言/)

@@ -87,6 +87,7 @@ Trigger: ~plan [description]
 - 只有在 UI 验收确有收益时，才额外写 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens` 与 `ui.visualValidation.states`；不要把视觉验收扩成所有 UI 任务的固定步骤
 - 只有在 `T3`、非 UI 的高风险审查或确需额外跨模型建议时，才写 `advisor.required`、`advisor.reason`、`advisor.focus` 与 `advisor.preferredSources`；不要把 advisor 变成默认常驻流程
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要让后续检查脚本再从 `plan.md` 的自然语言说明里猜验证主路径
+- 在 `tasks.md` 中保留 “Codex /goal 执行入口”，内容必须引用当前方案包路径、AFK/HITL 边界、完成前验证与 HelloAGENTS 收尾；不要把普通 PRD 原文当作 `/goal` 目标
 - 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`（按当前项目存储模式解析）；若原文件不存在，先按模板建立最小设计契约，再写入已确认的稳定设计决策
 - 重写 `state_path`，其中“主线目标”写本次规划要完成的目标，不保留其他任务的内容
 
@@ -110,6 +111,7 @@ Trigger: ~plan [description]
 - 每个任务标注 `AFK` 或 `HITL`：`AFK` 表示代理可独立完成，`HITL` 表示需要用户决策、外部凭据、人工视觉确认或手动验收
 - 明确文件路径、预期变更、完成标准、验证方式与依赖关系
 - 每个任务可独立验证；厚任务必须拆成更薄的可验收切片
+- “Codex /goal 执行入口”只作为长程执行提示，不计入任务列表；入口必须让 Codex 按已拆好的 `tasks.md` 执行，而不是直接消费未拆分需求文档
 
 方案包中的 `contract.json` 必须满足：
 - `verifyMode` 只能是 `test-first` 或 `review-first`

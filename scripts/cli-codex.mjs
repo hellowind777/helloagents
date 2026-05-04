@@ -12,16 +12,18 @@ import {
   CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   CODEX_PLUGIN_CONFIG_HEADER,
   installCodexManagedTopLevelConfig,
-  isManagedCodexHooksFeature,
   isManagedCodexBackupInstruction,
+  isManagedCodexGoalsFeature,
   isManagedCodexModelInstruction,
   isManagedCodexNotify,
-  readCodexHooksFeatureLine,
-  removeCodexHooksFeatureConfig,
+  isManagedLegacyCodexHooksFeature,
+  readCodexGoalsFeatureLine,
+  readLegacyCodexHooksFeatureLine,
+  removeCodexGoalsFeatureConfig,
+  removeLegacyManagedCodexHooksFeatureConfig,
   removeCodexPluginConfig,
-  restoreCodexHooksFeatureConfig,
+  restoreCodexGoalsFeatureConfig,
   restoreCodexTopLevelConfig,
-  upsertCodexHooksFeatureConfig,
   upsertCodexPluginConfig,
 } from './cli-codex-config.mjs';
 import {
@@ -144,17 +146,22 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
 
   const currentModelInstructions = readTopLevelTomlLine(toml, 'model_instructions_file');
   const currentNotify = readTopLevelTomlBlock(toml, 'notify');
-  const currentCodexHooksFeature = readCodexHooksFeatureLine(toml);
+  const currentCodexGoalsFeature = readCodexGoalsFeatureLine(toml);
+  const currentLegacyCodexHooksFeature = readLegacyCodexHooksFeatureLine(toml);
 
   const shouldRestoreModelInstructions = isManagedCodexModelInstruction(currentModelInstructions);
   const shouldRestoreNotify = isManagedCodexNotify(currentNotify);
-  const shouldRestoreCodexHooksFeature = isManagedCodexHooksFeature(currentCodexHooksFeature);
+  const shouldRestoreCodexGoalsFeature = isManagedCodexGoalsFeature(currentCodexGoalsFeature);
+  const shouldRemoveLegacyCodexHooksFeature = isManagedLegacyCodexHooksFeature(currentLegacyCodexHooksFeature);
 
   if (removePluginConfig) {
     toml = removeCodexPluginConfig(toml);
   }
-  if (shouldRestoreCodexHooksFeature) {
-    toml = removeCodexHooksFeatureConfig(toml);
+  if (shouldRestoreCodexGoalsFeature) {
+    toml = removeCodexGoalsFeatureConfig(toml);
+  }
+  if (shouldRemoveLegacyCodexHooksFeature) {
+    toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   }
   if (shouldRestoreModelInstructions) {
     toml = removeTopLevelTomlLines(toml, (line) =>
@@ -167,7 +174,7 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
 
   const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
   const backupNotify = readTopLevelTomlBlock(backupToml, 'notify');
-  const backupCodexHooksFeature = readCodexHooksFeatureLine(backupToml);
+  const backupCodexGoalsFeature = readCodexGoalsFeatureLine(backupToml);
 
   toml = restoreCodexTopLevelConfig(toml, {
     modelInstructionsLine: shouldRestoreModelInstructions && !isManagedCodexBackupInstruction(backupModelInstructions)
@@ -177,9 +184,9 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
       ? backupNotify
       : '',
   });
-  toml = restoreCodexHooksFeatureConfig(toml, {
-    codexHooksLine: shouldRestoreCodexHooksFeature && !isManagedCodexHooksFeature(backupCodexHooksFeature)
-      ? backupCodexHooksFeature
+  toml = restoreCodexGoalsFeatureConfig(toml, {
+    codexGoalsLine: shouldRestoreCodexGoalsFeature && !isManagedCodexGoalsFeature(backupCodexGoalsFeature)
+      ? backupCodexGoalsFeature
       : '',
   });
 
@@ -202,7 +209,7 @@ export function installCodexStandby(home, pkgRoot) {
   toml = installCodexManagedTopLevelConfig(toml, {
     modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
-  toml = upsertCodexHooksFeatureConfig(toml);
+  toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   safeWrite(configPath, toml);
   installCodexStandaloneHooks(home, pkgRoot);
 
@@ -297,7 +304,7 @@ export function installCodexGlobal(home, pkgRoot) {
   toml = installCodexManagedTopLevelConfig(toml, {
     modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
-  toml = upsertCodexHooksFeatureConfig(toml);
+  toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   toml = upsertCodexPluginConfig(toml);
   safeWrite(configPath, toml);
   installCodexStandaloneHooks(home, pkgRoot);

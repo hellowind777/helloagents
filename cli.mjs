@@ -176,6 +176,8 @@ if (cmd === 'codex-notify') {
   runRuntimeScript('guard.mjs', argv.slice(1))
 } else if (cmd === 'ralph-loop') {
   runRuntimeScript('ralph-loop.mjs', argv.slice(1))
+} else if (cmd === 'codex' && argv[1] === 'goals') {
+  runRuntimeScript('cli-codex-goals.mjs', argv.slice(2))
 } else if (cmd === 'postinstall') {
   printPostinstallMessage()
   if (shouldDeployFromEnv()) {

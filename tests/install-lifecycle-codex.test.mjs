@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CODEX_MANAGED_NOTIFY_VALUE, isManagedCodexModelInstruction, isManagedCodexNotify } from '../scripts/cli-codex-config.mjs'
+import { CODEX_MANAGED_GOALS_FEATURE_LINE, CODEX_MANAGED_NOTIFY_VALUE, isManagedCodexModelInstruction, isManagedCodexNotify } from '../scripts/cli-codex-config.mjs'
 import { createHomeFixture, createPackageFixture, readText, writeText } from './helpers/test-env.mjs'
 import {
   runCli,
@@ -11,7 +11,6 @@ import {
 } from './helpers/cli-test-helpers.mjs'
 
 const MANAGED_NOTIFY_LINE = `notify = ${CODEX_MANAGED_NOTIFY_VALUE} # helloagents-managed`
-const MANAGED_HOOKS_FEATURE_LINE = 'codex_hooks = true # helloagents-managed'
 
 test('Codex managed notify uses a cross-platform .cmd entrypoint', () => {
   assert.equal(CODEX_MANAGED_NOTIFY_VALUE, '["helloagents-js.cmd", "codex-notify"]')
@@ -73,7 +72,8 @@ test('Codex standby replaces a user-owned model_instructions_file with the manag
   assert.match(installedConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.ok(isManagedCodexModelInstruction(installedConfig.split('\n').find((line) => line.startsWith('model_instructions_file ='))))
   assert.ok(installedConfig.includes(MANAGED_NOTIFY_LINE), installedConfig)
-  assert.ok(installedConfig.includes(MANAGED_HOOKS_FEATURE_LINE), installedConfig)
+  assert.doesNotMatch(installedConfig, /codex_hooks\s*=/)
+  assert.doesNotMatch(installedConfig, /^\s*hooks\s*=/m)
   assert.doesNotMatch(installedConfig, /UserPromptSubmit/)
   const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
   assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify route --codex --silent/)
@@ -107,7 +107,8 @@ test('Codex standby merges standalone hooks without writing hook blocks into con
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const config = readText(join(home, '.codex', 'config.toml'))
-  assert.ok(config.includes(MANAGED_HOOKS_FEATURE_LINE), config)
+  assert.doesNotMatch(config, /codex_hooks\s*=/)
+  assert.doesNotMatch(config, /^\s*hooks\s*=/m)
   assert.doesNotMatch(config, /hooks-codex/)
   assert.doesNotMatch(config, /UserPromptSubmit/)
 
@@ -132,7 +133,8 @@ test('Codex global also installs standalone hooks outside config.toml', () => {
   runCli(pkgRoot, home, ['install', 'codex', '--global'])
 
   const config = readText(join(home, '.codex', 'config.toml'))
-  assert.ok(config.includes(MANAGED_HOOKS_FEATURE_LINE), config)
+  assert.doesNotMatch(config, /codex_hooks\s*=/)
+  assert.doesNotMatch(config, /^\s*hooks\s*=/m)
   assert.doesNotMatch(config, /UserPromptSubmit/)
 
   const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
@@ -172,14 +174,37 @@ test('Codex standby keeps model_instructions_file before notify and separates ma
     '',
     '[features]',
     'experimental = true',
-    MANAGED_HOOKS_FEATURE_LINE,
     '',
   ].join('\n')), installedConfig)
 })
 
-test('Codex cleanup restores a user-owned codex_hooks feature value', () => {
+test('Codex install removes legacy managed codex_hooks and preserves user-owned legacy keys', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      '[features]',
+      'codex_hooks = true # helloagents-managed',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  let config = readText(join(home, '.codex', 'config.toml'))
+  assert.doesNotMatch(config, /codex_hooks/)
+  assert.match(config, /experimental = true/)
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  let cleaned = readText(join(home, '.codex', 'config.toml'))
+  assert.match(cleaned, /\[features\]/)
+  assert.match(cleaned, /experimental = true/)
+  assert.doesNotMatch(cleaned, /helloagents-managed/)
 
   writeText(
     join(home, '.codex', 'config.toml'),
@@ -190,19 +215,48 @@ test('Codex cleanup restores a user-owned codex_hooks feature value', () => {
       '',
     ].join('\n'),
   )
-
-  runCli(pkgRoot, home, ['postinstall'])
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
-
-  assert.match(readText(join(home, '.codex', 'config.toml')), /codex_hooks = true # helloagents-managed/)
+  config = readText(join(home, '.codex', 'config.toml'))
+  assert.match(config, /codex_hooks = false/)
+  assert.doesNotMatch(config, /codex_hooks = true # helloagents-managed/)
 
   runCli(pkgRoot, home, ['cleanup', 'codex'])
-
-  const cleaned = readText(join(home, '.codex', 'config.toml'))
-  assert.match(cleaned, /\[features\]/)
+  cleaned = readText(join(home, '.codex', 'config.toml'))
   assert.match(cleaned, /codex_hooks = false/)
-  assert.match(cleaned, /experimental = true/)
-  assert.doesNotMatch(cleaned, /helloagents-managed/)
+})
+
+test('Codex goals command explicitly manages latest Codex goals feature', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      '[features]',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  let result = runCli(pkgRoot, home, ['codex', 'goals', 'status', '--json'])
+  let status = JSON.parse(result.stdout)
+  assert.equal(status.enabled, false)
+  assert.equal(status.configured, false)
+
+  runCli(pkgRoot, home, ['codex', 'goals', 'enable'])
+  let config = readText(join(home, '.codex', 'config.toml'))
+  assert.match(config, new RegExp(CODEX_MANAGED_GOALS_FEATURE_LINE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.match(config, /experimental = true/)
+
+  result = runCli(pkgRoot, home, ['codex', 'goals', 'status', '--json'])
+  status = JSON.parse(result.stdout)
+  assert.equal(status.enabled, true)
+  assert.equal(status.managed, true)
+
+  runCli(pkgRoot, home, ['codex', 'goals', 'disable'])
+  config = readText(join(home, '.codex', 'config.toml'))
+  assert.doesNotMatch(config, /^\s*goals\s*=/m)
+  assert.match(config, /experimental = true/)
 })
 
 test('Codex standby replaces existing top-level notify with the managed command', () => {

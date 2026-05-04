@@ -261,6 +261,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - 未进入 VERIFY / CONSOLIDATE 的路径，声称完成前必须完成与任务类型匹配的必要检查；无法执行的检查必须明确说明，不得直接宣称完成
 - 已激活 `hello-*` 技能或存在方案包 / `contract.json` / 证据文件时，以对应 skill、方案包契约与 VERIFY / CONSOLIDATE 为准，不得降级为本节
 - 只读分析、创意探索、方案比较、中间进度和阻塞汇报不适用本节
+- Codex `/goal` 只作为外层长程续跑与预算控制；HelloAGENTS 仍负责方案、执行、验证和收尾。若 active goal 的目标已全部完成，先完成 HelloAGENTS 验证、delivery gate 与本地版本检查点，再调用 `update_goal` 标记 complete；不得因预算接近耗尽、单轮结束或准备停下而标记 complete
 
 ## 路由
 - 默认按上文“统一执行流程 / ROUTE / TIER”选路；除显式 `~command` 外，不另起独立路由规则

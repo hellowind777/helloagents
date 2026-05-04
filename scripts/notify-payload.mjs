@@ -12,6 +12,8 @@ const PAYLOAD_KEY_ALIASES = {
   hook_event_name: 'hookEventName',
   permission_mode: 'permissionMode',
   stop_hook_active: 'stopHookActive',
+  'goal-id': 'goalId',
+  goal_id: 'goalId',
 }
 
 function assignAlias(target, source, sourceKey, targetKey) {

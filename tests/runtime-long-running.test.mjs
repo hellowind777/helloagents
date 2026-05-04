@@ -12,7 +12,12 @@ import {
   writeText,
 } from './helpers/test-env.mjs'
 import { getSessionCapsulePath } from '../scripts/session-capsule.mjs'
-import { writeRouteContext, readRouteContext } from '../scripts/runtime-context.mjs'
+import {
+  UNBOUND_ROUTE_CONTEXT_TTL_MS,
+  getApplicableRouteContext,
+  writeRouteContext,
+  readRouteContext,
+} from '../scripts/runtime-context.mjs'
 import { cleanupUserRuntimeRoot, USER_RUNTIME_MAX_AGE_MS } from '../scripts/runtime-scope.mjs'
 import { writeTurnState, readTurnState } from '../scripts/turn-state.mjs'
 import {
@@ -28,14 +33,14 @@ import {
 } from '../scripts/runtime-ttl.mjs'
 
 const HOURS = 60 * 60 * 1000
-const SESSION_PAYLOAD = { sessionId: 'goal720' }
+const SESSION_PAYLOAD = { sessionId: 'goal720', turnId: 'turn-long' }
 
 function activateProject(project) {
   writeText(join(project, '.helloagents', '.keep'), '')
 }
 
-function writeCapsuleRouteUpdatedAt(project, updatedAt) {
-  const capsulePath = getSessionCapsulePath(project, { payload: SESSION_PAYLOAD })
+function writeCapsuleRouteUpdatedAt(project, updatedAt, payload = SESSION_PAYLOAD) {
+  const capsulePath = getSessionCapsulePath(project, { payload })
   const capsule = readJson(capsulePath)
   capsule.route.updatedAt = updatedAt
   writeJson(capsulePath, capsule)
@@ -64,6 +69,69 @@ test('route context remains valid for long-running goal sessions', () => {
 
   writeCapsuleRouteUpdatedAt(project, Date.now() - (LONG_RUNNING_TTL_HOURS + 1) * HOURS)
   assert.equal(readRouteContext({ cwd: project, payload: SESSION_PAYLOAD }), null)
+})
+
+test('route context is turn-bound so old explicit commands do not block later goal turns', () => {
+  const project = createTempDir('helloagents-goal-turn-bound-')
+  activateProject(project)
+
+  writeRouteContext({
+    cwd: project,
+    skillName: 'auto',
+    payload: {
+      sessionId: 'goal-session',
+      turnId: 'turn-1',
+    },
+  })
+
+  assert.equal(
+    getApplicableRouteContext({
+      cwd: project,
+      payload: {
+        sessionId: 'goal-session',
+        turnId: 'turn-1',
+      },
+    })?.skillName,
+    'auto',
+  )
+  assert.equal(
+    getApplicableRouteContext({
+      cwd: project,
+      payload: {
+        sessionId: 'goal-session',
+        turnId: 'turn-2',
+      },
+    }),
+    null,
+  )
+
+  const gate = runCommand(process.execPath, [join(process.cwd(), 'scripts', 'turn-stop-gate.mjs')], {
+    cwd: project,
+    input: JSON.stringify({
+      cwd: project,
+      sessionId: 'goal-session',
+      turnId: 'turn-2',
+    }),
+  })
+  assert.equal(gate.status, 0, gate.stderr || gate.stdout)
+  assert.equal(JSON.parse(gate.stdout).decision, 'continue')
+})
+
+test('unbound route context expires quickly even though bound routes support 720h turns', () => {
+  const project = createTempDir('helloagents-unbound-route-')
+  activateProject(project)
+
+  writeRouteContext({
+    cwd: project,
+    skillName: 'auto',
+    payload: {},
+  })
+
+  writeCapsuleRouteUpdatedAt(project, Date.now() - UNBOUND_ROUTE_CONTEXT_TTL_MS + 60_000, {})
+  assert.equal(readRouteContext({ cwd: project, payload: {} })?.skillName, 'auto')
+
+  writeCapsuleRouteUpdatedAt(project, Date.now() - UNBOUND_ROUTE_CONTEXT_TTL_MS - 60_000, {})
+  assert.equal(readRouteContext({ cwd: project, payload: {} }), null)
 })
 
 test('turn-state and evidence stay valid across long-running goal sessions', () => {

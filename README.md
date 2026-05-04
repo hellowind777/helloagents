@@ -631,11 +631,11 @@ Codex is rules-file driven by default.
 - standby writes `~/.codex/AGENTS.md`
 - standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
 - standby writes a managed `notify = ["helloagents-js.cmd", "codex-notify"]` command for closeout notification
-- standby and global write only the required `codex_hooks = true` feature switch to `config.toml`
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject bootstrap or route text through hook output
+- `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
 
 ## Verification
 

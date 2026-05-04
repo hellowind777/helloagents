@@ -103,6 +103,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 创建 `.helloagents/plans/YYYYMMDDHHMM_{feature}/prd/`（按当前项目存储模式解析）
 - 按 templates/plans/prd/ 的模板格式，仅写入用户未跳过的维度文件
 - 生成 tasks.md（每个任务默认是端到端垂直切片，标注 AFK / HITL、依赖、具体文件路径、预期变更、完成标准与验证方式；任务独立可验证）
+- 在 `tasks.md` 中保留 “Codex /goal 执行入口”，让 Codex 按已拆分任务、验收边界和 `contract.json` 执行；不要把完整 PRD 原文直接当作 `/goal` 目标
 - 生成 decisions.md（贯穿全程的决策日志）
 - 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需先明确审美方向时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要只把验证路径留在自然语言说明里
