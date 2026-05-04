@@ -136,7 +136,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   assert.match(payload.reason, /建议路径：~verify -> CONSOLIDATE/)
 
   writeJson(getSessionEvidencePath(project, 'verify.json'), {
-    updatedAt: '2026-04-05T00:00:00.000Z',
+    updatedAt: new Date(Date.now() - 721 * 60 * 60 * 1000).toISOString(),
     commands: ['npm run test', 'npm run build'],
     fastOnly: false,
     source: 'stop',
@@ -153,7 +153,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /验证证据超过 30 分钟/)
+  assert.match(payload.reason, /验证证据超过 720 小时/)
 
   writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date().toISOString(),

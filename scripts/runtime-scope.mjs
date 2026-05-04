@@ -5,6 +5,7 @@ import { dirname, join, normalize, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
 import { resolveSessionToken } from './session-token.mjs'
+import { USER_RUNTIME_MAX_AGE_MS } from './runtime-ttl.mjs'
 
 export const PROJECT_DIR_NAME = '.helloagents'
 export const PROJECT_SESSIONS_DIR_NAME = 'sessions'
@@ -13,7 +14,7 @@ export const CAPSULE_FILE_NAME = 'capsule.json'
 export const EVENTS_FILE_NAME = 'events.jsonl'
 export const DEFAULT_STATE_SESSION_TOKEN = 'default'
 export const USER_RUNTIME_DIR_NAME = 'runtime'
-export const USER_RUNTIME_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+export { USER_RUNTIME_MAX_AGE_MS }
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''

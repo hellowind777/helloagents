@@ -10,8 +10,8 @@ import {
   readCapsuleSection,
   writeCapsuleSection,
 } from './session-capsule.mjs'
+import { TURN_STATE_TTL_MS } from './runtime-ttl.mjs'
 
-const TURN_STATE_TTL_MS = 30 * 60 * 1000
 const VALID_KINDS = new Set(['complete', 'waiting', 'blocked', 'progress'])
 const VALID_ROLES = new Set(['main', 'subagent'])
 const VALID_REASON_CATEGORIES = new Set([

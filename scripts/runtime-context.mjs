@@ -6,8 +6,7 @@ import {
   readCapsuleSection,
   writeCapsuleSection,
 } from './session-capsule.mjs'
-
-const ROUTE_CONTEXT_TTL_MS = 30 * 60 * 1000
+import { ROUTE_CONTEXT_TTL_MS } from './runtime-ttl.mjs'
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''

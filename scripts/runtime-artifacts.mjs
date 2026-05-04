@@ -7,8 +7,9 @@ import {
   readSessionArtifact,
   writeSessionArtifact,
 } from './session-capsule.mjs'
+import { EVIDENCE_MAX_AGE_MS, LONG_RUNNING_TTL_HOURS } from './runtime-ttl.mjs'
 
-export const EVIDENCE_MAX_AGE_MS = 30 * 60 * 1000
+export { EVIDENCE_MAX_AGE_MS }
 
 function readGitDiffStat(cwd, args) {
   try {
@@ -23,16 +24,31 @@ function readGitDiffStat(cwd, args) {
   }
 }
 
+function readGitHead(cwd) {
+  try {
+    return execSync('git rev-parse HEAD', {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 10_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim()
+  } catch {
+    return null
+  }
+}
+
 export function captureWorkspaceFingerprint(cwd) {
+  const head = readGitHead(cwd)
   const unstaged = readGitDiffStat(cwd, 'HEAD')
   const staged = readGitDiffStat(cwd, '--cached')
-  const available = unstaged !== null || staged !== null
+  const available = head !== null || unstaged !== null || staged !== null
 
   return {
     available,
+    head: head || '',
     unstaged: unstaged || '',
     staged: staged || '',
-    combined: `${unstaged || ''}\n---\n${staged || ''}`.trim(),
+    combined: [`HEAD:${head || ''}`, unstaged || '', staged || ''].join('\n---\n').trim(),
   }
 }
 
@@ -71,7 +87,7 @@ export function validateEvidenceTimestamp(evidence, now, label) {
       required: true,
       status: 'stale-time',
       evidence,
-      details: [`${label}超过 30 分钟`],
+      details: [`${label}超过 ${LONG_RUNNING_TTL_HOURS} 小时`],
     }
   }
   return null
