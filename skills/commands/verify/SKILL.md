@@ -13,6 +13,7 @@ Trigger: ~verify [scope]
    - 即使命令通过，也不能越过当前方案包边界：不完整方案包不能视为可信交付记录，未闭合方案包不能被整体报告为已完成
    - 当推荐路径已进入 `~verify` / 收尾时，优先把本命令用于审查、验真和交付收尾
    - 若当前存在活跃方案包，先读取 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`，把它们当作本轮验证契约；不要只看命令结果
+   - 若本轮运行在 Codex active goal 下，按 active goal 关联方案包和 `state_path` 复核范围；`/goal` 只负责续跑，不改变验证契约
    - 若 `contract.json` 声明 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，则本轮还必须补齐当前会话 `artifacts/advisor.json`；advisor / style advisor 都是可选能力，不是默认常驻步骤
    - 若 `contract.json` 声明 `ui.visualValidation.required=true`，则本轮还必须补齐当前会话 `artifacts/visual.json`；视觉验收优先用截图/浏览器工具，没有工具时才降级为结构化代码级自检
 1. 先决定验证分流：
@@ -30,6 +31,7 @@ Trigger: ~verify [scope]
    - 逐个运行所有检测到的命令
    - 收集每个命令的输出和退出码
    - 对照当前契约逐项核对：requirements 是否覆盖、tasks 中每项“完成标准”是否满足、`plan.md` 中风险与设计约束是否被验证、`contract.json` 中声明的 `verifyMode` / reviewer / tester 关注边界是否已被覆盖
+   - 若 Codex active goal 存在，还要确认 `tasks.md` 的 AFK/HITL 边界：仍有可执行 AFK 项时，不进入 complete；只在目标、任务、验证和收尾都闭合后标记 goal complete
    - 若 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，在进入收尾前调用 `scripts/advisor-state.mjs write` 写当前会话 `artifacts/advisor.json`；记录触发原因、focus、consultedSources、结论与建议，禁止只在自然语言里留一段 advisor 意见
    - 若 `ui.visualValidation.required=true`，在进入收尾前调用 `scripts/visual-state.mjs write` 写当前会话 `artifacts/visual.json`；记录 `reason`、`tooling`、`screensChecked`、`statesChecked`、`status`、`summary`、`findings` 与 `recommendations`
 4. 汇总报告：
@@ -41,4 +43,4 @@ Trigger: ~verify [scope]
 
 ## 失败处理
 - 有失败 → 逐个修复，修复后重新运行对应审查或验证
-- 全部通过 → 进入当前已加载 bootstrap 的 CONSOLIDATE 收尾，再按交付边界报告完成
+- 全部通过 → 进入当前已加载 bootstrap 的 CONSOLIDATE 收尾；若 Codex active goal 的目标也已满足，再标记 goal complete，并按交付边界报告完成

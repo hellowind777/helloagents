@@ -20,7 +20,7 @@ Trigger: ~build [description]
 
 ### 1. 恢复与定位
 
-- 优先按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”恢复当前任务；若当前消息明确要继续上次任务，或会话刚经历恢复 / 压缩，先读取 `state_path`，再用当前用户消息、活跃方案包 / PRD 与代码事实确认当前任务
+- 优先按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”恢复当前任务；若当前消息明确要继续上次任务、会话刚经历恢复 / 压缩，或本轮运行在 Codex active goal 下，先读取 `state_path`，再用当前用户消息、活跃方案包 / PRD 与代码事实确认当前任务
 - 若存在最近的活跃方案包，读取对应的：
   - `requirements.md`
   - `plan.md`
@@ -28,6 +28,7 @@ Trigger: ~build [description]
   - `contract.json`
   - 实现时优先把 `tasks.md` 中每个任务的“完成标准”当作本轮实现约束，不要只按任务标题猜测范围
   - `contract.json` 存在时，优先按其中的 `verifyMode`、`reviewerFocus`、`testerFocus` 理解后续验证边界
+- 若本轮运行在 Codex active goal 下，按 `tasks.md` 未完成项、`contract.json` 与 `state_path` 恢复实现位置；不要自动创建新 goal，也不要把 goal 目标原文替代方案包
 - 若当前上下文中已注入“当前工作流约束”或“当前建议下一命令”，先服从它；只有推荐仍为 `~build`，或用户明确提出新增实现范围时，才继续 `~build`
 - 其余项目知识库与相关代码文件，按 bootstrap 的项目上下文规则按需读取
 - 若任务涉及 UI，按以下优先级读取并遵循：当前活跃 `plan.md` / PRD 中的 UI 决策 > 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析） > `hello-ui` 通用规则
@@ -63,5 +64,6 @@ Trigger: ~build [description]
 
 - 有方案包时，只同步本次实现直接影响的任务状态；未完成项保持打开
 - 当前实现已闭合、且需要进入交付或收尾时，转入 `~verify`
+- 若 Codex active goal 仍有未完成 AFK 任务，继续下一项可执行任务；若目标已满足，先转入 `~verify` 与 HelloAGENTS 收尾，再标记 goal complete
 - 状态文件、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载 bootstrap 的 VERIFY / CONSOLIDATE 规则执行
 - 不在 `~build` 内把仍未闭合的方案包整体报告为已完成

@@ -126,6 +126,9 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(auto, /不要在 `~auto` 内另建一套关键词路由表/)
   assert.match(auto, /不依赖关键词命中做机械分流/)
   assert.match(auto, /默认持续推进直到完成交付/)
+  assert.match(auto, /`\/goal` 只提供长程续跑与预算/)
+  assert.match(auto, /不把 goal 目标原文替代方案包/)
+  assert.match(auto, /先完成 `~verify` 与 HelloAGENTS 收尾，再标记 goal complete/)
   assert.match(auto, /不再额外询问“是否开始执行”/)
   assert.match(auto, /不得把 `🔄 下一步` 当作阶段交接或继续执行占位/)
   assert.match(auto, /不得把“给出方案”“给出任务列表”“未执行修改”“等待下一步确认”“给出建议下一步”当作 `~auto` 的默认完成态/)
@@ -162,6 +165,9 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(verify, /不能越过当前方案包边界/)
   assert.match(verify, /审查、验真和交付收尾/)
   assert.match(verify, /验证契约/)
+  assert.match(verify, /按 active goal 关联方案包和 `state_path` 复核范围/)
+  assert.match(verify, /仍有可执行 AFK 项时，不进入 complete/)
+  assert.match(verify, /目标也已满足，再标记 goal complete/)
   assert.match(verify, /`requirements\.md`、`plan\.md`、`tasks\.md`、`contract\.json`/)
   assert.match(verify, /scripts\/review-state\.mjs write/)
   assert.match(verify, /当前上下文中已注入“验证分流”/)
@@ -180,6 +186,9 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(build, /优先按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”恢复当前任务/)
   assert.match(build, /先读取 `state_path`/)
   assert.match(build, /“完成标准”当作本轮实现约束/)
+  assert.match(build, /按 `tasks\.md` 未完成项、`contract\.json` 与 `state_path` 恢复实现位置/)
+  assert.match(build, /不要自动创建新 goal/)
+  assert.match(build, /先转入 `~verify` 与 HelloAGENTS 收尾，再标记 goal complete/)
   assert.match(build, /`contract\.json`/)
   assert.match(build, /其余项目知识库与相关代码文件，按 bootstrap 的项目上下文规则按需读取/)
   assert.match(build, /当前工作流约束/)
@@ -189,6 +198,10 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(build, /按当前已加载 bootstrap 的 VERIFY \/ CONSOLIDATE 规则执行/)
   assert.doesNotMatch(build, /读取 PLAN 阶段所需的 hello-\* 技能/)
   assert.doesNotMatch(build, /需要时同步知识库、`CHANGELOG\.md`、modules 文档与反思/)
+
+  const testSkill = readText(join(REPO_ROOT, 'skills', 'commands', 'test', 'SKILL.md'))
+  assert.match(testSkill, /从 `tasks\.md` 未完成项、`contract\.json` 与 `state_path` 推导本轮测试范围/)
+  assert.match(testSkill, /测试通过只作为 goal 交付证据，不直接标记 goal complete/)
 
   const help = readText(join(REPO_ROOT, 'skills', 'commands', 'help', 'SKILL.md'))
   assert.match(help, /纯标准模式未激活项目不会自动触发这些技能/)
@@ -285,6 +298,13 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(commit, /缺少 `commit_attribution` \/ `kb_create_mode`/)
   assert.match(commit, /按 bootstrap 的“已有则更新”规则同步当前已提交状态/)
   assert.match(commit, /同步范围与更新格式按当前已加载 bootstrap 的 CONSOLIDATE 阶段执行/)
+  for (const commandName of ['idea', 'help', 'clean', 'commit']) {
+    assert.doesNotMatch(
+      readText(join(REPO_ROOT, 'skills', 'commands', commandName, 'SKILL.md')),
+      /goal complete|active goal 下|goal 交付证据/,
+      `~${commandName} should not carry goal execution flow rules`,
+    )
+  }
 })
 
 test('runtime rule files avoid maintainer-facing prose', () => {
