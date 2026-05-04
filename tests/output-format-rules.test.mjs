@@ -39,7 +39,7 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /不用“下一步建议”代替实际执行/);
     assert.match(content, /必须写真正的下一步动作/);
     assert.match(content, /不写单纯当前状态或条件式能力表述/);
-    assert.match(content, /执行修改仍需用户授权/);
+    assert.match(content, /含确认是否执行已给出的方案或修改/);
     assert.match(content, /若仍有已授权且可继续执行的动作，不得收尾，必须继续执行/);
   }
 });
