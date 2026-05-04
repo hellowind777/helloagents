@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.18-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.19-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -179,6 +179,8 @@ For `~prd`, HelloAGENTS also creates PRD files such as:
 
 `contract.json` is used by the workflow to decide verification scope, reviewer/tester focus, optional advisor checks, and optional visual validation.
 
+`tasks.md` also includes a Codex `/goal` entry. For long-running Codex work, use that prepared entry instead of giving `/goal` a raw product document. HelloAGENTS keeps `/goal` as Codex-native continuation and budget control, while plan files, task boundaries, verification, and closeout remain controlled by HelloAGENTS.
+
 ### 5) State and recovery
 
 Long tasks need a small recovery snapshot, but one shared state file is not safe enough for concurrent work.
@@ -288,6 +290,8 @@ helloagents switch-branch beta
 helloagents switch-branch beta claude --global
 helloagents doctor
 helloagents doctor codex --json
+helloagents codex goals status
+helloagents codex goals enable
 ```
 
 Supported targets:
@@ -636,6 +640,7 @@ Codex is rules-file driven by default.
 - global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject bootstrap or route text through hook output
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
+- Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
 ## Verification
 
@@ -650,6 +655,7 @@ The current test suite covers:
 - install, update, uninstall, cleanup, and mode switching
 - Claude, Gemini, and Codex config merge and restore behavior
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, local plugin, marketplace, and cache behavior
+- Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
 - session-scoped `state_path`, runtime signals, and evidence

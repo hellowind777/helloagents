@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.18-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.19-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -179,6 +179,8 @@ HelloAGENTS 可以在 `.helloagents/` 下创建和维护项目知识库。
 
 `contract.json` 会影响验证范围、reviewer/tester 关注点、可选 advisor 检查和可选视觉验收。
 
+`tasks.md` 还会保留 Codex `/goal` 执行入口。长程 Codex 任务应使用这个已拆分入口，不要把原始产品文档直接交给 `/goal`。HelloAGENTS 保持 `/goal` 的 Codex 原生定位，只把它作为续跑和预算控制；方案文件、任务边界、验证与收尾仍由 HelloAGENTS 负责。
+
 ### 5）状态与恢复
 
 长任务需要一个小型恢复快照，但多个对话共用一个状态文件并不安全。
@@ -288,6 +290,8 @@ helloagents switch-branch beta
 helloagents switch-branch beta claude --global
 helloagents doctor
 helloagents doctor codex --json
+helloagents codex goals status
+helloagents codex goals enable
 ```
 
 支持的目标：
@@ -638,6 +642,7 @@ Codex 默认走规则文件驱动。
 - 全局模式安装原生本地插件流程，并同样用 `~/.codex/hooks.json` 加载静默 hooks
 - Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 bootstrap 或路由说明
 - `/goal` 保持 Codex 原生能力；需要长程执行时，用 `helloagents codex goals enable` 显式启用
+- 感知 goal 的命令从 `tasks.md`、`contract.json` 和 `state_path` 恢复；不会自动创建 goal，也不会在 HelloAGENTS 验证和收尾前标记完成
 
 ## 验证
 
@@ -652,6 +657,7 @@ npm test
 - 安装、更新、卸载、清理和模式切换
 - Claude、Gemini、Codex 的配置合并与恢复
 - Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、本地插件、marketplace 和缓存行为
+- Codex `/goal` 功能开关、长程路由上下文和 goal 感知命令契约
 - `helloagents doctor`
 - 项目存储和 `repo-shared`
 - 会话级 `state_path`、运行态信号和证据
