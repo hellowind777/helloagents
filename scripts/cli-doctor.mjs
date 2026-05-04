@@ -1,12 +1,8 @@
-import { existsSync, realpathSync } from 'node:fs'
+import { realpathSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_CONFIG_HEADER, CODEX_PLUGIN_NAME } from './cli-codex.mjs'
-import {
-  CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
-  CODEX_MANAGED_NOTIFY_VALUE,
-} from './cli-codex-config.mjs'
 import { DEFAULTS } from './cli-config.mjs'
+import { inspectCodexDoctor as inspectCodexDoctorImpl } from './cli-doctor-codex.mjs'
 import { printDoctorText } from './cli-doctor-render.mjs'
 import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
 import { readTopLevelTomlLine } from './cli-toml.mjs'
@@ -223,111 +219,6 @@ function inspectGeminiDoctor(settings) {
   return { host, label: runtime.getHostLabel(host), trackedMode, detectedMode, status, checks, issues, notes, suggestedFix: suggestDoctorFix(host, status, trackedMode) }
 }
 
-function appendCodexStandbyIssues(issues, checks) {
-  if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
-  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
-  if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
-  if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('standby-model-instructions-missing', 'standby config 缺少受管 model_instructions_file', 'Standby config is missing the managed model_instructions_file'))
-  if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('standby-model-instructions-drift', 'standby model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Standby model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
-  if (!checks.codexNotify) issues.push(buildDoctorIssue('standby-notify-missing', 'standby notify 配置缺失', 'Standby notify configuration is missing'))
-  if (checks.codexNotify && !checks.notifyPathMatch) issues.push(buildDoctorIssue('standby-notify-drift', 'standby notify 未使用受管命令入口', 'Standby notify does not use the managed command entrypoint'))
-  if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled) {
-    issues.push(buildDoctorIssue('standby-global-residue', 'standby 模式下仍残留 global 插件文件或配置', 'Global plugin artifacts still remain while Codex is in standby mode'))
-  }
-}
-
-function appendCodexGlobalIssues(issues, checks, pluginVersion, cacheVersion) {
-  if (!checks.carrierMarker) issues.push(buildDoctorIssue('global-home-carrier-missing', 'global `~/.codex/AGENTS.md` 缺少 HelloAGENTS 规则内容', 'Global `~/.codex/AGENTS.md` is missing the HelloAGENTS carrier'))
-  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('global-home-carrier-drift', 'global `~/.codex/AGENTS.md` 与当前 bootstrap.md 不一致', 'Global `~/.codex/AGENTS.md` differs from the current bootstrap.md'))
-  if (!checks.globalHomeLink) issues.push(buildDoctorIssue('global-read-root-link-missing', 'global `~/.codex/helloagents` 链接缺失或未指向当前插件根目录', 'Global `~/.codex/helloagents` link is missing or does not point to the current plugin root'))
-  if (!checks.pluginRoot) issues.push(buildDoctorIssue('global-plugin-root-missing', 'global 插件根目录缺失', 'Global plugin root is missing'))
-  if (!checks.pluginCache) issues.push(buildDoctorIssue('global-plugin-cache-missing', 'global 插件缓存目录缺失', 'Global plugin cache directory is missing'))
-  if (checks.pluginRoot && !checks.pluginCarrierMatch) issues.push(buildDoctorIssue('global-plugin-carrier-drift', 'global 插件根目录中的 AGENTS.md 与当前 bootstrap.md 不一致', 'Global plugin AGENTS.md differs from the current bootstrap.md'))
-  if (checks.pluginCache && !checks.pluginCacheCarrierMatch) issues.push(buildDoctorIssue('global-plugin-cache-carrier-drift', 'global 插件缓存中的 AGENTS.md 与当前 bootstrap.md 不一致', 'Global plugin cache AGENTS.md differs from the current bootstrap.md'))
-  if (!checks.marketplaceEntry) issues.push(buildDoctorIssue('global-marketplace-missing', 'global marketplace 条目缺失', 'Global marketplace entry is missing'))
-  if (!checks.pluginEnabled) issues.push(buildDoctorIssue('global-plugin-disabled', 'global config 中缺少插件启用段', 'Global plugin enablement block is missing from config'))
-  if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue('global-model-instructions-missing', 'global config 缺少受管 model_instructions_file', 'Global config is missing the managed model_instructions_file'))
-  if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue('global-model-instructions-drift', 'global model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Global model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
-  if (!checks.codexNotify) issues.push(buildDoctorIssue('global-notify-missing', 'global notify 配置缺失', 'Global notify configuration is missing'))
-  if (checks.codexNotify && !checks.globalNotifyPathMatch) issues.push(buildDoctorIssue('global-notify-drift', 'global notify 未使用受管命令入口', 'Global notify does not use the managed command entrypoint'))
-  if (pluginVersion && !checks.pluginVersionMatch) issues.push(buildDoctorIssue('global-plugin-version-drift', 'global 插件根目录版本与当前包版本不一致', 'Global plugin root version does not match the current package version'))
-  if (cacheVersion && !checks.pluginCacheVersionMatch) issues.push(buildDoctorIssue('global-plugin-cache-version-drift', 'global 插件缓存版本与当前包版本不一致', 'Global plugin cache version does not match the current package version'))
-  if (checks.homeLink) {
-    issues.push(buildDoctorIssue('global-standby-link-residue', 'global 模式下仍残留 standby home 链接', 'Standby home link still remains while Codex is in global mode'))
-  }
-}
-
-function inspectCodexDoctor(settings) {
-  const host = 'codex'
-  const trackedMode = normalizeDoctorMode(runtime.getTrackedHostMode(settings, host))
-  const detectedMode = normalizeDoctorMode(runtime.detectHostMode(host))
-  const codexDir = join(runtime.home, '.codex')
-  const codexConfig = safeRead(join(codexDir, 'config.toml')) || ''
-  const pluginRoot = join(runtime.home, 'plugins', CODEX_PLUGIN_NAME)
-  const pluginCacheRoot = join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME, 'local')
-  const marketplace = safeJson(join(runtime.home, '.agents', 'plugins', 'marketplace.json')) || {}
-  const pluginVersion = safeJson(join(pluginRoot, 'package.json'))?.version || ''
-  const cacheVersion = safeJson(join(pluginCacheRoot, 'package.json'))?.version || ''
-  const homeLinkTarget = safeRealTarget(join(codexDir, 'helloagents'))
-  const pkgRootTarget = safeRealTarget(runtime.pkgRoot) || normalizePath(runtime.pkgRoot)
-  const pluginRootTarget = safeRealTarget(pluginRoot) || normalizePath(pluginRoot)
-  const modelInstructionsLine = readTopLevelTomlLine(codexConfig, 'model_instructions_file')
-  const expectedHomeCarrier = (detectedMode === 'global' || (detectedMode === 'none' && trackedMode === 'global'))
-    ? 'bootstrap.md'
-    : 'bootstrap-lite.md'
-  const checks = {
-    carrierMarker: (safeRead(join(codexDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
-    carrierContentMatch: extractManagedCarrierContent(join(codexDir, 'AGENTS.md'))
-      === readExpectedCarrierContent(expectedHomeCarrier, settings),
-    homeLink: homeLinkTarget === pkgRootTarget,
-    globalHomeLink: homeLinkTarget === pluginRootTarget,
-    modelInstructionsFile: !!modelInstructionsLine,
-    modelInstructionsPathMatch: !!modelInstructionsLine
-      && normalizePath(modelInstructionsLine).includes(`"${CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH}"`),
-    codexNotify: codexConfig.includes('codex-notify'),
-    notifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
-    pluginRoot: existsSync(pluginRoot),
-    pluginCache: existsSync(pluginCacheRoot),
-    pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '')
-      === readExpectedCarrierContent('bootstrap.md', settings),
-    pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '')
-      === readExpectedCarrierContent('bootstrap.md', settings),
-    marketplaceEntry: Array.isArray(marketplace.plugins) && marketplace.plugins.some((plugin) => plugin?.name === CODEX_PLUGIN_NAME),
-    pluginEnabled: codexConfig.includes(CODEX_PLUGIN_CONFIG_HEADER) && codexConfig.includes('enabled = true'),
-    globalNotifyPath: codexConfig.includes('codex-notify'),
-    globalNotifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
-    pluginVersionMatch: pluginVersion ? pluginVersion === runtime.pkgVersion : false,
-    pluginCacheVersionMatch: cacheVersion ? cacheVersion === runtime.pkgVersion : false,
-  }
-
-  const issues = []
-  const notes = []
-  if (trackedMode !== 'none' && detectedMode !== 'none' && trackedMode !== detectedMode) {
-    issues.push(buildDoctorIssue('tracked-mode-mismatch', '记录模式与检测模式不一致', 'Tracked mode does not match detected mode'))
-  }
-  if (detectedMode === 'standby') {
-    appendCodexStandbyIssues(issues, checks)
-  }
-  if (detectedMode === 'global') {
-    appendCodexGlobalIssues(issues, checks, pluginVersion, cacheVersion)
-  }
-  if (trackedMode === 'none' && detectedMode !== 'none') {
-    issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
-  }
-  if (trackedMode !== 'none' && detectedMode === 'none') {
-    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应的受管文件或配置', 'Config says this CLI is installed, but no managed artifacts were detected'))
-  }
-  if (!checks.pluginVersionMatch && !pluginVersion && detectedMode === 'global') {
-    notes.push(runtime.msg('未读到 global 插件根目录版本信息', 'Global plugin root version was not readable'))
-  }
-  if (!checks.pluginCacheVersionMatch && !cacheVersion && detectedMode === 'global') {
-    notes.push(runtime.msg('未读到 global 插件缓存版本信息', 'Global plugin cache version was not readable'))
-  }
-
-  const status = summarizeDoctorStatus(issues, { host, trackedMode, detectedMode })
-  return { host, label: runtime.getHostLabel(host), trackedMode, detectedMode, status, checks, issues, notes, suggestedFix: suggestDoctorFix(host, status, trackedMode) }
-}
-
 function parseDoctorArgs(args) {
   const wantsJson = args.includes('--json')
   const unknownFlags = args.filter((arg) => arg.startsWith('--') && arg !== '--json' && arg !== '--all')
@@ -348,7 +239,7 @@ function parseDoctorArgs(args) {
 function inspectDoctorHost(host, settings) {
   if (host === 'claude') return inspectClaudeDoctor(settings)
   if (host === 'gemini') return inspectGeminiDoctor(settings)
-  return inspectCodexDoctor(settings)
+  return inspectCodexDoctorImpl(runtime, settings)
 }
 
 function buildDoctorReport(host) {

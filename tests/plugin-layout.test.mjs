@@ -48,6 +48,14 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.match(claudeHooks, /\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.match(claudeHooks, /--claude/);
   assert.doesNotMatch(claudeHooks, /BeforeAgent/);
+
+  const codexHooks = read('hooks/hooks-codex.json');
+  assert.match(codexHooks, /SessionStart/);
+  assert.match(codexHooks, /UserPromptSubmit/);
+  assert.match(codexHooks, /Stop/);
+  assert.match(codexHooks, /--codex --silent/);
+  assert.match(codexHooks, /\$\{PLUGIN_ROOT\}/);
+  assert.doesNotMatch(codexHooks, /statusMessage/);
 });
 
 test('bootstrap path rules no longer depend on host-name placeholders or wrong carrier-relative skills paths', () => {

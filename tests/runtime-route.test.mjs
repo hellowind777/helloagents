@@ -7,10 +7,12 @@ import {
   createHomeFixture,
   createPackageFixture,
   createTempDir,
+  readJson,
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { normalizeNotifyPayload } from '../scripts/notify-payload.mjs'
+import { getSessionEvidencePath, getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('CLI runtime entry dispatches Codex notify payloads', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -27,6 +29,105 @@ test('CLI runtime entry dispatches Codex notify payloads', () => {
   })
 
   assert.equal(result.status, 0, result.stderr || result.stdout)
+})
+
+test('notify payload normalization accepts Codex snake and kebab case fields', () => {
+  const payload = normalizeNotifyPayload({
+    session_id: 'session-1',
+    'turn-id': 'turn-1',
+    last_assistant_message: 'done',
+    input_messages: [
+      { content: [{ text: '~auto finish the task' }] },
+    ],
+  })
+
+  assert.equal(payload.sessionId, 'session-1')
+  assert.equal(payload.turnId, 'turn-1')
+  assert.equal(payload.lastAssistantMessage, 'done')
+  assert.equal(payload.prompt, '~auto finish the task')
+})
+
+test('Codex silent hooks do not emit additional context and de-duplicate Stop handling', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-codex-silent-hooks-')
+  const env = buildHomeEnv(home)
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+  const hookPayload = {
+    cwd: project,
+    session_id: '12345678',
+    turn_id: 'turn-1',
+  }
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  let result = runNode(notifyScript, ['inject', '--codex', '--silent'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ ...hookPayload, source: 'startup' }),
+  })
+  let payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.hookSpecificOutput, undefined)
+
+  result = runNode(notifyScript, ['route', '--codex', '--silent'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ ...hookPayload, prompt: '~auto continue until done' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.hookSpecificOutput, undefined)
+
+  result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      payload: hookPayload,
+      role: 'main',
+      kind: 'waiting',
+      reasonCategory: 'missing-input',
+      reason: '当前阶段已完成，等待用户下一步。',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(notifyScript, ['stop', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      ...hookPayload,
+      last_assistant_message: '我先停在这里，等你决定下一步。',
+    }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.decision, 'block')
+  assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
+  assert.equal(readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
+    session: '12345678',
+  })).turnId, 'turn-1')
+
+  result = runNode(notifyScript, ['stop', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify(hookPayload),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.decision, undefined)
+
+  result = runNode(join(pkgRoot, 'cli.mjs'), [
+    'codex-notify',
+    JSON.stringify({ ...hookPayload, type: 'agent-turn-complete' }),
+  ], {
+    cwd: project,
+    env,
+  })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.equal(result.stdout, '')
 })
 
 test('notify inject and semantic route cover standby and recovery hints', () => {

@@ -11,6 +11,7 @@ import {
 } from './helpers/cli-test-helpers.mjs'
 
 const MANAGED_NOTIFY_LINE = `notify = ${CODEX_MANAGED_NOTIFY_VALUE} # helloagents-managed`
+const MANAGED_HOOKS_FEATURE_LINE = 'codex_hooks = true # helloagents-managed'
 
 test('Codex managed notify uses a cross-platform .cmd entrypoint', () => {
   assert.equal(CODEX_MANAGED_NOTIFY_VALUE, '["helloagents-js.cmd", "codex-notify"]')
@@ -72,11 +73,74 @@ test('Codex standby replaces a user-owned model_instructions_file with the manag
   assert.match(installedConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.ok(isManagedCodexModelInstruction(installedConfig.split('\n').find((line) => line.startsWith('model_instructions_file ='))))
   assert.ok(installedConfig.includes(MANAGED_NOTIFY_LINE), installedConfig)
+  assert.ok(installedConfig.includes(MANAGED_HOOKS_FEATURE_LINE), installedConfig)
+  assert.doesNotMatch(installedConfig, /UserPromptSubmit/)
+  const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
+  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify route --codex --silent/)
 
   runCli(pkgRoot, home, ['cleanup'])
 
   assert.match(readText(join(home, '.codex', 'config.toml')), new RegExp(`model_instructions_file = "${userAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
   assert.equal(readText(join(home, '.codex', 'AGENTS.md')), '# Codex custom\n')
+  assert.ok(!existsSync(join(home, '.codex', 'hooks.json')))
+})
+
+test('Codex standby merges standalone hooks without writing hook blocks into config.toml', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'hooks.json'),
+    JSON.stringify({
+      hooks: {
+        UserPromptSubmit: [
+          {
+            matcher: '',
+            hooks: [{ type: 'command', command: 'node "other.mjs"', timeout: 1 }],
+          },
+        ],
+      },
+    }, null, 2) + '\n',
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  const config = readText(join(home, '.codex', 'config.toml'))
+  assert.ok(config.includes(MANAGED_HOOKS_FEATURE_LINE), config)
+  assert.doesNotMatch(config, /hooks-codex/)
+  assert.doesNotMatch(config, /UserPromptSubmit/)
+
+  const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
+  assert.match(JSON.stringify(installedHooks), /node \\"other\.mjs\\"/)
+  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify inject --codex --silent/)
+  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify stop --codex/)
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  const cleanedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
+  assert.match(JSON.stringify(cleanedHooks), /node \\"other\.mjs\\"/)
+  assert.doesNotMatch(JSON.stringify(cleanedHooks), /helloagents/)
+})
+
+test('Codex global also installs standalone hooks outside config.toml', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--global'])
+
+  const config = readText(join(home, '.codex', 'config.toml'))
+  assert.ok(config.includes(MANAGED_HOOKS_FEATURE_LINE), config)
+  assert.doesNotMatch(config, /UserPromptSubmit/)
+
+  const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
+  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify route --codex --silent/)
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  assert.ok(!existsSync(join(home, '.codex', 'hooks.json')))
 })
 
 test('Codex standby keeps model_instructions_file before notify and separates managed lines from later fields', () => {
@@ -108,8 +172,37 @@ test('Codex standby keeps model_instructions_file before notify and separates ma
     '',
     '[features]',
     'experimental = true',
+    MANAGED_HOOKS_FEATURE_LINE,
     '',
   ].join('\n')), installedConfig)
+})
+
+test('Codex cleanup restores a user-owned codex_hooks feature value', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      '[features]',
+      'codex_hooks = false',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  assert.match(readText(join(home, '.codex', 'config.toml')), /codex_hooks = true # helloagents-managed/)
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  const cleaned = readText(join(home, '.codex', 'config.toml'))
+  assert.match(cleaned, /\[features\]/)
+  assert.match(cleaned, /codex_hooks = false/)
+  assert.match(cleaned, /experimental = true/)
+  assert.doesNotMatch(cleaned, /helloagents-managed/)
 })
 
 test('Codex standby replaces existing top-level notify with the managed command', () => {

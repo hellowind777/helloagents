@@ -303,7 +303,7 @@ helloagents doctor codex --json
 
 当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`，省略时默认 `standby`。
 
-宿主配置使用稳定的 `helloagents-js.cmd` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。同一份受管 `config.toml` 可在 Windows、macOS 和 Linux 之间同步。
+宿主配置使用稳定的 `helloagents-js.cmd` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`。
 
 #### npm 命令
 
@@ -421,7 +421,7 @@ npm uninstall -g helloagents
 |-----|------------------|----------|
 | Claude Code | `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks / 权限和符号链接 |
 | Gemini CLI | `~/.gemini/GEMINI.md`、`~/.gemini/settings.json`、`~/.gemini/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks 和符号链接 |
-| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/helloagents -> ~/.helloagents/helloagents`、受管备份 | 删除受管标记块、受管配置键、符号链接和最近一次受管备份 |
+| Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents`、受管备份 | 删除受管标记块、受管配置键、受管 hooks、符号链接和最近一次受管备份 |
 
 ### 全局模式文件
 
@@ -429,7 +429,7 @@ npm uninstall -g helloagents
 |-----|----------|----------|
 | Claude Code | 原生插件安装 | 由 Claude Code 插件系统管理 |
 | Gemini CLI | 原生扩展安装 | 由 Gemini 扩展系统管理 |
-| Codex CLI | 原生本地插件流程 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/`、`~/.codex/plugins/cache/local-plugins/helloagents/local/`、`~/.codex/config.toml`、`~/.codex/helloagents -> ~/plugins/helloagents` |
+| Codex CLI | 原生本地插件流程 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/`、`~/.codex/plugins/cache/local-plugins/helloagents/local/`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/plugins/helloagents` |
 
 全局模式下，HelloAGENTS 会自动尝试宿主原生命令。若宿主命令不可用，再手动执行：
 
@@ -633,9 +633,11 @@ Codex 默认走规则文件驱动。
 - 标准模式写入 `~/.codex/AGENTS.md`
 - 标准模式写入受管 `model_instructions_file = "~/.codex/AGENTS.md"`
 - 标准模式写入受管 `notify = ["helloagents-js.cmd", "codex-notify"]` 命令用于收尾通知
+- 标准模式和全局模式只在 `config.toml` 写入必要的 `codex_hooks = true` 功能开关
+- 标准模式把静默 Codex hooks 写入 `~/.codex/hooks.json`
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
-- 全局模式安装原生本地插件流程
-- HelloAGENTS 默认不启用 Codex hooks
+- 全局模式安装原生本地插件流程，并同样用 `~/.codex/hooks.json` 加载静默 hooks
+- Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 bootstrap 或路由说明
 
 ## 验证
 
@@ -649,7 +651,7 @@ npm test
 
 - 安装、更新、卸载、清理和模式切换
 - Claude、Gemini、Codex 的配置合并与恢复
-- Codex 受管 `model_instructions_file`、`notify`、本地插件、marketplace 和缓存行为
+- Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、本地插件、marketplace 和缓存行为
 - `helloagents doctor`
 - 项目存储和 `repo-shared`
 - 会话级 `state_path`、运行态信号和证据
@@ -683,9 +685,9 @@ npm test
 
 `global` 默认更广泛地启用完整规则。Claude 和 Gemini 使用原生插件 / 扩展；Codex 使用本地插件路径。
 
-### 为什么 Codex 默认不用 hooks？
+### Codex hooks 会显示注入内容吗？
 
-当前 Codex 集成使用规则文件、`model_instructions_file`、`notify` 和本地插件更稳定。hooks 输出仍可能显示在 TUI 中，因此 HelloAGENTS 默认不启用 Codex hooks。
+不会显示 bootstrap 或路由说明。HelloAGENTS 的 Codex hooks 只写运行态和执行 Stop 门禁，成功路径返回静默结果；只有阻塞或错误时显示必要原因。
 
 ### 可以关闭通知或 Guard 吗？
 

@@ -11,9 +11,11 @@ import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
 import { resolveNotifyHost, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
 import { runGateScript } from './notify-gates.mjs';
+import { normalizeNotifyPayload } from './notify-payload.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
 import { clearRouteContext, getApplicableRouteContext, writeRouteContext } from './runtime-context.mjs';
+import { readRuntimeEvidence, writeRuntimeEvidence } from './runtime-artifacts.mjs';
 import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
 import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
@@ -27,12 +29,15 @@ const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 const cmd = process.argv[2] || '';
 const HOST = resolveNotifyHost(process.argv);
 const IS_GEMINI = HOST === 'gemini';
+const IS_CODEX = HOST === 'codex';
+const IS_SILENT = process.argv.includes('--silent');
 const EVENT_NAME = {
   SessionStart: 'SessionStart',
   UserPromptSubmit: IS_GEMINI ? 'BeforeAgent' : 'UserPromptSubmit',
   PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
 };
 const RALPH_LOOP_ROUTE_COMMANDS = new Set(['verify', 'loop']);
+const CODEX_NATIVE_STOP_FILE = 'codex-native-stop.json';
 
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
@@ -50,6 +55,10 @@ function notifyByLevel(event, extra, settings = getSettings()) {
     desktopNotify(event, extra);
     playSound(event);
   }
+}
+
+function readPayloadFromStdin() {
+  return normalizeNotifyPayload(readStdinJson());
 }
 
 function buildNotifyExtra(payload = {}, options = {}) {
@@ -130,6 +139,27 @@ function attachTurnSession(payload = {}, cwd = payload.cwd || process.cwd()) {
   return { ...payload, sessionId };
 }
 
+function getCodexTurnId(payload = {}) {
+  return String(payload.turnId || payload.turn_id || payload['turn-id'] || '').trim();
+}
+
+function markCodexNativeStopProcessed(cwd, payload = {}) {
+  if (!IS_CODEX) return;
+  const turnId = getCodexTurnId(payload);
+  if (!turnId) return;
+  writeRuntimeEvidence(cwd, CODEX_NATIVE_STOP_FILE, {
+    turnId,
+    updatedAt: new Date().toISOString(),
+  }, { payload });
+}
+
+function hasCodexNativeStopProcessed(cwd, payload = {}) {
+  const turnId = getCodexTurnId(payload);
+  if (!turnId) return false;
+  const evidence = readRuntimeEvidence(cwd, CODEX_NATIVE_STOP_FILE, { payload });
+  return evidence?.turnId === turnId;
+}
+
 function readMainTurnState(cwd, payload = {}) {
   const turnState = readTurnState(cwd, { payload });
   return turnState?.role === 'main' ? turnState : null;
@@ -145,7 +175,7 @@ function shouldProcessCloseout(turnState) {
 }
 
 function cmdPreCompact() {
-  const payload = readStdinJson();
+  const payload = readPayloadFromStdin();
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
   const bootstrapFile = resolveBootstrapFile(cwd, settings, HOST);
@@ -170,36 +200,33 @@ function cmdPreCompact() {
 }
 
 function cmdRoute() {
-  const payload = readStdinJson();
+  const payload = readPayloadFromStdin();
   clearTurnState(payload.cwd || process.cwd(), { payload });
   handleRouteCommand({
     payload,
     host: HOST,
     pkgRoot: PKG_ROOT,
     settings: getSettings(),
-    buildRouteInstruction,
-    buildSemanticRouteInstruction,
+    buildRouteInstruction: IS_SILENT ? () => null : buildRouteInstruction,
+    buildSemanticRouteInstruction: IS_SILENT ? () => null : buildSemanticRouteInstruction,
     resolveCanonicalCommandSkill,
     writeRouteContext,
     clearRouteContext,
     appendReplayEvent,
     getWorkflowRecommendation,
-    suppress: (context) => suppressedOutput(EVENT_NAME.UserPromptSubmit, context),
+    suppress: (context) => IS_SILENT
+      ? emptySuppress()
+      : suppressedOutput(EVENT_NAME.UserPromptSubmit, context),
     emptySuppress,
   });
 }
 
 function cmdInject() {
-  const payload = readStdinJson();
+  const payload = readPayloadFromStdin();
   const source = payload.source || 'startup';
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
   const bootstrapFile = resolveBootstrapFile(cwd, settings, HOST);
-
-  let bootstrap = '';
-  try {
-    bootstrap = readFileSync(join(PKG_ROOT, bootstrapFile), 'utf-8');
-  } catch {}
 
   startReplaySession(cwd, {
     host: HOST,
@@ -219,6 +246,17 @@ function cmdInject() {
       activatedProject: isProjectRuntimeActive(cwd),
     },
   });
+  clearRouteContext({ cwd, payload });
+  clearTurnState(cwd, { payload });
+  if (IS_SILENT) {
+    emptySuppress();
+    return;
+  }
+
+  let bootstrap = '';
+  try {
+    bootstrap = readFileSync(join(PKG_ROOT, bootstrapFile), 'utf-8');
+  } catch {}
   const context = buildInjectContext({
     source,
     bootstrap,
@@ -228,29 +266,34 @@ function cmdInject() {
     cwd,
     payload,
   });
-  clearRouteContext({ cwd, payload });
-  clearTurnState(cwd, { payload });
   suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
 }
 
 function cmdStop() {
-  const payload = readStdinJson();
+  const payload = readPayloadFromStdin();
   const cwd = payload.cwd || process.cwd();
   const turnPayload = attachTurnSession(payload, cwd);
+  if (IS_CODEX && hasCodexNativeStopProcessed(cwd, turnPayload)) {
+    emptySuppress();
+    return;
+  }
   const turnState = readMainTurnState(cwd, turnPayload);
   if (runTurnStopGate(turnPayload)) {
     if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
+    markCodexNativeStopProcessed(cwd, turnPayload);
     return;
   }
   const shouldProcess = shouldProcessCloseout(turnState);
   if (shouldProcess && runRalphLoop(turnPayload, { turnState })) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
+    markCodexNativeStopProcessed(cwd, turnPayload);
     return;
   }
   if (shouldProcess && runDeliveryGate(turnPayload)) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload));
+    markCodexNativeStopProcessed(cwd, turnPayload);
     return;
   }
 
@@ -260,6 +303,7 @@ function cmdStop() {
   }
   consumeMainTurnState(cwd, turnState, turnPayload);
   clearRouteContext({ cwd, payload: turnPayload });
+  markCodexNativeStopProcessed(cwd, turnPayload);
   emptySuppress();
 }
 
@@ -274,6 +318,7 @@ function cmdDesktop() {
 function cmdCodexNotify() {
   let data = {};
   try { data = JSON.parse(process.argv[3] || '{}'); } catch {}
+  data = normalizeNotifyPayload(data);
   const cwd = data.cwd || process.cwd();
   const turnPayload = attachTurnSession(data, cwd);
 
@@ -286,6 +331,7 @@ function cmdCodexNotify() {
     return;
   }
   if (type !== 'agent-turn-complete') return;
+  if (hasCodexNativeStopProcessed(cwd, turnPayload)) return;
 
   const turnState = readMainTurnState(cwd, turnPayload);
   if (runTurnStopGate(turnPayload)) {

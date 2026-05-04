@@ -303,7 +303,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
 
-Host configs use the stable `helloagents-js.cmd` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. The same managed `config.toml` works across Windows, macOS, and Linux.
+Host configs use the stable `helloagents-js.cmd` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`.
 
 #### npm commands
 
@@ -421,7 +421,7 @@ npm uninstall -g helloagents
 |-----|--------------------------|------------------|
 | Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks/permissions, and symlink |
 | Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks, and symlink |
-| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/helloagents -> ~/.helloagents/helloagents`, managed backups | removes managed marker block, managed config keys, symlink, and the latest managed backup |
+| Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents`, managed backups | removes managed marker block, managed config keys, managed hooks, symlink, and the latest managed backup |
 
 ### Global mode files
 
@@ -429,7 +429,7 @@ npm uninstall -g helloagents
 |-----|----------------|----------------|
 | Claude Code | native plugin install | managed by Claude Code plugin system |
 | Gemini CLI | native extension install | managed by Gemini extension system |
-| Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml`, `~/.codex/helloagents -> ~/plugins/helloagents` |
+| Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/plugins/helloagents` |
 
 In global mode, HelloAGENTS now attempts the host-native install commands automatically. If a host command is unavailable, run the same commands manually:
 
@@ -631,9 +631,11 @@ Codex is rules-file driven by default.
 - standby writes `~/.codex/AGENTS.md`
 - standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
 - standby writes a managed `notify = ["helloagents-js.cmd", "codex-notify"]` command for closeout notification
+- standby and global write only the required `codex_hooks = true` feature switch to `config.toml`
+- standby writes silent Codex hooks to `~/.codex/hooks.json`
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
-- global mode installs the native local-plugin chain
-- HelloAGENTS does not enable Codex hooks by default
+- global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
+- Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject bootstrap or route text through hook output
 
 ## Verification
 
@@ -647,7 +649,7 @@ The current test suite covers:
 
 - install, update, uninstall, cleanup, and mode switching
 - Claude, Gemini, and Codex config merge and restore behavior
-- Codex managed `model_instructions_file`, `notify`, local plugin, marketplace, and cache behavior
+- Codex managed `model_instructions_file`, `notify`, `hooks.json`, local plugin, marketplace, and cache behavior
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
 - session-scoped `state_path`, runtime signals, and evidence
@@ -681,9 +683,9 @@ Use `~init` when you also want project-level rule files and project-level HelloA
 
 `global` applies full rules broadly. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
 
-### Why does Codex not use hooks by default?
+### Do Codex hooks show injected content?
 
-The current Codex integration is more predictable with managed rules files, `model_instructions_file`, `notify`, and local plugins. Hooks can still show output in the TUI, so HelloAGENTS does not enable Codex hooks by default.
+No bootstrap or route text is injected through hooks. HelloAGENTS Codex hooks only write runtime state and enforce Stop gates; successful hooks stay quiet, while blocked or failed hooks show the necessary reason.
 
 ### Can I turn off notifications or guard checks?
 
