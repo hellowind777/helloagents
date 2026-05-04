@@ -37,10 +37,10 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /含确认是否执行已给出的方案/);
     assert.match(content, /若正在等待确认，写清待确认动作/);
     assert.match(content, /不用“下一步建议”代替实际执行/);
-    assert.match(content, /必须写真实下一步，不改写成条件式能力表述或空泛询问/);
-    assert.match(content, /`🔄 下一步` 写动作，不写单纯当前状态/);
-    assert.match(content, /未执行配置改动/);
-    assert.match(content, /若已获授权且可继续执行，不得把执行动作写进下一步，必须继续执行/);
+    assert.match(content, /必须写真正的下一步动作/);
+    assert.match(content, /不写单纯当前状态或条件式能力表述/);
+    assert.match(content, /执行修改仍需用户授权/);
+    assert.match(content, /若仍有已授权且可继续执行的动作，不得收尾，必须继续执行/);
   }
 });
 
@@ -49,8 +49,8 @@ test('skill and help docs describe output_format as final-summary only', () => {
   assert.match(helloagentsSkill, /不得包装 HelloAGENTS 外层输出格式/);
   assert.match(helloagentsSkill, /本轮最终收尾消息/);
   assert.match(helloagentsSkill, /所有流式内容、进度或状态汇报、中间文本/);
-  assert.match(helloagentsSkill, /最终收尾中的 `🔄 下一步` 必须写真实动作/);
-  assert.match(helloagentsSkill, /不得把待执行事项包装成完成态/);
+  assert.match(helloagentsSkill, /最终收尾中的 `🔄 下一步` 写真实动作/);
+  assert.match(helloagentsSkill, /已获授权且可继续执行时不得收尾/);
 
   const helloWriteSkill = read('skills/hello-write/SKILL.md');
   assert.match(helloWriteSkill, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);

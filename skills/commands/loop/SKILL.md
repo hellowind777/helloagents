@@ -38,8 +38,7 @@ iteration	commit	metric	delta	guard	status	description
 `~loop` 的八阶段循环是统一执行流程（ROUTE/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE）在迭代优化场景下的特化形式。每轮迭代的“修改”阶段遵循已标记的 hello-* 质量技能规范，“验证”阶段遵循 hello-verify 的验证规范。
 执行 `~loop` 时，涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载 bootstrap 执行；本 skill 负责补充 loop 场景的迭代顺序与回滚规则。
 
-除非达到迭代上限或命中阻塞判定，否则继续执行，不额外询问是否继续。
-显式 `~loop` 下，`🔄 下一步` 不能作为单轮结果或继续执行占位；能进入下一轮就继续执行，不能继续时必须写结构化 `turn-state` blocker。
+除非达到迭代上限或命中阻塞判定，否则继续执行，不额外询问是否继续，也不把 `🔄 下一步` 当作单轮结果或继续执行占位。
 每轮迭代必须完整走完以下八个阶段：
 
 ### 第 1 阶段：回顾
