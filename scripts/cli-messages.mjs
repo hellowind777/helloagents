@@ -29,8 +29,8 @@ function pluginCommands() {
 
 function removeHint(msg) {
   return msg(
-    '如已安装 Claude Code 插件，建议手动移除: /plugin remove helloagents\n  如已安装 Gemini CLI 扩展，建议手动移除: gemini extensions uninstall helloagents',
-    'If Claude Code plugin installed, consider removing: /plugin remove helloagents\n  If Gemini CLI extension installed, consider removing: gemini extensions uninstall helloagents',
+    '如已安装 Claude Code 插件，可手动移除: /plugin remove helloagents\n  如已安装 Gemini CLI 扩展，可手动移除: gemini extensions uninstall helloagents',
+    'If the Claude Code plugin is installed, you can remove it: /plugin remove helloagents\n  If the Gemini CLI extension is installed, you can remove it: gemini extensions uninstall helloagents',
   )
 }
 
@@ -118,7 +118,7 @@ ${msg('Codex /goal', 'Codex /goal')}:
   ${msg('仅显式管理 Codex 最新版 [features].goals，不替代 /goal', 'Explicitly manages only latest Codex [features].goals; does not replace /goal')}
 
 ${msg('卸载', 'Uninstall')}:
-  helloagents cleanup      ${msg('（推荐先执行，显式清理所有 CLI 注入/链接）', '(recommended first, explicitly cleans CLI injections/links)')}
+  helloagents cleanup      ${msg('（先清理所有 CLI 注入/链接）', '(cleans all CLI injections/links first)')}
   npm uninstall -g helloagents
   ${msg('如宿主命令不可用，另需手动移除：', 'If host commands are unavailable, also remove manually:')}
     Claude Code:  /plugin remove helloagents

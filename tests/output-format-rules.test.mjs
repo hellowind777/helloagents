@@ -16,6 +16,8 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);
     assert.match(content, /准确优先于压缩/);
     assert.match(content, /不写无执行价值的客套、邀约、重复确认、能力陈述或空泛建议/);
+    assert.match(content, /优先在原条目内收敛表达/);
+    assert.match(content, /同步删除重复表述/);
     assert.match(content, /适用条件：/);
     assert.match(content, /排除条件：/);
     assert.match(content, /输出格式：/);
@@ -48,15 +50,14 @@ test('skill and help docs describe output_format as final-summary only', () => {
   const helloagentsSkill = read('skills/helloagents/SKILL.md');
   assert.match(helloagentsSkill, /不得包装 HelloAGENTS 外层输出格式/);
   assert.match(helloagentsSkill, /本轮最终收尾消息/);
-  assert.match(helloagentsSkill, /完整 HelloAGENTS 外层格式/);
-  assert.match(helloagentsSkill, /首行 `图标【HelloAGENTS】\- 状态描述`/);
-  assert.match(helloagentsSkill, /所有流式内容、进度或状态汇报、中间文本/);
+  assert.match(helloagentsSkill, /通用输出格式/);
+  assert.match(helloagentsSkill, /流式内容、进度或状态汇报、中间文本/);
   assert.match(helloagentsSkill, /最终收尾中的 `🔄 下一步` 写真实动作/);
   assert.match(helloagentsSkill, /已获授权且可继续执行时不得收尾/);
 
   const helloWriteSkill = read('skills/hello-write/SKILL.md');
-  assert.match(helloWriteSkill, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);
-  assert.match(helloWriteSkill, /准确优先于压缩/);
+  assert.match(helloWriteSkill, /通用语言与表述要求/);
+  assert.doesNotMatch(helloWriteSkill, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);
   assert.match(helloWriteSkill, /不重复同一结论/);
 
   const subagentSkill = read('skills/hello-subagent/SKILL.md');

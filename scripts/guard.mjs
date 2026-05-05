@@ -76,12 +76,12 @@ function buildHighRiskGate(matches, cwd, payload = {}) {
   if (!recommendation) return null
   if (matches.some((match) => match.gate === 'post-verify')) {
     return {
-      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：当前工作流尚未进入 VERIFY / CONSOLIDATE。\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
+      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：当前工作流尚未进入 VERIFY / CONSOLIDATE。\n当前工作流：${recommendation.summary}\n处理路径：${recommendation.nextPath}\n${recommendation.guidance}`,
     }
   }
   if (matches.some((match) => match.gate === 'plan-first') && recommendation.nextCommand === 'plan') {
     return {
-      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：高风险 schema 变更前仍需先完成 ~plan。\n当前工作流：${recommendation.summary}\n建议路径：${recommendation.nextPath}\n${recommendation.guidance}`,
+      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：高风险 schema 变更前仍需先完成 ~plan。\n当前工作流：${recommendation.summary}\n处理路径：${recommendation.nextPath}\n${recommendation.guidance}`,
     }
   }
   return null
@@ -207,7 +207,7 @@ function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings)
     sections.push(`⚠️ [HelloAGENTS 高风险操作提醒] 检测到高风险命令:\n${highRiskWarnings.map((warning) => `  - ${warning}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`)
   }
   if (shellSafetyWarnings.length > 0) {
-    sections.push(`⚠️ [HelloAGENTS Shell 安全提醒] 检测到建议调整的命令写法:\n${shellSafetyWarnings.map((warning) => `  - ${warning}`).join('\n')}\n当前仅提示，不中断执行。`)
+    sections.push(`⚠️ [HelloAGENTS Shell 安全提醒] 检测到需要关注的命令写法:\n${shellSafetyWarnings.map((warning) => `  - ${warning}`).join('\n')}\n当前仅提示，不中断执行。`)
   }
   if (sections.length === 0) return
 

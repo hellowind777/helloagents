@@ -29,7 +29,7 @@ Trigger: ~build [description]
   - 实现时优先把 `tasks.md` 中每个任务的“完成标准”当作本轮实现约束，不要只按任务标题猜测范围
   - `contract.json` 存在时，优先按其中的 `verifyMode`、`reviewerFocus`、`testerFocus` 理解后续验证边界
 - 若本轮运行在 Codex active goal 下，按 `tasks.md` 未完成项、`contract.json` 与 `state_path` 恢复实现位置；不要自动创建新 goal，也不要把 goal 目标原文替代方案包
-- 若当前上下文中已注入“当前工作流约束”或“当前建议下一命令”，先服从它；只有推荐仍为 `~build`，或用户明确提出新增实现范围时，才继续 `~build`
+- 若当前上下文中已注入“当前工作流约束”或“当前推荐下一命令”，先服从它；只有推荐仍为 `~build`，或用户明确提出新增实现范围时，才继续 `~build`
 - 其余项目知识库与相关代码文件，按 HelloAGENTS 项目上下文要求读取
 - 若任务涉及 UI，按以下优先级读取并遵循：当前活跃 `plan.md` / PRD 中的 UI 决策 > 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析） > `hello-ui` 通用规则
 - 若已激活项目且当前任务属于整页新建、设计系统改造、或跨多个组件的视觉重做，但逻辑 `.helloagents/DESIGN.md` 不存在，先按模板创建最小设计契约，再继续大规模实现

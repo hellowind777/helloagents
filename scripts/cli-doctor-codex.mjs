@@ -201,7 +201,7 @@ export function inspectCodexDoctor(runtime, settings) {
   if (!checks.pluginVersionMatch && !pluginVersion && detectedMode === 'global') notes.push(runtime.msg('未读到 global 插件根目录版本信息', 'Global plugin root version was not readable'))
   if (!checks.pluginCacheVersionMatch && !cacheVersion && detectedMode === 'global') notes.push(runtime.msg('未读到 global 插件缓存版本信息', 'Global plugin cache version was not readable'))
   if (detectedMode !== 'none' && !checks.codexGoalsFeature) notes.push(runtime.msg('Codex /goal 未启用；如需长程执行，可运行 `helloagents codex goals enable`。', 'Codex /goal is not enabled; run `helloagents codex goals enable` if you need long-running goals.'))
-  if (detectedMode !== 'none' && checks.legacyCodexHooksFeature) notes.push(runtime.msg('检测到旧版 `codex_hooks`；HelloAGENTS 只兼容 Codex 最新版，建议移除旧 key。', 'Legacy `codex_hooks` was detected; HelloAGENTS targets latest Codex only, so remove the old key.'))
+  if (detectedMode !== 'none' && checks.legacyCodexHooksFeature) notes.push(runtime.msg('检测到旧版 `codex_hooks`；HelloAGENTS 只兼容 Codex 最新版，请移除旧 key。', 'Legacy `codex_hooks` was detected; HelloAGENTS targets latest Codex only, so remove the old key.'))
 
   const status = summarizeDoctorStatus(issues, { trackedMode, detectedMode })
   return { host, label: runtime.getHostLabel(host), trackedMode, detectedMode, status, checks, issues, notes, suggestedFix: suggestCodexDoctorFix(status, trackedMode) }

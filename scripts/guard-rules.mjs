@@ -81,13 +81,13 @@ export function scanShellSafetyWarnings(command = '') {
       .map((entry) => entry.trim())
       .filter(Boolean)
     if (logicalLines.length > 3) {
-      warnings.push('PowerShell 内联脚本超过 3 个逻辑行，建议改用临时 .ps1 文件')
+      warnings.push('PowerShell 内联脚本超过 3 个逻辑行，请改用临时 .ps1 文件')
     }
   }
 
   const fileOps = normalized.match(/\b(remove-item|move-item|copy-item|new-item|set-content|add-content|out-file|mkdir|md|touch|cp|copy|mv|move|ren|rename|del|erase|rm|rmdir)\b/ig) || []
   if (fileOps.length > 1 && /[;\r\n]/.test(normalized)) {
-    warnings.push('单条 shell 命令串联了多个文件操作，建议拆成独立命令')
+    warnings.push('单条 shell 命令串联了多个文件操作，请拆成独立命令')
   }
 
   return warnings
