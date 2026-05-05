@@ -33,6 +33,7 @@
 - 不写黑话、营销话、内部化表述或空泛形容；源码字段名、协议名、命令、路径、配置键等必须保留原名时除外
 - 不写无执行价值的客套、邀约、重复确认、能力陈述或空泛建议
 - 同一概念前后用语保持一致；先给结论再给细节，避免同义反复、重复解释和堆砌近义句
+- 优化既有约束或文案时，优先在原条目内收敛表达；只有边界独立且原条目无法承载时才新增条目，并同步删除重复表述
 
 ### 完整交付（强制）
 - 一次做完：用户需求明确且已获得执行授权时，必须持续执行到完成；只有符合下文“阻塞判定”的情况，才可中途停下
@@ -207,8 +208,9 @@
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 说明：
 - `.helloagents/` 表示项目级存储路径，也是标准模式的项目激活信号
-- `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{branch}/{session}/`
-- `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{branch}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{branch}/default/STATE.md`
+- `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/`
+- `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{workspace}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{workspace}/default/STATE.md`
+- `{workspace}` 为当前 Git 分支、`detached-{sha}` 或非 Git 项目的 `workspace`；`.helloagents/sessions/active.json` 只记录当前活跃会话索引，避免同一会话被拆成多个目录
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
 按上文 `~command` 路由中的相同技能根目录规则确定；确定根目录后读取其中的 `templates/`。

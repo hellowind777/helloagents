@@ -187,7 +187,7 @@ export function readStateSnapshot(cwd, options = {}) {
     stateScope: stateScope.stateScope,
     stateSessionToken: stateScope.stateSessionToken,
     stateSessionMode: stateScope.stateSessionMode,
-    stateBranch: stateScope.stateBranch,
+    stateWorkspace: stateScope.stateWorkspace,
     sessionScoped: stateScope.stateScope === 'session',
     exists,
     content,

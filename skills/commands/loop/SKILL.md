@@ -22,7 +22,7 @@ Trigger: ~loop <目标描述> [--iterations N] [--metric "命令"] [--direction 
 2. 确保 `.helloagents/` 目录和 `state_path` 存在；文件不存在时按 `templates/STATE.md` 创建。`~loop` 必须维护这个状态文件，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免混入其他任务
 3. 运行指标命令获取基线值，记录到 results log
 4. 如有守卫命令，运行确认基线通过
-5. 创建当前会话的 `.helloagents/sessions/{branch}/{session}/artifacts/loop-results.tsv`
+5. 创建当前会话的 `.helloagents/sessions/{workspace}/{session}/artifacts/loop-results.tsv`
 6. 根据优化目标标记可能需要的 hello-* 质量技能（如性能优化标记 hello-perf，UI 优化标记 hello-ui）
 7. 重写 `state_path`：记录主线目标=当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
 
@@ -36,7 +36,7 @@ iteration	commit	metric	delta	guard	status	description
 ## 八阶段循环
 
 `~loop` 的八阶段循环是统一执行流程（ROUTE/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE）在迭代优化场景下的特化形式。每轮迭代的“修改”阶段遵循已标记的 hello-* 质量技能规范，“验证”阶段遵循 hello-verify 的验证规范。
-执行 `~loop` 时，涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载 bootstrap 执行；本 skill 负责补充 loop 场景的迭代顺序与回滚规则。
+执行 `~loop` 时，涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载的 HelloAGENTS 规则执行；本 skill 负责补充 loop 场景的迭代顺序与回滚规则。
 若本轮运行在 Codex `/goal` 下，`/goal` 只作为外层长程续跑与预算控制；`~loop` 仍负责指标、守卫、实验提交、keep/revert、results log、`state_path` 与收尾验证，不把 `/goal` 当成循环逻辑本身。
 
 除非达到迭代上限或命中阻塞判定，否则继续执行，不额外询问是否继续，也不把 `🔄 下一步` 当作单轮结果或继续执行占位。

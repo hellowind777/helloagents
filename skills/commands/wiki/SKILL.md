@@ -9,7 +9,7 @@ Trigger: ~wiki
 `~wiki` 是用户显式命令，仅创建、补全或同步项目知识库。
 
 `~wiki` 是显式知识库命令，不受 `kb_create_mode` 限制。
-执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和状态文件重写规则按当前已加载 bootstrap 执行；不写入项目级规则文件，也不创建项目级 HelloAGENTS 包根链接。
+执行 `~wiki` 时，`.helloagents/` 目录结构、模板格式和状态文件重写规则按当前已加载的 HelloAGENTS 规则执行；不写入项目级规则文件，也不创建项目级 HelloAGENTS 包根链接。
 `.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；若 `project_store_mode=repo-shared`，`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`DESIGN.md`、`modules/` 改按当前上下文中已注入的项目知识目录写入。
 
 ## 流程

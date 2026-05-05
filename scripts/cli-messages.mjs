@@ -29,8 +29,8 @@ function pluginCommands() {
 
 function removeHint(msg) {
   return msg(
-    '如已安装 Claude Code 插件，建议手动移除: /plugin remove helloagents\n  如已安装 Gemini CLI 扩展，建议手动移除: gemini extensions uninstall helloagents',
-    'If Claude Code plugin installed, consider removing: /plugin remove helloagents\n  If Gemini CLI extension installed, consider removing: gemini extensions uninstall helloagents',
+    '如已安装 Claude Code 插件，可手动移除: /plugin remove helloagents\n  如已安装 Gemini CLI 扩展，可手动移除: gemini extensions uninstall helloagents',
+    'If the Claude Code plugin is installed, you can remove it: /plugin remove helloagents\n  If the Gemini CLI extension is installed, you can remove it: gemini extensions uninstall helloagents',
   )
 }
 
@@ -66,7 +66,7 @@ function renderInstallMessage(context, mode, state) {
   if (install) {
     return msg(
       `\n  ✅ HelloAGENTS 已安装（standby 模式）！\n\n    Claude Code:  已自动配置（~/.claude/CLAUDE.md + hooks）\n    Gemini CLI:   已自动配置（~/.gemini/GEMINI.md）\n    Codex:        ${codexStandbyStatus(context)}\n\n  ${restartHint(msg)}\n\n  standby 模式下，hello-* 技能不会自动触发。\n  在项目中使用 ~wiki 仅创建/同步知识库，或用 ~init 完整初始化项目；也可用 ~command 按需调用。\n\n  切换模式：\n    helloagents --global    全局模式（自动尝试 Claude/Gemini 插件或扩展；Codex 自动装原生本地插件）`,
-      `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Codex:        ${codexStandbyStatus(context)}\n\n  ${restartHint(msg)}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~wiki to create or sync the KB only, or ~init for the full project bootstrap; ~command stays available on demand.\n\n  Switch modes:\n    helloagents --global    Global mode (auto-attempts Claude/Gemini plugins or extensions; native local plugin auto-install for Codex)`,
+      `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Codex:        ${codexStandbyStatus(context)}\n\n  ${restartHint(msg)}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~wiki to create or sync the KB only, or ~init for the full project setup; ~command stays available on demand.\n\n  Switch modes:\n    helloagents --global    Global mode (auto-attempts Claude/Gemini plugins or extensions; native local plugin auto-install for Codex)`,
     )
   }
 
@@ -76,7 +76,7 @@ function renderInstallMessage(context, mode, state) {
       : `  项目可通过 ~wiki 创建/同步知识库，或通过 ~init 完整初始化；未激活项目仅注入通用规则。\n  ${restartHint(msg)}\n  ${removeHint(msg)}`,
     refresh
       ? `  Standby mode refreshed; injected files and links were synchronized.\n  ${restartHint(msg)}\n  ${removeHint(msg)}`
-      : `  Projects can use ~wiki for KB-only activation or ~init for the full bootstrap. Unactivated projects get lite rules only.\n  ${restartHint(msg)}\n  ${removeHint(msg)}`,
+      : `  Projects can use ~wiki for KB-only activation or ~init for the full project setup. Unactivated projects get lite rules only.\n  ${restartHint(msg)}\n  ${removeHint(msg)}`,
   )
 }
 
@@ -118,7 +118,7 @@ ${msg('Codex /goal', 'Codex /goal')}:
   ${msg('仅显式管理 Codex 最新版 [features].goals，不替代 /goal', 'Explicitly manages only latest Codex [features].goals; does not replace /goal')}
 
 ${msg('卸载', 'Uninstall')}:
-  helloagents cleanup      ${msg('（推荐先执行，显式清理所有 CLI 注入/链接）', '(recommended first, explicitly cleans CLI injections/links)')}
+  helloagents cleanup      ${msg('（先清理所有 CLI 注入/链接）', '(cleans all CLI injections/links first)')}
   npm uninstall -g helloagents
   ${msg('如宿主命令不可用，另需手动移除：', 'If host commands are unavailable, also remove manually:')}
     Claude Code:  /plugin remove helloagents

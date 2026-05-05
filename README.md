@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.19-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.21-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -116,7 +116,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
 | `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
 | `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Full project bootstrap: knowledge base plus project-level rule files and package-root links |
+| `~init` | Full project setup: knowledge base plus project-level rule files and package-root links |
 | `~test` | Write tests for a target module or recent change |
 | `~verify` | Review, run verification commands, fix failures, and close out |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -187,8 +187,10 @@ Long tasks need a small recovery snapshot, but one shared state file is not safe
 
 HelloAGENTS now resolves the current state file from `state_path`:
 
-- with a stable session id: `.helloagents/sessions/<branch>/<session>/STATE.md`
-- without a stable session id: `.helloagents/sessions/<branch>/default/STATE.md`
+- with a stable session id: `.helloagents/sessions/<workspace>/<session>/STATE.md`
+- without a stable session id: `.helloagents/sessions/<workspace>/default/STATE.md`
+
+`<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
 
 `STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation.
 
@@ -198,13 +200,16 @@ HelloAGENTS does not treat “tests passed” and “task complete” as the sam
 
 Runtime evidence files include:
 
-- `.helloagents/sessions/<branch>/<session>/capsule.json`
-- `.helloagents/sessions/<branch>/<session>/events.jsonl`
-- `.helloagents/sessions/<branch>/<session>/artifacts/review.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/advisor.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/visual.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/closeout.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
+- `.helloagents/sessions/<workspace>/<session>/capsule.json`
+- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
+- `.helloagents/sessions/active.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/review.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
+
+Delivery gate, guard, and loop messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions.
 
 ### 7) Safer install, update, cleanup, and diagnostics
 
@@ -268,7 +273,7 @@ For knowledge base only:
 ~wiki
 ```
 
-For full project bootstrap:
+For full project setup:
 
 ```text
 ~init
@@ -496,10 +501,11 @@ When `project_store_mode = "repo-shared"`:
 Runtime state and evidence remain local to the working project:
 
 - `state_path`
-- `.helloagents/sessions/<branch>/<session>/capsule.json`
-- `.helloagents/sessions/<branch>/<session>/events.jsonl`
-- `.helloagents/sessions/<branch>/<session>/artifacts/*.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
+- `.helloagents/sessions/<workspace>/<session>/capsule.json`
+- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
+- `.helloagents/sessions/active.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
 ### Unactivated or temporary sessions
 
@@ -638,7 +644,7 @@ Codex is rules-file driven by default.
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
-- Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject bootstrap or route text through hook output
+- Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
 - Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
@@ -666,14 +672,14 @@ The current test suite covers:
 
 ### What is the role of `docs/`?
 
-`docs/` is reference material for users and AI agents. It may lag behind implementation; runtime behavior is defined by source code, bootstrap files, skills, templates, and tests.
+`docs/` is reference material for users and AI agents. It may lag behind implementation; runtime behavior is defined by source code, rule templates, skills, templates, and tests.
 
 ### Is this a CLI tool or a prompt framework?
 
 Both.
 
 - `cli.mjs` handles install, update, cleanup, diagnostics, and host config
-- `bootstrap.md` and `bootstrap-lite.md` define workflow rules
+- rule templates define the loaded workflow rules
 - `skills/` defines task-specific behavior
 - `scripts/` provides runtime helpers for routing, guard, notify, verification, state, and evidence
 
@@ -691,7 +697,7 @@ Use `~init` when you also want project-level rule files and project-level HelloA
 
 ### Do Codex hooks show injected content?
 
-No bootstrap or route text is injected through hooks. HelloAGENTS Codex hooks only write runtime state and enforce Stop gates; successful hooks stay quiet, while blocked or failed hooks show the necessary reason.
+No HelloAGENTS rule or route text is injected through hooks. HelloAGENTS Codex hooks only write runtime state and enforce Stop gates; successful hooks stay quiet, while blocked or failed hooks show the necessary reason.
 
 ### Can I turn off notifications or guard checks?
 

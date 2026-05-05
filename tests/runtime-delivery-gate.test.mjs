@@ -50,7 +50,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /未完成任务/)
   assert.match(payload.reason, /任务缺少可交付元数据/)
-  assert.match(payload.reason, /建议路径：~plan -> ~build \/ ~verify/)
+  assert.match(payload.reason, /处理路径：~plan -> ~build \/ ~verify/)
 
   result = runNode(turnStateScript, ['write'], {
     cwd: project,
@@ -133,7 +133,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /缺少最新验证证据/)
-  assert.match(payload.reason, /建议路径：~verify -> CONSOLIDATE/)
+  assert.match(payload.reason, /处理路径：~verify -> CONSOLIDATE/)
 
   writeJson(getSessionEvidencePath(project, 'verify.json'), {
     updatedAt: new Date(Date.now() - 721 * 60 * 60 * 1000).toISOString(),

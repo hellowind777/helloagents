@@ -54,17 +54,17 @@ export function buildDeliveryBlockReason(issues, recommendation, gateHint) {
 
   lines.push('')
   if (recommendation?.nextPath) {
-    lines.push(`建议路径：${recommendation.nextPath}`)
+    lines.push(`处理路径：${recommendation.nextPath}`)
   }
   if (issues.some((issue) => issue.type === 'missing-closeout-evidence')) {
-    lines.push('下一步收尾：先写入当前会话 `artifacts/closeout.json`，记录 `requirementsCoverage` 和 `deliveryChecklist`，再报告完成。')
+    lines.push('收尾动作：先写入当前会话 `artifacts/closeout.json`，记录 `requirementsCoverage` 和 `deliveryChecklist`，再报告完成。')
   }
   if (issues.some((issue) => issue.type === 'missing-visual-evidence')) {
-    lines.push('下一步视觉验收：先写入当前会话 `artifacts/visual.json`，记录 `tooling`、`screensChecked`、`statesChecked`、`status` 和 `summary`，再报告完成。')
+    lines.push('视觉验收动作：先写入当前会话 `artifacts/visual.json`，记录 `tooling`、`screensChecked`、`statesChecked`、`status` 和 `summary`，再报告完成。')
   }
   if (gateHint) {
     lines.push(gateHint)
   }
-  lines.push('暂不要报告完成。先完成剩余任务、明确关闭任务，或修复方案包，使其成为可信的交付记录。')
+  lines.push('暂不要报告完成。先完成剩余任务、补齐收尾证据，或修复方案包，使其成为可信的交付记录。')
   return lines.join('\n')
 }

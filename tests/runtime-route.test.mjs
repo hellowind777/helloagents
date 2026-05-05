@@ -51,7 +51,10 @@ test('Codex silent hooks do not emit additional context and de-duplicate Stop ha
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const project = createTempDir('helloagents-codex-silent-hooks-')
-  const env = buildHomeEnv(home)
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
   const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
   const hookPayload = {
@@ -128,6 +131,49 @@ test('Codex silent hooks do not emit additional context and de-duplicate Stop ha
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
   assert.equal(result.stdout, '')
+})
+
+test('project active session keeps hook and local turn-state writes in one directory', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-active-session-')
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  let result = runNode(notifyScript, ['route', '--codex', '--silent'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      session_id: 'codex-session-abcdef',
+      turn_id: 'turn-1',
+      prompt: '~plan build a demo',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+    }),
+  })
+  const payload = parseStdoutJson(result)
+
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]abcdef[\\/]capsule\.json$/)
+  const active = readJson(join(project, '.helloagents', 'sessions', 'active.json'))
+  assert.equal(active.session, 'abcdef')
+  assert.equal(active.aliases.xyz999, 'abcdef')
 })
 
 test('notify inject and semantic route cover standby and recovery hints', () => {

@@ -76,7 +76,7 @@ export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFi
   } catch {}
   if (bootstrap) {
     summaryParts.push('');
-    summaryParts.push('## 核心规则（从 bootstrap 重新注入）');
+    summaryParts.push('## 核心 HelloAGENTS 规则（重新注入）');
     summaryParts.push(bootstrap);
   }
 

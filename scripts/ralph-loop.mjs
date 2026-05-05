@@ -135,7 +135,7 @@ function handleFailure(failures, cwd, options = {}) {
   writeBreaker(cwd, breaker, options);
 
   const breakerWarning = breaker.consecutive_failures >= 3
-    ? `\n\n⚠️ [断路器] 已连续 ${breaker.consecutive_failures} 次验证失败。当前修复思路可能有误，建议：\n  1. 重新分析根因，不要继续在同一方向上硬修\n  2. 检查是否存在架构层面的问题\n  3. 考虑回退到上一个正常状态重新开始`
+    ? `\n\n⚠️ [断路器] 已连续 ${breaker.consecutive_failures} 次验证失败。当前修复思路可能有误，先处理：\n  1. 重新分析根因，不要继续在同一方向上硬修\n  2. 检查是否存在架构层面的问题\n  3. 考虑回退到上一个正常状态重新开始`
     : '';
 
   const details = failures.map(f => `\u2717 ${f.cmd}\n${f.output}`).join('\n\n');

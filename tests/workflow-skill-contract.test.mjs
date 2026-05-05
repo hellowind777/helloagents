@@ -22,14 +22,14 @@ function listSkillFiles(dirPath) {
 
 test('workflow skill contracts stay aligned with command aliases and artifacts', () => {
   const helloagents = readText(join(REPO_ROOT, 'skills', 'helloagents', 'SKILL.md'))
-  assert.match(helloagents, /公共阶段边界以当前已加载 bootstrap 为准/)
+  assert.match(helloagents, /公共阶段边界以当前已加载的 HelloAGENTS 规则为准/)
   assert.match(helloagents, /ROUTE\/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE/)
   assert.match(helloagents, /ROUTE \/ TIER \/ SPEC 阶段/)
   assert.match(helloagents, /BUILD 开始时读取/)
-  assert.match(helloagents, /所有 UI 任务先受当前 bootstrap 的 UI 质量基线约束/)
+  assert.match(helloagents, /所有 UI 任务先受当前已加载的 HelloAGENTS UI 质量基线约束/)
   assert.match(helloagents, /project_store_mode=repo-shared/)
   assert.match(helloagents, /style advisor \/ visual validation/)
-  assert.match(helloagents, /遵循当前 bootstrap 的等待输入规则/)
+  assert.match(helloagents, /按当前已加载的 HelloAGENTS 规则处理/)
   assert.match(helloagents, /不得把等待输入包装成完成态/)
   assert.match(helloagents, /helloagents-turn-state write --kind complete --role main/)
   assert.match(helloagents, /普通问候、普通问答、T0 只读分析和一次性解释不调用/)
@@ -135,15 +135,18 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.doesNotMatch(auto, /只做选路/)
 
   const plan = readText(join(REPO_ROOT, 'skills', 'commands', 'plan', 'SKILL.md'))
-  assert.match(plan, /执行 `~plan` 时，通用阶段边界按当前已加载 bootstrap 执行/)
-  assert.match(plan, /按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”和“项目文件”规则恢复上下文/)
+  assert.match(plan, /执行 `~plan` 时，通用阶段边界按当前已加载的 HelloAGENTS 规则执行/)
+  assert.match(plan, /按当前已加载的 HelloAGENTS 规则恢复上下文，并遵循“.helloagents\/ 文件读取优先级”和“项目文件”要求/)
   assert.match(plan, /先读取 `state_path`/)
-  assert.match(plan, /按当前已加载 bootstrap 的 `\.helloagents\/` 与流程状态规则，确保最小项目状态已建立/)
+  assert.match(plan, /按当前已加载的 HelloAGENTS 规则建立 `\.helloagents\/` 与最小流程状态/)
+  assert.match(plan, /创建方案包目标目录/)
+  assert.match(plan, /在上述方案包目标目录内写入/)
+  assert.match(plan, /templates\/plans\//)
   assert.match(plan, /`contract\.json`/)
   assert.match(plan, /scripts\/plan-contract\.mjs write/)
   assert.match(plan, /ui\.styleAdvisor\.required/)
   assert.match(plan, /ui\.visualValidation\.required/)
-  assert.match(plan, /知识库完整创建与归档按当前已加载 bootstrap 的后续规则执行/)
+  assert.match(plan, /知识库完整创建与归档按当前已加载的 HelloAGENTS 规则继续处理/)
   assert.match(plan, /“主线目标”写本次规划要完成的目标/)
   assert.match(plan, /完成定义/)
   assert.match(plan, /完成标准、验证方式/)
@@ -156,7 +159,9 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(plan, /`~design` 是 `~plan` 的兼容别名/)
   assert.match(plan, /只有在 `~auto` 内触发其语义时/)
   assert.match(plan, /显式 `~plan` 或 `~design`/)
-  assert.match(plan, /下一步写清待确认的执行动作/)
+  assert.match(plan, /通用输出格式使用等待输入态/)
+  assert.match(plan, /`🔄 下一步` 写清待确认动作/)
+  assert.doesNotMatch(plan, /完整 HelloAGENTS 外层格式/)
   assert.doesNotMatch(plan, /ROUTE \/ SPEC 前置/)
   assert.doesNotMatch(plan, /统一处理/)
 
@@ -179,23 +184,23 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(verify, /requirements 是否覆盖、tasks 中每项“完成标准”是否满足/)
   assert.match(verify, /合同核对结论/)
   assert.match(verify, /不能把“命令通过”直接等同于“风险已解除”/)
-  assert.match(verify, /进入当前已加载 bootstrap 的 CONSOLIDATE 收尾/)
+  assert.match(verify, /按当前已加载的 HelloAGENTS 规则进入 CONSOLIDATE 收尾/)
 
   const build = readText(join(REPO_ROOT, 'skills', 'commands', 'build', 'SKILL.md'))
-  assert.match(build, /执行 `~build` 时，通用阶段边界按当前已加载 bootstrap 执行/)
-  assert.match(build, /优先按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”恢复当前任务/)
+  assert.match(build, /执行 `~build` 时，通用阶段边界按当前已加载的 HelloAGENTS 规则执行/)
+  assert.match(build, /优先按当前已加载的 HelloAGENTS 规则恢复当前任务，并遵循“.helloagents\/ 文件读取优先级”/)
   assert.match(build, /先读取 `state_path`/)
   assert.match(build, /“完成标准”当作本轮实现约束/)
   assert.match(build, /按 `tasks\.md` 未完成项、`contract\.json` 与 `state_path` 恢复实现位置/)
   assert.match(build, /不要自动创建新 goal/)
   assert.match(build, /先转入 `~verify` 与 HelloAGENTS 收尾，再标记 goal complete/)
   assert.match(build, /`contract\.json`/)
-  assert.match(build, /其余项目知识库与相关代码文件，按 bootstrap 的项目上下文规则按需读取/)
+  assert.match(build, /其余项目知识库与相关代码文件，按 HelloAGENTS 项目上下文要求读取/)
   assert.match(build, /当前工作流约束/)
   assert.match(build, /只有推荐仍为 `~build`/)
   assert.match(build, /按当前实现需要读取对应的 hello-\* 技能/)
   assert.match(build, /进入 `~verify`/)
-  assert.match(build, /按当前已加载 bootstrap 的 VERIFY \/ CONSOLIDATE 规则执行/)
+  assert.match(build, /按当前已加载的 HelloAGENTS 规则进入 VERIFY \/ CONSOLIDATE/)
   assert.doesNotMatch(build, /读取 PLAN 阶段所需的 hello-\* 技能/)
   assert.doesNotMatch(build, /需要时同步知识库、`CHANGELOG\.md`、modules 文档与反思/)
 
@@ -235,11 +240,11 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.doesNotMatch(readmeCn, /写 UI 代码？→ `hello-ui` 激活/)
 
   const prd = readText(join(REPO_ROOT, 'skills', 'commands', 'prd', 'SKILL.md'))
-  assert.match(prd, /执行 `~prd` 时，通用阶段边界按当前已加载 bootstrap 执行/)
+  assert.match(prd, /执行 `~prd` 时，通用阶段边界按当前已加载的 HelloAGENTS 规则执行/)
   assert.match(prd, /执行 `~prd` 时，不读取 `~plan` 的 command skill/)
-  assert.match(prd, /按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”和“项目文件”规则恢复上下文/)
+  assert.match(prd, /按当前已加载的 HelloAGENTS 规则恢复上下文，并遵循“.helloagents\/ 文件读取优先级”和“项目文件”要求/)
   assert.match(prd, /先读取 `state_path`/)
-  assert.match(prd, /按当前已加载 bootstrap 的 `\.helloagents\/` 与流程状态规则，确保最小项目状态已建立/)
+  assert.match(prd, /按当前已加载的 HelloAGENTS 规则建立 `\.helloagents\/` 与最小流程状态/)
   assert.match(prd, /`contract\.json`/)
   assert.match(prd, /scripts\/plan-contract\.mjs write/)
   assert.match(prd, /ui\.styleAdvisor\.required/)
@@ -251,12 +256,16 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(prd, /AFK \/ HITL/)
   assert.match(prd, /如果当前任务来自 `~auto`/)
   assert.match(prd, /不再额外询问一次“是否开始执行”/)
+  assert.match(prd, /显式 `~prd`/)
+  assert.match(prd, /通用输出格式使用等待输入态/)
+  assert.match(prd, /`🔄 下一步` 写清待确认动作/)
+  assert.doesNotMatch(prd, /完整 HelloAGENTS 外层格式/)
   assert.doesNotMatch(prd, /SPEC 前置/)
   assert.doesNotMatch(prd, /本 skill 自包含/)
 
   const wiki = readText(join(REPO_ROOT, 'skills', 'commands', 'wiki', 'SKILL.md'))
   assert.match(wiki, /仅创建、补全或同步项目知识库/)
-  assert.match(wiki, /目录结构、模板格式和状态文件重写规则按当前已加载 bootstrap 执行/)
+  assert.match(wiki, /目录结构、模板格式和状态文件重写规则按当前已加载的 HelloAGENTS 规则执行/)
   assert.match(wiki, /不写入项目级规则文件，也不创建项目级 HelloAGENTS 包根链接/)
   assert.match(wiki, /project_store_mode=repo-shared/)
   assert.match(wiki, /初始“主线目标”只写当前知识库初始化 \/ 同步目标/)
@@ -267,7 +276,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.doesNotMatch(wiki, /\.codex\/skills\/helloagents/)
 
   const init = readText(join(REPO_ROOT, 'skills', 'commands', 'init', 'SKILL.md'))
-  assert.match(init, /目录结构、模板格式和状态文件规则按当前已加载 bootstrap 执行/)
+  assert.match(init, /目录结构、模板格式和状态文件规则按当前已加载的 HelloAGENTS 规则执行/)
+  assert.match(init, /读取 `\{插件根目录\}` 中的全量规则模板/)
   assert.match(init, /项目级规则文件/)
   assert.doesNotMatch(init, /项目根载体/)
   assert.match(init, /初始“主线目标”写当前初始化任务/)
@@ -279,13 +289,13 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(init, /\.codex\/skills\/helloagents/)
 
   const clean = readText(join(REPO_ROOT, 'skills', 'commands', 'clean', 'SKILL.md'))
-  assert.match(clean, /方案包归档、临时文件清理和状态文件更新范围按当前已加载 bootstrap 执行/)
+  assert.match(clean, /方案包归档、临时文件清理和状态文件更新范围按当前已加载的 HelloAGENTS 规则执行/)
   assert.match(clean, /只有任务清单无法判断时/)
-  assert.match(clean, /按 bootstrap 的归档规则/)
+  assert.match(clean, /按 HelloAGENTS 归档规则/)
   assert.match(clean, /不删除知识文件或项目级设计契约/)
 
   assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /ROUTE\/TIER→SPEC→PLAN→BUILD→VERIFY→CONSOLIDATE/)
-  assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载 bootstrap 执行/)
+  assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载的 HelloAGENTS 规则执行/)
   assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /必须维护这个状态文件/)
   assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /主线目标=当前优化目标/)
   assert.match(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /除非达到迭代上限或命中阻塞判定，否则继续执行/)
@@ -294,10 +304,10 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.doesNotMatch(readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md')), /不要停止。不要询问是否继续。/)
 
   const commit = readText(join(REPO_ROOT, 'skills', 'commands', 'commit', 'SKILL.md'))
-  assert.match(commit, /知识库同步与状态文件更新范围按当前已加载 bootstrap 的 CONSOLIDATE \/ 流程状态规则执行/)
+  assert.match(commit, /知识库同步与状态文件更新范围按当前已加载的 HelloAGENTS CONSOLIDATE \/ 流程状态要求执行/)
   assert.match(commit, /缺少 `commit_attribution` \/ `kb_create_mode`/)
-  assert.match(commit, /按 bootstrap 的“已有则更新”规则同步当前已提交状态/)
-  assert.match(commit, /同步范围与更新格式按当前已加载 bootstrap 的 CONSOLIDATE 阶段执行/)
+  assert.match(commit, /按 HelloAGENTS“已有则更新”要求同步当前已提交状态/)
+  assert.match(commit, /同步范围与更新格式按当前已加载的 HelloAGENTS CONSOLIDATE 阶段执行/)
   for (const commandName of ['idea', 'help', 'clean', 'commit']) {
     assert.doesNotMatch(
       readText(join(REPO_ROOT, 'skills', 'commands', commandName, 'SKILL.md')),
@@ -324,6 +334,18 @@ test('runtime rule files avoid maintainer-facing prose', () => {
     /维护说明/,
     /作者说明/,
     /重构说明/,
+    /当前已加载 bootstrap/,
+    /当前 bootstrap/,
+    /bootstrap 的/,
+    /按 bootstrap/,
+    /命中 bootstrap/,
+    /遵守 bootstrap/,
+    /bootstrap 中定义/,
+    /当前已加载 HelloAGENTS/,
+    /HelloAGENTS 规则的/,
+    /HelloAGENTS 规则中/,
+    /规则的.*规则/,
+    /规则中的.*规则/,
   ]
 
   for (const filePath of runtimeFiles) {

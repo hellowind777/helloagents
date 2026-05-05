@@ -313,7 +313,7 @@ function buildBuildOrchestrationHint(plan) {
   if (openTasks.every((item) => item.files.length === 0)) {
     return '编排提示：当前有多个开放任务，但 tasks.md 尚未写清契约元数据；考虑子代理并行前先补足文件路径、完成标准与验证方式。'
   }
-  return '编排提示：当前仍有多个开放任务，但文件范围存在重叠；暂不建议并行子代理，优先串行推进。'
+  return '编排提示：当前仍有多个开放任务，但文件范围存在重叠；暂不并行子代理，优先串行推进。'
 }
 
 export function buildOrchestrationHintFromSnapshot(snapshot, cwd, recommendation = buildRecommendation(snapshot, cwd)) {

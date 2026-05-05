@@ -24,7 +24,7 @@ export function printDoctorText(runtime, report) {
       console.log(`  issue[${issue.code}]: ${issue.message}`)
     }
     if (entry.suggestedFix) {
-      console.log(`  suggested_fix: ${entry.suggestedFix}`)
+      console.log(`  fix: ${entry.suggestedFix}`)
     }
   }
 
