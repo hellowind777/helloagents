@@ -139,6 +139,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(plan, /按当前已加载 bootstrap 的“.helloagents\/ 文件读取优先级”和“项目文件”规则恢复上下文/)
   assert.match(plan, /先读取 `state_path`/)
   assert.match(plan, /按当前已加载 bootstrap 的 `\.helloagents\/` 与流程状态规则，确保最小项目状态已建立/)
+  assert.match(plan, /创建方案包目标目录/)
+  assert.match(plan, /在上述方案包目标目录内写入/)
   assert.match(plan, /templates\/plans\//)
   assert.match(plan, /`contract\.json`/)
   assert.match(plan, /scripts\/plan-contract\.mjs write/)

@@ -76,8 +76,8 @@ Trigger: ~plan [description]
 
 将确认的方案写入本地项目：
 - 按当前已加载 bootstrap 的 `.helloagents/` 与流程状态规则，确保最小项目状态已建立
-- 创建 `.helloagents/plans/YYYYMMDDHHMM_{feature}/`（按当前项目存储模式解析）
-- 按 `{HELLOAGENTS_READ_ROOT}/templates/plans/` 中对应模板写入：
+- 创建方案包目标目录：`.helloagents/plans/YYYYMMDDHHMM_{feature}/`（按当前项目存储模式解析；repo-shared 时写入当前项目方案目录）
+- 以 `{HELLOAGENTS_READ_ROOT}/templates/plans/` 为源模板，在上述方案包目标目录内写入：
   - `requirements.md`
   - `plan.md`
   - `tasks.md`
