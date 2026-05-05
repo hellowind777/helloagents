@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.20-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.21-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -208,6 +208,8 @@ Runtime evidence files include:
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
+
+Delivery gate, guard, and loop messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions.
 
 ### 7) Safer install, update, cleanup, and diagnostics
 

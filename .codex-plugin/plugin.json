@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "3.0.20",
+  "version": "3.0.21",
   "description": "HelloAGENTS — Quality-driven orchestration kernel for AI CLIs with intelligent routing, quality verification (Ralph Loop), safety guards, and notifications.",
   "author": {
     "name": "HelloWind",
