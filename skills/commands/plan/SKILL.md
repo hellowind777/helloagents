@@ -7,7 +7,7 @@ policy:
 Trigger: ~plan [description]
 
 `~plan` 是实现前的主规划命令。它负责需求澄清、方案设计、任务拆解与方案写入；直接显式执行 `~plan` 时，默认停在“形成可执行方案”，只有用户明确授权继续时才继续执行。
-执行 `~plan` 时，通用阶段边界按当前已加载 bootstrap 执行；本 skill 负责补充 `~plan` 的需求澄清、方案确认、方案包写入与继续执行要求。
+执行 `~plan` 时，通用阶段边界按当前已加载的 HelloAGENTS 规则执行；本 skill 负责补充 `~plan` 的需求澄清、方案确认、方案包写入与继续执行要求。
 `.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；会话证据使用当前 `state_path` 所在目录下的 `artifacts/*.json`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与 `plans/` / `archive/` 按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
@@ -22,7 +22,7 @@ Trigger: ~plan [description]
 ### 1. 上下文收集与需求澄清准备
 
 已有项目：
-- 按当前已加载 bootstrap 的“.helloagents/ 文件读取优先级”和“项目文件”规则恢复上下文；若当前消息明确要继续上次任务，或会话刚经历恢复 / 压缩，先读取 `state_path`，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实确认当前任务
+- 按当前已加载的 HelloAGENTS 规则恢复上下文，并遵循“.helloagents/ 文件读取优先级”和“项目文件”要求；若当前消息明确要继续上次任务，或会话刚经历恢复 / 压缩，先读取 `state_path`，再用当前用户消息、显式命令、活跃方案包 / PRD 与代码事实确认当前任务
 - 在需求澄清前，至少确认 `.helloagents/context.md`、`.helloagents/guidelines.md`（按当前项目存储模式解析）；涉及 UI 时，如存在 `.helloagents/DESIGN.md`（按当前项目存储模式解析），一并读取现有设计契约
 - 只扫描与当前需求直接相关的代码文件，用于形成假设和识别约束
 
@@ -75,7 +75,7 @@ Trigger: ~plan [description]
 ### 5. 写入方案包
 
 将确认的方案写入本地项目：
-- 按当前已加载 bootstrap 的 `.helloagents/` 与流程状态规则，确保最小项目状态已建立
+- 按当前已加载的 HelloAGENTS 规则建立 `.helloagents/` 与最小流程状态
 - 创建方案包目标目录：`.helloagents/plans/YYYYMMDDHHMM_{feature}/`（按当前项目存储模式解析；repo-shared 时写入当前项目方案目录）
 - 以 `{HELLOAGENTS_READ_ROOT}/templates/plans/` 为源模板，在上述方案包目标目录内写入：
   - `requirements.md`
@@ -91,7 +91,7 @@ Trigger: ~plan [description]
 - 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`（按当前项目存储模式解析）；若原文件不存在，先按模板建立最小设计契约，再写入已确认的稳定设计决策
 - 重写 `state_path`，其中“主线目标”写本次规划要完成的目标，不保留其他任务的内容
 
-知识库完整创建与归档按当前已加载 bootstrap 的后续规则执行。
+知识库完整创建与归档按当前已加载的 HelloAGENTS 规则继续处理。
 
 ### 6. 执行决策
 
@@ -102,7 +102,7 @@ Trigger: ~plan [description]
 
 如果用户已明确表示继续执行，则视为授权成立，可直接继续执行。
 如果当前任务来自 `~auto`，且方案包已足够支撑实现、也未命中阻塞判定，则默认直接进入 `~build`，不再追加一次“是否开始执行”的询问。
-如果当前任务是显式 `~plan` 或 `~design`，且尚未获得执行授权，最终收尾必须按当前 bootstrap 输出格式使用 `❓【HelloAGENTS】- 等待输入`（`output_format=false` 时保持自然输出），并在 `🔄 下一步` 写清待确认的执行动作。
+如果当前任务是显式 `~plan` 或 `~design`，且尚未获得执行授权，最终收尾必须使用完整 HelloAGENTS 外层格式（`output_format=false` 时保持自然输出）：首行使用 `❓【HelloAGENTS】- 等待输入`，正文说明方案包与验证结果，末行以 `🔄 下一步: ...` 写清待确认动作。
 
 ## 方案包要求
 

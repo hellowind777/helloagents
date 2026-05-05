@@ -116,7 +116,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
 | `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
 | `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Full project bootstrap: knowledge base plus project-level rule files and package-root links |
+| `~init` | Full project setup: knowledge base plus project-level rule files and package-root links |
 | `~test` | Write tests for a target module or recent change |
 | `~verify` | Review, run verification commands, fix failures, and close out |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -268,7 +268,7 @@ For knowledge base only:
 ~wiki
 ```
 
-For full project bootstrap:
+For full project setup:
 
 ```text
 ~init
@@ -638,7 +638,7 @@ Codex is rules-file driven by default.
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
-- Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject bootstrap or route text through hook output
+- Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
 - Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
@@ -666,14 +666,14 @@ The current test suite covers:
 
 ### What is the role of `docs/`?
 
-`docs/` is reference material for users and AI agents. It may lag behind implementation; runtime behavior is defined by source code, bootstrap files, skills, templates, and tests.
+`docs/` is reference material for users and AI agents. It may lag behind implementation; runtime behavior is defined by source code, rule templates, skills, templates, and tests.
 
 ### Is this a CLI tool or a prompt framework?
 
 Both.
 
 - `cli.mjs` handles install, update, cleanup, diagnostics, and host config
-- `bootstrap.md` and `bootstrap-lite.md` define workflow rules
+- rule templates define the loaded workflow rules
 - `skills/` defines task-specific behavior
 - `scripts/` provides runtime helpers for routing, guard, notify, verification, state, and evidence
 
@@ -691,7 +691,7 @@ Use `~init` when you also want project-level rule files and project-level HelloA
 
 ### Do Codex hooks show injected content?
 
-No bootstrap or route text is injected through hooks. HelloAGENTS Codex hooks only write runtime state and enforce Stop gates; successful hooks stay quiet, while blocked or failed hooks show the necessary reason.
+No HelloAGENTS rule or route text is injected through hooks. HelloAGENTS Codex hooks only write runtime state and enforce Stop gates; successful hooks stay quiet, while blocked or failed hooks show the necessary reason.
 
 ### Can I turn off notifications or guard checks?
 

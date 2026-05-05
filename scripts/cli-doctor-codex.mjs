@@ -92,7 +92,7 @@ function suggestCodexDoctorFix(status, trackedMode) {
 
 function appendCodexStandbyIssues(runtime, issues, checks) {
   if (!checks.carrierMarker) issues.push(buildDoctorIssue(runtime, 'standby-carrier-missing', 'standby `~/.codex/AGENTS.md` 缺少 HelloAGENTS 标记', 'Standby `~/.codex/AGENTS.md` is missing the HELLOAGENTS marker'))
-  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue(runtime, 'standby-carrier-drift', 'standby `~/.codex/AGENTS.md` 与当前 bootstrap-lite.md 不一致', 'Standby `~/.codex/AGENTS.md` differs from the current bootstrap-lite.md'))
+  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue(runtime, 'standby-carrier-drift', 'standby `~/.codex/AGENTS.md` 与当前标准模式规则不一致', 'Standby `~/.codex/AGENTS.md` differs from the current standby rules'))
   if (!checks.homeLink) issues.push(buildDoctorIssue(runtime, 'standby-link-missing', 'standby `~/.codex/helloagents` 链接缺失或未指向稳定运行根目录', 'Standby `~/.codex/helloagents` link is missing or points to a different runtime root'))
   if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue(runtime, 'standby-model-instructions-missing', 'standby config 缺少受管 model_instructions_file', 'Standby config is missing the managed model_instructions_file'))
   if (checks.modelInstructionsFile && !checks.modelInstructionsPathMatch) issues.push(buildDoctorIssue(runtime, 'standby-model-instructions-drift', 'standby model_instructions_file 未指向受管 `~/.codex/AGENTS.md`', 'Standby model_instructions_file does not point to the managed `~/.codex/AGENTS.md`'))
@@ -108,12 +108,12 @@ function appendCodexStandbyIssues(runtime, issues, checks) {
 
 function appendCodexGlobalIssues(runtime, issues, checks, pluginVersion, cacheVersion) {
   if (!checks.carrierMarker) issues.push(buildDoctorIssue(runtime, 'global-home-carrier-missing', 'global `~/.codex/AGENTS.md` 缺少 HelloAGENTS 规则内容', 'Global `~/.codex/AGENTS.md` is missing the HelloAGENTS carrier'))
-  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue(runtime, 'global-home-carrier-drift', 'global `~/.codex/AGENTS.md` 与当前 bootstrap.md 不一致', 'Global `~/.codex/AGENTS.md` differs from the current bootstrap.md'))
+  if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue(runtime, 'global-home-carrier-drift', 'global `~/.codex/AGENTS.md` 与当前全局模式规则不一致', 'Global `~/.codex/AGENTS.md` differs from the current global rules'))
   if (!checks.globalHomeLink) issues.push(buildDoctorIssue(runtime, 'global-read-root-link-missing', 'global `~/.codex/helloagents` 链接缺失或未指向当前插件根目录', 'Global `~/.codex/helloagents` link is missing or does not point to the current plugin root'))
   if (!checks.pluginRoot) issues.push(buildDoctorIssue(runtime, 'global-plugin-root-missing', 'global 插件根目录缺失', 'Global plugin root is missing'))
   if (!checks.pluginCache) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-missing', 'global 插件缓存目录缺失', 'Global plugin cache directory is missing'))
-  if (checks.pluginRoot && !checks.pluginCarrierMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-carrier-drift', 'global 插件根目录中的 AGENTS.md 与当前 bootstrap.md 不一致', 'Global plugin AGENTS.md differs from the current bootstrap.md'))
-  if (checks.pluginCache && !checks.pluginCacheCarrierMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-carrier-drift', 'global 插件缓存中的 AGENTS.md 与当前 bootstrap.md 不一致', 'Global plugin cache AGENTS.md differs from the current bootstrap.md'))
+  if (checks.pluginRoot && !checks.pluginCarrierMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-carrier-drift', 'global 插件根目录中的 AGENTS.md 与当前全局模式规则不一致', 'Global plugin AGENTS.md differs from the current global rules'))
+  if (checks.pluginCache && !checks.pluginCacheCarrierMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-carrier-drift', 'global 插件缓存中的 AGENTS.md 与当前全局模式规则不一致', 'Global plugin cache AGENTS.md differs from the current global rules'))
   if (!checks.marketplaceEntry) issues.push(buildDoctorIssue(runtime, 'global-marketplace-missing', 'global marketplace 条目缺失', 'Global marketplace entry is missing'))
   if (!checks.pluginEnabled) issues.push(buildDoctorIssue(runtime, 'global-plugin-disabled', 'global config 中缺少插件启用段', 'Global plugin enablement block is missing from config'))
   if (!checks.modelInstructionsFile) issues.push(buildDoctorIssue(runtime, 'global-model-instructions-missing', 'global config 缺少受管 model_instructions_file', 'Global config is missing the managed model_instructions_file'))

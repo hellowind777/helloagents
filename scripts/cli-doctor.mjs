@@ -145,7 +145,7 @@ function inspectClaudeDoctor(settings) {
   }
   if (detectedMode === 'standby') {
     if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
-    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
+    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前标准模式规则不一致', 'Standby carrier content differs from the current standby rules'))
     if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
@@ -194,7 +194,7 @@ function inspectGeminiDoctor(settings) {
   }
   if (detectedMode === 'standby') {
     if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby 规则文件缺少 HELLOAGENTS 标记', 'Standby carrier is missing the HELLOAGENTS marker'))
-    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前 bootstrap-lite.md 不一致', 'Standby carrier content differs from the current bootstrap-lite.md'))
+    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby 规则文件内容与当前标准模式规则不一致', 'Standby carrier content differs from the current standby rules'))
     if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby home 链接缺失或未指向稳定运行根目录', 'Standby home link is missing or points to a different runtime root'))
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))

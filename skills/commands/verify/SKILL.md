@@ -43,4 +43,4 @@ Trigger: ~verify [scope]
 
 ## 失败处理
 - 有失败 → 逐个修复，修复后重新运行对应审查或验证
-- 全部通过 → 进入当前已加载 bootstrap 的 CONSOLIDATE 收尾；若 Codex active goal 的目标也已满足，再标记 goal complete，并按交付边界报告完成
+- 全部通过 → 按当前已加载的 HelloAGENTS 规则进入 CONSOLIDATE 收尾；若 Codex active goal 的目标也已满足，再标记 goal complete，并按交付边界报告完成

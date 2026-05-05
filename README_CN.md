@@ -640,7 +640,7 @@ Codex 默认走规则文件驱动。
 - 标准模式把静默 Codex hooks 写入 `~/.codex/hooks.json`
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件流程，并同样用 `~/.codex/hooks.json` 加载静默 hooks
-- Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 bootstrap 或路由说明
+- Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 HelloAGENTS 规则或路由说明
 - `/goal` 保持 Codex 原生能力；需要长程执行时，用 `helloagents codex goals enable` 显式启用
 - 感知 goal 的命令从 `tasks.md`、`contract.json` 和 `state_path` 恢复；不会自动创建 goal，也不会在 HelloAGENTS 验证和收尾前标记完成
 
@@ -668,14 +668,14 @@ npm test
 
 ### `docs/` 的作用是什么？
 
-`docs/` 只作为用户和 AI 理解项目的参考材料，可能滞后于实现。运行时行为以源码、bootstrap 文件、skills、templates 和测试为准。
+`docs/` 只作为用户和 AI 理解项目的参考材料，可能滞后于实现。运行时行为以源码、规则模板、skills、templates 和测试为准。
 
 ### 这是 CLI 工具还是提示词框架？
 
 两者都是。
 
 - `cli.mjs` 负责安装、更新、清理、诊断和宿主配置
-- `bootstrap.md` 与 `bootstrap-lite.md` 定义工作流规则
+- 规则模板定义运行时加载的工作流规则
 - `skills/` 定义任务类型相关行为
 - `scripts/` 提供选路、Guard、通知、验证、状态和证据等运行时辅助能力
 
@@ -693,7 +693,7 @@ npm test
 
 ### Codex hooks 会显示注入内容吗？
 
-不会显示 bootstrap 或路由说明。HelloAGENTS 的 Codex hooks 只写运行态和执行 Stop 门禁，成功路径返回静默结果；只有阻塞或错误时显示必要原因。
+不会显示 HelloAGENTS 规则或路由说明。HelloAGENTS 的 Codex hooks 只写运行态和执行 Stop 门禁，成功路径返回静默结果；只有阻塞或错误时显示必要原因。
 
 ### 可以关闭通知或 Guard 吗？
 

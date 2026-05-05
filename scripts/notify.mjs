@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// notify.mjs — Unified notification & bootstrap injection for HelloAGENTS
+// notify.mjs — Unified notification and rule injection for HelloAGENTS
 // Zero external dependencies, ES module, cross-platform
 
 import { join, dirname } from 'node:path';

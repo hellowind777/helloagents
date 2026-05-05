@@ -48,6 +48,8 @@ test('skill and help docs describe output_format as final-summary only', () => {
   const helloagentsSkill = read('skills/helloagents/SKILL.md');
   assert.match(helloagentsSkill, /不得包装 HelloAGENTS 外层输出格式/);
   assert.match(helloagentsSkill, /本轮最终收尾消息/);
+  assert.match(helloagentsSkill, /完整 HelloAGENTS 外层格式/);
+  assert.match(helloagentsSkill, /首行 `图标【HelloAGENTS】\- 状态描述`/);
   assert.match(helloagentsSkill, /所有流式内容、进度或状态汇报、中间文本/);
   assert.match(helloagentsSkill, /最终收尾中的 `🔄 下一步` 写真实动作/);
   assert.match(helloagentsSkill, /已获授权且可继续执行时不得收尾/);
