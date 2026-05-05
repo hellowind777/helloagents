@@ -77,7 +77,7 @@ Trigger: ~plan [description]
 将确认的方案写入本地项目：
 - 按当前已加载 bootstrap 的 `.helloagents/` 与流程状态规则，确保最小项目状态已建立
 - 创建 `.helloagents/plans/YYYYMMDDHHMM_{feature}/`（按当前项目存储模式解析）
-- 按模板写入：
+- 按 `{HELLOAGENTS_READ_ROOT}/templates/plans/` 中对应模板写入：
   - `requirements.md`
   - `plan.md`
   - `tasks.md`
