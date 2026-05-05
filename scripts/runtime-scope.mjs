@@ -1,20 +1,22 @@
 import { execFileSync } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, normalize, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
 import { resolveSessionToken } from './session-token.mjs'
 import { USER_RUNTIME_MAX_AGE_MS } from './runtime-ttl.mjs'
+import { cleanupUserRuntimeRoot, getUserRuntimeRoot } from './runtime-user-cleanup.mjs'
 
 export const PROJECT_DIR_NAME = '.helloagents'
 export const PROJECT_SESSIONS_DIR_NAME = 'sessions'
 export const PROJECT_ARTIFACTS_DIR_NAME = 'artifacts'
 export const CAPSULE_FILE_NAME = 'capsule.json'
 export const EVENTS_FILE_NAME = 'events.jsonl'
+export const ACTIVE_SESSION_FILE_NAME = 'active.json'
 export const DEFAULT_STATE_SESSION_TOKEN = 'default'
 export const USER_RUNTIME_DIR_NAME = 'runtime'
-export { USER_RUNTIME_MAX_AGE_MS }
+export { cleanupUserRuntimeRoot, getUserRuntimeRoot, USER_RUNTIME_MAX_AGE_MS }
 
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
@@ -68,6 +70,22 @@ function resolveGitBranchName(cwd) {
   return symbolicName && symbolicName !== 'HEAD' ? symbolicName : ''
 }
 
+function resolveGitShortHead(cwd) {
+  return runGit(cwd, ['rev-parse', '--short', 'HEAD'])
+}
+
+function resolveWorkspaceName(cwd) {
+  const branchName = resolveGitBranchName(cwd)
+  if (branchName) return sanitizeRuntimeSegment(branchName, 'workspace')
+
+  if (resolveGitTopLevel(cwd)) {
+    const shortHead = sanitizeRuntimeSegment(resolveGitShortHead(cwd), '')
+    return shortHead ? `detached-${shortHead}` : 'detached'
+  }
+
+  return 'workspace'
+}
+
 export function sanitizeRuntimeSegment(value = '', fallback = '') {
   const normalized = String(value)
     .trim()
@@ -99,10 +117,6 @@ export function isProjectRuntimeActive(cwd) {
 export function getProjectRoot(cwd) {
   const activeDir = findProjectActivationDir(cwd)
   return activeDir ? dirname(activeDir) : normalizePath(cwd || process.cwd())
-}
-
-export function getUserRuntimeRoot(home = getHomeDir()) {
-  return join(home, PROJECT_DIR_NAME, USER_RUNTIME_DIR_NAME)
 }
 
 function isUserHomeHelloagentsDir(dirPath) {
@@ -151,57 +165,19 @@ function findProjectActivationDir(cwd) {
   return ''
 }
 
-function removePathIfExists(filePath, result, bucket) {
-  if (!existsSync(filePath)) return
-  try {
-    rmSync(filePath, { recursive: true, force: true })
-    result[bucket].push(filePath)
-  } catch (error) {
-    result.errors.push(`${filePath}: ${error.message}`)
-  }
-}
-
-export function cleanupUserRuntimeRoot({
-  home = getHomeDir(),
-  now = Date.now(),
-  maxAgeMs = USER_RUNTIME_MAX_AGE_MS,
-} = {}) {
-  const root = getUserRuntimeRoot(home)
-  const result = {
-    root,
-    removedExpiredDirs: [],
-    errors: [],
-  }
-
-  if (!existsSync(root)) return result
-
-  let entries = []
-  try {
-    entries = readdirSync(root, { withFileTypes: true })
-  } catch (error) {
-    result.errors.push(`${root}: ${error.message}`)
-    return result
-  }
-
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    const dirPath = join(root, entry.name)
-    try {
-      if (now - statSync(dirPath).mtimeMs > maxAgeMs) {
-        removePathIfExists(dirPath, result, 'removedExpiredDirs')
-      }
-    } catch (error) {
-      result.errors.push(`${dirPath}: ${error.message}`)
-    }
-  }
-
-  return result
-}
-
-function resolveStableSessionToken({ payload = {}, env = process.env, ppid = process.ppid } = {}) {
-  void ppid
+function resolvePayloadSessionToken(payload = {}) {
+  if (payload?._helloagentsSessionAlias) return ''
   return resolveSessionToken({
     payload,
+    env: {},
+    ppid: 0,
+    allowPpidFallback: false,
+  })
+}
+
+function resolveEnvSessionToken(env = process.env) {
+  return resolveSessionToken({
+    payload: {},
     env,
     ppid: 0,
     allowPpidFallback: false,
@@ -217,29 +193,122 @@ function resolveTransientSessionToken({ payload = {}, env = process.env, ppid = 
   })
 }
 
+function getActiveSessionPath(activationDir) {
+  return join(activationDir, PROJECT_SESSIONS_DIR_NAME, ACTIVE_SESSION_FILE_NAME)
+}
+
+function resolveActiveSessionToken({ activationDir, projectRoot, workspace, now = Date.now() } = {}) {
+  const active = readJsonFile(getActiveSessionPath(activationDir), null)
+  if (!active || typeof active !== 'object') return ''
+  if (active.cwd && !samePath(active.cwd, projectRoot)) return ''
+
+  const activeWorkspace = sanitizeRuntimeSegment(active.workspace || active.branch || '', '')
+  if (activeWorkspace && activeWorkspace !== workspace) return ''
+
+  const updatedAt = Date.parse(active.updatedAt || '')
+  if (!Number.isFinite(updatedAt) || now - updatedAt > USER_RUNTIME_MAX_AGE_MS) return ''
+
+  return sanitizeRuntimeSegment(active.session, '')
+}
+
+function resolveActiveAliasSession({ activationDir, projectRoot, workspace, alias, now = Date.now() } = {}) {
+  if (!alias) return ''
+  const active = readJsonFile(getActiveSessionPath(activationDir), null)
+  if (!active || typeof active !== 'object') return ''
+  if (active.cwd && !samePath(active.cwd, projectRoot)) return ''
+
+  const activeWorkspace = sanitizeRuntimeSegment(active.workspace || active.branch || '', '')
+  if (activeWorkspace && activeWorkspace !== workspace) return ''
+
+  const updatedAt = Date.parse(active.updatedAt || '')
+  if (!Number.isFinite(updatedAt) || now - updatedAt > USER_RUNTIME_MAX_AGE_MS) return ''
+
+  const aliases = active.aliases && typeof active.aliases === 'object' ? active.aliases : {}
+  return sanitizeRuntimeSegment(aliases[alias], '')
+}
+
+export function writeActiveProjectSession(scope, { host = '', source = '', env = process.env } = {}) {
+  if (!scope?.active || !scope.activationDir || !scope.session) return ''
+
+  const activePath = getActiveSessionPath(scope.activationDir)
+  const current = readJsonFile(activePath, null) || {}
+  const aliases = current.aliases && typeof current.aliases === 'object' ? current.aliases : {}
+  const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
+  if (envToken && envToken !== scope.session) aliases[envToken] = scope.session
+
+  writeJsonFileAtomic(activePath, {
+    version: 1,
+    cwd: scope.cwd,
+    workspace: scope.workspace || scope.branch,
+    session: scope.session,
+    sessionMode: scope.sessionMode,
+    host,
+    source,
+    aliases,
+    updatedAt: new Date().toISOString(),
+  })
+  return activePath
+}
+
+function chooseProjectSession({ payload, env, activationDir, projectRoot, workspace }) {
+  const payloadToken = sanitizeRuntimeSegment(resolvePayloadSessionToken(payload), '')
+  if (payloadToken) return { session: payloadToken, sessionMode: 'host-session' }
+
+  const payloadAlias = sanitizeRuntimeSegment(payload?._helloagentsSessionAlias, '')
+  const payloadAliasToken = resolveActiveAliasSession({
+    activationDir,
+    projectRoot,
+    workspace,
+    alias: payloadAlias,
+  })
+  if (payloadAliasToken) return { session: payloadAliasToken, sessionMode: 'active-session' }
+
+  const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
+  const aliasToken = resolveActiveAliasSession({
+    activationDir,
+    projectRoot,
+    workspace,
+    alias: envToken,
+  })
+  if (aliasToken) return { session: aliasToken, sessionMode: 'active-session' }
+
+  if (envToken) return { session: envToken, sessionMode: 'host-session' }
+
+  const activeToken = resolveActiveSessionToken({ activationDir, projectRoot, workspace })
+  if (activeToken) return { session: activeToken, sessionMode: 'active-session' }
+
+  return { session: DEFAULT_STATE_SESSION_TOKEN, sessionMode: 'default' }
+}
+
 export function getProjectSessionScope(cwd, options = {}) {
   const normalizedCwd = normalizePath(cwd || process.cwd())
   const projectRoot = getProjectRoot(normalizedCwd)
-  const { payload = {}, env = process.env, ppid = process.ppid } = normalizeRuntimeOptions(options)
-  const stableToken = resolveStableSessionToken({ payload, env, ppid })
-  const branch = sanitizeRuntimeSegment(resolveGitBranchName(projectRoot), 'detached')
-  const session = sanitizeRuntimeSegment(stableToken, DEFAULT_STATE_SESSION_TOKEN)
+  const { payload = {}, env = process.env } = normalizeRuntimeOptions(options)
   const activationDir = getProjectActivationDir(projectRoot)
-  const sessionDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME, branch, session)
+  const workspace = resolveWorkspaceName(projectRoot)
+  const { session, sessionMode } = chooseProjectSession({
+    payload,
+    env,
+    activationDir,
+    projectRoot,
+    workspace,
+  })
+  const sessionDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME, workspace, session)
 
   return {
     cwd: projectRoot,
     active: isProjectRuntimeActive(projectRoot),
-    branch,
+    branch: workspace,
+    workspace,
     session,
-    sessionMode: stableToken ? 'host-session' : 'default',
+    sessionMode,
     activationDir,
     sessionDir,
     statePath: join(sessionDir, 'STATE.md'),
     capsulePath: join(sessionDir, CAPSULE_FILE_NAME),
     eventsPath: join(sessionDir, EVENTS_FILE_NAME),
     artifactsDir: join(sessionDir, PROJECT_ARTIFACTS_DIR_NAME),
-    key: `${normalizedCwd}::${branch}::${session}`,
+    key: `${projectRoot}::${workspace}::${session}`,
   }
 }
 
@@ -259,6 +328,7 @@ function buildTransientRuntimeDir(cwd, options = {}) {
   return {
     cwd: normalizedCwd,
     branch: 'transient',
+    workspace: 'transient',
     session: token,
     sessionMode: token === DEFAULT_STATE_SESSION_TOKEN ? 'default' : 'transient-session',
     sessionDir: join(getUserRuntimeRoot(), hash),

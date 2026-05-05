@@ -217,14 +217,14 @@ test('session-scoped state path isolates branch and terminal session in session-
   assert.equal(payload.stateScope, 'session')
   assert.equal(payload.stateSessionToken, 'abcdef12')
   assert.equal(payload.stateSessionMode, 'host-session')
-  assert.equal(payload.stateBranch, 'feature-state-scope')
+  assert.equal(payload.stateWorkspace, 'feature-state-scope')
   assert.equal(
     normalizePathForAssert(payload.statePath),
     normalizePathForAssert(join(repo, '.helloagents', 'sessions', 'feature-state-scope', 'abcdef12', 'STATE.md')),
   )
 })
 
-test('workflow snapshot reads the current session STATE or branch default slot only', () => {
+test('workflow snapshot reads the current session STATE or workspace default slot only', () => {
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
@@ -250,8 +250,8 @@ test('workflow snapshot reads the current session STATE or branch default slot o
     ['# 恢复快照', '', '## 主线目标', '当前会话恢复快照', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
   )
   writeText(
-    getSessionStatePath(repo, { branch: 'feature-session-fallback', session: 'default' }),
-    ['# 恢复快照', '', '## 主线目标', '当前分支默认会话恢复快照', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
+    getSessionStatePath(repo, { workspace: 'feature-session-fallback', session: 'default' }),
+    ['# 恢复快照', '', '## 主线目标', '当前工作区默认会话恢复快照', '', '## 方案', `.helloagents/plans/${feature}`, ''].join('\n'),
   )
 
   let payload = runModuleEval({
@@ -295,6 +295,6 @@ test('workflow snapshot reads the current session STATE or branch default slot o
   assert.equal(payload.sessionScoped, true)
   assert.equal(payload.stateScope, 'session')
   assert.equal(payload.stateSessionMode, 'default')
-  assert.equal(payload.statePath, getSessionStatePath(repo, { branch: 'feature-session-fallback', session: 'default' }))
+  assert.equal(payload.statePath, getSessionStatePath(repo, { workspace: 'feature-session-fallback', session: 'default' }))
   assert.equal(payload.referencedPlanDir, join(repo, '.helloagents', 'plans', feature))
 })

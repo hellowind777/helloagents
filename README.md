@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.19-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.20-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -187,8 +187,10 @@ Long tasks need a small recovery snapshot, but one shared state file is not safe
 
 HelloAGENTS now resolves the current state file from `state_path`:
 
-- with a stable session id: `.helloagents/sessions/<branch>/<session>/STATE.md`
-- without a stable session id: `.helloagents/sessions/<branch>/default/STATE.md`
+- with a stable session id: `.helloagents/sessions/<workspace>/<session>/STATE.md`
+- without a stable session id: `.helloagents/sessions/<workspace>/default/STATE.md`
+
+`<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
 
 `STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation.
 
@@ -198,13 +200,14 @@ HelloAGENTS does not treat “tests passed” and “task complete” as the sam
 
 Runtime evidence files include:
 
-- `.helloagents/sessions/<branch>/<session>/capsule.json`
-- `.helloagents/sessions/<branch>/<session>/events.jsonl`
-- `.helloagents/sessions/<branch>/<session>/artifacts/review.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/advisor.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/visual.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/closeout.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
+- `.helloagents/sessions/<workspace>/<session>/capsule.json`
+- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
+- `.helloagents/sessions/active.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/review.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
 ### 7) Safer install, update, cleanup, and diagnostics
 
@@ -496,10 +499,11 @@ When `project_store_mode = "repo-shared"`:
 Runtime state and evidence remain local to the working project:
 
 - `state_path`
-- `.helloagents/sessions/<branch>/<session>/capsule.json`
-- `.helloagents/sessions/<branch>/<session>/events.jsonl`
-- `.helloagents/sessions/<branch>/<session>/artifacts/*.json`
-- `.helloagents/sessions/<branch>/<session>/artifacts/loop-results.tsv`
+- `.helloagents/sessions/<workspace>/<session>/capsule.json`
+- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
+- `.helloagents/sessions/active.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
 ### Unactivated or temporary sessions
 

@@ -12,6 +12,7 @@ import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buil
 import { resolveNotifyHost, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
 import { runGateScript } from './notify-gates.mjs';
 import { normalizeNotifyPayload } from './notify-payload.mjs';
+import { cleanupProjectSessions } from './project-session-cleanup.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
 import { clearRouteContext, getApplicableRouteContext, writeRouteContext } from './runtime-context.mjs';
@@ -248,6 +249,7 @@ function cmdInject() {
   });
   clearRouteContext({ cwd, payload });
   clearTurnState(cwd, { payload });
+  cleanupProjectSessions(cwd);
   if (IS_SILENT) {
     emptySuppress();
     return;

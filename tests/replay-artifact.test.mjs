@@ -101,7 +101,7 @@ test('replay artifact stays inactive until project activation and records event-
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
 
-  const sessionDir = join(project, '.helloagents', 'sessions', 'detached', 'default')
+  const sessionDir = join(project, '.helloagents', 'sessions', 'workspace', 'default')
   const eventPath = join(sessionDir, 'events.jsonl')
   assert.equal(existsSync(eventPath), true)
 

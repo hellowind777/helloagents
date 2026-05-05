@@ -22,7 +22,7 @@ Trigger: ~loop <目标描述> [--iterations N] [--metric "命令"] [--direction 
 2. 确保 `.helloagents/` 目录和 `state_path` 存在；文件不存在时按 `templates/STATE.md` 创建。`~loop` 必须维护这个状态文件，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免混入其他任务
 3. 运行指标命令获取基线值，记录到 results log
 4. 如有守卫命令，运行确认基线通过
-5. 创建当前会话的 `.helloagents/sessions/{branch}/{session}/artifacts/loop-results.tsv`
+5. 创建当前会话的 `.helloagents/sessions/{workspace}/{session}/artifacts/loop-results.tsv`
 6. 根据优化目标标记可能需要的 hello-* 质量技能（如性能优化标记 hello-perf，UI 优化标记 hello-ui）
 7. 重写 `state_path`：记录主线目标=当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
 

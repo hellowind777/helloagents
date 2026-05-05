@@ -15,8 +15,6 @@ const PAYLOAD_SESSION_KEYS = [
   'tabId',
   'tab_id',
   'tab',
-  'requestId',
-  'request_id',
 ]
 
 const ENV_SESSION_KEYS = [

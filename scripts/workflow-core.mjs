@@ -16,7 +16,7 @@ export function getTargetPlans(snapshot) {
 
 function describeStateLabel(state) {
   if (state.stateSessionMode === 'default') {
-    return '当前分支默认位置的状态文件'
+    return '当前工作区默认位置的状态文件'
   }
   return '当前会话的状态文件'
 }

@@ -6,6 +6,7 @@ import {
   getRuntimeScope,
   readJsonFile,
   removeRuntimeFile,
+  writeActiveProjectSession,
   writeJsonFileAtomic,
 } from './runtime-scope.mjs'
 
@@ -18,6 +19,7 @@ function buildEmptyCapsule(scope) {
     key: scope.key,
     cwd: scope.cwd,
     branch: scope.branch,
+    workspace: scope.workspace || scope.branch,
     session: scope.session,
     sessionMode: scope.sessionMode,
     updatedAt: new Date().toISOString(),
@@ -34,6 +36,10 @@ function normalizeOptions(options = {}) {
     ...options,
     payload: options,
   }
+}
+
+function getEventSessionAlias(eventPayload = {}) {
+  return eventPayload.sessionId || eventPayload.session_id || eventPayload['session-id'] || ''
 }
 
 function getScope(cwd, options = {}) {
@@ -66,7 +72,7 @@ export function getSessionArtifactPath(cwd, fileName, options = {}) {
 export function getSessionArtifactRelativePath(cwd, fileName, options = {}) {
   const scope = getScope(cwd, options)
   if (scope.scope === 'project-session') {
-    return `.helloagents/sessions/${scope.branch}/${scope.session}/artifacts/${fileName}`
+    return `.helloagents/sessions/${scope.workspace || scope.branch}/${scope.session}/artifacts/${fileName}`
   }
   return `~/.helloagents/runtime/${basename(scope.sessionDir)}/artifacts/${fileName}`
 }
@@ -82,6 +88,7 @@ export function readSessionCapsule(cwd = process.cwd(), options = {}) {
     key: scope.key,
     cwd: scope.cwd,
     branch: scope.branch,
+    workspace: scope.workspace || scope.branch,
     session: scope.session,
     sessionMode: scope.sessionMode,
   }
@@ -96,11 +103,15 @@ export function writeSessionCapsule(cwd, capsule, options = {}) {
     key: scope.key,
     cwd: scope.cwd,
     branch: scope.branch,
+    workspace: scope.workspace || scope.branch,
     session: scope.session,
     sessionMode: scope.sessionMode,
     updatedAt: new Date().toISOString(),
   }
   writeJsonFileAtomic(scope.capsulePath, nextCapsule)
+  writeActiveProjectSession(scope, {
+    env: normalizeOptions(options).env,
+  })
   return nextCapsule
 }
 
@@ -138,7 +149,18 @@ export function clearCapsuleSection(cwd, section, options = {}) {
 }
 
 export function appendSessionEvent(cwd, eventPayload, options = {}) {
-  const scope = getScope(cwd, options)
+  const normalizedOptions = normalizeOptions(options)
+  const sessionAlias = getEventSessionAlias(eventPayload)
+  const scopedOptions = sessionAlias
+    ? {
+      ...normalizedOptions,
+      payload: {
+        ...(normalizedOptions.payload || {}),
+        _helloagentsSessionAlias: sessionAlias,
+      },
+    }
+    : normalizedOptions
+  const scope = getScope(cwd, scopedOptions)
   if (scope.scope === 'project-session' && !scope.active) return ''
   const eventName = eventPayload?.event || ''
   if (!eventName) return ''
@@ -154,6 +176,11 @@ export function appendSessionEvent(cwd, eventPayload, options = {}) {
   writeFileSync(scope.eventsPath, `${JSON.stringify(payload)}\n`, {
     encoding: 'utf-8',
     flag: 'a',
+  })
+  writeActiveProjectSession(scope, {
+    host: eventPayload.host || '',
+    source: eventPayload.source || eventName,
+    env: scopedOptions.env,
   })
   return scope.eventsPath
 }
