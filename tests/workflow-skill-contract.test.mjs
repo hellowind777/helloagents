@@ -159,7 +159,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(plan, /`~design` 是 `~plan` 的兼容别名/)
   assert.match(plan, /只有在 `~auto` 内触发其语义时/)
   assert.match(plan, /显式 `~plan` 或 `~design`/)
-  assert.match(plan, /下一步写清待确认的执行动作/)
+  assert.match(plan, /❓【HelloAGENTS】\- 等待输入/)
+  assert.match(plan, /`🔄 下一步` 写清待确认的执行动作/)
   assert.doesNotMatch(plan, /ROUTE \/ SPEC 前置/)
   assert.doesNotMatch(plan, /统一处理/)
 
