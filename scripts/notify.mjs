@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
+import { beginCodexCloseoutClaim, finalizeCodexCloseoutClaim } from './notify-closeout.mjs';
 import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
 import { resolveNotifyHost, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
@@ -16,7 +17,6 @@ import { cleanupProjectSessions } from './project-session-cleanup.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
 import { clearRouteContext, getApplicableRouteContext, writeRouteContext } from './runtime-context.mjs';
-import { readRuntimeEvidence, writeRuntimeEvidence } from './runtime-artifacts.mjs';
 import { appendReplayEvent, startReplaySession } from './replay-state.mjs';
 import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
@@ -38,7 +38,6 @@ const EVENT_NAME = {
   PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
 };
 const RALPH_LOOP_ROUTE_COMMANDS = new Set(['verify', 'loop']);
-const CODEX_NATIVE_STOP_FILE = 'codex-native-stop.json';
 
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
@@ -140,27 +139,6 @@ function attachTurnSession(payload = {}, cwd = payload.cwd || process.cwd()) {
   return { ...payload, sessionId };
 }
 
-function getCodexTurnId(payload = {}) {
-  return String(payload.turnId || payload.turn_id || payload['turn-id'] || '').trim();
-}
-
-function markCodexNativeStopProcessed(cwd, payload = {}) {
-  if (!IS_CODEX) return;
-  const turnId = getCodexTurnId(payload);
-  if (!turnId) return;
-  writeRuntimeEvidence(cwd, CODEX_NATIVE_STOP_FILE, {
-    turnId,
-    updatedAt: new Date().toISOString(),
-  }, { payload });
-}
-
-function hasCodexNativeStopProcessed(cwd, payload = {}) {
-  const turnId = getCodexTurnId(payload);
-  if (!turnId) return false;
-  const evidence = readRuntimeEvidence(cwd, CODEX_NATIVE_STOP_FILE, { payload });
-  return evidence?.turnId === turnId;
-}
-
 function readMainTurnState(cwd, payload = {}) {
   const turnState = readTurnState(cwd, { payload });
   return turnState?.role === 'main' ? turnState : null;
@@ -173,6 +151,43 @@ function consumeMainTurnState(cwd, turnState, payload = {}) {
 function shouldProcessCloseout(turnState) {
   if (turnState) return turnState.kind === 'complete';
   return false;
+}
+
+function processTurnCloseout(payload, turnPayload, turnState, settings = getSettings()) {
+  const cwd = turnPayload.cwd || process.cwd();
+
+  if (runTurnStopGate(turnPayload)) {
+    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
+    return { blocked: true };
+  }
+
+  if (!turnState) {
+    notifyByLevel('complete', buildNotifyExtra(turnPayload), settings);
+    clearRouteContext({ cwd, payload: turnPayload });
+    return { blocked: false };
+  }
+
+  if (turnState.kind !== 'complete') {
+    consumeMainTurnState(cwd, turnState, turnPayload);
+    clearRouteContext({ cwd, payload: turnPayload });
+    return { blocked: false };
+  }
+
+  if (runRalphLoop(turnPayload, { turnState })) {
+    consumeMainTurnState(cwd, turnState, turnPayload);
+    notifyByLevel('warning', buildNotifyExtra(payload), settings);
+    return { blocked: true };
+  }
+  if (runDeliveryGate(turnPayload)) {
+    consumeMainTurnState(cwd, turnState, turnPayload);
+    notifyByLevel('warning', buildNotifyExtra(payload), settings);
+    return { blocked: true };
+  }
+
+  notifyByLevel('complete', buildNotifyExtra(payload), settings);
+  consumeMainTurnState(cwd, turnState, turnPayload);
+  clearRouteContext({ cwd, payload: turnPayload });
+  return { blocked: false };
 }
 
 function cmdPreCompact() {
@@ -275,37 +290,29 @@ function cmdStop() {
   const payload = readPayloadFromStdin();
   const cwd = payload.cwd || process.cwd();
   const turnPayload = attachTurnSession(payload, cwd);
-  if (IS_CODEX && hasCodexNativeStopProcessed(cwd, turnPayload)) {
+  const turnState = readMainTurnState(cwd, turnPayload);
+  const closeoutClaim = IS_CODEX
+    ? beginCodexCloseoutClaim(cwd, { payload: turnPayload, turnState, source: 'stop' })
+    : null;
+  if (IS_CODEX && !closeoutClaim?.claimed) {
     emptySuppress();
     return;
   }
-  const turnState = readMainTurnState(cwd, turnPayload);
-  if (runTurnStopGate(turnPayload)) {
-    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
-    markCodexNativeStopProcessed(cwd, turnPayload);
-    return;
-  }
-  const shouldProcess = shouldProcessCloseout(turnState);
-  if (shouldProcess && runRalphLoop(turnPayload, { turnState })) {
-    consumeMainTurnState(cwd, turnState, turnPayload);
-    notifyByLevel('warning', buildNotifyExtra(payload));
-    markCodexNativeStopProcessed(cwd, turnPayload);
-    return;
-  }
-  if (shouldProcess && runDeliveryGate(turnPayload)) {
-    consumeMainTurnState(cwd, turnState, turnPayload);
-    notifyByLevel('warning', buildNotifyExtra(payload));
-    markCodexNativeStopProcessed(cwd, turnPayload);
-    return;
-  }
 
-  const settings = getSettings();
-  if (shouldProcess || !turnState) {
-    notifyByLevel('complete', buildNotifyExtra(payload), settings);
+  let handled = false;
+  let result = { blocked: false };
+  try {
+    result = processTurnCloseout(payload, turnPayload, turnState, getSettings());
+    handled = true;
+  } finally {
+    finalizeCodexCloseoutClaim(closeoutClaim, {
+      handled,
+      source: 'stop',
+      event: 'stop',
+      turnKind: turnState?.kind || '',
+    });
   }
-  consumeMainTurnState(cwd, turnState, turnPayload);
-  clearRouteContext({ cwd, payload: turnPayload });
-  markCodexNativeStopProcessed(cwd, turnPayload);
+  if (result.blocked) return;
   emptySuppress();
 }
 
@@ -333,39 +340,27 @@ function cmdCodexNotify() {
     return;
   }
   if (type !== 'agent-turn-complete') return;
-  if (hasCodexNativeStopProcessed(cwd, turnPayload)) return;
 
   const turnState = readMainTurnState(cwd, turnPayload);
-  if (runTurnStopGate(turnPayload)) {
-    if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
-    return;
-  }
-  if (!turnState) {
-    notifyByLevel('complete', buildNotifyExtra(data), getSettings());
-    clearRouteContext({ cwd, payload: turnPayload });
-    return;
-  }
-  if (turnState.kind !== 'complete') {
-    consumeMainTurnState(cwd, turnState, turnPayload);
-    clearRouteContext({ cwd, payload: turnPayload });
-    return;
-  }
+  const closeoutClaim = beginCodexCloseoutClaim(cwd, {
+    payload: turnPayload,
+    turnState,
+    source: 'codex-notify',
+  });
+  if (!closeoutClaim.claimed) return;
 
-  const settings = getSettings();
-  if (runRalphLoop(turnPayload, { turnState })) {
-    consumeMainTurnState(cwd, turnState, turnPayload);
-    notifyByLevel('warning', buildNotifyExtra(data), settings);
-    return;
+  let handled = false;
+  try {
+    processTurnCloseout(data, turnPayload, turnState, getSettings());
+    handled = true;
+  } finally {
+    finalizeCodexCloseoutClaim(closeoutClaim, {
+      handled,
+      source: 'codex-notify',
+      event: type,
+      turnKind: turnState?.kind || '',
+    });
   }
-  if (runDeliveryGate(turnPayload)) {
-    consumeMainTurnState(cwd, turnState, turnPayload);
-    notifyByLevel('warning', buildNotifyExtra(data), settings);
-    return;
-  }
-
-  notifyByLevel('complete', buildNotifyExtra(data), settings);
-  consumeMainTurnState(cwd, turnState, turnPayload);
-  clearRouteContext({ cwd, payload: turnPayload });
 }
 
 switch (cmd) {

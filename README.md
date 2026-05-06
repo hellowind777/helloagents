@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.21-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.22-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -645,6 +645,7 @@ Codex is rules-file driven by default.
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
+- Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
 - Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
@@ -656,7 +657,7 @@ Run all tests:
 npm test
 ```
 
-The current test suite covers:
+The current suite includes 103 tests and covers:
 
 - install, update, uninstall, cleanup, and mode switching
 - Claude, Gemini, and Codex config merge and restore behavior

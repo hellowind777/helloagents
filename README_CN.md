@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.21-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.22-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -647,6 +647,7 @@ Codex 默认走规则文件驱动。
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件流程，并同样用 `~/.codex/hooks.json` 加载静默 hooks
 - Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 HelloAGENTS 规则或路由说明
+- Codex 收尾会对 Stop hook 和原生 `codex-notify` 去重，避免同一轮重复通知
 - `/goal` 保持 Codex 原生能力；需要长程执行时，用 `helloagents codex goals enable` 显式启用
 - 感知 goal 的命令从 `tasks.md`、`contract.json` 和 `state_path` 恢复；不会自动创建 goal，也不会在 HelloAGENTS 验证和收尾前标记完成
 
@@ -658,7 +659,7 @@ Codex 默认走规则文件驱动。
 npm test
 ```
 
-当前测试覆盖：
+当前测试共 103 项，覆盖：
 
 - 安装、更新、卸载、清理和模式切换
 - Claude、Gemini、Codex 的配置合并与恢复
