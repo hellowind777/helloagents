@@ -109,9 +109,11 @@ test('Codex silent hooks do not emit additional context and de-duplicate Stop ha
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
-  assert.equal(readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
+  let evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
     session: '12345678',
-  })).turnId, 'turn-1')
+  }))
+  assert.equal(evidence.turnId, 'turn-1')
+  assert.equal(evidence.source, 'stop')
 
   result = runNode(notifyScript, ['stop', '--codex'], {
     cwd: project,
@@ -131,6 +133,142 @@ test('Codex silent hooks do not emit additional context and de-duplicate Stop ha
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
   assert.equal(result.stdout, '')
+})
+
+test('Codex native notify writes closeout evidence before Stop and prevents double closeout', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-codex-notify-first-')
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+  const hookPayload = {
+    cwd: project,
+    session_id: '12345678',
+    turn_id: 'turn-1',
+    last_assistant_message: '任务已完成。',
+  }
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      payload: hookPayload,
+      role: 'main',
+      kind: 'complete',
+      phase: 'closeout',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(join(pkgRoot, 'cli.mjs'), [
+    'codex-notify',
+    JSON.stringify({ ...hookPayload, type: 'agent-turn-complete', client: 'codex-tui' }),
+  ], {
+    cwd: project,
+    env,
+  })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.equal(result.stdout, '')
+
+  let evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
+    session: '12345678',
+  }))
+  assert.equal(evidence.turnId, 'turn-1')
+  assert.equal(evidence.source, 'codex-notify')
+  assert.equal(evidence.turnKind, 'complete')
+
+  result = runNode(notifyScript, ['stop', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify(hookPayload),
+  })
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.decision, undefined)
+
+  evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
+    session: '12345678',
+  }))
+  assert.equal(evidence.source, 'codex-notify')
+})
+
+test('Codex native notify consumes waiting closeout once and Stop does not synthesize complete', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-codex-notify-waiting-')
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+  const hookPayload = {
+    cwd: project,
+    session_id: '12345678',
+    turn_id: 'turn-1',
+    last_assistant_message: '缺少输入文件，当前无法继续。',
+  }
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      payload: hookPayload,
+      role: 'main',
+      kind: 'waiting',
+      phase: 'build',
+      reasonCategory: 'missing-file',
+      reason: '缺少 tests/fixtures/input.csv 文件，无法继续生成基线结果。',
+      blocker: {
+        target: 'tests/fixtures/input.csv',
+        evidence: '读取基线输入文件时文件不存在。',
+        requiredAction: '用户补充该文件或确认改用其他输入路径。',
+      },
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(join(pkgRoot, 'cli.mjs'), [
+    'codex-notify',
+    JSON.stringify({ ...hookPayload, type: 'agent-turn-complete', client: 'codex-tui' }),
+  ], {
+    cwd: project,
+    env,
+  })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.equal(result.stdout, '')
+
+  let evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
+    session: '12345678',
+  }))
+  assert.equal(evidence.source, 'codex-notify')
+  assert.equal(evidence.turnKind, 'waiting')
+
+  result = runNode(notifyScript, ['stop', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify(hookPayload),
+  })
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.decision, undefined)
+
+  evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
+    session: '12345678',
+  }))
+  assert.equal(evidence.source, 'codex-notify')
 })
 
 test('project active session keeps hook and local turn-state writes in one directory', () => {
