@@ -175,3 +175,22 @@ test('runtime carrier does not snapshot helloagents config into persistent rules
   assert.doesNotMatch(codexAgents, /"output_format": false/)
   assert.match(codexAgents, /输出格式只在缺少 `output_format` 已知值时触发读取/)
 })
+
+test('global mode switch records only successful host setup', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['--global'], {
+    HELLOAGENTS_CLAUDE_CMD: join(home, 'missing-claude.cmd'),
+    HELLOAGENTS_GEMINI_CMD: join(home, 'missing-gemini.cmd'),
+  })
+
+  const settings = readJson(configFile)
+  assert.equal(settings.install_mode, 'global')
+  assert.equal(settings.host_install_modes.claude, undefined)
+  assert.equal(settings.host_install_modes.gemini, undefined)
+  assert.equal(settings.host_install_modes.codex, 'global')
+})
