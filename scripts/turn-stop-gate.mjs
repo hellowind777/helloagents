@@ -48,6 +48,56 @@ function buildBlockReason(routeContext, detail, cwd) {
   ].filter(Boolean).join('\n')
 }
 
+function getLastAssistantMessage(payload = {}) {
+  return String(
+    payload.lastAssistantMessage
+    || payload.last_assistant_message
+    || payload['last-assistant-message']
+    || '',
+  ).trim()
+}
+
+function countMatches(text, pattern) {
+  const matches = text.match(pattern)
+  return matches ? matches.length : 0
+}
+
+function validateFormattedCloseoutMessage(routeContext, payload, cwd) {
+  const message = getLastAssistantMessage(payload)
+  if (!message || !message.includes('【HelloAGENTS】')) return ''
+
+  const firstNonEmptyLine = message
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean)
+
+  if (!firstNonEmptyLine || !/^[💡⚡🔵✅❓⚠️❌]【HelloAGENTS】- /.test(firstNonEmptyLine)) {
+    return buildBlockReason(
+      routeContext,
+      '最终收尾消息使用了 HelloAGENTS 外层格式，但首个非空行不是规范标题行。',
+      cwd,
+    )
+  }
+
+  if (countMatches(message, /[💡⚡🔵✅❓⚠️❌]【HelloAGENTS】-/g) > 1) {
+    return buildBlockReason(
+      routeContext,
+      '最终收尾消息重复输出了 HelloAGENTS 标题；请把所有内容合并到同一个外层块内。',
+      cwd,
+    )
+  }
+
+  if (countMatches(message, /^🔄 下一步:/gm) > 1) {
+    return buildBlockReason(
+      routeContext,
+      '最终收尾消息重复输出了 `🔄 下一步`；请只保留一个真实下一步。',
+      cwd,
+    )
+  }
+
+  return ''
+}
+
 function getMainTurnState(cwd, payload = {}) {
   const turnState = readTurnState(cwd, { payload })
   return turnState?.role === 'main' ? turnState : null
@@ -64,11 +114,13 @@ function hasStructuredBlocker(turnState) {
   )
 }
 
-function validateTurnState(routeContext, turnState, cwd) {
+function validateTurnState(routeContext, turnState, cwd, payload = {}) {
   if (!turnState) {
     return buildBlockReason(routeContext, '缺少主代理 turn-state。', cwd)
   }
   if (turnState.kind === 'complete') {
+    const formatReason = validateFormattedCloseoutMessage(routeContext, payload, cwd)
+    if (formatReason) return formatReason
     return ''
   }
   if (turnState.kind === 'waiting' || turnState.kind === 'blocked') {
@@ -101,7 +153,7 @@ function main() {
     return
   }
 
-  const reason = validateTurnState(routeContext, getMainTurnState(cwd, payload), cwd)
+  const reason = validateTurnState(routeContext, getMainTurnState(cwd, payload), cwd, payload)
   process.stdout.write(JSON.stringify(reason ? { decision: 'block', reason } : { decision: 'continue' }))
 }
 

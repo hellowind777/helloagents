@@ -59,12 +59,16 @@ function clearTrackedHostMode(settings, host) {
   delete settings.host_install_modes[host]
 }
 
-function setAllTrackedHostModes(settings, mode) {
-  settings.host_install_modes = Object.fromEntries(HOSTS.map((host) => [host, mode]))
-}
-
 function clearAllTrackedHostModes(settings) {
   settings.host_install_modes = {}
+}
+
+function syncTrackedHostMode(settings, host, result, mode) {
+  if (!result?.skipped && result?.ok !== false) {
+    setTrackedHostMode(settings, host, mode)
+    return
+  }
+  clearTrackedHostMode(settings, host)
 }
 
 export function normalizeHost(value = '') {
@@ -157,8 +161,11 @@ export function switchMode(newMode) {
     runtime.ok(runtime.msg(`当前已是 ${newMode} 模式，正在刷新安装`, `Already in ${newMode} mode, refreshing installation`))
   }
 
-  installAllHosts(runtime, newMode)
-  setAllTrackedHostModes(config, newMode)
+  const results = installAllHosts(runtime, newMode)
+  clearAllTrackedHostModes(config)
+  for (const host of HOSTS) {
+    syncTrackedHostMode(config, host, results?.[host], newMode)
+  }
   writeSettings(config)
   runtime.printInstallMsg(newMode, isRefresh ? 'refresh' : 'switch')
 }
@@ -229,7 +236,7 @@ export function runScopedLifecycle(action, rawArgs) {
       writeSettings(settings)
     }
   } else if (!result.skipped) {
-    setTrackedHostMode(settings, host, mode)
+    syncTrackedHostMode(settings, host, result, mode)
     writeSettings(settings)
   }
 }

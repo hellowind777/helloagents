@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.22-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.23-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -209,7 +209,7 @@ Runtime evidence files include:
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
-Delivery gate, guard, and loop messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions.
+Delivery gate, guard, and loop messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
 
 ### 7) Safer install, update, cleanup, and diagnostics
 
@@ -220,6 +220,7 @@ The CLI manages host files explicitly:
 - `cleanup` removes managed injections and links
 - `uninstall` performs scoped cleanup before package removal
 - `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, and versions
+- per-host mode tracking is written only after a host setup succeeds, so failed native global installs do not leave stale mode records
 
 ## Quick Start
 
@@ -616,7 +617,7 @@ Default shape:
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
 | `commit_attribution` | `""` | optional text appended to commit messages |
 | `install_mode` | `"standby"` | current default install mode |
-| `host_install_modes` | `{}` | managed per-CLI mode map, such as `{ "codex": "standby" }`; used before falling back to `install_mode` |
+| `host_install_modes` | `{}` | managed per-CLI mode map, such as `{ "codex": "standby" }`; recorded only after successful host setup and used before falling back to `install_mode` |
 
 ## How Each CLI Is Integrated
 
@@ -657,7 +658,7 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 103 tests and covers:
+The current suite includes 107 tests and covers:
 
 - install, update, uninstall, cleanup, and mode switching
 - Claude, Gemini, and Codex config merge and restore behavior
@@ -666,7 +667,7 @@ The current suite includes 103 tests and covers:
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
 - session-scoped `state_path`, runtime signals, and evidence
-- runtime routing, guard, verification, visual evidence, and delivery gates
+- runtime routing, guard, verification, visual evidence, delivery gates, single-wrapper closeout validation, and successful-mode tracking after native install failures
 - README and skill contract alignment
 
 ## FAQ

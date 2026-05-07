@@ -212,3 +212,17 @@ test('global install attempts Claude and Gemini native installers when commands 
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'global')
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.gemini, 'global')
 })
+
+test('single-host global install does not record a mode when the native host command fails', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'claude', '--global'], {
+    HELLOAGENTS_CLAUDE_CMD: join(home, 'missing-claude.cmd'),
+  })
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.claude, undefined)
+})

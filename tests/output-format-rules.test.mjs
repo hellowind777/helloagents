@@ -36,6 +36,8 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /首行必须保留 `【HelloAGENTS】` 和连字符 `-`，不得省略/);
     assert.match(content, /状态图标与收尾内容必须一致/);
     assert.match(content, /仅在本轮执行已完成且不存在待确认动作时，才能使用 `✅完成`/);
+    assert.match(content, /同一条最终收尾消息只使用一次该格式/);
+    assert.match(content, /不得在正文中再次输出 `【HelloAGENTS】` 或第二个 `🔄 下一步`/);
     assert.match(content, /含确认是否执行已给出的方案/);
     assert.match(content, /若正在等待确认，写清待确认动作/);
     assert.match(content, /不用“下一步建议”代替实际执行/);
@@ -54,6 +56,8 @@ test('skill and help docs describe output_format as final-summary only', () => {
   assert.match(helloagentsSkill, /流式内容、进度或状态汇报、中间文本/);
   assert.match(helloagentsSkill, /最终收尾中的 `🔄 下一步` 写真实动作/);
   assert.match(helloagentsSkill, /已获授权且可继续执行时不得收尾/);
+  assert.match(helloagentsSkill, /同一条最终收尾消息只包装一次/);
+  assert.match(helloagentsSkill, /不在正文里再次输出 `【HelloAGENTS】` 或第二个 `🔄 下一步`/);
 
   const helloWriteSkill = read('skills/hello-write/SKILL.md');
   assert.match(helloWriteSkill, /通用语言与表述要求/);
