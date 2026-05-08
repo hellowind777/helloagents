@@ -110,8 +110,7 @@ export function matchesCodexCloseoutEvidence(evidence, snapshot, now = Date.now(
   if (intersects(snapshot.strongKeys, strongKeys)) return true
 
   const currentHasStrong = snapshot.strongKeys.length > 0
-  const evidenceHasStrong = strongKeys.length > 0
-  if (currentHasStrong && evidenceHasStrong) return false
+  if (currentHasStrong) return false
 
   const updatedAt = Date.parse(evidence.updatedAt || '')
   if (!Number.isFinite(updatedAt) || now - updatedAt > WEAK_KEY_TTL_MS) return false

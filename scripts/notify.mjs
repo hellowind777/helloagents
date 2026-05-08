@@ -288,9 +288,10 @@ function consumeMainTurnState(cwd, turnState, payload = {}) {
   if (turnState?.role === 'main') clearTurnState(cwd, { payload });
 }
 
-function shouldProcessCloseout(turnState) {
+function shouldEmitManagedCodexCompleteNotify(cwd, turnState, payload = {}) {
   if (turnState) return turnState.kind === 'complete';
-  return false;
+  const routeContext = getApplicableRouteContext({ cwd, payload });
+  return routeContext?.skillName !== 'auto';
 }
 
 async function processTurnCloseout(payload, turnPayload, turnState, settings = getSettings()) {
@@ -480,7 +481,13 @@ async function cmdCodexNotify() {
     return;
   }
   if (type !== 'agent-turn-complete') return;
-  if (hasManagedCodexStopHook()) return;
+  if (hasManagedCodexStopHook()) {
+    const turnState = readMainTurnState(cwd, turnPayload);
+    if (shouldEmitManagedCodexCompleteNotify(cwd, turnState, turnPayload)) {
+      notifyByLevel('complete', buildNotifyExtra(data));
+    }
+    return;
+  }
 
   const turnState = readMainTurnState(cwd, turnPayload);
   const closeoutClaim = beginCodexCloseoutClaim(cwd, {

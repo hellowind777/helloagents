@@ -12,6 +12,7 @@ import {
   CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   CODEX_PLUGIN_CONFIG_HEADER,
   installCodexManagedTopLevelConfig,
+  installCodexManagedTuiConfig,
   isManagedCodexBackupInstruction,
   isManagedCodexGoalsFeature,
   isManagedCodexModelInstruction,
@@ -20,6 +21,7 @@ import {
   readCodexGoalsFeatureLine,
   readLegacyCodexHooksFeatureLine,
   removeCodexGoalsFeatureConfig,
+  removeCodexManagedTuiConfig,
   removeLegacyManagedCodexHooksFeatureConfig,
   removeCodexPluginConfig,
   restoreCodexGoalsFeatureConfig,
@@ -167,6 +169,7 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
   if (shouldRestoreCodexGoalsFeature) {
     toml = removeCodexGoalsFeatureConfig(toml);
   }
+  toml = removeCodexManagedTuiConfig(toml);
   if (shouldRemoveLegacyCodexHooksFeature) {
     toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   }
@@ -216,6 +219,7 @@ export function installCodexStandby(home, pkgRoot) {
   toml = installCodexManagedTopLevelConfig(toml, {
     modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
+  toml = installCodexManagedTuiConfig(toml);
   toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   safeWrite(configPath, toml);
   installCodexStandaloneHooks(home, pkgRoot);
@@ -311,6 +315,7 @@ export function installCodexGlobal(home, pkgRoot) {
   toml = installCodexManagedTopLevelConfig(toml, {
     modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
+  toml = installCodexManagedTuiConfig(toml);
   toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   toml = upsertCodexPluginConfig(toml);
   safeWrite(configPath, toml);

@@ -3,7 +3,13 @@ import assert from 'node:assert/strict'
 import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CODEX_MANAGED_GOALS_FEATURE_LINE, CODEX_MANAGED_NOTIFY_VALUE, isManagedCodexModelInstruction, isManagedCodexNotify } from '../scripts/cli-codex-config.mjs'
+import {
+  CODEX_MANAGED_GOALS_FEATURE_LINE,
+  CODEX_MANAGED_NOTIFY_VALUE,
+  CODEX_MANAGED_TUI_NOTIFICATIONS_LINE,
+  isManagedCodexModelInstruction,
+  isManagedCodexNotify,
+} from '../scripts/cli-codex-config.mjs'
 import { buildManagedCodexHookTrustEntries, readCodexHookStateSections } from '../scripts/cli-codex-hooks-state.mjs'
 import { createHomeFixture, createPackageFixture, readText, writeText } from './helpers/test-env.mjs'
 import {
@@ -83,6 +89,7 @@ test('Codex standby replaces a user-owned model_instructions_file with the manag
   assert.match(installedConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.ok(isManagedCodexModelInstruction(installedConfig.split('\n').find((line) => line.startsWith('model_instructions_file ='))))
   assert.ok(installedConfig.includes(MANAGED_NOTIFY_LINE), installedConfig)
+  assert.match(installedConfig, /\[tui\]\nnotifications = \["plan-mode-prompt"\] # helloagents-managed/)
   assert.doesNotMatch(installedConfig, /codex_hooks\s*=/)
   assert.doesNotMatch(installedConfig, /^\s*hooks\s*=/m)
   assert.doesNotMatch(installedConfig, /UserPromptSubmit/)
@@ -100,6 +107,7 @@ test('Codex standby replaces a user-owned model_instructions_file with the manag
 
   assert.match(readText(join(home, '.codex', 'config.toml')), new RegExp(`model_instructions_file = "${userAgentsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`))
   assert.equal(readText(join(home, '.codex', 'AGENTS.md')), '# Codex custom\n')
+  assert.doesNotMatch(readText(join(home, '.codex', 'config.toml')), /plan-mode-prompt/)
   assert.ok(!existsSync(join(home, '.codex', 'hooks.json')))
   assert.equal(readCodexHookStateSections(readText(join(home, '.codex', 'config.toml'))).filter((section) => section.managed).length, 0)
 })
@@ -235,6 +243,33 @@ test('Codex standby keeps model_instructions_file before notify and separates ma
     'experimental = true',
     '',
   ].join('\n')), installedConfig)
+  assert.match(installedConfig, /\[tui\]\nnotifications = \["plan-mode-prompt"\] # helloagents-managed/)
+})
+
+test('Codex install does not override user-owned TUI notifications', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      '[tui]',
+      'notifications = ["agent-turn-complete", "approval-requested"]',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  const installedConfig = readText(join(home, '.codex', 'config.toml'))
+  assert.match(installedConfig, /\[tui\]\nnotifications = \["agent-turn-complete", "approval-requested"\]/)
+  assert.doesNotMatch(installedConfig, new RegExp(CODEX_MANAGED_TUI_NOTIFICATIONS_LINE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  const cleanedConfig = readText(join(home, '.codex', 'config.toml'))
+  assert.match(cleanedConfig, /\[tui\]\nnotifications = \["agent-turn-complete", "approval-requested"\]/)
 })
 
 test('Codex install removes legacy managed codex_hooks and preserves user-owned legacy keys', () => {

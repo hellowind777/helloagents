@@ -53,6 +53,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(codexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.doesNotMatch(codexConfig, /developer_instructions\s*=/)
   assert.match(codexConfig, /codex-notify/)
+  assert.match(codexConfig, /\[tui\]\nnotifications = \["plan-mode-prompt"\] # helloagents-managed/)
   assert.ok(codexConfig.startsWith([
     'model_instructions_file = "~/.codex/AGENTS.md" # helloagents-managed',
     MANAGED_NOTIFY_LINE,
@@ -87,6 +88,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const globalCodexConfig = readText(codexConfigPath)
   assert.match(globalCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
+  assert.match(globalCodexConfig, /\[tui\]\nnotifications = \["plan-mode-prompt"\] # helloagents-managed/)
   assert.ok(globalCodexConfig.startsWith([
     'model_instructions_file = "~/.codex/AGENTS.md" # helloagents-managed',
     MANAGED_NOTIFY_LINE,
@@ -118,6 +120,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   const finalCodexConfig = readText(codexConfigPath)
   assert.match(finalCodexConfig, /C:\/original\/bootstrap\.md/)
   assert.match(finalCodexConfig, /notify = \["node", "C:\/original\/notify\.mjs", "codex-notify"\]/)
+  assert.doesNotMatch(finalCodexConfig, /plan-mode-prompt/)
   assert.doesNotMatch(finalCodexConfig, /developer_instructions\s*=/)
 })
 
