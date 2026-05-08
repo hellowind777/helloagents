@@ -143,18 +143,20 @@ function validateTurnState(routeContext, turnState, cwd, payload = {}) {
   return buildBlockReason(routeContext, `当前 turn-state 为 \`${turnState.kind}\`，不能作为本轮结束状态。`, cwd)
 }
 
-function main() {
-  const payload = readStdinJson()
+export function evaluateTurnStopGate(payload = {}) {
   const cwd = payload.cwd || process.cwd()
   const routeContext = getApplicableRouteContext({ cwd, payload })
 
   if (!routeContext || !ENFORCED_COMMANDS.has(routeContext.skillName)) {
-    process.stdout.write(JSON.stringify({ decision: 'continue' }))
-    return
+    return { decision: 'continue' }
   }
 
   const reason = validateTurnState(routeContext, getMainTurnState(cwd, payload), cwd, payload)
-  process.stdout.write(JSON.stringify(reason ? { decision: 'block', reason } : { decision: 'continue' }))
+  return reason ? { decision: 'block', reason } : { decision: 'continue' }
+}
+
+function main() {
+  process.stdout.write(JSON.stringify(evaluateTurnStopGate(readStdinJson())))
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

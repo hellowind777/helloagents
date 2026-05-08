@@ -11,7 +11,6 @@ import { beginCodexCloseoutClaim, finalizeCodexCloseoutClaim } from './notify-cl
 import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
 import { resolveNotifyHost, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
-import { runGateScript } from './notify-gates.mjs';
 import { normalizeNotifyPayload } from './notify-payload.mjs';
 import { cleanupProjectSessions } from './project-session-cleanup.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
@@ -38,6 +37,13 @@ const EVENT_NAME = {
   PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
 };
 const RALPH_LOOP_ROUTE_COMMANDS = new Set(['verify', 'loop']);
+const CODEX_HOOKS_FILE = join(homedir(), '.codex', 'hooks.json');
+const GATE_MODULE_LOADERS = {
+  'turn-stop-gate': () => import('./turn-stop-gate.mjs'),
+  'delivery-gate': () => import('./delivery-gate.mjs'),
+  'ralph-loop': () => import('./ralph-loop.mjs'),
+};
+const gateEvaluatorCache = new Map();
 
 const playSound = (event) => _playSound(PKG_ROOT, event);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
@@ -84,48 +90,182 @@ function shouldRunRalphLoop(cwd, turnState, payload = {}) {
   return RALPH_LOOP_ROUTE_COMMANDS.has(routeContext?.skillName);
 }
 
-function runRalphLoop(payload, { turnState } = {}) {
+function buildGateErrorReason(source, detail = '') {
+  return [
+    `[HelloAGENTS Runtime] ${source} 执行失败，已暂停完成通知。`,
+    detail ? `原因：${detail}` : '',
+    '请修复脚本或重新运行验证后再报告完成。',
+  ].filter(Boolean).join('\n');
+}
+
+function emitInlineGateError(payload, source, detail = '') {
+  const reason = buildGateErrorReason(source, detail);
+  appendReplayEvent(payload.cwd || process.cwd(), {
+    host: HOST,
+    event: 'runtime_gate_error',
+    source,
+    reason,
+    payload,
+  });
+  output({
+    decision: 'block',
+    reason,
+    suppressOutput: true,
+  });
+  return true;
+}
+
+function stringifyStreamChunk(chunk, encoding) {
+  if (typeof chunk === 'string') return chunk;
+  if (chunk instanceof Uint8Array || Buffer.isBuffer(chunk)) {
+    return Buffer.from(chunk).toString(typeof encoding === 'string' ? encoding : 'utf-8');
+  }
+  return String(chunk ?? '');
+}
+
+async function importGateModule(source) {
+  const loader = GATE_MODULE_LOADERS[source];
+  if (!loader) {
+    throw new Error(`无法解析的 JSON：未知 gate 模块 ${source}。`);
+  }
+
+  const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  let capturedStdout = '';
+  let capturedStderr = '';
+
+  process.stdout.write = (chunk, encoding, callback) => {
+    capturedStdout += stringifyStreamChunk(chunk, encoding);
+    if (typeof encoding === 'function') encoding();
+    if (typeof callback === 'function') callback();
+    return true;
+  };
+  process.stderr.write = (chunk, encoding, callback) => {
+    capturedStderr += stringifyStreamChunk(chunk, encoding);
+    if (typeof encoding === 'function') encoding();
+    if (typeof callback === 'function') callback();
+    return true;
+  };
+
+  try {
+    const module = await loader();
+    if (capturedStdout.trim() || capturedStderr.trim()) {
+      throw new Error(`无法解析的 JSON：模块导入时输出了意外内容。${capturedStdout || capturedStderr}`);
+    }
+    return module;
+  } finally {
+    process.stdout.write = originalStdoutWrite;
+    process.stderr.write = originalStderrWrite;
+  }
+}
+
+async function loadGateEvaluator(source, exportName) {
+  let evaluatorPromise = gateEvaluatorCache.get(source);
+  if (!evaluatorPromise) {
+    evaluatorPromise = importGateModule(source).then((module) => {
+      const evaluate = module?.[exportName];
+      if (typeof evaluate !== 'function') {
+        throw new Error(`无法解析的 JSON：模块未导出 ${exportName}。`);
+      }
+      return evaluate;
+    });
+    gateEvaluatorCache.set(source, evaluatorPromise);
+  }
+
+  try {
+    return await evaluatorPromise;
+  } catch (error) {
+    gateEvaluatorCache.delete(source);
+    throw error;
+  }
+}
+
+async function runInlineGate({ payload, source, blockEvent, exportName, evaluateArgs }) {
+  let evaluate;
+  try {
+    evaluate = await loadGateEvaluator(source, exportName);
+  } catch (error) {
+    return emitInlineGateError(payload, source, error?.message || String(error));
+  }
+
+  let gateOutput;
+  try {
+    gateOutput = await evaluate(...evaluateArgs);
+  } catch (error) {
+    return emitInlineGateError(payload, source, error?.message || String(error));
+  }
+
+  if (!gateOutput || typeof gateOutput !== 'object' || Array.isArray(gateOutput)) {
+    return emitInlineGateError(payload, source, '无法解析的 JSON：gate 返回值不是对象。');
+  }
+
+  if (gateOutput?.decision === 'block') {
+    appendReplayEvent(payload.cwd || process.cwd(), {
+      host: HOST,
+      event: blockEvent,
+      source,
+      reason: gateOutput.reason || '',
+      payload,
+    });
+    output(gateOutput);
+    return true;
+  }
+
+  return false;
+}
+
+async function runRalphLoop(payload, { turnState } = {}) {
   const settings = getSettings();
   if (settings.ralph_loop_enabled === false) return false;
   const cwd = payload.cwd || process.cwd();
   if (!shouldRunRalphLoop(cwd, turnState, payload)) return false;
-  return runGateScript({
+  return await runInlineGate({
     payload,
-    host: HOST,
-    scriptPath: join(__dirname, 'ralph-loop.mjs'),
-    args: IS_GEMINI ? ['--gemini'] : HOST === 'codex' ? ['--codex'] : [],
     source: 'ralph-loop',
     blockEvent: 'verify_gate_blocked',
-    timeout: 120_000,
-    appendReplayEvent,
-    output,
+    exportName: 'evaluateRalphLoop',
+    evaluateArgs: [payload, {
+      isSubagent: false,
+      isGemini: IS_GEMINI,
+      hookEventName: HOST === 'codex' ? 'Stop' : (IS_GEMINI ? 'SessionEnd' : 'Stop'),
+    }],
   });
 }
 
-function runDeliveryGate(payload) {
-  return runGateScript({
+async function runDeliveryGate(payload) {
+  return await runInlineGate({
     payload,
-    host: HOST,
-    scriptPath: join(__dirname, 'delivery-gate.mjs'),
     source: 'delivery-gate',
     blockEvent: 'delivery_gate_blocked',
-    timeout: 30_000,
-    appendReplayEvent,
-    output,
+    exportName: 'evaluateDeliveryGate',
+    evaluateArgs: [payload],
   });
 }
 
-function runTurnStopGate(payload) {
-  return runGateScript({
+async function runTurnStopGate(payload) {
+  return await runInlineGate({
     payload,
-    host: HOST,
-    scriptPath: join(__dirname, 'turn-stop-gate.mjs'),
     source: 'turn-stop-gate',
     blockEvent: 'turn_stop_blocked',
-    timeout: 30_000,
-    appendReplayEvent,
-    output,
+    exportName: 'evaluateTurnStopGate',
+    evaluateArgs: [payload],
   });
+}
+
+function hasManagedCodexStopHook() {
+  if (!IS_CODEX) return false;
+  try {
+    const hooksData = JSON.parse(readFileSync(CODEX_HOOKS_FILE, 'utf-8'));
+    const groups = Array.isArray(hooksData?.hooks?.Stop) ? hooksData.hooks.Stop : [];
+    return groups.some((group) => Array.isArray(group?.hooks) && group.hooks.some((handler) =>
+      handler?.type === 'command'
+      && typeof handler.command === 'string'
+      && handler.command.includes('helloagents-js')
+      && handler.command.includes('notify stop --codex'),
+    ));
+  } catch {
+    return false;
+  }
 }
 
 function attachTurnSession(payload = {}, cwd = payload.cwd || process.cwd()) {
@@ -153,10 +293,10 @@ function shouldProcessCloseout(turnState) {
   return false;
 }
 
-function processTurnCloseout(payload, turnPayload, turnState, settings = getSettings()) {
+async function processTurnCloseout(payload, turnPayload, turnState, settings = getSettings()) {
   const cwd = turnPayload.cwd || process.cwd();
 
-  if (runTurnStopGate(turnPayload)) {
+  if (await runTurnStopGate(turnPayload)) {
     if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
     return { blocked: true };
   }
@@ -173,12 +313,12 @@ function processTurnCloseout(payload, turnPayload, turnState, settings = getSett
     return { blocked: false };
   }
 
-  if (runRalphLoop(turnPayload, { turnState })) {
+  if (await runRalphLoop(turnPayload, { turnState })) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload), settings);
     return { blocked: true };
   }
-  if (runDeliveryGate(turnPayload)) {
+  if (await runDeliveryGate(turnPayload)) {
     consumeMainTurnState(cwd, turnState, turnPayload);
     notifyByLevel('warning', buildNotifyExtra(payload), settings);
     return { blocked: true };
@@ -286,7 +426,7 @@ function cmdInject() {
   suppressedOutput(EVENT_NAME.SessionStart, context || undefined);
 }
 
-function cmdStop() {
+async function cmdStop() {
   const payload = readPayloadFromStdin();
   const cwd = payload.cwd || process.cwd();
   const turnPayload = attachTurnSession(payload, cwd);
@@ -302,7 +442,7 @@ function cmdStop() {
   let handled = false;
   let result = { blocked: false };
   try {
-    result = processTurnCloseout(payload, turnPayload, turnState, getSettings());
+    result = await processTurnCloseout(payload, turnPayload, turnState, getSettings());
     handled = true;
   } finally {
     finalizeCodexCloseoutClaim(closeoutClaim, {
@@ -324,7 +464,7 @@ function cmdDesktop() {
   desktopNotify(process.argv[3] || 'complete', buildNotifyExtra({ cwd: process.cwd() }));
 }
 
-function cmdCodexNotify() {
+async function cmdCodexNotify() {
   let data = {};
   try { data = JSON.parse(process.argv[3] || '{}'); } catch {}
   data = normalizeNotifyPayload(data);
@@ -340,6 +480,7 @@ function cmdCodexNotify() {
     return;
   }
   if (type !== 'agent-turn-complete') return;
+  if (hasManagedCodexStopHook()) return;
 
   const turnState = readMainTurnState(cwd, turnPayload);
   const closeoutClaim = beginCodexCloseoutClaim(cwd, {
@@ -351,7 +492,7 @@ function cmdCodexNotify() {
 
   let handled = false;
   try {
-    processTurnCloseout(data, turnPayload, turnState, getSettings());
+    await processTurnCloseout(data, turnPayload, turnState, getSettings());
     handled = true;
   } finally {
     finalizeCodexCloseoutClaim(closeoutClaim, {
@@ -363,15 +504,19 @@ function cmdCodexNotify() {
   }
 }
 
-switch (cmd) {
-  case 'inject':        cmdInject(); break;
-  case 'stop':          cmdStop(); break;
-  case 'pre-compact':   cmdPreCompact(); break;
-  case 'route':         cmdRoute(); break;
-  case 'sound':         cmdSound(); break;
-  case 'desktop':       cmdDesktop(); break;
-  case 'codex-notify':  cmdCodexNotify(); break;
-  default:
-    process.stderr.write(`notify.mjs: unknown command "${cmd}"\n`);
-    process.exit(1);
+async function main() {
+  switch (cmd) {
+    case 'inject':        cmdInject(); break;
+    case 'stop':          await cmdStop(); break;
+    case 'pre-compact':   cmdPreCompact(); break;
+    case 'route':         cmdRoute(); break;
+    case 'sound':         cmdSound(); break;
+    case 'desktop':       cmdDesktop(); break;
+    case 'codex-notify':  await cmdCodexNotify(); break;
+    default:
+      process.stderr.write(`notify.mjs: unknown command "${cmd}"\n`);
+      process.exit(1);
+  }
 }
+
+await main();

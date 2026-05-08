@@ -5,6 +5,7 @@
  * or when the plan artifacts are incomplete enough that delivery is not trustworthy.
  */
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { getAdvisorEvidenceStatus } from './advisor-state.mjs'
 import { getCloseoutEvidenceStatus } from './closeout-state.mjs'
 import { getAdvisorRequirement, getVisualValidationRequirement } from './plan-contract.mjs'
@@ -129,11 +130,15 @@ function collectGateIssues(planEntries, verificationStatus, reviewStatus, adviso
   return issues
 }
 
-function main() {
-  let data = {}
+function readStdinJson() {
   try {
-    data = JSON.parse(readFileSync(0, 'utf-8'))
-  } catch {}
+    return JSON.parse(readFileSync(0, 'utf-8'))
+  } catch {
+    return {}
+  }
+}
+
+export function evaluateDeliveryGate(data = {}) {
   const cwd = data.cwd || process.cwd()
   const workflowOptions = { payload: data }
   const snapshot = getWorkflowSnapshot(cwd, workflowOptions)
@@ -146,8 +151,7 @@ function main() {
     ...workflowOptions,
   })
   if (gatePlans.length === 0) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }))
-    return
+    return { suppressOutput: true }
   }
 
   const advisorRequirements = gatePlans.map((entry) => getAdvisorRequirement(entry.contract))
@@ -177,15 +181,20 @@ function main() {
 
   const issues = collectGateIssues(gatePlans, verificationStatus, reviewStatus, advisorStatus, visualStatus, closeoutStatus)
   if (issues.length === 0) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }))
-    return
+    return { suppressOutput: true }
   }
 
-  process.stdout.write(JSON.stringify({
+  return {
     decision: 'block',
     reason: buildDeliveryBlockReason(issues, recommendation, buildDeliveryGateHint(cwd, workflowOptions)),
     suppressOutput: true,
-  }))
+  }
 }
 
-main()
+function main() {
+  process.stdout.write(JSON.stringify(evaluateDeliveryGate(readStdinJson())))
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main()
+}

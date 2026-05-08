@@ -23,10 +23,10 @@ function readManagedHookTrust(home) {
   return { expected, sections }
 }
 
-test('Codex managed notify uses a cross-platform .cmd entrypoint', () => {
-  assert.equal(CODEX_MANAGED_NOTIFY_VALUE, '["helloagents-js.cmd", "codex-notify"]')
-  assert.equal(isManagedCodexNotify('notify = ["helloagents-js", "codex-notify"]'), false)
-  assert.equal(isManagedCodexNotify('notify = ["helloagents-js", "codex-notify"] # helloagents-managed'), false)
+test('Codex managed notify uses a single cross-platform entrypoint', () => {
+  assert.equal(CODEX_MANAGED_NOTIFY_VALUE, '["helloagents-js", "codex-notify"]')
+  assert.equal(isManagedCodexNotify('notify = ["helloagents-js.cmd", "codex-notify"]'), false)
+  assert.equal(isManagedCodexNotify('notify = ["helloagents-js.cmd", "codex-notify"] # helloagents-managed'), false)
   assert.equal(isManagedCodexNotify(`${MANAGED_NOTIFY_LINE}`), true)
 })
 
@@ -87,7 +87,7 @@ test('Codex standby replaces a user-owned model_instructions_file with the manag
   assert.doesNotMatch(installedConfig, /^\s*hooks\s*=/m)
   assert.doesNotMatch(installedConfig, /UserPromptSubmit/)
   const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
-  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify route --codex --silent/)
+  assert.match(JSON.stringify(installedHooks), /helloagents-js notify route --codex --silent/)
   const managedHookTrust = readManagedHookTrust(home)
   assert.equal(managedHookTrust.sections.length, managedHookTrust.expected.length)
   for (const entry of managedHookTrust.expected) {
@@ -133,8 +133,8 @@ test('Codex standby merges standalone hooks without writing hook blocks into con
 
   const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
   assert.match(JSON.stringify(installedHooks), /node \\"other\.mjs\\"/)
-  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify inject --codex --silent/)
-  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify stop --codex/)
+  assert.match(JSON.stringify(installedHooks), /helloagents-js notify inject --codex --silent/)
+  assert.match(JSON.stringify(installedHooks), /helloagents-js notify stop --codex/)
   const managedHookTrust = readManagedHookTrust(home)
   assert.equal(managedHookTrust.sections.length, managedHookTrust.expected.length)
 
@@ -166,7 +166,7 @@ test('Codex global also installs standalone hooks outside config.toml', () => {
   assert.doesNotMatch(config, /UserPromptSubmit/)
 
   const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
-  assert.match(JSON.stringify(installedHooks), /helloagents-js\.cmd notify route --codex --silent/)
+  assert.match(JSON.stringify(installedHooks), /helloagents-js notify route --codex --silent/)
   const managedHookTrust = readManagedHookTrust(home)
   assert.equal(managedHookTrust.sections.length, managedHookTrust.expected.length)
 

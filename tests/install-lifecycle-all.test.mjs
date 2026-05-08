@@ -39,11 +39,11 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const claudeSettingsText = JSON.stringify(readJson(join(home, '.claude', 'settings.json')))
   const geminiSettingsText = JSON.stringify(readJson(join(home, '.gemini', 'settings.json')))
-  assert.match(claudeSettingsText, /helloagents-js\.cmd notify/)
-  assert.match(claudeSettingsText, /helloagents-js\.cmd guard/)
+  assert.match(claudeSettingsText, /helloagents-js notify/)
+  assert.match(claudeSettingsText, /helloagents-js guard/)
   assert.doesNotMatch(claudeSettingsText, /scripts\/notify\.mjs/)
-  assert.match(geminiSettingsText, /helloagents-js\.cmd notify/)
-  assert.match(geminiSettingsText, /helloagents-js\.cmd guard/)
+  assert.match(geminiSettingsText, /helloagents-js notify/)
+  assert.match(geminiSettingsText, /helloagents-js guard/)
   assert.doesNotMatch(geminiSettingsText, /scripts\/notify\.mjs/)
 
   const codexConfigPath = join(home, '.codex', 'config.toml')

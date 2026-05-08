@@ -271,6 +271,81 @@ test('Codex native notify consumes waiting closeout once and Stop does not synth
   assert.equal(evidence.source, 'codex-notify')
 })
 
+test('Codex managed Stop hook takes over complete closeout and native notify stays silent', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-codex-managed-stop-')
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+  const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
+  const hookPayload = {
+    cwd: project,
+    session_id: '12345678',
+    turn_id: 'turn-1',
+    last_assistant_message: '任务已完成。',
+  }
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+  writeText(
+    join(home, '.codex', 'hooks.json'),
+    JSON.stringify({
+      hooks: {
+        Stop: [
+          {
+            matcher: '',
+            hooks: [
+              { type: 'command', command: 'helloagents-js notify stop --codex' },
+            ],
+          },
+        ],
+      },
+    }, null, 2) + '\n',
+  )
+
+  let result = runNode(turnStateScript, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      payload: hookPayload,
+      role: 'main',
+      kind: 'complete',
+      phase: 'closeout',
+    }),
+  })
+  parseStdoutJson(result)
+
+  result = runNode(join(pkgRoot, 'cli.mjs'), [
+    'codex-notify',
+    JSON.stringify({ ...hookPayload, type: 'agent-turn-complete', client: 'codex-tui' }),
+  ], {
+    cwd: project,
+    env,
+  })
+  assert.equal(result.status, 0, result.stderr || result.stdout)
+  assert.equal(result.stdout, '')
+
+  result = runNode(notifyScript, ['stop', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify(hookPayload),
+  })
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.suppressOutput, true)
+  assert.equal(payload.decision, undefined)
+
+  const evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
+    session: '12345678',
+  }))
+  assert.equal(evidence.turnId, 'turn-1')
+  assert.equal(evidence.source, 'stop')
+  assert.equal(evidence.turnKind, 'complete')
+})
+
 test('project active session keeps hook and local turn-state writes in one directory', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

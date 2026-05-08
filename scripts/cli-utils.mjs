@@ -132,9 +132,9 @@ export function cleanSettingsHooks(settingsPath, cleanPermissions = false) {
 
 function rewriteHookCommandToCli(command = '', pathVar = '') {
   const replacements = new Map([
-    [`node "${pathVar}/scripts/notify.mjs"`, 'helloagents-js.cmd notify'],
-    [`node "${pathVar}/scripts/guard.mjs"`, 'helloagents-js.cmd guard'],
-    [`node "${pathVar}/scripts/ralph-loop.mjs"`, 'helloagents-js.cmd ralph-loop'],
+    [`node "${pathVar}/scripts/notify.mjs"`, 'helloagents-js notify'],
+    [`node "${pathVar}/scripts/guard.mjs"`, 'helloagents-js guard'],
+    [`node "${pathVar}/scripts/ralph-loop.mjs"`, 'helloagents-js ralph-loop'],
   ]);
 
   let next = command;

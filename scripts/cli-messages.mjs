@@ -87,7 +87,7 @@ HelloAGENTS v${pkgVersion} — The orchestration kernel for AI CLIs
 ${msg('安装', 'Install')}:
   npm install -g helloagents  ${msg('（安装命令并同步稳定运行根目录；CLI 部署需显式执行 helloagents install ...）', '(installs the command and syncs the stable runtime root; deploy to CLIs explicitly with helloagents install ...)')}
   HELLOAGENTS=codex:global npm install -g helloagents
-  helloagents-js.cmd         ${msg('（受管宿主配置的跨平台稳定入口）', '(cross-platform stable entrypoint for managed host configs)')}
+  helloagents-js             ${msg('（受管宿主配置的跨平台稳定入口）', '(cross-platform stable entrypoint for managed host configs)')}
 
 ${msg('模式切换', 'Mode switching')}:
   helloagents --global     ${msg('全局模式（自动尝试 Claude/Gemini 插件或扩展；Codex 自动装原生本地插件）', 'Global mode (auto-attempts Claude/Gemini plugins or extensions; native local plugin auto-install for Codex)')}
