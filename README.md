@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.23-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.24-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -406,6 +406,8 @@ $env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https:/
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
+The PowerShell wrapper now forwards the same npm arguments as `install.sh`, so install, update, cleanup, uninstall, and `switch-branch` stay on the same lifecycle path.
+
 ### Branch switching
 
 `switch-branch` installs the requested npm/GitHub ref first, then syncs host CLIs through npm scripts so it does not depend on the `helloagents` executable during updates:
@@ -643,8 +645,10 @@ Codex is rules-file driven by default.
 - standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
 - standby writes a managed `notify = ["helloagents-js.cmd", "codex-notify"]` command for closeout notification
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
+- install and update also sync HelloAGENTS-managed Codex hook trust state in `~/.codex/config.toml`, so Codex 0.129.0+ does not re-prompt for the managed hooks
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
+- cleanup removes only the HelloAGENTS-managed hook trust entries and keeps user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
@@ -658,11 +662,12 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 107 tests and covers:
+The current suite includes 111 tests and covers:
 
 - install, update, uninstall, cleanup, and mode switching
+- one-shot PowerShell lifecycle dispatch for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex config merge and restore behavior
-- Codex managed `model_instructions_file`, `notify`, `hooks.json`, local plugin, marketplace, and cache behavior
+- Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior

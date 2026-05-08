@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.23-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.24-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -406,6 +406,8 @@ $env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https:/
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
+PowerShell 包装脚本现在会传递与 `install.sh` 相同的 npm 参数，因此安装、更新、清理、卸载和 `switch-branch` 走的是同一条生命周期链路。
+
 ### 分支切换
 
 `switch-branch` 会先安装指定 npm/GitHub ref，再通过 npm 脚本同步宿主 CLI，避免依赖更新过程中的 `helloagents` 可执行文件：
@@ -645,8 +647,10 @@ Codex 默认走规则文件驱动。
 - 标准模式写入受管 `model_instructions_file = "~/.codex/AGENTS.md"`
 - 标准模式写入受管 `notify = ["helloagents-js.cmd", "codex-notify"]` 命令用于收尾通知
 - 标准模式把静默 Codex hooks 写入 `~/.codex/hooks.json`
+- 安装和更新还会把 HelloAGENTS 受管的 Codex hook trust 状态同步到 `~/.codex/config.toml`，因此 Codex 0.129.0+ 不会再对这些受管 hooks 反复提示确认
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件流程，并同样用 `~/.codex/hooks.json` 加载静默 hooks
+- 清理时只删除 HelloAGENTS 自己写入的 hook trust 条目，不影响用户已有的 hook 状态
 - Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 HelloAGENTS 规则或路由说明
 - Codex 收尾会对 Stop hook 和原生 `codex-notify` 去重，避免同一轮重复通知
 - `/goal` 保持 Codex 原生能力；需要长程执行时，用 `helloagents codex goals enable` 显式启用
@@ -660,11 +664,12 @@ Codex 默认走规则文件驱动。
 npm test
 ```
 
-当前测试共 107 项，覆盖：
+当前测试共 111 项，覆盖：
 
 - 安装、更新、卸载、清理和模式切换
+- PowerShell 一键脚本的安装、更新、清理、卸载和分支切换分发链路
 - Claude、Gemini、Codex 的配置合并与恢复
-- Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、本地插件、marketplace 和缓存行为
+- Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、hook trust 状态、本地插件、marketplace 和缓存行为
 - Codex `/goal` 功能开关、长程路由上下文和 goal 感知命令契约
 - `helloagents doctor`
 - 项目存储和 `repo-shared`
