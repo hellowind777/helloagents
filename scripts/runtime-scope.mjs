@@ -269,6 +269,7 @@ export function writeActiveProjectSession(scope, { host = '', source = '', env =
     host,
     source,
     aliases,
+    ...(current.cleanupCheckedAt ? { cleanupCheckedAt: current.cleanupCheckedAt } : {}),
     updatedAt: new Date().toISOString(),
   })
   return activePath

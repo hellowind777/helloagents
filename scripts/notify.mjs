@@ -17,7 +17,7 @@ import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
 import { resolveNotifyHost, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
 import { normalizeNotifyPayload } from './notify-payload.mjs';
-import { cleanupProjectSessions } from './project-session-cleanup.mjs';
+import { cleanupProjectSessions, PROJECT_SESSION_CLEANUP_COOLDOWN_MS } from './project-session-cleanup.mjs';
 import { handleRouteCommand, resolveBootstrapFile } from './notify-route.mjs';
 import { readSettings, readStdinJson, output, suppressedOutput, emptySuppress } from './notify-shared.mjs';
 import { clearRouteContext, getApplicableRouteContext, writeRouteContext } from './runtime-context.mjs';
@@ -377,6 +377,7 @@ function cmdRoute() {
     clearRouteContext,
     appendReplayEvent,
     getWorkflowRecommendation,
+    recordReplayEvents: !IS_SILENT,
     suppress: (context) => IS_SILENT
       ? emptySuppress()
       : suppressedOutput(EVENT_NAME.UserPromptSubmit, context),
@@ -398,20 +399,24 @@ function cmdInject() {
     installMode: settings.install_mode || '',
     payload,
   });
-  appendReplayEvent(cwd, {
-    host: HOST,
-    event: 'session_injected',
-    source,
-    payload,
-    details: {
-      bootstrapFile,
-      installMode: settings.install_mode || '',
-      activatedProject: isProjectRuntimeActive(cwd),
-    },
-  });
+  if (!IS_SILENT) {
+    appendReplayEvent(cwd, {
+      host: HOST,
+      event: 'session_injected',
+      source,
+      payload,
+      details: {
+        bootstrapFile,
+        installMode: settings.install_mode || '',
+        activatedProject: isProjectRuntimeActive(cwd),
+      },
+    });
+  }
   clearRouteContext({ cwd, payload });
   clearTurnState(cwd, { payload });
-  cleanupProjectSessions(cwd);
+  cleanupProjectSessions(cwd, {
+    minIntervalMs: IS_SILENT ? PROJECT_SESSION_CLEANUP_COOLDOWN_MS : 0,
+  });
   if (IS_SILENT) {
     emptySuppress();
     return;

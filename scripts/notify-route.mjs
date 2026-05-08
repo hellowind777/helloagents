@@ -38,6 +38,7 @@ function routeExplicitCommand({
   appendReplayEvent,
   buildRouteInstruction,
   suppress,
+  recordReplayEvents,
 }) {
   const cmdMatch = prompt.match(/^~(\w+)/)
   if (!cmdMatch) return false
@@ -50,14 +51,16 @@ function routeExplicitCommand({
     sourceSkillName: skillName,
     payload,
   })
-  appendReplayEvent(cwd, {
-    host,
-    event: 'command_route_selected',
-    source: 'route',
-    skillName: canonicalSkillName,
-    sourceSkillName: skillName,
-    payload,
-  })
+  if (recordReplayEvents !== false) {
+    appendReplayEvent(cwd, {
+      host,
+      event: 'command_route_selected',
+      source: 'route',
+      skillName: canonicalSkillName,
+      sourceSkillName: skillName,
+      payload,
+    })
+  }
   suppress(buildRouteInstruction({
     skillName,
     extraRules: buildHelpExtraRules(skillName),
@@ -84,6 +87,7 @@ export function handleRouteCommand({
   getWorkflowRecommendation,
   suppress,
   emptySuppress,
+  recordReplayEvents = true,
 }) {
   const prompt = (payload.prompt || '').trim()
   const cwd = payload.cwd || process.cwd()
@@ -105,6 +109,7 @@ export function handleRouteCommand({
     appendReplayEvent,
     buildRouteInstruction,
     suppress,
+    recordReplayEvents,
   })) {
     return
   }
@@ -112,13 +117,15 @@ export function handleRouteCommand({
   const bootstrapFile = resolveBootstrapFile(cwd, settings, host)
   if (bootstrapFile === 'bootstrap.md') {
     clearRouteContext({ cwd, payload })
-    appendReplayEvent(cwd, {
-      host,
-      event: 'semantic_route_prompted',
-      source: 'route',
-      recommendation: getWorkflowRecommendation(cwd, { payload }),
-      payload,
-    })
+    if (recordReplayEvents !== false) {
+      appendReplayEvent(cwd, {
+        host,
+        event: 'semantic_route_prompted',
+        source: 'route',
+        recommendation: getWorkflowRecommendation(cwd, { payload }),
+        payload,
+      })
+    }
     suppress(buildSemanticRouteInstruction(cwd, payload))
     return
   }

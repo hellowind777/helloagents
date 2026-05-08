@@ -228,3 +228,25 @@ test('project session cleanup removes empty and route-only inactive sessions', (
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'route1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), false)
 })
+
+test('project session cleanup skips repeated scans inside cooldown window', () => {
+  const project = createTempDir('helloagents-project-session-cleanup-cooldown-')
+  const now = Date.now()
+
+  writeText(join(project, '.helloagents', '.keep'), '')
+  writeText(join(project, '.helloagents', 'sessions', 'active.json'), JSON.stringify({
+    workspace: 'workspace',
+    session: 'active1',
+    cleanupCheckedAt: new Date(now).toISOString(),
+    updatedAt: new Date(now).toISOString(),
+  }))
+  mkdirSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1'), { recursive: true })
+
+  const result = cleanupProjectSessions(project, {
+    now: now + 5_000,
+    minIntervalMs: 60_000,
+  })
+
+  assert.equal(result.skipped, true)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), true)
+})
