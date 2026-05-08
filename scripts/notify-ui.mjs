@@ -5,7 +5,7 @@
 import { platform } from 'node:os';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 
 const PLAT = platform();
 
@@ -55,6 +55,11 @@ function resolveWav(pkgRoot, event) {
   return existsSync(p) ? p : null;
 }
 
+function resolveSoundHelper(pkgRoot) {
+  const helperPath = join(pkgRoot, 'scripts', 'notify-sound.mjs');
+  return existsSync(helperPath) ? helperPath : '';
+}
+
 function runDetached(command, args) {
   try {
     const child = spawn(command, args, {
@@ -74,10 +79,30 @@ function shellQuote(value = '') {
   return `'${String(value).replace(/'/g, `'\\''`)}'`
 }
 
-export function playSound(pkgRoot, event) {
+function runSoundHelper(pkgRoot, event, mode = 'background') {
+  const helperPath = resolveSoundHelper(pkgRoot);
+  if (!helperPath) return false;
+
+  if (mode === 'blocking') {
+    try {
+      execFileSync(process.execPath, [helperPath, event], {
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return runDetached(process.execPath, [helperPath, event]);
+}
+
+export function playSound(pkgRoot, event, options = {}) {
   if (DISABLE_OS_NOTIFICATIONS) return;
   const wav = resolveWav(pkgRoot, event);
   if (!wav) { process.stderr.write('\x07'); return; }
+  if (runSoundHelper(pkgRoot, event, options.mode === 'blocking' ? 'blocking' : 'background')) return;
   try {
     if (PLAT === 'win32') {
       runDetached('powershell', [

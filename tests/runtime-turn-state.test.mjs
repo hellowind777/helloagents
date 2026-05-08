@@ -370,6 +370,30 @@ test('stable turn-state command entry writes state', () => {
   assert.equal(payload.payload.role, 'main')
 })
 
+test('stable turn-state command entry prefers the stable runtime root script', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-turn-state-runtime-root-')
+  const turnStateCli = join(pkgRoot, 'scripts', 'turn-state-cli.mjs')
+  const runtimeScript = join(home, '.helloagents', 'helloagents', 'scripts', 'turn-state.mjs')
+
+  writeText(runtimeScript, 'process.stdout.write(JSON.stringify({ source: "runtime-root" }))\n')
+
+  const result = runNode(turnStateCli, ['write'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      role: 'main',
+      kind: 'complete',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.source, 'runtime-root')
+})
+
 test('stable turn-state command entry supports flags and help', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

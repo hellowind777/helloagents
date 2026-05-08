@@ -35,6 +35,7 @@ export function copyEntries(sourceRoot, targetRoot, entries) {
 export function createLink(target, linkPath) {
   removeLink(linkPath);
   try {
+    ensureDir(dirname(linkPath));
     symlinkSync(target, linkPath, IS_WIN ? 'junction' : 'dir');
     return true;
   } catch { return false; }

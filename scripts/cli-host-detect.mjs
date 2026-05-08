@@ -6,6 +6,7 @@ import {
   CODEX_PLUGIN_KEY,
   CODEX_PLUGIN_NAME,
 } from './cli-codex.mjs'
+import { getStableRuntimeRoot } from './cli-runtime-root.mjs'
 import { safeJson, safeRead } from './cli-utils.mjs'
 
 const HOST_ALIASES = new Map([
@@ -68,19 +69,18 @@ function detectCodexMode(home) {
   const codexHomeLink = join(codexDir, 'helloagents')
   const codexConfig = safeRead(join(codexDir, 'config.toml')) || ''
   const marketplace = safeRead(join(home, '.agents', 'plugins', 'marketplace.json')) || ''
-  const globalPluginRoot = normalizePath(join(home, 'plugins', CODEX_PLUGIN_NAME))
+  const runtimeRoot = normalizePath(getStableRuntimeRoot(home))
   const codexHomeLinkTarget = safeRealTarget(codexHomeLink)
   if (
     existsSync(join(home, 'plugins', CODEX_PLUGIN_NAME))
     || existsSync(join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME))
     || marketplace.includes(`"name": "${CODEX_PLUGIN_NAME}"`)
     || codexConfig.includes(CODEX_PLUGIN_KEY)
-    || codexHomeLinkTarget === globalPluginRoot
   ) {
     return 'global'
   }
   if (
-    (existsSync(codexHomeLink) && codexHomeLinkTarget !== globalPluginRoot)
+    (existsSync(codexHomeLink) && codexHomeLinkTarget === runtimeRoot)
     || hasHelloagentsMarker(join(codexDir, 'AGENTS.md'))
     || codexConfig.includes('codex-notify')
     || codexConfig.includes('HelloAGENTS')

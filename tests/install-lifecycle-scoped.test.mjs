@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chmodSync, existsSync } from 'node:fs'
+import { chmodSync, existsSync, realpathSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
 import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, writeJson, writeText } from './helpers/test-env.mjs'
@@ -49,6 +49,7 @@ test('single-host update reuses tracked codex mode and cleanup leaves other CLIs
 
   runCli(pkgRoot, home, ['install', 'codex', '--global'])
   assert.ok(existsSync(pluginRoot))
+  assert.equal(realpathSync(pluginRoot), realpathSync(join(home, '.helloagents', 'helloagents')))
   assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/)
   assert.equal(readJson(configFile).host_install_modes.codex, 'global')
 
@@ -88,6 +89,7 @@ test('single-host update infers the detected codex mode when tracked config is s
   runCli(pkgRoot, home, ['update', 'codex'])
 
   assert.ok(existsSync(pluginRoot))
+  assert.equal(realpathSync(pluginRoot), realpathSync(join(home, '.helloagents', 'helloagents')))
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# detected global refresh/)
   assert.equal(readJson(configFile).host_install_modes.codex, 'global')
 })
@@ -111,6 +113,7 @@ test('all-host update preserves each CLI tracked mode when no mode flag is passe
   assert.equal(settings.host_install_modes.claude, 'standby')
   assert.equal(settings.host_install_modes.gemini, 'standby')
   assert.ok(existsSync(pluginRoot))
+  assert.equal(realpathSync(pluginRoot), realpathSync(join(home, '.helloagents', 'helloagents')))
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# refreshed global mode/)
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /# refreshed standby mode/)
 })

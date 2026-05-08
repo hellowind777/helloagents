@@ -2,7 +2,7 @@ import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import {
   ensureDir, safeJson, safeRead, safeWrite, removeIfExists,
-  readJsonOrThrow, copyEntries,
+  readJsonOrThrow,
   createLink, removeLink, injectMarkedContent, removeMarkedContent,
   cleanSettingsHooks, loadHooksWithCliEntry, mergeSettingsHooks,
 } from './cli-utils.mjs';
@@ -288,20 +288,15 @@ export function installCodexGlobal(home, pkgRoot) {
   removeIfExists(join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME));
 
   ensureDir(join(home, 'plugins'));
-  ensureDir(installedPluginRoot);
+  ensureDir(dirname(installedPluginRoot));
 
   const settings = readCarrierSettings(home);
-  copyEntries(pkgRoot, pluginRoot, CODEX_RUNTIME_ENTRIES);
-  copyEntries(pkgRoot, installedPluginRoot, CODEX_RUNTIME_ENTRIES);
-  createLink(pluginRoot, join(codexDir, 'helloagents'));
+  createLink(pkgRoot, pluginRoot);
+  createLink(pkgRoot, installedPluginRoot);
+  createLink(pkgRoot, join(codexDir, 'helloagents'));
   writeCodexRuntimeCarrier(
-    join(pluginRoot, CODEX_RUNTIME_CARRIER),
-    join(pluginRoot, 'bootstrap.md'),
-    settings,
-  );
-  writeCodexRuntimeCarrier(
-    join(installedPluginRoot, CODEX_RUNTIME_CARRIER),
-    join(installedPluginRoot, 'bootstrap.md'),
+    join(pkgRoot, CODEX_RUNTIME_CARRIER),
+    join(pkgRoot, 'bootstrap.md'),
     settings,
   );
   const homeCarrierPath = join(codexDir, CODEX_RUNTIME_CARRIER);

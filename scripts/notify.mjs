@@ -7,7 +7,12 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { playSound as _playSound, desktopNotify as _desktopNotify } from './notify-ui.mjs';
-import { beginCodexCloseoutClaim, finalizeCodexCloseoutClaim } from './notify-closeout.mjs';
+import {
+  beginCodexCloseoutClaim,
+  finalizeCodexCloseoutClaim,
+  hasCodexQuickNotifyEvidence,
+  writeCodexQuickNotifyEvidence,
+} from './notify-closeout.mjs';
 import { resolveNotificationSource } from './notify-source.mjs';
 import { buildCompactionContext, buildInjectContext, buildRouteInstruction, buildSemanticRouteInstruction, resolveCanonicalCommandSkill } from './notify-context.mjs';
 import { resolveNotifyHost, shouldIgnoreCodexNotifyClient } from './notify-events.mjs';
@@ -45,7 +50,7 @@ const GATE_MODULE_LOADERS = {
 };
 const gateEvaluatorCache = new Map();
 
-const playSound = (event) => _playSound(PKG_ROOT, event);
+const playSound = (event, options) => _playSound(PKG_ROOT, event, options);
 const desktopNotify = (event, extra) => _desktopNotify(PKG_ROOT, event, extra);
 
 function normalizeNotifyLevel(value) {
@@ -53,13 +58,13 @@ function normalizeNotifyLevel(value) {
   return [0, 1, 2, 3].includes(level) ? level : 0;
 }
 
-function notifyByLevel(event, extra, settings = getSettings()) {
+function notifyByLevel(event, extra, settings = getSettings(), options = {}) {
   const level = normalizeNotifyLevel(settings.notify_level ?? 0);
   if (level === 1) desktopNotify(event, extra);
-  if (level === 2) playSound(event);
+  if (level === 2) playSound(event, options);
   if (level === 3) {
     desktopNotify(event, extra);
-    playSound(event);
+    playSound(event, options);
   }
 }
 
@@ -294,8 +299,9 @@ function shouldEmitManagedCodexCompleteNotify(cwd, turnState, payload = {}) {
   return routeContext?.skillName !== 'auto';
 }
 
-async function processTurnCloseout(payload, turnPayload, turnState, settings = getSettings()) {
+async function processTurnCloseout(payload, turnPayload, turnState, settings = getSettings(), options = {}) {
   const cwd = turnPayload.cwd || process.cwd();
+  const skipCompleteNotify = options.skipCompleteNotify === true;
 
   if (await runTurnStopGate(turnPayload)) {
     if (turnState && turnState.kind !== 'complete') consumeMainTurnState(cwd, turnState, turnPayload);
@@ -303,7 +309,7 @@ async function processTurnCloseout(payload, turnPayload, turnState, settings = g
   }
 
   if (!turnState) {
-    notifyByLevel('complete', buildNotifyExtra(turnPayload), settings);
+    if (!skipCompleteNotify) notifyByLevel('complete', buildNotifyExtra(turnPayload), settings);
     clearRouteContext({ cwd, payload: turnPayload });
     return { blocked: false };
   }
@@ -325,7 +331,7 @@ async function processTurnCloseout(payload, turnPayload, turnState, settings = g
     return { blocked: true };
   }
 
-  notifyByLevel('complete', buildNotifyExtra(payload), settings);
+  if (!skipCompleteNotify) notifyByLevel('complete', buildNotifyExtra(payload), settings);
   consumeMainTurnState(cwd, turnState, turnPayload);
   clearRouteContext({ cwd, payload: turnPayload });
   return { blocked: false };
@@ -432,6 +438,11 @@ async function cmdStop() {
   const cwd = payload.cwd || process.cwd();
   const turnPayload = attachTurnSession(payload, cwd);
   const turnState = readMainTurnState(cwd, turnPayload);
+  const managedCodexStopHook = IS_CODEX && hasManagedCodexStopHook();
+  const skipCompleteNotify = managedCodexStopHook && hasCodexQuickNotifyEvidence(cwd, {
+    payload: turnPayload,
+    turnState,
+  });
   const closeoutClaim = IS_CODEX
     ? beginCodexCloseoutClaim(cwd, { payload: turnPayload, turnState, source: 'stop' })
     : null;
@@ -443,7 +454,9 @@ async function cmdStop() {
   let handled = false;
   let result = { blocked: false };
   try {
-    result = await processTurnCloseout(payload, turnPayload, turnState, getSettings());
+    result = await processTurnCloseout(payload, turnPayload, turnState, getSettings(), {
+      skipCompleteNotify,
+    });
     handled = true;
   } finally {
     finalizeCodexCloseoutClaim(closeoutClaim, {
@@ -458,7 +471,7 @@ async function cmdStop() {
 }
 
 function cmdSound() {
-  playSound(process.argv[3] || 'complete');
+  playSound(process.argv[3] || 'complete', { mode: 'blocking' });
 }
 
 function cmdDesktop() {
@@ -477,14 +490,19 @@ async function cmdCodexNotify() {
   if (shouldIgnoreCodexNotifyClient(client)) return;
 
   if (type === 'approval-requested') {
-    notifyByLevel('confirm', buildNotifyExtra(data));
+    notifyByLevel('confirm', buildNotifyExtra(data), getSettings(), { mode: 'blocking' });
     return;
   }
   if (type !== 'agent-turn-complete') return;
   if (hasManagedCodexStopHook()) {
     const turnState = readMainTurnState(cwd, turnPayload);
     if (shouldEmitManagedCodexCompleteNotify(cwd, turnState, turnPayload)) {
-      notifyByLevel('complete', buildNotifyExtra(data));
+      notifyByLevel('complete', buildNotifyExtra(data), getSettings(), { mode: 'blocking' });
+      writeCodexQuickNotifyEvidence(cwd, {
+        payload: turnPayload,
+        turnState,
+        event: type,
+      });
     }
     return;
   }
