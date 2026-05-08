@@ -77,8 +77,9 @@ test('workflow runtime contract keeps route and state scripts aligned', () => {
   assert.match(cliMessages, /已运行会话不会自动重载注入规则/)
 
   const notifyUi = readText(join(REPO_ROOT, 'scripts', 'notify-ui.mjs'))
-  assert.match(notifyUi, /spawnSync/)
-  assert.doesNotMatch(notifyUi, /detached: true/)
+  assert.match(notifyUi, /spawn\(/)
+  assert.match(notifyUi, /detached: true/)
+  assert.match(notifyUi, /Stop hooks do not wait/i)
 
   const cliCodex = readText(join(REPO_ROOT, 'scripts', 'cli-codex.mjs'))
   assert.match(cliCodex, /cleanupCodexGlobalResidueForStandby/)

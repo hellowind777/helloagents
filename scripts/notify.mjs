@@ -22,6 +22,7 @@ import { clearTurnState, readTurnState } from './turn-state.mjs';
 import { getWorkflowRecommendation } from './workflow-state.mjs';
 import { resolveSessionToken } from './session-token.mjs';
 import { isProjectRuntimeActive } from './runtime-scope.mjs';
+import { evaluateTurnStopGate } from './turn-stop-gate.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -116,16 +117,35 @@ function runDeliveryGate(payload) {
 }
 
 function runTurnStopGate(payload) {
-  return runGateScript({
-    payload,
-    host: HOST,
-    scriptPath: join(__dirname, 'turn-stop-gate.mjs'),
-    source: 'turn-stop-gate',
-    blockEvent: 'turn_stop_blocked',
-    timeout: 30_000,
-    appendReplayEvent,
-    output,
-  });
+  try {
+    const gateOutput = evaluateTurnStopGate(payload);
+    if (gateOutput?.decision === 'block') {
+      appendReplayEvent(payload.cwd || process.cwd(), {
+        host: HOST,
+        event: 'turn_stop_blocked',
+        source: 'turn-stop-gate',
+        reason: gateOutput.reason || '',
+        payload,
+      });
+      output(gateOutput);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    appendReplayEvent(payload.cwd || process.cwd(), {
+      host: HOST,
+      event: 'runtime_gate_error',
+      source: 'turn-stop-gate',
+      reason: `[HelloAGENTS Runtime] turn-stop-gate 执行失败，已暂停完成通知。\n原因：${error?.message || error}`,
+      payload,
+    });
+    output({
+      decision: 'block',
+      reason: `[HelloAGENTS Runtime] turn-stop-gate 执行失败，已暂停完成通知。\n原因：${error?.message || error}\n请修复脚本或重新运行验证后再报告完成。`,
+      suppressOutput: true,
+    });
+    return true;
+  }
 }
 
 function attachTurnSession(payload = {}, cwd = payload.cwd || process.cwd()) {
