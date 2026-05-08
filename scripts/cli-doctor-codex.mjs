@@ -9,6 +9,10 @@ import {
   readCodexHooksFeatureLine,
   readLegacyCodexHooksFeatureLine,
 } from './cli-codex-config.mjs'
+import {
+  buildManagedCodexHookTrustEntries,
+  readCodexHookStateSections,
+} from './cli-codex-hooks-state.mjs'
 import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
 import { readTopLevelTomlLine } from './cli-toml.mjs'
 import { loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
@@ -101,6 +105,8 @@ function appendCodexStandbyIssues(runtime, issues, checks) {
   if (!checks.codexHooksFeature) issues.push(buildDoctorIssue(runtime, 'codex-hooks-feature-disabled', 'Codex hooks 功能被显式关闭', 'Codex hooks feature is explicitly disabled'))
   if (!checks.standaloneHooks) issues.push(buildDoctorIssue(runtime, 'standby-hooks-missing', 'standby `~/.codex/hooks.json` 缺少 HelloAGENTS hooks', 'Standby `~/.codex/hooks.json` is missing HelloAGENTS hooks'))
   if (checks.standaloneHooks && !checks.standaloneHooksMatch) issues.push(buildDoctorIssue(runtime, 'standby-hooks-drift', 'standby `~/.codex/hooks.json` 与当前 hooks-codex.json 不一致', 'Standby `~/.codex/hooks.json` differs from the current hooks-codex.json'))
+  if (checks.standaloneHooks && !checks.managedHookTrust) issues.push(buildDoctorIssue(runtime, 'standby-hook-trust-missing', 'standby `config.toml` 缺少 HelloAGENTS hooks trust', 'Standby `config.toml` is missing HelloAGENTS hook trust metadata'))
+  if (checks.standaloneHooks && checks.managedHookTrust && !checks.managedHookTrustMatch) issues.push(buildDoctorIssue(runtime, 'standby-hook-trust-drift', 'standby hooks trust 与当前 hooks 定义不一致', 'Standby hook trust metadata differs from the current hooks definition'))
   if (checks.pluginRoot || checks.pluginCache || checks.marketplaceEntry || checks.pluginEnabled) {
     issues.push(buildDoctorIssue(runtime, 'standby-global-residue', 'standby 模式下仍残留 global 插件文件或配置', 'Global plugin artifacts still remain while Codex is in standby mode'))
   }
@@ -123,6 +129,8 @@ function appendCodexGlobalIssues(runtime, issues, checks, pluginVersion, cacheVe
   if (!checks.codexHooksFeature) issues.push(buildDoctorIssue(runtime, 'codex-hooks-feature-disabled', 'Codex hooks 功能被显式关闭', 'Codex hooks feature is explicitly disabled'))
   if (!checks.standaloneHooks) issues.push(buildDoctorIssue(runtime, 'global-hooks-missing', 'global `~/.codex/hooks.json` 缺少 HelloAGENTS hooks', 'Global `~/.codex/hooks.json` is missing HelloAGENTS hooks'))
   if (checks.standaloneHooks && !checks.standaloneHooksMatch) issues.push(buildDoctorIssue(runtime, 'global-hooks-drift', 'global `~/.codex/hooks.json` 与当前 hooks-codex.json 不一致', 'Global `~/.codex/hooks.json` differs from the current hooks-codex.json'))
+  if (checks.standaloneHooks && !checks.managedHookTrust) issues.push(buildDoctorIssue(runtime, 'global-hook-trust-missing', 'global `config.toml` 缺少 HelloAGENTS hooks trust', 'Global `config.toml` is missing HelloAGENTS hook trust metadata'))
+  if (checks.standaloneHooks && checks.managedHookTrust && !checks.managedHookTrustMatch) issues.push(buildDoctorIssue(runtime, 'global-hook-trust-drift', 'global hooks trust 与当前 hooks 定义不一致', 'Global hook trust metadata differs from the current hooks definition'))
   if (pluginVersion && !checks.pluginVersionMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-version-drift', 'global 插件根目录版本与当前包版本不一致', 'Global plugin root version does not match the current package version'))
   if (cacheVersion && !checks.pluginCacheVersionMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-version-drift', 'global 插件缓存版本与当前包版本不一致', 'Global plugin cache version does not match the current package version'))
   if (checks.homeLink) issues.push(buildDoctorIssue(runtime, 'global-standby-link-residue', 'global 模式下仍残留 standby home 链接', 'Standby home link still remains while Codex is in global mode'))
@@ -141,6 +149,12 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
   const marketplace = safeJson(join(runtime.home, '.agents', 'plugins', 'marketplace.json')) || {}
   const modelInstructionsLine = readTopLevelTomlLine(codexConfig, 'model_instructions_file')
   const expectedHooks = readExpectedHooks(runtime, 'hooks-codex.json', '${PLUGIN_ROOT}')
+  const expectedHookTrust = buildManagedCodexHookTrustEntries(join(codexDir, 'hooks.json'), codexHooks)
+  const managedHookTrust = new Map(
+    readCodexHookStateSections(codexConfig)
+      .filter((section) => section.managed)
+      .map((section) => [section.key, section.trustedHash]),
+  )
   const hooksFeatureLine = readCodexHooksFeatureLine(codexConfig)
   const goalsFeatureLine = readCodexGoalsFeatureLine(codexConfig)
   const legacyHooksFeatureLine = readLegacyCodexHooksFeatureLine(codexConfig)
@@ -162,6 +176,8 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
       legacyCodexHooksFeature: Boolean(legacyHooksFeatureLine),
       standaloneHooks: JSON.stringify(codexHooks.hooks || {}).includes('helloagents'),
       standaloneHooksMatch: managedHooksMatch(codexHooks.hooks || {}, expectedHooks),
+      managedHookTrust: expectedHookTrust.every((entry) => managedHookTrust.has(entry.key)),
+      managedHookTrustMatch: expectedHookTrust.every((entry) => managedHookTrust.get(entry.key) === entry.trustedHash),
       pluginRoot: existsSync(pluginRoot),
       pluginCache: existsSync(pluginCacheRoot),
       pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings),

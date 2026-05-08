@@ -1,7 +1,7 @@
 import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import {
-  ensureDir, safeRead, safeWrite, removeIfExists,
+  ensureDir, safeJson, safeRead, safeWrite, removeIfExists,
   readJsonOrThrow, copyEntries,
   createLink, removeLink, injectMarkedContent, removeMarkedContent,
   cleanSettingsHooks, loadHooksWithCliEntry, mergeSettingsHooks,
@@ -26,6 +26,10 @@ import {
   restoreCodexTopLevelConfig,
   upsertCodexPluginConfig,
 } from './cli-codex-config.mjs';
+import {
+  cleanupManagedCodexHookTrust,
+  syncManagedCodexHookTrust,
+} from './cli-codex-hooks-state.mjs';
 import {
   readTopLevelTomlLine,
   readTopLevelTomlBlock,
@@ -132,11 +136,14 @@ function writeCodexRuntimeCarrier(filePath, bootstrapPath, settings) {
 function installCodexStandaloneHooks(home, pkgRoot) {
   const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks-codex.json', '${PLUGIN_ROOT}');
   if (!hooksData) return false;
-  mergeSettingsHooks(join(home, '.codex', CODEX_HOOKS_BASENAME), hooksData);
+  const hooksPath = join(home, '.codex', CODEX_HOOKS_BASENAME);
+  mergeSettingsHooks(hooksPath, hooksData);
+  syncManagedCodexHookTrust(join(home, '.codex', CODEX_CONFIG_BASENAME), hooksPath, safeJson(hooksPath));
   return true;
 }
 
 function cleanupCodexStandaloneHooks(home) {
+  cleanupManagedCodexHookTrust(join(home, '.codex', CODEX_CONFIG_BASENAME));
   cleanSettingsHooks(join(home, '.codex', CODEX_HOOKS_BASENAME));
 }
 
