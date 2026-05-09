@@ -13,6 +13,10 @@ export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed'
 export const CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH = '~/.codex/AGENTS.md'
 export const CODEX_MANAGED_NOTIFY_COMMAND = 'helloagents-js'
 export const CODEX_MANAGED_NOTIFY_VALUE = `["${CODEX_MANAGED_NOTIFY_COMMAND}", "codex-notify"]`
+const CODEX_MANAGED_NOTIFY_LEGACY_VALUES = [
+  `["${CODEX_MANAGED_NOTIFY_COMMAND}.cmd", "codex-notify"]`,
+  `["${CODEX_MANAGED_NOTIFY_COMMAND}.exe", "codex-notify"]`,
+]
 export const CODEX_MANAGED_TUI_NOTIFICATIONS_VALUE = '["plan-mode-prompt"]'
 export const CODEX_HOOKS_FEATURE_KEY = 'hooks'
 export const CODEX_LEGACY_HOOKS_FEATURE_KEY = 'codex_hooks'
@@ -168,7 +172,11 @@ export function isManagedCodexModelInstruction(line = '') {
 
 export function isManagedCodexNotify(line = '') {
   const value = String(line || '').replace(/\\/g, '/')
-  return value.includes(CODEX_MANAGED_NOTIFY_VALUE)
+  return value.includes(CODEX_MANAGED_TOML_COMMENT)
+    && (
+      value.includes(CODEX_MANAGED_NOTIFY_VALUE)
+      || CODEX_MANAGED_NOTIFY_LEGACY_VALUES.some((entry) => value.includes(entry))
+    )
 }
 
 export function isManagedCodexTuiNotifications(line = '') {

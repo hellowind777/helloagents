@@ -32,7 +32,7 @@ function readManagedHookTrust(home) {
 test('Codex managed notify uses a single cross-platform entrypoint', () => {
   assert.equal(CODEX_MANAGED_NOTIFY_VALUE, '["helloagents-js", "codex-notify"]')
   assert.equal(isManagedCodexNotify('notify = ["helloagents-js.cmd", "codex-notify"]'), false)
-  assert.equal(isManagedCodexNotify('notify = ["helloagents-js.cmd", "codex-notify"] # helloagents-managed'), false)
+  assert.equal(isManagedCodexNotify('notify = ["helloagents-js.cmd", "codex-notify"] # helloagents-managed'), true)
   assert.equal(isManagedCodexNotify(`${MANAGED_NOTIFY_LINE}`), true)
 })
 
@@ -473,6 +473,30 @@ test('Codex cleanup restores user-owned notify even when it uses codex-notify', 
   const cleaned = readText(join(home, '.codex', 'config.toml'))
   assert.match(cleaned, /notify = \["node", "C:\/tools\/custom-notify\.mjs", "codex-notify"\]/)
   assert.doesNotMatch(cleaned, /helloagents-managed/)
+})
+
+test('Codex cleanup removes legacy managed notify variants from backup state', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'notify = ["helloagents-js.cmd", "codex-notify"] # helloagents-managed',
+      '',
+      '[features]',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  const cleaned = readText(join(home, '.codex', 'config.toml'))
+  assert.doesNotMatch(cleaned, /helloagents-js(?:\.cmd|\.exe)?", "codex-notify"/)
+  assert.match(cleaned, /\[features\]\nexperimental = true/)
 })
 
 test('Codex install and cleanup preserve multiline user notify arrays', () => {
