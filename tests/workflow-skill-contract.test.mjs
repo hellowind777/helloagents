@@ -33,6 +33,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(helloagents, /不得把等待输入包装成完成态/)
   assert.match(helloagents, /helloagents-turn-state write --kind complete --role main/)
   assert.match(helloagents, /普通问候、普通问答、T0 只读分析和一次性解释不调用/)
+  assert.match(helloagents, /普通问答、解释、分析、改写、邮件回复和其他一次性交付虽然不进入完整实现、验证或收尾流程，但仍属于交付/)
+  assert.match(helloagents, /请求已满足时直接结束，不追加无执行价值的邀约式收尾、第二版或变体/)
   assert.match(helloagents, /不要查找、读取或拼接 `turn-state\.mjs` 源码路径/)
   assert.match(helloagents, /blocker\.target/)
   assert.match(helloagents, /`🔄 下一步` 写真实动作/)
