@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.26-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.27-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -664,10 +664,10 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 118 tests and covers:
+The current suite includes 121 tests and covers:
 
 - install, update, uninstall, cleanup, and mode switching
-- one-shot PowerShell lifecycle dispatch plus shell-wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
+- one-shot shell and PowerShell lifecycle dispatch, plus wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex config merge and restore behavior
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
