@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.25-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.26-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -311,7 +311,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -664,10 +664,10 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 116 tests and covers:
+The current suite includes 118 tests and covers:
 
 - install, update, uninstall, cleanup, and mode switching
-- one-shot PowerShell lifecycle dispatch for install, update, cleanup, uninstall, and branch switching
+- one-shot PowerShell lifecycle dispatch plus shell-wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex config merge and restore behavior
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
