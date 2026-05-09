@@ -26,15 +26,14 @@ if ($env:HELLOAGENTS) {
 }
 
 if (-not $Target) { $Target = "all" }
-if (-not $Mode) { $Mode = "standby" }
 $Target = $Target.ToLowerInvariant()
-$Mode = $Mode.ToLowerInvariant()
+if ($Mode) { $Mode = $Mode.ToLowerInvariant() }
 
 if (@("all", "claude", "gemini", "codex") -notcontains $Target) {
     throw "Unsupported HELLOAGENTS target: $Target"
 }
 
-if (@("standby", "global") -notcontains $Mode) {
+if ($Mode -and @("standby", "global") -notcontains $Mode) {
     throw "Unsupported HELLOAGENTS mode: $Mode"
 }
 
@@ -57,16 +56,23 @@ function Invoke-Npm {
 function Enable-PostinstallDeploy {
     $env:HELLOAGENTS_DEPLOY = "1"
     $env:HELLOAGENTS_TARGET = $Target
-    $env:HELLOAGENTS_MODE = $Mode
+    if ($Mode) {
+        $env:HELLOAGENTS_MODE = $Mode
+    } else {
+        $env:HELLOAGENTS_MODE = "standby"
+    }
 }
 
 function Invoke-HostScript {
     param([string]$ScriptName)
+    $scriptArgs = @("explore", "-g", "helloagents", "--", "npm", "run", $ScriptName, "--")
     if ($Target -eq "all") {
-        Invoke-Npm -NpmArgs @("explore", "-g", "helloagents", "--", "npm", "run", $ScriptName, "--", "--all", "--$Mode")
+        $scriptArgs += "--all"
     } else {
-        Invoke-Npm -NpmArgs @("explore", "-g", "helloagents", "--", "npm", "run", $ScriptName, "--", $Target, "--$Mode")
+        $scriptArgs += $Target
     }
+    if ($Mode) { $scriptArgs += "--$Mode" }
+    Invoke-Npm -NpmArgs $scriptArgs
 }
 
 function Sync-Hosts {
