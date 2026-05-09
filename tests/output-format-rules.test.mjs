@@ -12,8 +12,10 @@ function read(relativePath) {
 test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-out replies only', () => {
   for (const file of ['bootstrap.md', 'bootstrap-lite.md']) {
     const content = read(file);
-    assert.ok(content.indexOf('### 完整交付（强制）') < content.indexOf('### 表达与语气（强制）'));
-    assert.match(content, /表达与语气（强制）/);
+    assert.match(content, /## 交付标准（强制）/);
+    assert.match(content, /### 产出质量/);
+    assert.ok(content.indexOf('### 交付纪律') < content.indexOf('### 表达与语气'));
+    assert.match(content, /### 表达与语气/);
     assert.match(content, /都必须同时遵守本节全部规则/);
     assert.match(content, /普通问答、解释、分析、改写、邮件回复和其他一次性交付/);
     assert.match(content, /请求已满足时直接结束，不追加无执行价值的延伸、第二版或邀约式收尾/);
@@ -71,7 +73,7 @@ test('skill and help docs describe output_format as final-summary only', () => {
   assert.match(helloagentsSkill, /不在正文里再次输出 `【HelloAGENTS】` 或第二个 `🔄 下一步`/);
 
   const helloWriteSkill = read('skills/hello-write/SKILL.md');
-  assert.match(helloWriteSkill, /通用表达与语气要求/);
+  assert.match(helloWriteSkill, /通用交付纪律与表达与语气要求/);
   assert.match(helloWriteSkill, /邮件回复、问答说明、措辞改写/);
   assert.match(helloWriteSkill, /默认交付一个可直接使用的最终文本/);
   assert.match(helloWriteSkill, /先直接给可用文本或结论，再补必要说明/);

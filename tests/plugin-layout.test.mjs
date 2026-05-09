@@ -64,8 +64,8 @@ test('bootstrap path rules no longer depend on host-name placeholders or wrong c
     assert.doesNotMatch(content, /当前CLI名称/);
     assert.doesNotMatch(content, /本文件所在目录\/skills\/commands/);
     assert.doesNotMatch(content, /本文件所在目录\/skills\/\{技能名\}/);
-    assert.match(content, /## \.helloagents\/ 目录/);
-    assert.match(content, /## 项目上下文/);
+    assert.match(content, /### \.helloagents\/ 目录/);
+    assert.match(content, /## 项目存储与上下文/);
     assert.match(content, /路径定义：`\{HELLOAGENTS_READ_ROOT\}`/);
     assert.match(content, /不要读取项目路径|不要.*项目目录.*HelloAGENTS skills 路径/);
     assert.match(content, /同一路径的配置文件、模块、SKILL、模板只读一次/);
