@@ -13,6 +13,7 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
   for (const file of ['bootstrap.md', 'bootstrap-lite.md']) {
     const content = read(file);
     assert.match(content, /语言与表述（强制）/);
+    assert.match(content, /都必须同时遵守本节全部规则/);
     assert.match(content, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);
     assert.match(content, /准确优先于压缩/);
     assert.match(content, /不输出黑话、营销话、内部化表述或空泛形容/);
