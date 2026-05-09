@@ -16,7 +16,7 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);
     assert.match(content, /准确优先于压缩/);
     assert.match(content, /不输出黑话、营销话、内部化表述或空泛形容/);
-    assert.match(content, /不输出无执行价值的客套、邀约、重复确认、能力陈述或空泛建议/);
+    assert.match(content, /不输出客套、邀约、重复确认、能力陈述或空泛建议/);
     assert.match(content, /优先在原条目内收敛表达/);
     assert.match(content, /同步删除重复表述/);
     assert.match(content, /适用条件：/);
