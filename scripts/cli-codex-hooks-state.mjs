@@ -25,6 +25,13 @@ const EVENTS_WITH_MATCHER = new Set([
   'SessionStart',
 ])
 
+// Codex persists hook trust under `[hooks.state."<key>"]`, where the key is
+// derived from the discovered hooks.json absolute path plus event/group/handler
+// indexes. That makes hook trust machine-local materialized state rather than a
+// portable config value. Keep portable config such as
+// `model_instructions_file = "~/.codex/AGENTS.md"` separate from this generated
+// trust metadata and regenerate it on each machine during install/update.
+
 const HOOK_STATE_HEADER_RE = /^\[hooks\.state\."((?:\\.|[^"])*)"\](?:\s*#.*)?$/
 
 function normalizeLineEndings(text = '') {

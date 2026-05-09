@@ -110,7 +110,7 @@ ${msg('分支切换', 'Branch switching')}:
 ${msg('诊断', 'Diagnostics')}:
   helloagents doctor
   helloagents doctor codex --json
-  ${msg('检查 carrier、链接、hooks、配置注入、Codex 插件安装、受管 model_instructions_file 指向与版本漂移', 'Checks carriers, links, hooks, config injections, Codex plugin installation, managed model_instructions_file targeting, and version drift')}
+  ${msg('检查 carrier、链接、hooks、配置注入、Codex 插件安装、受管 model_instructions_file 指向、Codex hook trust 本机状态与版本漂移', 'Checks carriers, links, hooks, config injections, Codex plugin installation, managed model_instructions_file targeting, machine-local Codex hook trust state, and version drift')}
 
 ${msg('Codex /goal', 'Codex /goal')}:
   helloagents codex goals status

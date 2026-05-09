@@ -642,11 +642,12 @@ Default shape:
 Codex is rules-file driven by default.
 
 - standby writes `~/.codex/AGENTS.md`
-- standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
+- standby writes a portable managed `model_instructions_file = "~/.codex/AGENTS.md"`
 - standby writes a managed `notify = ["helloagents-js", "codex-notify"]` command for closeout notification
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
 - Codex `SessionStart` stays silent and reads the current `~/.helloagents/helloagents.json` at runtime instead of baking a config snapshot into `config.toml`, so first-turn and post-compaction settings stay current
 - install and update also sync HelloAGENTS-managed Codex hook trust state in `~/.codex/config.toml`, so Codex 0.129.0+ does not re-prompt for the managed hooks
+- that hook trust state is machine-local generated metadata derived from the current absolute `~/.codex/hooks.json` path; unlike `model_instructions_file = "~/.codex/AGENTS.md"`, it is not portable config and should be regenerated on each machine
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
 - cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
