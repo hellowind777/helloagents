@@ -1,8 +1,8 @@
 import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import {
-  ensureDir, safeRead, safeWrite, removeIfExists,
-  readJsonOrThrow, copyEntries,
+  ensureDir, safeJson, safeRead, safeWrite, removeIfExists,
+  readJsonOrThrow,
   createLink, removeLink, injectMarkedContent, removeMarkedContent,
   cleanSettingsHooks, loadHooksWithCliEntry, mergeSettingsHooks,
 } from './cli-utils.mjs';
@@ -12,6 +12,7 @@ import {
   CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   CODEX_PLUGIN_CONFIG_HEADER,
   installCodexManagedTopLevelConfig,
+  installCodexManagedTuiConfig,
   isManagedCodexBackupInstruction,
   isManagedCodexGoalsFeature,
   isManagedCodexModelInstruction,
@@ -20,12 +21,17 @@ import {
   readCodexGoalsFeatureLine,
   readLegacyCodexHooksFeatureLine,
   removeCodexGoalsFeatureConfig,
+  removeCodexManagedTuiConfig,
   removeLegacyManagedCodexHooksFeatureConfig,
   removeCodexPluginConfig,
   restoreCodexGoalsFeatureConfig,
   restoreCodexTopLevelConfig,
   upsertCodexPluginConfig,
 } from './cli-codex-config.mjs';
+import {
+  cleanupManagedCodexHookTrust,
+  syncManagedCodexHookTrust,
+} from './cli-codex-hooks-state.mjs';
 import {
   readTopLevelTomlLine,
   readTopLevelTomlBlock,
@@ -132,11 +138,14 @@ function writeCodexRuntimeCarrier(filePath, bootstrapPath, settings) {
 function installCodexStandaloneHooks(home, pkgRoot) {
   const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks-codex.json', '${PLUGIN_ROOT}');
   if (!hooksData) return false;
-  mergeSettingsHooks(join(home, '.codex', CODEX_HOOKS_BASENAME), hooksData);
+  const hooksPath = join(home, '.codex', CODEX_HOOKS_BASENAME);
+  mergeSettingsHooks(hooksPath, hooksData);
+  syncManagedCodexHookTrust(join(home, '.codex', CODEX_CONFIG_BASENAME), hooksPath, safeJson(hooksPath));
   return true;
 }
 
 function cleanupCodexStandaloneHooks(home) {
+  cleanupManagedCodexHookTrust(join(home, '.codex', CODEX_CONFIG_BASENAME));
   cleanSettingsHooks(join(home, '.codex', CODEX_HOOKS_BASENAME));
 }
 
@@ -160,6 +169,7 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
   if (shouldRestoreCodexGoalsFeature) {
     toml = removeCodexGoalsFeatureConfig(toml);
   }
+  toml = removeCodexManagedTuiConfig(toml);
   if (shouldRemoveLegacyCodexHooksFeature) {
     toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   }
@@ -209,6 +219,7 @@ export function installCodexStandby(home, pkgRoot) {
   toml = installCodexManagedTopLevelConfig(toml, {
     modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
+  toml = installCodexManagedTuiConfig(toml);
   toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   safeWrite(configPath, toml);
   installCodexStandaloneHooks(home, pkgRoot);
@@ -277,20 +288,15 @@ export function installCodexGlobal(home, pkgRoot) {
   removeIfExists(join(codexDir, 'plugins', 'cache', CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_NAME));
 
   ensureDir(join(home, 'plugins'));
-  ensureDir(installedPluginRoot);
+  ensureDir(dirname(installedPluginRoot));
 
   const settings = readCarrierSettings(home);
-  copyEntries(pkgRoot, pluginRoot, CODEX_RUNTIME_ENTRIES);
-  copyEntries(pkgRoot, installedPluginRoot, CODEX_RUNTIME_ENTRIES);
-  createLink(pluginRoot, join(codexDir, 'helloagents'));
+  createLink(pkgRoot, pluginRoot);
+  createLink(pkgRoot, installedPluginRoot);
+  createLink(pkgRoot, join(codexDir, 'helloagents'));
   writeCodexRuntimeCarrier(
-    join(pluginRoot, CODEX_RUNTIME_CARRIER),
-    join(pluginRoot, 'bootstrap.md'),
-    settings,
-  );
-  writeCodexRuntimeCarrier(
-    join(installedPluginRoot, CODEX_RUNTIME_CARRIER),
-    join(installedPluginRoot, 'bootstrap.md'),
+    join(pkgRoot, CODEX_RUNTIME_CARRIER),
+    join(pkgRoot, 'bootstrap.md'),
     settings,
   );
   const homeCarrierPath = join(codexDir, CODEX_RUNTIME_CARRIER);
@@ -304,6 +310,7 @@ export function installCodexGlobal(home, pkgRoot) {
   toml = installCodexManagedTopLevelConfig(toml, {
     modelInstructionsPath: CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   });
+  toml = installCodexManagedTuiConfig(toml);
   toml = removeLegacyManagedCodexHooksFeatureConfig(toml);
   toml = upsertCodexPluginConfig(toml);
   safeWrite(configPath, toml);

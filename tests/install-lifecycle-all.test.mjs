@@ -39,11 +39,11 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const claudeSettingsText = JSON.stringify(readJson(join(home, '.claude', 'settings.json')))
   const geminiSettingsText = JSON.stringify(readJson(join(home, '.gemini', 'settings.json')))
-  assert.match(claudeSettingsText, /helloagents-js\.cmd notify/)
-  assert.match(claudeSettingsText, /helloagents-js\.cmd guard/)
+  assert.match(claudeSettingsText, /helloagents-js notify/)
+  assert.match(claudeSettingsText, /helloagents-js guard/)
   assert.doesNotMatch(claudeSettingsText, /scripts\/notify\.mjs/)
-  assert.match(geminiSettingsText, /helloagents-js\.cmd notify/)
-  assert.match(geminiSettingsText, /helloagents-js\.cmd guard/)
+  assert.match(geminiSettingsText, /helloagents-js notify/)
+  assert.match(geminiSettingsText, /helloagents-js guard/)
   assert.doesNotMatch(geminiSettingsText, /scripts\/notify\.mjs/)
 
   const codexConfigPath = join(home, '.codex', 'config.toml')
@@ -53,6 +53,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(codexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
   assert.doesNotMatch(codexConfig, /developer_instructions\s*=/)
   assert.match(codexConfig, /codex-notify/)
+  assert.match(codexConfig, /\[tui\]\nnotifications = \["plan-mode-prompt"\] # helloagents-managed/)
   assert.ok(codexConfig.startsWith([
     'model_instructions_file = "~/.codex/AGENTS.md" # helloagents-managed',
     MANAGED_NOTIFY_LINE,
@@ -79,7 +80,9 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   const pluginCacheRoot = join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local')
   assert.ok(existsSync(pluginRoot))
   assert.ok(existsSync(pluginCacheRoot))
-  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pluginRoot)
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
+  assert.equal(realTarget(pluginRoot), runtimeRoot)
+  assert.equal(realTarget(pluginCacheRoot), runtimeRoot)
   assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
   assert.doesNotMatch(readText(join(pluginRoot, 'AGENTS.md')), /## 当前用户设置/)
@@ -87,6 +90,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const globalCodexConfig = readText(codexConfigPath)
   assert.match(globalCodexConfig, /model_instructions_file = "~\/\.codex\/AGENTS\.md" # helloagents-managed/)
+  assert.match(globalCodexConfig, /\[tui\]\nnotifications = \["plan-mode-prompt"\] # helloagents-managed/)
   assert.ok(globalCodexConfig.startsWith([
     'model_instructions_file = "~/.codex/AGENTS.md" # helloagents-managed',
     MANAGED_NOTIFY_LINE,
@@ -118,6 +122,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   const finalCodexConfig = readText(codexConfigPath)
   assert.match(finalCodexConfig, /C:\/original\/bootstrap\.md/)
   assert.match(finalCodexConfig, /notify = \["node", "C:\/original\/notify\.mjs", "codex-notify"\]/)
+  assert.doesNotMatch(finalCodexConfig, /plan-mode-prompt/)
   assert.doesNotMatch(finalCodexConfig, /developer_instructions\s*=/)
 })
 
@@ -153,7 +158,8 @@ test('postinstall can deploy from compact HELLOAGENTS spec', () => {
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(existsSync(pluginRoot))
-  assert.equal(realTarget(join(home, '.codex', 'helloagents')), pluginRoot)
+  assert.equal(realTarget(join(home, '.codex', 'helloagents')), join(home, '.helloagents', 'helloagents'))
+  assert.equal(realTarget(pluginRoot), join(home, '.helloagents', 'helloagents'))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.codex, 'global')
 })
 

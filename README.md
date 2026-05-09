@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.23-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.25-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -233,7 +233,7 @@ npm install -g helloagents
 If another executable named `helloagents` already exists in your `PATH`, use the stable managed-entry alias:
 
 ```bash
-helloagents-js.cmd
+helloagents-js
 ```
 
 By default, `postinstall` installs the package command, initializes `~/.helloagents/helloagents.json`, and syncs runtime files to `~/.helloagents/helloagents`. No host CLI is deployed unless you set `HELLOAGENTS=target[:mode]`, such as `HELLOAGENTS=codex:global`.
@@ -313,7 +313,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
 
-Host configs use the stable `helloagents-js.cmd` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`.
+Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
 #### npm commands
 
@@ -406,6 +406,8 @@ $env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https:/
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
+The PowerShell wrapper now forwards the same npm arguments as `install.sh`, so install, update, cleanup, uninstall, and `switch-branch` stay on the same lifecycle path.
+
 ### Branch switching
 
 `switch-branch` installs the requested npm/GitHub ref first, then syncs host CLIs through npm scripts so it does not depend on the `helloagents` executable during updates:
@@ -439,7 +441,7 @@ npm uninstall -g helloagents
 |-----|----------------|----------------|
 | Claude Code | native plugin install | managed by Claude Code plugin system |
 | Gemini CLI | native extension install | managed by Gemini extension system |
-| Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/`, `~/.codex/plugins/cache/local-plugins/helloagents/local/`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/plugins/helloagents` |
+| Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
 In global mode, HelloAGENTS now attempts the host-native install commands automatically. If a host command is unavailable, run the same commands manually:
 
@@ -641,10 +643,13 @@ Codex is rules-file driven by default.
 
 - standby writes `~/.codex/AGENTS.md`
 - standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
-- standby writes a managed `notify = ["helloagents-js.cmd", "codex-notify"]` command for closeout notification
+- standby writes a managed `notify = ["helloagents-js", "codex-notify"]` command for closeout notification
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
+- Codex `SessionStart` stays silent and reads the current `~/.helloagents/helloagents.json` at runtime instead of baking a config snapshot into `config.toml`, so first-turn and post-compaction settings stay current
+- install and update also sync HelloAGENTS-managed Codex hook trust state in `~/.codex/config.toml`, so Codex 0.129.0+ does not re-prompt for the managed hooks
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
-- global mode installs the native local-plugin chain and also loads silent hooks from `~/.codex/hooks.json`
+- global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
+- cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
@@ -658,11 +663,13 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 107 tests and covers:
+The current suite includes 116 tests and covers:
 
 - install, update, uninstall, cleanup, and mode switching
+- one-shot PowerShell lifecycle dispatch for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex config merge and restore behavior
-- Codex managed `model_instructions_file`, `notify`, `hooks.json`, local plugin, marketplace, and cache behavior
+- Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
+- Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior

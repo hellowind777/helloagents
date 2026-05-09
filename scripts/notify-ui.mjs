@@ -5,7 +5,7 @@
 import { platform } from 'node:os';
 import { join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 
 const PLAT = platform();
 
@@ -55,33 +55,65 @@ function resolveWav(pkgRoot, event) {
   return existsSync(p) ? p : null;
 }
 
-function runSync(command, args) {
+function resolveSoundHelper(pkgRoot) {
+  const helperPath = join(pkgRoot, 'scripts', 'notify-sound.mjs');
+  return existsSync(helperPath) ? helperPath : '';
+}
+
+function runDetached(command, args) {
   try {
-    const result = spawnSync(command, args, {
+    const child = spawn(command, args, {
       stdio: 'ignore',
+      detached: true,
       windowsHide: true,
     });
-    return !result.error && result.status === 0;
+    child.on('error', () => {});
+    child.unref();
+    return true;
   } catch {
     return false;
   }
 }
 
-export function playSound(pkgRoot, event) {
+function shellQuote(value = '') {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`
+}
+
+function runSoundHelper(pkgRoot, event, mode = 'background') {
+  const helperPath = resolveSoundHelper(pkgRoot);
+  if (!helperPath) return false;
+
+  if (mode === 'blocking') {
+    try {
+      execFileSync(process.execPath, [helperPath, event], {
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  return runDetached(process.execPath, [helperPath, event]);
+}
+
+export function playSound(pkgRoot, event, options = {}) {
   if (DISABLE_OS_NOTIFICATIONS) return;
   const wav = resolveWav(pkgRoot, event);
   if (!wav) { process.stderr.write('\x07'); return; }
+  if (runSoundHelper(pkgRoot, event, options.mode === 'blocking' ? 'blocking' : 'background')) return;
   try {
     if (PLAT === 'win32') {
-      runSync('powershell', [
+      runDetached('powershell', [
         '-NoProfile',
         '-c',
         `(New-Object Media.SoundPlayer '${wav.replace(/'/g, "''")}').PlaySync()`,
       ]);
     } else if (PLAT === 'darwin') {
-      runSync('afplay', [wav]);
+      runDetached('afplay', [wav]);
     } else {
-      if (!runSync('aplay', ['-q', wav]) && !runSync('paplay', [wav])) process.stderr.write('\x07');
+      runDetached('sh', ['-c', `if command -v aplay >/dev/null 2>&1; then aplay -q ${shellQuote(wav)}; elif command -v paplay >/dev/null 2>&1; then paplay ${shellQuote(wav)}; else printf '\\a'; fi`]);
     }
   } catch { process.stderr.write('\x07'); }
 }
@@ -124,16 +156,16 @@ export function desktopNotify(pkgRoot, event, extra) {
   try {
     if (PLAT === 'win32') {
       const iconPath = join(pkgRoot, 'assets', 'icons', 'icon.png').replace(/\//g, '\\');
-      runSync('powershell', ['-NoProfile', '-c', buildWindowsToastScript(notification, iconPath)]);
+      runDetached('powershell', ['-NoProfile', '-c', buildWindowsToastScript(notification, iconPath)]);
     } else if (PLAT === 'darwin') {
       const subtitle = notification.sourceLabel
         ? ` subtitle "${escapeAppleScriptText(notification.sourceLabel)}"`
         : '';
-      runSync('osascript', ['-e',
+      runDetached('osascript', ['-e',
         `display notification "${escapeAppleScriptText(notification.message)}" with title "${escapeAppleScriptText(notification.title)}"${subtitle}`],
       );
     } else {
-      if (!runSync('notify-send', [notification.title, notification.body])) process.stderr.write('\x07');
+      runDetached('sh', ['-c', `if command -v notify-send >/dev/null 2>&1; then notify-send ${shellQuote(notification.title)} ${shellQuote(notification.body)}; else printf '\\a'; fi`]);
     }
   } catch { process.stderr.write('\x07'); }
 }

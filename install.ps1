@@ -47,10 +47,10 @@ if (-not $Package) {
 }
 
 function Invoke-Npm {
-    param([string[]]$Args)
-    & npm @Args
+    param([string[]]$NpmArgs)
+    & npm @NpmArgs
     if ($LASTEXITCODE -ne 0) {
-        throw "npm $($Args -join ' ') failed with exit code $LASTEXITCODE"
+        throw "npm $($NpmArgs -join ' ') failed with exit code $LASTEXITCODE"
     }
 }
 
@@ -63,9 +63,9 @@ function Enable-PostinstallDeploy {
 function Invoke-HostScript {
     param([string]$ScriptName)
     if ($Target -eq "all") {
-        Invoke-Npm @("explore", "-g", "helloagents", "--", "npm", "run", $ScriptName, "--", "--all", "--$Mode")
+        Invoke-Npm -NpmArgs @("explore", "-g", "helloagents", "--", "npm", "run", $ScriptName, "--", "--all", "--$Mode")
     } else {
-        Invoke-Npm @("explore", "-g", "helloagents", "--", "npm", "run", $ScriptName, "--", $Target, "--$Mode")
+        Invoke-Npm -NpmArgs @("explore", "-g", "helloagents", "--", "npm", "run", $ScriptName, "--", $Target, "--$Mode")
     }
 }
 
@@ -84,15 +84,15 @@ function Uninstall-Hosts {
 switch ($Action) {
     "install" {
         Enable-PostinstallDeploy
-        Invoke-Npm @("install", "-g", $Package)
+        Invoke-Npm -NpmArgs @("install", "-g", $Package)
     }
     "update" {
         if ($Branch -or $env:HELLOAGENTS_PACKAGE) {
-            Invoke-Npm @("install", "-g", $Package)
+            Invoke-Npm -NpmArgs @("install", "-g", $Package)
         } else {
             & npm update -g helloagents
             if ($LASTEXITCODE -ne 0) {
-                Invoke-Npm @("install", "-g", "helloagents")
+                Invoke-Npm -NpmArgs @("install", "-g", "helloagents")
             }
         }
         Sync-Hosts
@@ -104,14 +104,14 @@ switch ($Action) {
         if (-not $Branch -and -not $env:HELLOAGENTS_PACKAGE) {
             throw "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for switch-branch"
         }
-        Invoke-Npm @("install", "-g", $Package)
+        Invoke-Npm -NpmArgs @("install", "-g", $Package)
         Sync-Hosts
     }
     "branch" {
         if (-not $Branch -and -not $env:HELLOAGENTS_PACKAGE) {
             throw "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for branch"
         }
-        Invoke-Npm @("install", "-g", $Package)
+        Invoke-Npm -NpmArgs @("install", "-g", $Package)
         Sync-Hosts
     }
     "uninstall" {
@@ -120,7 +120,7 @@ switch ($Action) {
         } catch {
             Write-Warning "Failed to cleanup HelloAGENTS host integrations before uninstall: $_"
         }
-        Invoke-Npm @("uninstall", "-g", "helloagents")
+        Invoke-Npm -NpmArgs @("uninstall", "-g", "helloagents")
     }
     default {
         throw "Unsupported HELLOAGENTS_ACTION: $Action"

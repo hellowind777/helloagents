@@ -18,6 +18,12 @@ export const DEFAULT_STATE_SESSION_TOKEN = 'default'
 export const USER_RUNTIME_DIR_NAME = 'runtime'
 export { cleanupUserRuntimeRoot, getUserRuntimeRoot, USER_RUNTIME_MAX_AGE_MS }
 
+const gitTopLevelCache = new Map()
+const gitBranchNameCache = new Map()
+const gitShortHeadCache = new Map()
+const workspaceNameCache = new Map()
+let userRuntimeCleanupDone = false
+
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
 }
@@ -33,6 +39,13 @@ function runGit(cwd, args = []) {
   } catch {
     return ''
   }
+}
+
+function readCachedValue(cache, key, loader) {
+  if (cache.has(key)) return cache.get(key)
+  const value = loader()
+  cache.set(key, value)
+  return value
 }
 
 function getHomeDir(env = process.env) {
@@ -55,35 +68,46 @@ function samePath(left, right) {
 }
 
 function resolveGitTopLevel(cwd) {
-  const absolute = runGit(cwd, ['rev-parse', '--path-format=absolute', '--show-toplevel'])
-  if (absolute) return normalize(resolve(absolute))
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  return readCachedValue(gitTopLevelCache, normalizedCwd, () => {
+    const absolute = runGit(normalizedCwd, ['rev-parse', '--path-format=absolute', '--show-toplevel'])
+    if (absolute) return normalize(resolve(absolute))
 
-  const raw = runGit(cwd, ['rev-parse', '--show-toplevel'])
-  return raw ? normalize(resolve(cwd, raw)) : ''
+    const raw = runGit(normalizedCwd, ['rev-parse', '--show-toplevel'])
+    return raw ? normalize(resolve(normalizedCwd, raw)) : ''
+  })
 }
 
 function resolveGitBranchName(cwd) {
-  const branchName = runGit(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])
-  if (branchName && branchName !== 'HEAD') return branchName
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  return readCachedValue(gitBranchNameCache, normalizedCwd, () => {
+    const branchName = runGit(normalizedCwd, ['rev-parse', '--abbrev-ref', 'HEAD'])
+    if (branchName && branchName !== 'HEAD') return branchName
 
-  const symbolicName = runGit(cwd, ['symbolic-ref', '--quiet', '--short', 'HEAD'])
-  return symbolicName && symbolicName !== 'HEAD' ? symbolicName : ''
+    const symbolicName = runGit(normalizedCwd, ['symbolic-ref', '--quiet', '--short', 'HEAD'])
+    return symbolicName && symbolicName !== 'HEAD' ? symbolicName : ''
+  })
 }
 
 function resolveGitShortHead(cwd) {
-  return runGit(cwd, ['rev-parse', '--short', 'HEAD'])
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  return readCachedValue(gitShortHeadCache, normalizedCwd, () =>
+    runGit(normalizedCwd, ['rev-parse', '--short', 'HEAD']))
 }
 
 function resolveWorkspaceName(cwd) {
-  const branchName = resolveGitBranchName(cwd)
-  if (branchName) return sanitizeRuntimeSegment(branchName, 'workspace')
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  return readCachedValue(workspaceNameCache, normalizedCwd, () => {
+    const branchName = resolveGitBranchName(normalizedCwd)
+    if (branchName) return sanitizeRuntimeSegment(branchName, 'workspace')
 
-  if (resolveGitTopLevel(cwd)) {
-    const shortHead = sanitizeRuntimeSegment(resolveGitShortHead(cwd), '')
-    return shortHead ? `detached-${shortHead}` : 'detached'
-  }
+    if (resolveGitTopLevel(normalizedCwd)) {
+      const shortHead = sanitizeRuntimeSegment(resolveGitShortHead(normalizedCwd), '')
+      return shortHead ? `detached-${shortHead}` : 'detached'
+    }
 
-  return 'workspace'
+    return 'workspace'
+  })
 }
 
 export function sanitizeRuntimeSegment(value = '', fallback = '') {
@@ -245,6 +269,7 @@ export function writeActiveProjectSession(scope, { host = '', source = '', env =
     host,
     source,
     aliases,
+    ...(current.cleanupCheckedAt ? { cleanupCheckedAt: current.cleanupCheckedAt } : {}),
     updatedAt: new Date().toISOString(),
   })
   return activePath
@@ -323,7 +348,10 @@ function buildTransientRuntimeDir(cwd, options = {}) {
     .update(`${normalizedCwd.toLowerCase()}::${token}`)
     .digest('hex')
     .slice(0, 16)
-  cleanupUserRuntimeRoot()
+  if (!userRuntimeCleanupDone) {
+    cleanupUserRuntimeRoot()
+    userRuntimeCleanupDone = true
+  }
 
   return {
     cwd: normalizedCwd,

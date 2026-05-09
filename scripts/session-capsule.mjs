@@ -142,6 +142,7 @@ export function clearCapsuleSection(cwd, section, options = {}) {
 
   const capsule = readSessionCapsule(cwd, options)
   if (!Object.prototype.hasOwnProperty.call(capsule, section)) return false
+  if (capsule[section] == null) return false
   capsule[section] = null
   capsule[`${section}UpdatedAt`] = new Date().toISOString()
   writeSessionCapsule(cwd, capsule, options)

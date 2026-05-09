@@ -10,7 +10,10 @@ import {
   getProjectActivationDir,
   getProjectRoot,
   readJsonFile,
+  writeJsonFileAtomic,
 } from './runtime-scope.mjs'
+
+export const PROJECT_SESSION_CLEANUP_COOLDOWN_MS = 10 * 60 * 1000
 
 function removePath(filePath, result, bucket) {
   try {
@@ -58,7 +61,21 @@ function shouldKeepSession(active, workspace, session) {
   return activeWorkspace === workspace && active.session === session
 }
 
-export function cleanupProjectSessions(cwd) {
+function readCleanupCheckedAt(active) {
+  const raw = active && typeof active === 'object' ? active.cleanupCheckedAt : ''
+  const timestamp = Date.parse(raw || '')
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
+function writeCleanupCheckpoint(activePath, active, now) {
+  if (!active || typeof active !== 'object' || Object.keys(active).length === 0) return
+  writeJsonFileAtomic(activePath, {
+    ...active,
+    cleanupCheckedAt: new Date(now).toISOString(),
+  })
+}
+
+export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 0 } = {}) {
   const projectRoot = getProjectRoot(cwd)
   const activationDir = getProjectActivationDir(projectRoot)
   const sessionsDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME)
@@ -69,9 +86,17 @@ export function cleanupProjectSessions(cwd) {
     removedEmptyDirs: [],
     removedRouteOnlyDirs: [],
     errors: [],
+    skipped: false,
   }
 
   if (!existsSync(sessionsDir)) return result
+  if (minIntervalMs > 0) {
+    const lastCleanupAt = readCleanupCheckedAt(active)
+    if (lastCleanupAt > 0 && now - lastCleanupAt < minIntervalMs) {
+      result.skipped = true
+      return result
+    }
+  }
 
   for (const workspaceEntry of readdirSync(sessionsDir, { withFileTypes: true })) {
     if (!workspaceEntry.isDirectory()) continue
@@ -102,5 +127,6 @@ export function cleanupProjectSessions(cwd) {
     }
   }
 
+  writeCleanupCheckpoint(activePath, active, now)
   return result
 }

@@ -5,6 +5,7 @@ import { dirname } from 'node:path'
 import { getRuntimeEvidencePath, readRuntimeEvidence, writeRuntimeEvidence } from './runtime-artifacts.mjs'
 
 export const CODEX_CLOSEOUT_EVIDENCE_FILE = 'codex-native-stop.json'
+export const CODEX_QUICK_NOTIFY_EVIDENCE_FILE = 'codex-quick-notify.json'
 const CODEX_CLOSEOUT_LOCK_FILE = 'codex-native-stop.lock'
 const WEAK_KEY_TTL_MS = 10_000
 const LOCK_STALE_MS = 120_000
@@ -110,8 +111,7 @@ export function matchesCodexCloseoutEvidence(evidence, snapshot, now = Date.now(
   if (intersects(snapshot.strongKeys, strongKeys)) return true
 
   const currentHasStrong = snapshot.strongKeys.length > 0
-  const evidenceHasStrong = strongKeys.length > 0
-  if (currentHasStrong && evidenceHasStrong) return false
+  if (currentHasStrong) return false
 
   const updatedAt = Date.parse(evidence.updatedAt || '')
   if (!Number.isFinite(updatedAt) || now - updatedAt > WEAK_KEY_TTL_MS) return false
@@ -210,4 +210,24 @@ export function finalizeCodexCloseoutClaim(claim, meta = {}) {
   } finally {
     releaseLockFile(claim.lockPath)
   }
+}
+
+export function writeCodexQuickNotifyEvidence(cwd, { payload = {}, turnState = null, event = '' } = {}) {
+  const snapshot = buildCodexCloseoutSnapshot({ payload, turnState })
+  return writeRuntimeEvidence(cwd, CODEX_QUICK_NOTIFY_EVIDENCE_FILE, {
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    event,
+    turnId: snapshot.turnId,
+    sessionId: snapshot.sessionId,
+    messageHash: snapshot.messageHash,
+    strongKeys: snapshot.strongKeys,
+    weakKeys: snapshot.weakKeys,
+  }, { payload })
+}
+
+export function hasCodexQuickNotifyEvidence(cwd, { payload = {}, turnState = null } = {}) {
+  const snapshot = buildCodexCloseoutSnapshot({ payload, turnState })
+  const evidence = readRuntimeEvidence(cwd, CODEX_QUICK_NOTIFY_EVIDENCE_FILE, { payload })
+  return matchesCodexCloseoutEvidence(evidence, snapshot)
 }

@@ -8,15 +8,22 @@ import {
 
 export const CODEX_PLUGIN_CONFIG_HEADER = '[plugins."helloagents@local-plugins"]'
 export const CODEX_FEATURES_HEADER = '[features]'
+export const CODEX_TUI_HEADER = '[tui]'
 export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed'
 export const CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH = '~/.codex/AGENTS.md'
-export const CODEX_MANAGED_NOTIFY_COMMAND = 'helloagents-js.cmd'
+export const CODEX_MANAGED_NOTIFY_COMMAND = 'helloagents-js'
 export const CODEX_MANAGED_NOTIFY_VALUE = `["${CODEX_MANAGED_NOTIFY_COMMAND}", "codex-notify"]`
+const CODEX_MANAGED_NOTIFY_LEGACY_VALUES = [
+  `["${CODEX_MANAGED_NOTIFY_COMMAND}.cmd", "codex-notify"]`,
+  `["${CODEX_MANAGED_NOTIFY_COMMAND}.exe", "codex-notify"]`,
+]
+export const CODEX_MANAGED_TUI_NOTIFICATIONS_VALUE = '["plan-mode-prompt"]'
 export const CODEX_HOOKS_FEATURE_KEY = 'hooks'
 export const CODEX_LEGACY_HOOKS_FEATURE_KEY = 'codex_hooks'
 export const CODEX_GOALS_FEATURE_KEY = 'goals'
 export const CODEX_MANAGED_GOALS_FEATURE_LINE = `${CODEX_GOALS_FEATURE_KEY} = true ${CODEX_MANAGED_TOML_COMMENT}`
 export const CODEX_MANAGED_GOALS_DISABLED_LINE = `${CODEX_GOALS_FEATURE_KEY} = false ${CODEX_MANAGED_TOML_COMMENT}`
+export const CODEX_MANAGED_TUI_NOTIFICATIONS_LINE = `notifications = ${CODEX_MANAGED_TUI_NOTIFICATIONS_VALUE} ${CODEX_MANAGED_TOML_COMMENT}`
 
 function normalizePath(value = '') {
   return String(value || '').replace(/\\/g, '/')
@@ -106,9 +113,17 @@ export function readCodexGoalsFeatureLine(text) {
   return readCodexFeatureLine(text, CODEX_GOALS_FEATURE_KEY)
 }
 
+export function readCodexTuiNotificationsLine(text) {
+  return readCodexSectionLine(text, CODEX_TUI_HEADER, 'notifications')
+}
+
 export function readCodexFeatureLine(text, key) {
+  return readCodexSectionLine(text, CODEX_FEATURES_HEADER, key)
+}
+
+export function readCodexSectionLine(text, headerLine, key) {
   const lines = splitTomlLines(text)
-  const bounds = findSectionBounds(lines, CODEX_FEATURES_HEADER)
+  const bounds = findSectionBounds(lines, headerLine)
   const keyIndex = findSectionKeyIndex(lines, bounds, key)
   return keyIndex >= 0 ? lines[keyIndex].trim() : ''
 }
@@ -157,7 +172,16 @@ export function isManagedCodexModelInstruction(line = '') {
 
 export function isManagedCodexNotify(line = '') {
   const value = String(line || '').replace(/\\/g, '/')
-  return value.includes(CODEX_MANAGED_NOTIFY_VALUE)
+  return value.includes(CODEX_MANAGED_TOML_COMMENT)
+    && (
+      value.includes(CODEX_MANAGED_NOTIFY_VALUE)
+      || CODEX_MANAGED_NOTIFY_LEGACY_VALUES.some((entry) => value.includes(entry))
+    )
+}
+
+export function isManagedCodexTuiNotifications(line = '') {
+  return String(line || '').includes(CODEX_MANAGED_TUI_NOTIFICATIONS_VALUE)
+    && String(line || '').includes(CODEX_MANAGED_TOML_COMMENT)
 }
 
 function isManagedFeatureLine(line = '', key = '') {
@@ -221,6 +245,29 @@ export function installCodexManagedTopLevelConfig(toml, { modelInstructionsPath 
     formatManagedCodexModelInstructionsLine(modelInstructionsPath),
     formatManagedCodexNotifyLine(),
   ])
+}
+
+export function installCodexManagedTuiConfig(text) {
+  const currentLine = readCodexTuiNotificationsLine(text)
+  if (currentLine && !isManagedCodexTuiNotifications(currentLine)) {
+    return normalizeToml(text)
+  }
+
+  return upsertTomlSectionLine(
+    text,
+    CODEX_TUI_HEADER,
+    'notifications',
+    CODEX_MANAGED_TUI_NOTIFICATIONS_LINE,
+  )
+}
+
+export function removeCodexManagedTuiConfig(text) {
+  return removeTomlSectionLine(
+    text,
+    CODEX_TUI_HEADER,
+    'notifications',
+    isManagedCodexTuiNotifications,
+  )
 }
 
 export function restoreCodexTopLevelConfig(toml, { modelInstructionsLine = '', notifyLine = '' }) {

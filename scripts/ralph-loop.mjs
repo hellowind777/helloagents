@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { clearVerifyEvidence, detectCommands, hasUnsafeVerifyCommand, writeVerifyEvidence } from './verify-state.mjs';
 import {
   getRuntimeEvidencePath,
@@ -33,10 +34,6 @@ function readSettings() {
 
 // ── Circuit Breaker (consecutive failure tracking) ───────────────────
 const BREAKER_FILE_NAME = 'loop-breaker.json';
-
-function getBreakerPath(cwd, options = {}) {
-  return getRuntimeEvidencePath(cwd, BREAKER_FILE_NAME, options);
-}
 
 function readBreaker(cwd, options = {}) {
   return readRuntimeEvidence(cwd, BREAKER_FILE_NAME, options)
@@ -92,111 +89,109 @@ function runVerify(commands, cwd) {
   return failures;
 }
 
-// ── Result Handlers ──────────────────────────────────────────────────
-
-function handleSuccess(cwd, isSubagent, options = {}) {
-  resetBreaker(cwd, options);
-  writeVerifyEvidence(cwd, {
-    commands: detectCommands(cwd),
-    fastOnly: isSubagent,
-    source: isSubagent ? 'subagent' : 'stop',
-  }, options);
-
-  if (isSubagent) {
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: HOOK_EVENT,
-        additionalContext: '子代理快速验证通过（lint/typecheck）。请控制器审查变更后继续。',
-      },
-      suppressOutput: true,
-    }));
-    return;
-  }
-
-  // Progress detection: warn if claiming done but no git changes
-  if (!hasGitChanges(cwd)) {
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: HOOK_EVENT,
-        additionalContext: '⚠️ [Ralph Loop] 验证通过但未检测到代码变更（git diff 为空）。如果确实完成了编码任务，请确认变更已保存。',
-      },
-      suppressOutput: true,
-    }));
-  } else {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
-  }
-}
-
-function handleFailure(failures, cwd, options = {}) {
-  clearVerifyEvidence(cwd, options);
-  const breaker = readBreaker(cwd, options);
-  breaker.consecutive_failures += 1;
-  breaker.last_failure = new Date().toISOString();
-  writeBreaker(cwd, breaker, options);
-
-  const breakerWarning = breaker.consecutive_failures >= 3
-    ? `\n\n⚠️ [断路器] 已连续 ${breaker.consecutive_failures} 次验证失败。当前修复思路可能有误，先处理：\n  1. 重新分析根因，不要继续在同一方向上硬修\n  2. 检查是否存在架构层面的问题\n  3. 考虑回退到上一个正常状态重新开始`
-    : '';
-
-  const details = failures.map(f => `\u2717 ${f.cmd}\n${f.output}`).join('\n\n');
-  process.stdout.write(JSON.stringify({
-    decision: 'block',
-    reason: `[Ralph Loop] 验证失败：\n\n${details}\n\n请先修复以上问题，再报告完成。${breakerWarning}`,
-    suppressOutput: true,
-  }));
-}
-
 /** Filter commands to fast checks only for subagent mode. Returns null if no fast commands found. */
 function filterSubagentCommands(commands) {
   const fast = commands.filter(cmd =>
     /lint|typecheck|type-check|ruff check|mypy|eslint|tsc/.test(cmd)
   );
   if (fast.length === 0) {
-    process.stdout.write(JSON.stringify({
+    return {
       hookSpecificOutput: {
         hookEventName: HOOK_EVENT,
         additionalContext: '子代理完成。未找到快速验证命令，请控制器手动审查变更。',
       },
       suppressOutput: true,
-    }));
-    return null;
+    };
   }
-  return fast;
+  return { commands: fast };
 }
 
-// ── Main ──────────────────────────────────────────────────────────────
-async function main() {
+export function evaluateRalphLoop(data = {}, runtime = {}) {
   const settings = readSettings();
   if (settings.ralph_loop_enabled === false) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
-    return;
+    return { suppressOutput: true };
   }
 
-  let data = {};
-  try { data = JSON.parse(readFileSync(0, 'utf-8')); } catch {}
   const cwd = data.cwd || process.cwd();
   const runtimeOptions = { payload: data };
+  const isSubagent = runtime.isSubagent ?? IS_SUBAGENT;
+  const hookEventName = runtime.hookEventName || HOOK_EVENT;
 
   let commands = detectCommands(cwd);
   if (!commands?.length) {
-    process.stdout.write(JSON.stringify({ suppressOutput: true }));
-    return;
+    return { suppressOutput: true };
   }
 
-  if (IS_SUBAGENT) {
-    commands = filterSubagentCommands(commands);
-    if (!commands) return;
+  if (isSubagent) {
+    const filtered = filterSubagentCommands(commands);
+    if (!filtered?.commands) return filtered || { suppressOutput: true };
+    commands = filtered.commands;
   }
 
   const failures = runVerify(commands, cwd);
-  if (failures.length === 0) handleSuccess(cwd, IS_SUBAGENT, runtimeOptions);
-  else handleFailure(failures, cwd, runtimeOptions);
+  if (failures.length === 0) {
+    resetBreaker(cwd, runtimeOptions);
+    writeVerifyEvidence(cwd, {
+      commands: detectCommands(cwd),
+      fastOnly: isSubagent,
+      source: isSubagent ? 'subagent' : 'stop',
+    }, runtimeOptions);
+
+    if (isSubagent) {
+      return {
+        hookSpecificOutput: {
+          hookEventName,
+          additionalContext: '子代理快速验证通过（lint/typecheck）。请控制器审查变更后继续。',
+        },
+        suppressOutput: true,
+      };
+    }
+
+    if (!hasGitChanges(cwd)) {
+      return {
+        hookSpecificOutput: {
+          hookEventName,
+          additionalContext: '⚠️ [Ralph Loop] 验证通过但未检测到代码变更（git diff 为空）。如果确实完成了编码任务，请确认变更已保存。',
+        },
+        suppressOutput: true,
+      };
+    }
+
+    return { suppressOutput: true };
+  }
+
+  clearVerifyEvidence(cwd, runtimeOptions);
+  const breaker = readBreaker(cwd, runtimeOptions);
+  breaker.consecutive_failures += 1;
+  breaker.last_failure = new Date().toISOString();
+  writeBreaker(cwd, breaker, runtimeOptions);
+
+  const breakerWarning = breaker.consecutive_failures >= 3
+    ? `\n\n⚠️ [断路器] 已连续 ${breaker.consecutive_failures} 次验证失败。当前修复思路可能有误，先处理：\n  1. 重新分析根因，不要继续在同一方向上硬修\n  2. 检查是否存在架构层面的问题\n  3. 考虑回退到上一个正常状态重新开始`
+    : '';
+  const details = failures.map(f => `\u2717 ${f.cmd}\n${f.output}`).join('\n\n');
+  return {
+    decision: 'block',
+    reason: `[Ralph Loop] 验证失败：\n\n${details}\n\n请先修复以上问题，再报告完成。${breakerWarning}`,
+    suppressOutput: true,
+  };
 }
 
-main().catch((error) => {
-  process.stdout.write(JSON.stringify({
-    decision: 'block',
-    reason: `[Ralph Loop] 验证脚本执行异常，已暂停完成通知。\n原因：${error?.message || error}`,
-    suppressOutput: true,
-  }));
-});
+// ── Main ──────────────────────────────────────────────────────────────
+function main() {
+  let data = {};
+  try { data = JSON.parse(readFileSync(0, 'utf-8')); } catch {}
+  process.stdout.write(JSON.stringify(evaluateRalphLoop(data)));
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  try {
+    main();
+  } catch (error) {
+    process.stdout.write(JSON.stringify({
+      decision: 'block',
+      reason: `[Ralph Loop] 验证脚本执行异常，已暂停完成通知。\n原因：${error?.message || error}`,
+      suppressOutput: true,
+    }));
+  }
+}
