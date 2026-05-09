@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.25-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.26-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -311,7 +311,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`, and defaults to `standby`.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -642,11 +642,12 @@ Default shape:
 Codex is rules-file driven by default.
 
 - standby writes `~/.codex/AGENTS.md`
-- standby writes a managed `model_instructions_file = "~/.codex/AGENTS.md"`
+- standby writes a portable managed `model_instructions_file = "~/.codex/AGENTS.md"`
 - standby writes a managed `notify = ["helloagents-js", "codex-notify"]` command for closeout notification
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
 - Codex `SessionStart` stays silent and reads the current `~/.helloagents/helloagents.json` at runtime instead of baking a config snapshot into `config.toml`, so first-turn and post-compaction settings stay current
 - install and update also sync HelloAGENTS-managed Codex hook trust state in `~/.codex/config.toml`, so Codex 0.129.0+ does not re-prompt for the managed hooks
+- that hook trust state is machine-local generated metadata derived from the current absolute `~/.codex/hooks.json` path; unlike `model_instructions_file = "~/.codex/AGENTS.md"`, it is not portable config and should be regenerated on each machine
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
 - cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
@@ -663,10 +664,10 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 116 tests and covers:
+The current suite includes 118 tests and covers:
 
 - install, update, uninstall, cleanup, and mode switching
-- one-shot PowerShell lifecycle dispatch for install, update, cleanup, uninstall, and branch switching
+- one-shot PowerShell lifecycle dispatch plus shell-wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex config merge and restore behavior
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules

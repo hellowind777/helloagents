@@ -91,7 +91,7 @@ test('doctor detects standby carrier and hook drift for gemini content mismatche
             hooks: [
               {
                 type: 'command',
-                command: `node "${pkgRoot.replace(/\\/g, '/')}/scripts/notify.mjs" inject --gemini`,
+                command: `node "${pkgRoot.replace(/\\/g, '/')}\/scripts\/notify.mjs" inject --gemini`,
                 timeout: 10000,
               },
             ],
@@ -196,4 +196,5 @@ test('doctor flags missing codex hook trust as drift', () => {
   assert.equal(codex.status, 'drift')
   assert.equal(codex.checks.managedHookTrust, false)
   assert.ok(codex.issues.some((issue) => issue.code === 'standby-hook-trust-missing'))
+  assert.ok(codex.issues.some((issue) => /machine-local hook trust metadata/.test(issue.message)))
 })

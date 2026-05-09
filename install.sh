@@ -32,7 +32,6 @@ if [ -n "${HELLOAGENTS:-}" ]; then
 fi
 
 TARGET="${TARGET:-all}"
-MODE="${MODE:-standby}"
 TARGET="$(printf '%s' "$TARGET" | tr '[:upper:]' '[:lower:]')"
 MODE="$(printf '%s' "$MODE" | tr '[:upper:]' '[:lower:]')"
 
@@ -41,10 +40,12 @@ case "$TARGET" in
   *) echo "Unsupported HELLOAGENTS target: $TARGET" >&2; exit 1 ;;
 esac
 
-case "$MODE" in
-  standby|global) ;;
-  *) echo "Unsupported HELLOAGENTS mode: $MODE" >&2; exit 1 ;;
-esac
+if [ -n "$MODE" ]; then
+  case "$MODE" in
+    standby|global) ;;
+    *) echo "Unsupported HELLOAGENTS mode: $MODE" >&2; exit 1 ;;
+  esac
+fi
 
 if [ -z "$PACKAGE" ]; then
   if [ -n "$BRANCH" ]; then
@@ -56,32 +57,56 @@ fi
 
 sync_hosts() {
   if [ "$TARGET" = "all" ]; then
-    npm explore -g helloagents -- npm run sync-hosts -- --all "--$MODE"
+    if [ -n "$MODE" ]; then
+      npm explore -g helloagents -- npm run sync-hosts -- --all "--$MODE"
+    else
+      npm explore -g helloagents -- npm run sync-hosts -- --all
+    fi
   else
-    npm explore -g helloagents -- npm run sync-hosts -- "$TARGET" "--$MODE"
+    if [ -n "$MODE" ]; then
+      npm explore -g helloagents -- npm run sync-hosts -- "$TARGET" "--$MODE"
+    else
+      npm explore -g helloagents -- npm run sync-hosts -- "$TARGET"
+    fi
   fi
 }
 
 cleanup_hosts() {
   if [ "$TARGET" = "all" ]; then
-    npm explore -g helloagents -- npm run cleanup-hosts -- --all "--$MODE"
+    if [ -n "$MODE" ]; then
+      npm explore -g helloagents -- npm run cleanup-hosts -- --all "--$MODE"
+    else
+      npm explore -g helloagents -- npm run cleanup-hosts -- --all
+    fi
   else
-    npm explore -g helloagents -- npm run cleanup-hosts -- "$TARGET" "--$MODE"
+    if [ -n "$MODE" ]; then
+      npm explore -g helloagents -- npm run cleanup-hosts -- "$TARGET" "--$MODE"
+    else
+      npm explore -g helloagents -- npm run cleanup-hosts -- "$TARGET"
+    fi
   fi
 }
 
 uninstall_hosts() {
   if [ "$TARGET" = "all" ]; then
-    npm explore -g helloagents -- npm run uninstall -- --all "--$MODE"
+    if [ -n "$MODE" ]; then
+      npm explore -g helloagents -- npm run uninstall -- --all "--$MODE"
+    else
+      npm explore -g helloagents -- npm run uninstall -- --all
+    fi
   else
-    npm explore -g helloagents -- npm run uninstall -- "$TARGET" "--$MODE"
+    if [ -n "$MODE" ]; then
+      npm explore -g helloagents -- npm run uninstall -- "$TARGET" "--$MODE"
+    else
+      npm explore -g helloagents -- npm run uninstall -- "$TARGET"
+    fi
   fi
 }
 
 enable_postinstall_deploy() {
   export HELLOAGENTS_DEPLOY=1
   export HELLOAGENTS_TARGET="$TARGET"
-  export HELLOAGENTS_MODE="$MODE"
+  export HELLOAGENTS_MODE="${MODE:-standby}"
 }
 
 case "$ACTION" in

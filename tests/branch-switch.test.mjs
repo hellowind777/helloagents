@@ -88,3 +88,13 @@ test('package exposes npm-script and one-shot script entry points', () => {
   assert.match(readText(join(REPO_ROOT, 'install.ps1')), /install\|update\|cleanup\|uninstall\|switch-branch\|branch/)
   assert.match(readText(join(REPO_ROOT, 'install.ps1')), /HELLOAGENTS=all\|claude\|gemini\|codex/)
 })
+
+test('one-shot shell wrappers preserve mode omission for update and cleanup flows', () => {
+  const installSh = readText(join(REPO_ROOT, 'install.sh'))
+  const installPs1 = readText(join(REPO_ROOT, 'install.ps1'))
+
+  assert.match(installSh, /export HELLOAGENTS_MODE="\$\{MODE:-standby\}"/)
+  assert.match(installSh, /if \[ -n "\$MODE" \]; then\s+npm explore -g helloagents -- npm run sync-hosts -- "\$TARGET" "--\$MODE"\s+else\s+npm explore -g helloagents -- npm run sync-hosts -- "\$TARGET"/s)
+  assert.match(installPs1, /if \(\$Mode\) \{\s*\$env:HELLOAGENTS_MODE = \$Mode\s*\}\s*else \{\s*\$env:HELLOAGENTS_MODE = "standby"/s)
+  assert.doesNotMatch(installPs1, /\$Mode = "standby"/)
+})

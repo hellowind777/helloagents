@@ -207,3 +207,49 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
     ])
   }
 })
+
+test('install.ps1 omits the mode for non-install actions so the CLI can reuse tracked or detected host modes', { skip: !PWSH }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+
+  {
+    const home = createHomeFixture()
+    const { logPath, env } = createScriptEnv(home, {
+      HELLOAGENTS_ACTION: 'update',
+      HELLOAGENTS_TARGET: 'codex',
+    })
+    runInstallPs1(pkgRoot, home, env)
+    const entries = readLogEntries(logPath)
+    assert.deepEqual(entries.map((entry) => entry.args), [
+      ['update', '-g', 'helloagents'],
+      ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'codex'],
+    ])
+  }
+
+  {
+    const home = createHomeFixture()
+    const { logPath, env } = createScriptEnv(home, {
+      HELLOAGENTS_ACTION: 'cleanup',
+      HELLOAGENTS_TARGET: 'all',
+    })
+    runInstallPs1(pkgRoot, home, env)
+    const entries = readLogEntries(logPath)
+    assert.deepEqual(entries.map((entry) => entry.args), [
+      ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'cleanup-hosts', '--', '--all'],
+    ])
+  }
+
+  {
+    const home = createHomeFixture()
+    const { logPath, env } = createScriptEnv(home, {
+      HELLOAGENTS_ACTION: 'switch-branch',
+      HELLOAGENTS_BRANCH: 'beta',
+      HELLOAGENTS_TARGET: 'gemini',
+    })
+    runInstallPs1(pkgRoot, home, env)
+    const entries = readLogEntries(logPath)
+    assert.deepEqual(entries.map((entry) => entry.args), [
+      ['install', '-g', 'github:hellowind777/helloagents#beta'],
+      ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'gemini'],
+    ])
+  }
+})
