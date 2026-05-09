@@ -14,10 +14,10 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     const content = read(file);
     assert.match(content, /语言与表述（强制）/);
     assert.match(content, /都必须同时遵守本节全部规则/);
-    assert.match(content, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);
+    assert.match(content, /用词用语和表述方式保持简洁、自然、准确、合理，不赘述、不冗余、不过度精简/);
     assert.match(content, /准确优先于压缩/);
     assert.match(content, /不输出黑话、营销话、内部化表述或空泛形容/);
-    assert.match(content, /不输出客套内容、邀约式表述、重复确认、能力陈述或空泛建议/);
+    assert.match(content, /不输出客套内容、邀约式表述、重复确认、自我能力陈述内容或空泛建议/);
     assert.match(content, /优先在原条目内收敛表达/);
     assert.match(content, /同步删除重复表述/);
     assert.match(content, /适用条件：/);
