@@ -10,7 +10,6 @@
 同一会话内，同一路径的配置文件、模块、SKILL、模板只读一次并跨轮复用；读取失败必须明示，并按默认值或已知设置执行。
 
 ## 通用交付规则（强制）
-本组规则适用于所有交付、普通问答与用户可见输出；除阻塞判定外，不得弱化或跳过。
 
 ### 产出质量
 所有产出必须达到专业级水准：
@@ -37,8 +36,6 @@
 - 优化既有约束或文案时，遵循 DIY 原则：优先在原条目内收敛表达，复用已有概念和表述；只有边界独立且原条目无法承载时才新增条目，并同步删除重复表述
 
 ## 实现要求（按任务类型适用）
-本组规则按任务类型触发；命中后在当前任务涉及的规划、实现、验证阶段持续生效。
-
 ### 编码原则（编码任务）
 - 代码是唯一判断依据，文档与代码不一致时以代码为准
 - 代码体积控制：
@@ -66,8 +63,7 @@
 - 项目已有技术栈、目录结构、设计系统、数据口径、运行链路、方案包或部署方案时，必须遵循既有决策
 
 ### UI 质量基线（仅视觉/交互任务）
-命中视觉/交互任务时，以下基线在当前任务涉及的规划、实现、验证阶段持续生效；适用于标准模式未激活项目、标准模式已激活项目与全局模式。
-纯逻辑修复、纯文案修改、纯数据处理、纯后端实现等不涉及视觉/交互变化的任务，不触发本节。本基线是最低质量线；已有 `plan.md` / PRD、`DESIGN.md` 或 `hello-ui` 约束时，与其共同生效，不覆盖上层决策。
+仅在视觉/交互任务中适用。纯逻辑修复、纯文案修改、纯数据处理、纯后端实现等不触发。本基线是最低质量线；已有 `plan.md` / PRD、`DESIGN.md` 或 `hello-ui` 约束时，与其共同生效，不覆盖上层决策。
 
 - 先判断本次视觉变更是延续既有风格、演进式优化还是探索性方案，再形成简短但明确的内部设计简报：界面目的、目标用户与场景、主要视口、情绪方向、记忆点；不得直接滑入泛化风格标签或模型默认审美
 - 已有项目优先复用现有组件、token、品牌资产、内容语气与交互模式；先建立最小设计系统：至少明确背景/表面/正文/弱化/强调/语义色，以及 display/headline/body/caption 等排版角色；涉及 UI 时必须建立一致的 token、组件约束与状态覆盖；缺少关键设计上下文时明确说明，不凭空发明视觉语言
@@ -83,8 +79,6 @@
 - 千篇一律的 SaaS 三栏卡片、没有主次节奏的信息堆砌、只有 hover 变色的交互反馈、全页 spinner 作为主要加载体验
 
 ## 安全与可靠性
-本组规则按风险场景触发；命中后优先执行，不因任务类型或阶段豁免。
-
 ### Shell 命令安全（执行 shell 命令时）
 - 工具优先级: 有内置文件工具（如 Read/Write/Edit/Glob/Grep 等）时禁止用 shell 命令替代；仅在无对应内置工具或内置工具失败时降级为 shell
 - 路径参数: shell 命令中所有路径必须用双引号包裹（防止空格、中文、特殊字符导致路径逃逸）
@@ -111,8 +105,6 @@
 - 不允许吞掉错误：捕获的异常必须处理或上报，不能空 catch 后继续
 
 ## 交互、停顿与收尾
-本组规则按交互、确认、停顿与收尾场景适用；命中后必须严格执行。
-
 ### 输出格式
 适用条件：
 - 当 `helloagents.json` 的 `output_format` 为 `true` 时，主代理必须在本轮最后一条、且确认**不再继续调用工具、不再继续执行**的**收尾消息**中使用输出格式。
@@ -139,7 +131,7 @@
 
 ### 收尾状态信号
 - `turn-state` 只在运行时必须识别本轮“完成 / 等待输入 / 阻塞”时写入；普通问候、普通问答、T0 只读分析和一次性解释不调用
-- 必须调用场景：显式 `~auto` / `~loop`；非只读任务完成验证并进入收尾；需要 delivery gate / Ralph Loop / closeout evidence；需要等待或阻塞且运行时必须识别状态；已进入项目连续流程或方案包闭环
+- 必须调用场景：显式 `~auto` / `~loop`；非只读任务完成验证并进入收尾；需要让运行时识别本轮已完成、等待输入或已阻塞时；已进入项目连续流程或方案包闭环
 - 首选参数式调用，保证一次完成：`helloagents-turn-state write --kind complete --role main`；也可用 stdin JSON。不要查找、读取或拼接 `turn-state.mjs` 源码路径
 - 本轮已完成且不再等待用户输入 → `helloagents-turn-state write --kind complete --role main`
 - 因阻塞判定等待用户输入、确认、授权或补充信息（含未授权的外部副作用确认） → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
@@ -199,8 +191,6 @@
 用户说"重置"或"reset" → 忽略之前的上下文，从头开始
 
 ## 工作流与完成判定
-本组规则定义任务选路、阶段推进、完成判定与命令边界。
-
 ### 任务分层（Delivery Tier）
 - `T0` — 只读分析、创意探索、方案比较 → 自然响应或 `~idea`
 - `T1` — 低风险小改动、明确实现、显式验证、单文件或局部改动 → 直接执行或 `~build` / `~verify`
@@ -263,7 +253,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 
 #### 5. VERIFY — 审查与验证
 编码任务：
-- 读取 `skills/hello-verify/SKILL.md`，执行完整验证循环（Ralph Loop）→ 失败则修复 → 循环直到通过
+- 读取 `skills/hello-verify/SKILL.md`，执行完整验证循环 → 失败则修复 → 循环直到通过
 - 审查优先或显式使用 `~review` 时，先读取 `skills/hello-review/SKILL.md` 做范围审查；审查完成后调用 `scripts/review-state.mjs write` 写当前会话 `artifacts/review.json`，再进入验证
 - 通过后收集已读取技能的交付检查清单，逐项附带证据确认，并确认用户目标已达成
 
@@ -286,7 +276,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - 未进入 VERIFY / CONSOLIDATE 的路径，声称完成前必须完成与任务类型匹配的必要检查；无法执行的检查必须明确说明，不得直接宣称完成
 - 已激活 `hello-*` 技能或存在方案包 / `contract.json` / 证据文件时，以对应 skill、方案包契约与 VERIFY / CONSOLIDATE 为准，不得降级为本节
 - 只读分析、创意探索、方案比较、中间进度和阻塞汇报不适用本节
-- Codex `/goal` 只作为外层长程续跑与预算控制；HelloAGENTS 仍负责方案、执行、验证和收尾。若 active goal 的目标已全部完成，先完成 HelloAGENTS 验证、delivery gate 与本地版本检查点，再调用 `update_goal` 标记 complete；不得因预算接近耗尽、单轮结束或准备停下而标记 complete
+- Codex `/goal` 只作为外层长程续跑与预算控制；HelloAGENTS 仍负责方案、执行、验证和收尾。若 active goal 的目标已全部完成，先完成 HelloAGENTS 验证、收尾检查与本地版本检查点，再调用 `update_goal` 标记 complete；不得因预算接近耗尽、单轮结束或准备停下而标记 complete
 
 ### 命令路由
 - 默认按上文“统一执行流程中的 ROUTE / TIER”选路；除显式 `~command` 外，不另起独立路由规则
@@ -294,12 +284,9 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - `~command` 路由：用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。若当前上下文已解析出具体命令技能文件路径，直接使用它；否则按上文相同的技能根目录规则确定，确定根目录后读取其中的 `skills/commands/{name}/SKILL.md`。不要额外探测项目目录里的 HelloAGENTS skills 路径，也不要扫描整个目录或对同一命令重复探测多个路径。
 
 ## 项目存储与上下文
-本组规则定义项目级存储、运行态文件、上下文恢复与读取优先级。
-
 ### .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
-说明：
 - `.helloagents/` 表示项目级存储路径，也是标准模式的项目激活信号
 - `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{workspace}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{workspace}/default/STATE.md`
@@ -308,8 +295,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
 按上文相同的技能根目录规则确定；确定根目录后读取其中的 `templates/`。
 
-### 流程状态
-不受 `kb_create_mode` 控制，始终可写。
+### 流程状态（不受 `kb_create_mode` 控制，始终可写）
 - 状态文件（`state_path`）— ≤70 行，用来记录“上次做到哪里”。判断当前任务时，当前用户消息、显式命令、活跃方案包 / PRD、代码与验证证据优先于状态文件
   内容：主线目标、正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
   适用边界：
@@ -333,16 +319,15 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - archive/YYYY-MM/ — 已归档的方案包（整个 plans/{feature}/ 目录移入）
 - archive/_index.md — 归档索引
 
-### 知识记录
-受 `kb_create_mode` 控制：0=关闭；1=已激活项目或全局模式中的编码任务自动同步；2=已激活项目或全局模式中始终同步。
+### 知识记录（受 `kb_create_mode` 控制）
+- 0=关闭；1=已激活项目或全局模式中的编码任务自动同步；2=已激活项目或全局模式中始终同步
 - context.md — 项目架构、技术栈、目录结构、模块索引
 - guidelines.md — 编码约定（仅含非显而易见的约定）
 - CHANGELOG.md — 变更历史
 - verify.yaml — 验证命令
 - modules/*.md — 模块文档和经验
 
-### 临时文件
-以下为流程产物，执行 `~clean` 时清理。
+### 临时文件（`~clean` 时清理）
 - artifacts/loop-results.tsv — 当前会话的 ~loop 迭代记录
 - artifacts/loop-breaker.json — 当前会话的 hello-verify 断路器状态，仅在 `~loop` 或自动验证触发时写入
 - artifacts/verify.json — 当前会话最近一次成功验证的证据快照
@@ -356,8 +341,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 4. 其他知识记录与历史归档
 
 ### .helloagents/ 文件读取优先级
-以下文件在任务需要时按需读取，按优先级分层：
-说明：
+按以下优先级读取：
 - Tier 1 在恢复、压缩、连续流程或活跃方案包场景读取当前 `state_path`；普通问答和一次性只读任务不强制读取
 - Tier 2 / Tier 3 中的 `.helloagents/...` 路径默认按项目级存储路径解析；`project_store_mode=repo-shared` 时按共享知识/方案目录解析
 

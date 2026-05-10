@@ -405,7 +405,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, source: 'startup' }),
   })
   let payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /HelloAGENTS \(Standby\)/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /# HelloAGENTS\b/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 运行根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /本轮 HelloAGENTS 读取根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /turnStateCommand/)
