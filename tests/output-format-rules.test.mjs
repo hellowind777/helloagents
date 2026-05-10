@@ -18,10 +18,11 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /### 表达与语气/);
     assert.match(content, /都必须同时遵守本节全部规则/);
     assert.match(content, /普通问答、解释、分析、改写、邮件回复和其他一次性交付/);
-    assert.match(content, /请求已满足时直接结束，不追加无执行价值的延伸、第二版或邀约式收尾/);
+    assert.match(content, /默认只交付与当前请求直接对应的一版最终结果/);
+    assert.match(content, /请求已满足时直接结束，不主动追加无执行价值的延伸、派生版本、不同写法、第二版或邀约式收尾/);
     assert.match(content, /回复末尾只保留结论、风险、限制、已完成状态、阻塞项或真实下一步动作/);
     assert.match(content, /说话像成熟同事，不像客服、销售或咨询顾问/);
-    assert.match(content, /直接回答，少铺垫；需要先给结论时先给结论，再补必要细节/);
+    assert.match(content, /直接回答，少铺垫；需要先给结论时先给结论，再补必要细节。能用一版说清就只给一版，不主动提供多个备选、补充改写或派生版本/);
     assert.match(content, /用词用语和表述方式保持简洁、自然、清晰、准确、合理、统一，不赘述、不冗余、不过度精简/);
     assert.match(content, /优先使用普通、易懂、贴近用户的表达；必要术语先解释，再补原名/);
     assert.match(content, /准确优先于压缩/);
