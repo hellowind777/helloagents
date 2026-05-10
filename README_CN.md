@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.27-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.28-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -670,18 +670,18 @@ Codex 默认走规则文件驱动。
 npm test
 ```
 
-当前测试共 121 项，覆盖：
+当前测试共 124 项，覆盖：
 
-- 安装、更新、卸载、清理和模式切换
+- 安装、更新、清理、卸载、分支切换和模式切换
 - shell 与 PowerShell 一键脚本分发链路，以及包装脚本在安装、更新、清理、卸载和分支切换中的模式传递规则
-- Claude、Gemini、Codex 的配置合并与恢复
+- Claude、Gemini、Codex 的配置合并、恢复，以及原生全局清理行为
 - Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、hook trust 状态、本地插件、marketplace 和缓存行为
 - Windows 下 Codex 旧式受管 notify 变体的清理，以及受管 notify 恢复规则
 - Codex `/goal` 功能开关、长程路由上下文和 goal 感知命令契约
 - `helloagents doctor`
 - 项目存储和 `repo-shared`
 - 会话级 `state_path`、运行态信号和证据
-- 运行时选路、Guard、验证、视觉证据、交付门控、单次收尾包装校验，以及原生安装失败后的模式记录
+- 运行时注入、选路、Guard、验证、视觉证据、交付门控、收尾去重，以及原生安装失败后的模式记录
 - README 与 skill 契约一致性
 
 ## FAQ

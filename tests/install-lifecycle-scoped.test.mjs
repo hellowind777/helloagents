@@ -216,6 +216,64 @@ test('global install attempts Claude and Gemini native installers when commands 
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.gemini, 'global')
 })
 
+test('cleanup claude --global runs native removal and clears only Claude tracked mode', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const fakeBin = createTempDir('helloagents-fake-bin-')
+  const claudeLog = join(home, 'claude-cleanup.log')
+  const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'claude', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_CLAUDE_CMD: claudeCommand,
+  })
+  runCli(pkgRoot, home, ['install', 'codex', '--global'])
+
+  runCli(pkgRoot, home, ['cleanup', 'claude', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_CLAUDE_CMD: claudeCommand,
+  })
+
+  assert.match(readText(claudeLog), /plugin remove helloagents/)
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.claude, undefined)
+  assert.equal(settings.host_install_modes.codex, 'global')
+})
+
+test('uninstall gemini reuses tracked global mode and runs native removal', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const fakeBin = createTempDir('helloagents-fake-bin-')
+  const geminiLog = join(home, 'gemini-uninstall.log')
+  const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'gemini', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GEMINI_CMD: geminiCommand,
+  })
+  runCli(pkgRoot, home, ['install', 'claude'])
+
+  runCli(pkgRoot, home, ['uninstall', 'gemini'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GEMINI_CMD: geminiCommand,
+  })
+
+  assert.match(readText(geminiLog), /extensions uninstall helloagents/)
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.gemini, undefined)
+  assert.equal(settings.host_install_modes.claude, 'standby')
+})
+
 test('single-host global install does not record a mode when the native host command fails', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

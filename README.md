@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.27-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.28-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -668,18 +668,18 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 121 tests and covers:
+The current suite includes 124 tests and covers:
 
-- install, update, uninstall, cleanup, and mode switching
+- install, update, cleanup, uninstall, branch switching, and mode switching
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
-- Claude, Gemini, and Codex config merge and restore behavior
+- Claude, Gemini, and Codex config merge, restore, and native/global cleanup behavior
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
 - session-scoped `state_path`, runtime signals, and evidence
-- runtime routing, guard, verification, visual evidence, delivery gates, single-wrapper closeout validation, and successful-mode tracking after native install failures
+- runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, and successful-mode tracking after native install failures
 - README and skill contract alignment
 
 ## FAQ

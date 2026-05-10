@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "3.0.27",
+  "version": "3.0.28",
   "type": "module",
   "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, quality verification (Ralph Loop), safety guards, and notifications.",
   "author": "HelloWind",
