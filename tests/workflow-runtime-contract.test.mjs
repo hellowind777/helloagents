@@ -300,7 +300,7 @@ test('workflow templates and bootstrap stay aligned with runtime artifacts', () 
   }
 
   assert.match(readText(join(REPO_ROOT, 'bootstrap.md')), /`~idea` 在输出比较与推荐后结束，不进入实现，也不创建 `\.helloagents\/`、状态文件或方案包/)
-  assert.match(readText(join(REPO_ROOT, 'bootstrap.md')), /默认按上文“统一执行流程 \/ ROUTE \/ TIER”选路；除显式 `~command` 外，不另起独立路由规则/)
+  assert.match(readText(join(REPO_ROOT, 'bootstrap.md')), /默认按上文“统一执行流程中的 ROUTE \/ TIER”选路；除显式 `~command` 外，不另起独立路由规则/)
   assert.match(readText(join(REPO_ROOT, 'bootstrap.md')), /### 完成判定/)
   assert.match(readText(join(REPO_ROOT, 'bootstrap.md')), /任务状态符号统一使用：`\[ \]` 待办 \| `\[√\]` 完成 \| `\[X\]` 取消 \| `\[-\]` 跳过/)
   assert.match(readText(join(REPO_ROOT, 'bootstrap.md')), /### 重置/)

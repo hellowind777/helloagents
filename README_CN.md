@@ -566,7 +566,7 @@ UI 任务遵循以下优先级：
 
 1. 当前 `plan.md` 或 PRD 中的 UI 决策
 2. `.helloagents/DESIGN.md`
-3. `hello-ui` 的实现和验收规则，与共享 UI 质量基线共同生效
+3. 已读取的 `hello-ui` 实现和验收规则；所有 UI 任务都必须满足共享 UI 质量基线
 
 更重的 UI 任务可以通过 `contract.json` 要求：
 

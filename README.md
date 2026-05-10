@@ -564,7 +564,7 @@ UI work follows this priority:
 
 1. current `plan.md` or PRD UI decisions
 2. `.helloagents/DESIGN.md`
-3. `hello-ui` implementation and validation rules, together with the shared UI quality baseline
+3. any loaded `hello-ui` implementation and validation rules; all UI work must still satisfy the shared UI quality baseline
 
 For heavier UI work, `contract.json` can require:
 
