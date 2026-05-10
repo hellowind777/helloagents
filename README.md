@@ -623,6 +623,8 @@ Default shape:
 | `install_mode` | `"standby"` | current default install mode |
 | `host_install_modes` | `{}` | managed per-CLI mode map, such as `{ "codex": "standby" }`; recorded only after successful host setup and used before falling back to `install_mode` |
 
+`auto_commit_enabled` is initialized to `true` only when the config file is first created. Later installs and updates only fill missing keys and do not overwrite your existing value.
+
 ## How Each CLI Is Integrated
 
 ### Claude Code

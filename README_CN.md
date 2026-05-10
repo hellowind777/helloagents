@@ -625,6 +625,8 @@ UI 任务遵循以下优先级：
 | `install_mode` | `"standby"` | 当前默认安装模式 |
 | `host_install_modes` | `{}` | 受管的单 CLI 模式记录，如 `{ "codex": "standby" }`；仅在宿主安装成功后写入，并优先于 `install_mode` |
 
+`auto_commit_enabled` 只会在首次创建配置文件时初始化为 `true`。后续安装或更新只补齐缺失项，不覆盖你已有的配置值。
+
 ## 各 CLI 集成方式
 
 ### Claude Code
