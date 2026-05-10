@@ -551,7 +551,7 @@ ROUTE / TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
 | `VERIFY` | 审查、运行命令、核对契约和证据 |
 | `CONSOLIDATE` | 更新状态、知识库和收尾证据 |
 
-### 交付分层
+### 任务分层
 
 | 分层 | 典型场景 |
 |------|----------|

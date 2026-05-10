@@ -8,7 +8,7 @@ policy:
 ## Skill 系统
 Skills 是带 YAML frontmatter 的 Markdown 文件。
 - helloagents: 由检查清单驱动的质量把关（每次对话自动加载）
-- hello-*: 质量技能（根据任务自动激活，提供实现标准和交付检查清单）
+- hello-*: 质量技能（根据任务自动激活，提供实现要求和交付检查清单）
 - commands/*: 用户通过 ~command 调用
 
 Skills 按需加载，不预加载。
