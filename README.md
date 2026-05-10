@@ -602,6 +602,7 @@ Default shape:
   "guard_enabled": true,
   "kb_create_mode": 1,
   "project_store_mode": "local",
+  "auto_commit_enabled": true,
   "commit_attribution": "",
   "install_mode": "standby",
   "host_install_modes": {}
@@ -617,6 +618,7 @@ Default shape:
 | `guard_enabled` | `true` | block dangerous commands |
 | `kb_create_mode` | `1` | control automatic knowledge base updates |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
+| `auto_commit_enabled` | `true` | auto-create a local commit at closeout when verification passed and the working tree changed; `false` skips only the automatic commit |
 | `commit_attribution` | `""` | optional text appended to commit messages |
 | `install_mode` | `"standby"` | current default install mode |
 | `host_install_modes` | `{}` | managed per-CLI mode map, such as `{ "codex": "standby" }`; recorded only after successful host setup and used before falling back to `install_mode` |

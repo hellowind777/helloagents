@@ -270,7 +270,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
   - 已存在且完整则按模板格式更新 `CHANGELOG.md`、相关 `modules/*.md`、增量经验 delta 追加
 - 符合条件时触发 `hello-reflect`（详见 `hello-reflect` SKILL.md）
-- 本地版本检查点：非只读任务完成验证且产生工作区变更时，最终收尾前自动执行本地提交。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。不自动远程 `git push`，除非用户明确要求
+- 本地版本检查点：非只读任务完成验证且产生工作区变更时，若 `auto_commit_enabled=true`，最终收尾前自动执行本地提交；若 `auto_commit_enabled=false`，跳过这一步。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。显式 `~commit` 不受这个开关影响。不自动远程 `git push`，除非用户明确要求
 
 ### 完成判定
 - 未进入 VERIFY / CONSOLIDATE 的路径，声称完成前必须完成与任务类型匹配的必要检查；无法执行的检查必须明确说明，不得直接宣称完成

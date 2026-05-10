@@ -19,6 +19,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const configFile = join(home, '.helloagents', 'helloagents.json')
   assert.equal(readJson(configFile).install_mode, 'standby')
+  assert.equal(readJson(configFile).auto_commit_enabled, true)
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))

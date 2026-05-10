@@ -604,6 +604,7 @@ UI 任务遵循以下优先级：
   "guard_enabled": true,
   "kb_create_mode": 1,
   "project_store_mode": "local",
+  "auto_commit_enabled": true,
   "commit_attribution": "",
   "install_mode": "standby",
   "host_install_modes": {}
@@ -619,6 +620,7 @@ UI 任务遵循以下优先级：
 | `guard_enabled` | `true` | 拦截危险命令 |
 | `kb_create_mode` | `1` | 控制知识库自动更新 |
 | `project_store_mode` | `"local"` | `local` 或 `repo-shared` |
+| `auto_commit_enabled` | `true` | 验证完成且工作区有变更时自动创建本地提交；`false` 只跳过自动提交 |
 | `commit_attribution` | `""` | 提交信息附加署名 |
 | `install_mode` | `"standby"` | 当前默认安装模式 |
 | `host_install_modes` | `{}` | 受管的单 CLI 模式记录，如 `{ "codex": "standby" }`；仅在宿主安装成功后写入，并优先于 `install_mode` |

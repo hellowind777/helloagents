@@ -50,6 +50,7 @@ Trigger: ~help
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
 | kb_create_mode | 1 | 0=关闭/1=已激活项目或全局模式中编码自动/2=已激活项目或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
 | project_store_mode | "local" | "local"=知识库/方案包保留在项目本地 `.helloagents/`；"repo-shared"=本地 `.helloagents/` 仅保留激活/STATE/运行态，知识库与方案包改写到 `~/.helloagents/projects/<repo-key>/` | Claude Code + Gemini CLI + Codex CLI |
+| auto_commit_enabled | true | true=验证完成且有变更时自动执行本地提交；false=跳过自动提交，仍可手动用 `~commit` | Claude Code + Gemini CLI + Codex CLI |
 | commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |
 | install_mode | "standby" | 当前默认安装模式 | Claude Code + Gemini CLI + Codex CLI |
 | host_install_modes | {} | 单 CLI 模式记录，优先于 install_mode | Claude Code + Gemini CLI + Codex CLI |

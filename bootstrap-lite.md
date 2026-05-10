@@ -202,7 +202,7 @@
 - 当前项目已激活，或已存在方案包 / `contract.json` / 证据文件时，以完整流程、对应 skill 与运行时交付约束为准，不得降级为本节
 - 只读分析、创意探索、方案比较、中间进度和阻塞汇报不适用本节
 - Codex `/goal` 只作为外层长程续跑与预算控制；HelloAGENTS 仍负责方案、执行、验证和收尾。若 active goal 的目标已全部完成，先完成 HelloAGENTS 验证、收尾检查与本地版本检查点，再调用 `update_goal` 标记 complete；不得因预算接近耗尽、单轮结束或准备停下而标记 complete
-- 本地版本检查点：非只读任务完成验证且产生工作区变更时，最终收尾前自动执行本地提交。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。不自动远程 `git push`，除非用户明确要求
+- 本地版本检查点：非只读任务完成验证且产生工作区变更时，若 `auto_commit_enabled=true`，最终收尾前自动执行本地提交；若 `auto_commit_enabled=false`，跳过这一步。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。显式 `~commit` 不受这个开关影响。不自动远程 `git push`，除非用户明确要求
 
 ### 命令路由
 - `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名；`~review` 是 `~verify` 的兼容别名

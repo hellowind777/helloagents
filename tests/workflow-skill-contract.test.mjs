@@ -116,8 +116,11 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(helloVerify, /blocker\.target/)
   assert.match(helloVerify, /本地版本检查点/)
   assert.match(helloVerify, /非只读任务完成验证且产生工作区变更时/)
+  assert.match(helloVerify, /auto_commit_enabled=true/)
+  assert.match(helloVerify, /auto_commit_enabled=false/)
   assert.match(helloVerify, /使用当前回复语言生成简洁 conventional commit message/)
   assert.match(helloVerify, /执行 `git commit`/)
+  assert.match(helloVerify, /显式 `~commit` 不受这个开关影响/)
   assert.match(helloVerify, /不自动远程 `git push`/)
   assert.match(helloVerify, /requirementsCoverage/)
   assert.match(helloVerify, /deliveryChecklist/)
@@ -225,6 +228,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(help, /纯标准模式未激活项目不会自动触发这些技能/)
   assert.match(help, /UI 质量基线约束/)
   assert.match(help, /project_store_mode/)
+  assert.match(help, /auto_commit_enabled/)
+  assert.match(help, /仍可手动用 `~commit`/)
 
   const bootstrapFull = readText(join(REPO_ROOT, 'bootstrap.md'))
   assert.match(bootstrapFull, /项目级规则文件（`AGENTS\.md`、`CLAUDE\.md`、`\.gemini\/GEMINI\.md`）/)
@@ -240,6 +245,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(readme, /artifacts\/visual\.json/)
   assert.match(readme, /refreshes project-level HelloAGENTS package-root links/)
   assert.match(readme, /project-level rule files/)
+  assert.match(readme, /auto_commit_enabled/)
+  assert.match(readme, /skips only the automatic commit/)
   assert.doesNotMatch(readme, /Codex project skill link at `\.codex\/skills\/helloagents`/)
   assert.doesNotMatch(readme, /Writing UI code\? → `hello-ui` activates/)
 
@@ -249,6 +256,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(readmeCn, /artifacts\/visual\.json/)
   assert.match(readmeCn, /刷新各宿主项目级 HelloAGENTS 包根链接/)
   assert.match(readmeCn, /项目级规则文件/)
+  assert.match(readmeCn, /auto_commit_enabled/)
+  assert.match(readmeCn, /只跳过自动提交/)
   assert.doesNotMatch(readmeCn, /刷新 Codex 项目技能链接 `\.codex\/skills\/helloagents`/)
   assert.doesNotMatch(readmeCn, /写 UI 代码？→ `hello-ui` 激活/)
 
@@ -318,6 +327,8 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
 
   const commit = readText(join(REPO_ROOT, 'skills', 'commands', 'commit', 'SKILL.md'))
   assert.match(commit, /知识库同步与状态文件更新范围按当前已加载的 HelloAGENTS CONSOLIDATE \/ 流程状态要求执行/)
+  assert.match(commit, /auto_commit_enabled=false/)
+  assert.match(commit, /不影响显式 `~commit`/)
   assert.match(commit, /缺少 `commit_attribution` \/ `kb_create_mode`/)
   assert.match(commit, /按 HelloAGENTS“已有则更新”要求同步当前已提交状态/)
   assert.match(commit, /同步范围与更新格式按当前已加载的 HelloAGENTS CONSOLIDATE 阶段执行/)
