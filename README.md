@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.27-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.28-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -564,7 +564,7 @@ UI work follows this priority:
 
 1. current `plan.md` or PRD UI decisions
 2. `.helloagents/DESIGN.md`
-3. `hello-ui` implementation and validation rules, together with the shared UI quality baseline
+3. any loaded `hello-ui` implementation and validation rules; all UI work must still satisfy the shared UI quality baseline
 
 For heavier UI work, `contract.json` can require:
 
@@ -602,6 +602,7 @@ Default shape:
   "guard_enabled": true,
   "kb_create_mode": 1,
   "project_store_mode": "local",
+  "auto_commit_enabled": true,
   "commit_attribution": "",
   "install_mode": "standby",
   "host_install_modes": {}
@@ -617,9 +618,12 @@ Default shape:
 | `guard_enabled` | `true` | block dangerous commands |
 | `kb_create_mode` | `1` | control automatic knowledge base updates |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
+| `auto_commit_enabled` | `true` | auto-create a local commit at closeout when verification passed and the working tree changed; `false` skips only the automatic commit |
 | `commit_attribution` | `""` | optional text appended to commit messages |
 | `install_mode` | `"standby"` | current default install mode |
 | `host_install_modes` | `{}` | managed per-CLI mode map, such as `{ "codex": "standby" }`; recorded only after successful host setup and used before falling back to `install_mode` |
+
+`auto_commit_enabled` is initialized to `true` only when the config file is first created. Later installs and updates only fill missing keys and do not overwrite your existing value.
 
 ## How Each CLI Is Integrated
 
@@ -664,18 +668,18 @@ Run all tests:
 npm test
 ```
 
-The current suite includes 121 tests and covers:
+The current suite includes 124 tests and covers:
 
-- install, update, uninstall, cleanup, and mode switching
+- install, update, cleanup, uninstall, branch switching, and mode switching
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
-- Claude, Gemini, and Codex config merge and restore behavior
+- Claude, Gemini, and Codex config merge, restore, and native/global cleanup behavior
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
 - session-scoped `state_path`, runtime signals, and evidence
-- runtime routing, guard, verification, visual evidence, delivery gates, single-wrapper closeout validation, and successful-mode tracking after native install failures
+- runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, and successful-mode tracking after native install failures
 - README and skill contract alignment
 
 ## FAQ

@@ -12,12 +12,21 @@ function read(relativePath) {
 test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-out replies only', () => {
   for (const file of ['bootstrap.md', 'bootstrap-lite.md']) {
     const content = read(file);
-    assert.match(content, /语言与表述（强制）/);
+    assert.match(content, /## 通用交付规则（强制）/);
+    assert.match(content, /### 产出质量/);
+    assert.ok(content.indexOf('### 执行纪律') < content.indexOf('### 表达与语气'));
+    assert.match(content, /### 表达与语气/);
     assert.match(content, /都必须同时遵守本节全部规则/);
+    assert.match(content, /普通问答、解释、分析、改写、邮件回复和其他一次性交付/);
+    assert.match(content, /请求已满足时直接结束，不追加无执行价值的延伸、第二版或邀约式收尾/);
+    assert.match(content, /回复末尾只保留结论、风险、限制、已完成状态、阻塞项或真实下一步动作/);
+    assert.match(content, /说话像成熟同事，不像客服、销售或咨询顾问/);
+    assert.match(content, /直接回答，少铺垫；需要先给结论时先给结论，再补必要细节/);
     assert.match(content, /用词用语和表述方式保持简洁、自然、清晰、准确、合理、统一，不赘述、不冗余、不过度精简/);
+    assert.match(content, /优先使用普通、易懂、贴近用户的表达；必要术语先解释，再补原名/);
     assert.match(content, /准确优先于压缩/);
-    assert.match(content, /不输出黑话、营销话、内部化表述或空泛形容/);
-    assert.match(content, /不输出客套内容、邀约式表述、重复确认、自我能力陈述内容或空泛建议/);
+    assert.match(content, /不输出黑话、营销话、内部化表述或空泛形容；不为了显得专业而堆黑话/);
+    assert.match(content, /不输出客套内容、重复确认或无执行价值的自我能力陈述/);
     assert.match(content, /遵循 DIY 原则/);
     assert.match(content, /优先在原条目内收敛表达/);
     assert.match(content, /复用已有概念和表述/);
@@ -64,7 +73,12 @@ test('skill and help docs describe output_format as final-summary only', () => {
   assert.match(helloagentsSkill, /不在正文里再次输出 `【HelloAGENTS】` 或第二个 `🔄 下一步`/);
 
   const helloWriteSkill = read('skills/hello-write/SKILL.md');
-  assert.match(helloWriteSkill, /通用语言与表述要求/);
+  assert.match(helloWriteSkill, /通用交付规则中的执行纪律与表达与语气要求/);
+  assert.match(helloWriteSkill, /邮件回复、问答说明、措辞改写/);
+  assert.match(helloWriteSkill, /默认交付一个可直接使用的最终文本/);
+  assert.match(helloWriteSkill, /先直接给可用文本或结论，再补必要说明/);
+  assert.match(helloWriteSkill, /未明确要求多版本时，只给一个最终版本/);
+  assert.match(helloWriteSkill, /文本已满足请求时直接结束，不加无执行价值的邀约式收尾/);
   assert.doesNotMatch(helloWriteSkill, /简洁、自然、准确、合理、不赘述、不冗余、不过度精简/);
   assert.match(helloWriteSkill, /不重复同一结论/);
 

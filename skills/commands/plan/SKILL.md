@@ -15,7 +15,7 @@ Trigger: ~plan [description]
 - 需求澄清阶段不读取实现类技能（hello-ui / hello-test / hello-verify 等），需求明确后再按需读取
 - 方案必须整理为可执行产物，不停留在泛化建议
 - 若当前任务来自 `~auto`，则“开始执行”视为已包含在 `~auto` 授权内；方案包写入后默认继续执行，只有命中阻塞判定时才停下。`~design` 是 `~plan` 的兼容别名，只有在 `~auto` 内触发其语义时才默认继续进入 `~build`
-- 涉及 UI 时，当前方案包中的 UI 决策优先于 `.helloagents/DESIGN.md`；`.helloagents/DESIGN.md`（按当前项目存储模式解析）优先于通用 UI 规则
+- 涉及 UI 时，当前方案包中的 UI 决策优先于 `.helloagents/DESIGN.md`；`.helloagents/DESIGN.md`（按当前项目存储模式解析）优先于已读取的 `hello-ui` 规则；同时所有 UI 任务都必须满足 UI 质量基线
 
 ## 流程
 

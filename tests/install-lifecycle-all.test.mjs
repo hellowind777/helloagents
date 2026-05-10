@@ -19,6 +19,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const configFile = join(home, '.helloagents', 'helloagents.json')
   assert.equal(readJson(configFile).install_mode, 'standby')
+  assert.equal(readJson(configFile).auto_commit_enabled, true)
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
@@ -161,6 +162,36 @@ test('postinstall can deploy from compact HELLOAGENTS spec', () => {
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), join(home, '.helloagents', 'helloagents'))
   assert.equal(realTarget(pluginRoot), join(home, '.helloagents', 'helloagents'))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.codex, 'global')
+})
+
+test('postinstall and later lifecycle commands preserve existing auto_commit_enabled', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  writeJson(configFile, {
+    output_language: '',
+    output_format: true,
+    notify_level: 0,
+    ralph_loop_enabled: true,
+    guard_enabled: true,
+    kb_create_mode: 1,
+    project_store_mode: 'local',
+    auto_commit_enabled: false,
+    commit_attribution: '',
+    install_mode: 'standby',
+    host_install_modes: {},
+  })
+
+  runCli(pkgRoot, home, ['postinstall'])
+  assert.equal(readJson(configFile).auto_commit_enabled, false)
+
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+  assert.equal(readJson(configFile).auto_commit_enabled, false)
+
+  runCli(pkgRoot, home, ['update', 'codex'])
+  assert.equal(readJson(configFile).auto_commit_enabled, false)
 })
 
 test('runtime carrier does not snapshot helloagents config into persistent rules files', () => {

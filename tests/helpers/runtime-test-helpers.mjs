@@ -25,6 +25,7 @@ export function writeSettings(home, overrides = {}) {
     guard_enabled: true,
     kb_create_mode: 1,
     project_store_mode: 'local',
+    auto_commit_enabled: true,
     commit_attribution: '',
     install_mode: 'standby',
     ...overrides,
