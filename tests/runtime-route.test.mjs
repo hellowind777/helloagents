@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -439,6 +440,16 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.equal(payload.suppressOutput, true)
   assert.equal(payload.hookSpecificOutput, undefined)
 
+  writeText(
+    join(project, 'CLAUDE.md'),
+    [
+      '<!-- HELLOAGENTS_PROFILE: full -->',
+      '<!-- HELLOAGENTS_START -->',
+      '# project carrier',
+      '<!-- HELLOAGENTS_END -->',
+      '',
+    ].join('\n'),
+  )
   writeText(getSessionStatePath(project), '# activated\n')
   result = runNode(notifyScript, ['inject'], {
     cwd: project,
@@ -610,6 +621,53 @@ test('notify runtime uses host_install_modes before global install_mode', () => 
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
+})
+
+test('project full carrier switches semantic route to full bootstrap in standby mode', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-route-full-carrier-')
+  const env = buildHomeEnv(home)
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { install_mode: 'standby' })
+  writeText(
+    join(project, 'AGENTS.md'),
+    [
+      '<!-- HELLOAGENTS_PROFILE: full -->',
+      '<!-- HELLOAGENTS_START -->',
+      '# project carrier',
+      '<!-- HELLOAGENTS_END -->',
+      '',
+    ].join('\n'),
+  )
+
+  const result = runNode(notifyScript, ['route', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: 'create a new app for expenses' }),
+  })
+  const payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
+})
+
+test('non-readonly command route creates project-local state in non-full standby project', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-route-local-state-')
+  const env = buildHomeEnv(home)
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { install_mode: 'standby' })
+
+  const result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '~build finish the current task' }),
+  })
+  const payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]build[\\/]SKILL\.md/)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md')), true)
 })
 
 test('notify route keeps command skills on the runtime root even if project-level skill dirs exist', () => {

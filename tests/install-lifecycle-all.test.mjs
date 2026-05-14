@@ -86,6 +86,9 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.equal(realTarget(pluginCacheRoot), runtimeRoot)
   assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
+  assert.match(readText(join(pluginCacheRoot, 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
   assert.doesNotMatch(readText(join(pluginRoot, 'AGENTS.md')), /## 当前用户设置/)
   assert.doesNotMatch(readText(join(pluginCacheRoot, 'AGENTS.md')), /## 当前用户设置/)
 

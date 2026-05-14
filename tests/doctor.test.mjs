@@ -138,6 +138,7 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   assert.equal(codex.checks.pluginCache, true)
   assert.equal(codex.checks.pluginRootLink, true)
   assert.equal(codex.checks.pluginCacheLink, true)
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
   assert.equal(codex.checks.standaloneHooks, true)
   assert.equal(codex.checks.standaloneHooksMatch, true)
   assert.equal(codex.checks.managedHookTrust, true)

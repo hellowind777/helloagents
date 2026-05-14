@@ -73,10 +73,10 @@ function renderInstallMessage(context, mode, state) {
   return msg(
     refresh
       ? `  standby 模式已刷新，CLI 注入与链接已同步最新文件。\n  ${restartHint(msg)}\n  ${removeHint(msg)}`
-      : `  项目可通过 ~wiki 创建/同步知识库，或通过 ~init 完整初始化；未激活项目仅注入通用规则。\n  ${restartHint(msg)}\n  ${removeHint(msg)}`,
+      : `  项目可通过 ~wiki 创建/同步知识库，或通过 ~init 写入 full 项目级 carrier；未写入 full carrier 时仅注入轻量规则。\n  ${restartHint(msg)}\n  ${removeHint(msg)}`,
     refresh
       ? `  Standby mode refreshed; injected files and links were synchronized.\n  ${restartHint(msg)}\n  ${removeHint(msg)}`
-      : `  Projects can use ~wiki for KB-only activation or ~init for the full project setup. Unactivated projects get lite rules only.\n  ${restartHint(msg)}\n  ${removeHint(msg)}`,
+      : `  Projects can use ~wiki for KB-only sync or ~init to write a full project carrier. Projects without a full carrier get lite rules only.\n  ${restartHint(msg)}\n  ${removeHint(msg)}`,
   )
 }
 
