@@ -7,6 +7,7 @@ import { homedir } from 'node:os'
 import { resolveSessionToken } from './session-token.mjs'
 import { USER_RUNTIME_MAX_AGE_MS } from './runtime-ttl.mjs'
 import { cleanupUserRuntimeRoot, getUserRuntimeRoot } from './runtime-user-cleanup.mjs'
+import { FULL_CARRIER_PROFILE_MARKER } from './cli-utils.mjs'
 
 export const PROJECT_DIR_NAME = '.helloagents'
 export const PROJECT_SESSIONS_DIR_NAME = 'sessions'
@@ -141,6 +142,138 @@ export function isProjectRuntimeActive(cwd) {
 export function getProjectRoot(cwd) {
   const activeDir = findProjectActivationDir(cwd)
   return activeDir ? dirname(activeDir) : normalizePath(cwd || process.cwd())
+}
+
+function getCarrierPathForRoot(root, host = '') {
+  if (!root) return ''
+  if (host === 'codex') return join(root, 'AGENTS.md')
+  if (host === 'gemini') return join(root, '.gemini', 'GEMINI.md')
+  return join(root, 'CLAUDE.md')
+}
+
+function getCarrierCandidatePaths(root, host = '', { anyHost = false } = {}) {
+  if (!root) return []
+  if (!anyHost) return [getCarrierPathForRoot(root, host)]
+  return [
+    join(root, 'AGENTS.md'),
+    join(root, 'CLAUDE.md'),
+    join(root, '.gemini', 'GEMINI.md'),
+  ]
+}
+
+function hasFullCarrierMarker(filePath = '') {
+  if (!filePath || !existsSync(filePath)) return false
+  try {
+    return readFileSync(filePath, 'utf-8').includes(FULL_CARRIER_PROFILE_MARKER)
+  } catch {
+    return false
+  }
+}
+
+function findProjectCarrierRoot(cwd, host = '', options = {}) {
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  const gitRoot = resolveGitTopLevel(normalizedCwd)
+  const requireFullProfile = options.requireFullProfile === true
+  const anyHost = options.anyHost === true
+  let current = normalizedCwd
+
+  while (current) {
+    const candidates = getCarrierCandidatePaths(current, host, { anyHost })
+    const matched = candidates.some((filePath) =>
+      requireFullProfile ? hasFullCarrierMarker(filePath) : existsSync(filePath))
+    if (matched) return current
+    if (isUserHomeDir(current)) break
+    if (gitRoot && samePath(current, gitRoot)) break
+
+    const parent = dirname(current)
+    if (!parent || parent === current) break
+    current = parent
+  }
+
+  return ''
+}
+
+export function getProjectLocalRoot(cwd) {
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  const activeDir = findProjectActivationDir(normalizedCwd)
+  if (activeDir) return dirname(activeDir)
+
+  const fullCarrierRoot = findProjectCarrierRoot(normalizedCwd, '', {
+    anyHost: true,
+    requireFullProfile: true,
+  })
+  return fullCarrierRoot || resolveGitTopLevel(normalizedCwd) || normalizedCwd
+}
+
+export function getProjectLocalDir(cwd) {
+  return join(getProjectLocalRoot(cwd), PROJECT_DIR_NAME)
+}
+
+export function getProjectCarrierRoot(cwd) {
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  return findProjectCarrierRoot(normalizedCwd, '', { anyHost: true })
+    || resolveGitTopLevel(normalizedCwd)
+    || getProjectRoot(normalizedCwd)
+}
+
+export function getProjectCarrierPath(cwd, host = '') {
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  const carrierRoot = findProjectCarrierRoot(normalizedCwd, host, {
+    requireFullProfile: true,
+  }) || findProjectCarrierRoot(normalizedCwd, host)
+    || getProjectCarrierRoot(normalizedCwd)
+  return getCarrierPathForRoot(carrierRoot, host)
+}
+
+export function hasProjectFullCarrier(cwd, host = '') {
+  const carrierPath = getProjectCarrierPath(cwd, host)
+  return hasFullCarrierMarker(carrierPath)
+}
+
+function buildInitialStateSnapshot({
+  goal = '继续当前非只读任务',
+  doing = '已进入当前任务执行流程',
+  context = '由运行时自动创建；后续按实际任务重写',
+  next = '根据当前用户请求继续执行，并按实际任务重写本状态文件',
+} = {}) {
+  return [
+    '# 恢复快照',
+    '',
+    '## 主线目标',
+    goal,
+    '',
+    '## 正在做什么',
+    doing,
+    '',
+    '## 关键上下文',
+    context,
+    '',
+    '## 下一步',
+    next,
+    '',
+    '## 阻塞项',
+    '（无）',
+    '',
+    '## 方案',
+    '',
+    '## 已标记技能',
+    '',
+  ].join('\n')
+}
+
+export function ensureProjectLocalRuntime(cwd, options = {}) {
+  const normalizedCwd = normalizePath(cwd || process.cwd())
+  const localDir = getProjectLocalDir(normalizedCwd)
+  mkdirSync(localDir, { recursive: true })
+
+  const scope = getProjectSessionScope(normalizedCwd, options)
+  mkdirSync(dirname(scope.statePath), { recursive: true })
+
+  if (!existsSync(scope.statePath)) {
+    writeFileSync(scope.statePath, `${buildInitialStateSnapshot(options.stateSeed || {})}\n`, 'utf-8')
+  }
+
+  return scope
 }
 
 function isUserHomeHelloagentsDir(dirPath) {
@@ -368,7 +501,16 @@ function buildTransientRuntimeDir(cwd, options = {}) {
 }
 
 export function getRuntimeScope(cwd = process.cwd(), options = {}) {
-  const projectScope = getProjectSessionScope(cwd, options)
+  const normalizedOptions = normalizeRuntimeOptions(options)
+  if (normalizedOptions.ensureProjectLocal === true) {
+    return {
+      ...ensureProjectLocalRuntime(cwd, normalizedOptions),
+      active: true,
+      scope: 'project-session',
+    }
+  }
+
+  const projectScope = getProjectSessionScope(cwd, normalizedOptions)
   if (projectScope.active) {
     return {
       ...projectScope,
@@ -377,7 +519,7 @@ export function getRuntimeScope(cwd = process.cwd(), options = {}) {
   }
 
   return {
-    ...buildTransientRuntimeDir(cwd, options),
+    ...buildTransientRuntimeDir(cwd, normalizedOptions),
     active: false,
     scope: 'user-runtime',
   }

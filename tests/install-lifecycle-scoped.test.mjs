@@ -51,6 +51,8 @@ test('single-host update reuses tracked codex mode and cleanup leaves other CLIs
   assert.ok(existsSync(pluginRoot))
   assert.equal(realpathSync(pluginRoot), realpathSync(join(home, '.helloagents', 'helloagents')))
   assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
   assert.equal(readJson(configFile).host_install_modes.codex, 'global')
 
   writeText(join(pkgRoot, 'bootstrap.md'), '# scoped global update\n')

@@ -227,7 +227,7 @@
 - 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
 - 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`）只作为兼容别名，不作为优先探测路径
 - 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
-- 已激活项目或全局模式下，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
+- 全局模式或项目已写入 full carrier 时，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
 路径确定一次即可，不预读、不扫描整个目录，也不重复探测同一路径。
 hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.md`
 包内脚本优先使用稳定命令入口；涉及 turn-state 时按“收尾状态信号”执行。
@@ -265,7 +265,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
 - 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`artifacts/loop-results.tsv`、`capsule.json`、`events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/verify.json`、`artifacts/review.json`、`artifacts/closeout.json`）
-- 按 `kb_create_mode` 同步知识库（0=关闭 / 1=已激活项目或全局模式中编码自动 / 2=已激活项目或全局模式中始终）：
+- 按 `kb_create_mode` 同步知识库（0=关闭 / 1=项目已写入 full carrier 或全局模式中的编码任务自动 / 2=项目已写入 full carrier 或全局模式中始终）：
   - `.helloagents/` 不存在则按 templates/ 创建知识库文件（`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`）
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
   - 已存在且完整则按模板格式更新 `CHANGELOG.md`、相关 `modules/*.md`、增量经验 delta 追加
@@ -287,7 +287,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 ### .helloagents/ 目录
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
-- `.helloagents/` 表示项目级存储路径，也是标准模式的项目激活信号
+- `.helloagents/` 表示项目本地存储路径，负责知识、方案、状态与运行态；它不再作为 full 规则判定信号
 - `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/`
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{workspace}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{workspace}/default/STATE.md`
 - `{workspace}` 为当前 Git 分支、`detached-{sha}` 或非 Git 项目的 `workspace`；`.helloagents/sessions/active.json` 只记录当前活跃会话索引，避免同一会话被拆成多个目录
@@ -299,7 +299,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - 状态文件（`state_path`）— ≤70 行，用来记录“上次做到哪里”。判断当前任务时，当前用户消息、显式命令、活跃方案包 / PRD、代码与验证证据优先于状态文件
   内容：主线目标、正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
   适用边界：
-  - 强制创建并持续更新：`~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop`，以及进入工作流阶段或已激活项目的连续任务
+  - 强制创建并持续更新：`~wiki`、`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop`，以及进入工作流阶段、项目已写入 full carrier 的连续任务，或任何会创建/修改本地文件、会在当前工作区留下实际输出或操作记录的非只读任务
   - 强制更新，不要求首次创建：`~clean`，主代理汇总子代理结果后
   - 已有则更新：`~verify`、`~review`（兼容别名）、`~test`、`~commit`
   - 不创建：`~help`、`~idea`、普通问答、一次性只读任务、子代理自身执行过程、压缩/恢复钩子
@@ -320,7 +320,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - archive/_index.md — 归档索引
 
 ### 知识记录（受 `kb_create_mode` 控制）
-- 0=关闭；1=已激活项目或全局模式中的编码任务自动同步；2=已激活项目或全局模式中始终同步
+- 0=关闭；1=项目已写入 full carrier 或全局模式中的编码任务自动同步；2=项目已写入 full carrier 或全局模式中始终同步
 - context.md — 项目架构、技术栈、目录结构、模块索引
 - guidelines.md — 编码约定（仅含非显而易见的约定）
 - CHANGELOG.md — 变更历史

@@ -100,7 +100,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-reflect` | reusable lessons and knowledge updates |
 
 All UI work first follows the shared UI quality baseline.
-In global mode, activated projects, or explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
+In global mode, projects with a full project carrier, or explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
 When visual evidence is required, HelloAGENTS records it in the current session `artifacts/visual.json`.
 
 ### 2) Commands for different work styles
@@ -116,7 +116,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
 | `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
 | `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Full project setup: knowledge base plus project-level rule files and package-root links |
+| `~init` | Full project setup: knowledge base, full project carrier files, and package-root links |
 | `~test` | Write tests for a target module or recent change |
 | `~verify` | Review, run verification commands, fix failures, and close out |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -148,7 +148,7 @@ The knowledge base helps future turns understand the repo without re-discovering
 
 `~wiki` creates or updates the knowledge base only.
 
-`~init` does more: it creates or updates the knowledge base, writes project-level rule files, and refreshes project-level HelloAGENTS package-root links for supported hosts.
+`~init` does more: it creates or updates the knowledge base, writes full project carrier files, and refreshes project-level HelloAGENTS package-root links for supported hosts.
 
 ### 4) Structured plan packages
 
@@ -472,9 +472,9 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Validate current work | `~verify` |
 | Generate commit message and sync knowledge | `~commit` |
 
-### Activated vs unactivated projects
+### Full carrier vs lite carrier
 
-In standby mode, unactivated projects get lighter rules and explicit `~command` entry points. A project becomes activated when `.helloagents/` exists, usually through `~wiki` or `~init`.
+In standby mode, projects without a full project carrier get lighter rules and explicit `~command` entry points. A project enters the full project workflow after `~init` writes a project carrier with `<!-- HELLOAGENTS_PROFILE: full -->`.
 
 In global mode, HelloAGENTS applies full rules by default.
 
@@ -488,16 +488,13 @@ By default, project knowledge lives in the project:
 .helloagents/
 ```
 
-This directory acts as both:
-
-- the activation signal
-- the local knowledge, plan, state, and runtime directory
+This directory is the local knowledge, plan, state, and runtime directory.
 
 ### Repo-shared mode
 
 When `project_store_mode = "repo-shared"`:
 
-- local `.helloagents/` keeps activation and runtime files
+- local `.helloagents/` keeps project-local state and runtime files
 - stable knowledge and plan files move to `~/.helloagents/projects/<repo-key>/`
 - multiple worktrees of the same git repo can share the same stable knowledge
 
@@ -510,9 +507,9 @@ Runtime state and evidence remain local to the working project:
 - `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
-### Unactivated or temporary sessions
+### Temporary sessions outside project-local storage
 
-If neither the current directory nor its parents contain an activated `.helloagents/` directory, HelloAGENTS does not write project files automatically. Temporary runtime state is kept under the user-level directory:
+For read-only work with no local output, if neither the current directory nor its parents contain a project-local `.helloagents/` directory, HelloAGENTS keeps short-lived runtime state under the user-level directory:
 
 ```text
 ~/.helloagents/runtime/<scope-key>/
@@ -520,15 +517,17 @@ If neither the current directory nor its parents contain an activated `.helloage
 
 This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
 
+Once the task creates or modifies local files, or otherwise leaves local output in the current project, HelloAGENTS creates the project-local `.helloagents/sessions/.../STATE.md` automatically instead of keeping that task only in the user-level transient runtime.
+
 ### Knowledge creation rules
 
 | Command or setting | Behavior |
 |--------------------|----------|
 | `~wiki` | creates or syncs the knowledge base only |
-| `~init` | creates knowledge base plus project-level rule files and package-root links |
+| `~init` | creates knowledge base plus full project carrier files and package-root links |
 | `kb_create_mode = 0` | disables automatic knowledge updates |
-| `kb_create_mode = 1` | updates knowledge automatically for coding tasks in activated projects or global mode |
-| `kb_create_mode = 2` | updates knowledge more aggressively in activated projects or global mode |
+| `kb_create_mode = 1` | updates knowledge automatically for coding tasks in full-carrier projects or global mode |
+| `kb_create_mode = 2` | updates knowledge more aggressively in full-carrier projects or global mode |
 
 ## Workflow and Delivery
 
@@ -705,7 +704,7 @@ Use `~init` when you also want project-level rule files and project-level HelloA
 
 ### What is the difference between standby and global?
 
-`standby` is lighter and explicit. It deploys rules to selected CLIs and keeps full project workflow behind project activation.
+`standby` is lighter and explicit. It deploys rules to selected CLIs and keeps full project workflow behind a full project carrier.
 
 `global` applies full rules broadly. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
 

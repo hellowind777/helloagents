@@ -64,9 +64,9 @@ function readExpectedHooks(runtime, hooksFile, pathVar) {
   return pickManagedHooks(loadHooksWithCliEntry(runtime.pkgRoot, hooksFile, pathVar)?.hooks || {})
 }
 
-function readExpectedCarrierContent(runtime, fileName, settings) {
+function readExpectedCarrierContent(runtime, fileName, settings, options = {}) {
   const bootstrap = safeRead(join(runtime.pkgRoot, fileName)) || ''
-  return normalizeText(buildRuntimeCarrier(bootstrap, settings))
+  return normalizeText(buildRuntimeCarrier(bootstrap, settings, options))
 }
 
 function buildDoctorIssue(runtime, code, cn, en) {
@@ -168,7 +168,12 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
     checks: {
       carrierMarker: (safeRead(join(codexDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
       carrierContentMatch: normalizeText((safeRead(join(codexDir, 'AGENTS.md')) || '').match(/<!-- HELLOAGENTS_START -->([\s\S]*?)<!-- HELLOAGENTS_END -->/)?.[1] || '')
-        === readExpectedCarrierContent(runtime, expectedHomeCarrier, settings),
+        === readExpectedCarrierContent(
+          runtime,
+          expectedHomeCarrier,
+          settings,
+          expectedHomeCarrier === 'bootstrap.md' ? { profile: 'full' } : {},
+        ),
       homeLink: homeLinkTarget === (safeRealTarget(runtime.pkgRoot) || normalizePath(runtime.pkgRoot)),
       globalHomeLink: homeLinkTarget === runtimeRoot,
       modelInstructionsFile: !!modelInstructionsLine,
@@ -187,8 +192,8 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
       pluginCache: existsSync(pluginCacheRoot),
       pluginRootLink: pluginRootTarget === runtimeRoot,
       pluginCacheLink: pluginCacheTarget === runtimeRoot,
-      pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings),
-      pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings),
+      pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings, { profile: 'full' }),
+      pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings, { profile: 'full' }),
       marketplaceEntry: Array.isArray(marketplace.plugins) && marketplace.plugins.some((plugin) => plugin?.name === CODEX_PLUGIN_NAME),
       pluginEnabled: codexConfig.includes(CODEX_PLUGIN_CONFIG_HEADER) && codexConfig.includes('enabled = true'),
       globalNotifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),

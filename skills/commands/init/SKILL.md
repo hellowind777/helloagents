@@ -8,7 +8,7 @@ Trigger: ~init
 
 ~init 是用户显式命令，创建完整知识库，不受 kb_create_mode 限制。
 执行 `~init` 时，`.helloagents/` 目录结构、模板格式和状态文件规则按当前已加载的 HelloAGENTS 规则执行；本命令额外负责项目级规则文件和各宿主项目级 HelloAGENTS 包根链接。
-`.helloagents/` 在本 skill 中统一按项目级存储路径理解：项目本地 `.helloagents/` 继续承担激活目录；状态文件只使用 `state_path`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录写入。
+`.helloagents/` 在本 skill 中统一按项目级存储路径理解：项目本地 `.helloagents/` 继续承担项目本地存储目录；状态文件只使用 `state_path`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录写入。
 
 ## 流程
 
@@ -21,7 +21,7 @@ Trigger: ~init
    - `.gemini/skills/helloagents` symlink → `{插件根目录}/`
    - `.codex/skills/helloagents` symlink → `{插件根目录}/`
    这些链接用于项目级规则定位 HelloAGENTS 的 `skills/`、`templates/` 和 `scripts/`；宿主若支持递归发现 `SKILL.md`，也可直接识别包内 skills。
-4. 读取 `{插件根目录}` 中的全量规则模板，用 `<!-- HELLOAGENTS_START -->` / `<!-- HELLOAGENTS_END -->` 标记包裹后写入：
+4. 读取 `{插件根目录}` 中的全量规则模板，在受管内容第一行写入 `<!-- HELLOAGENTS_PROFILE: full -->`，再用 `<!-- HELLOAGENTS_START -->` / `<!-- HELLOAGENTS_END -->` 标记包裹后写入：
    - `AGENTS.md`（项目根目录，Codex 读取）
    - `CLAUDE.md`（项目根目录，Claude Code 读取）
    - `.gemini/GEMINI.md`（Gemini CLI 读取，需先创建 .gemini/ 目录）
