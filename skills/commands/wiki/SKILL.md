@@ -1,6 +1,6 @@
 ---
 name: ~wiki
-description: 初始化或同步项目知识库（仅 `.helloagents/`）
+description: 初始化或同步项目知识库（与 ~init 同义）
 policy:
   allow_implicit_invocation: false
 ---
