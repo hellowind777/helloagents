@@ -9,7 +9,7 @@ set -eu
 #   HELLOAGENTS_TARGET=all|claude|gemini|codex|deepseek
 #   HELLOAGENTS_MODE=standby|global
 #   HELLOAGENTS_BRANCH=main|beta|...
-#   HELLOAGENTS_PACKAGE=helloagents|github:owner/repo#ref|...
+#   HELLOAGENTS_PACKAGE=helloagents|https://github.com/owner/repo/archive/refs/heads/ref.tar.gz|...
 
 ACTION="${HELLOAGENTS_ACTION:-install}"
 TARGET="${HELLOAGENTS_TARGET:-}"
@@ -49,7 +49,7 @@ fi
 
 if [ -z "$PACKAGE" ]; then
   if [ -n "$BRANCH" ]; then
-    PACKAGE="github:hellowind777/helloagents#$BRANCH"
+    PACKAGE="https://github.com/hellowind777/helloagents/archive/refs/heads/$BRANCH.tar.gz"
   else
     PACKAGE="helloagents"
   fi

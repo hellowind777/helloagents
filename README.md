@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.29-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.30-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -332,7 +332,7 @@ HELLOAGENTS=codex:global npm install -g helloagents
 HELLOAGENTS=claude:standby npm update -g helloagents
 
 # Switch to the beta branch and sync all CLIs in standby mode
-HELLOAGENTS=all:standby npm install -g github:hellowind777/helloagents#beta
+HELLOAGENTS=all:standby npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 
 # Clean Gemini integration before package uninstall
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -352,7 +352,7 @@ $env:HELLOAGENTS="codex:global"; npm install -g helloagents
 $env:HELLOAGENTS="claude:standby"; npm update -g helloagents
 
 # Switch to the beta branch and sync all CLIs in standby mode
-$env:HELLOAGENTS="all:standby"; npm install -g github:hellowind777/helloagents#beta
+$env:HELLOAGENTS="all:standby"; npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 
 # Clean Gemini integration before package uninstall
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -417,13 +417,13 @@ The PowerShell wrapper now forwards the same npm arguments as `install.sh`, so i
 ```bash
 helloagents switch-branch beta
 helloagents switch-branch beta claude --global
-helloagents branch github:hellowind777/helloagents#beta --all --standby
+helloagents branch beta --all --standby
 ```
 
 Use normal npm commands when you only want to change the package and not sync host CLIs immediately:
 
 ```bash
-npm install -g github:hellowind777/helloagents#beta
+npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 npm update -g helloagents
 npm explore -g helloagents -- npm run uninstall -- --all --standby
 npm uninstall -g helloagents
