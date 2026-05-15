@@ -124,6 +124,22 @@ test('install.ps1 install forwards postinstall deploy env for compact host mode 
   assert.equal(entries[0].mode, 'global')
 })
 
+test('install.ps1 accepts DeepSeek as a target', { skip: !PWSH }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const { logPath, env } = createScriptEnv(home, {
+    HELLOAGENTS_ACTION: 'install',
+    HELLOAGENTS: 'deepseek:standby',
+  })
+
+  runInstallPs1(pkgRoot, home, env)
+
+  const entries = readLogEntries(logPath)
+  assert.equal(entries.length, 1)
+  assert.equal(entries[0].target, 'deepseek')
+  assert.equal(entries[0].mode, 'standby')
+})
+
 test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the expected npm commands', { skip: !PWSH }, () => {
   const { root: pkgRoot } = createPackageFixture()
 

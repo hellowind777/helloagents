@@ -12,6 +12,7 @@ import {
   loadHooksWithCliEntry,
 } from './cli-utils.mjs';
 import { buildRuntimeCarrier, readCarrierSettings } from './cli-runtime-carrier.mjs';
+import { installDeepseekGlobal, installDeepseekStandby, uninstallDeepseekGlobal, uninstallDeepseekStandby } from './cli-deepseek.mjs'
 
 export function installClaudeStandby(home, pkgRoot) {
   const claudeDir = join(home, '.claude');
@@ -80,4 +81,11 @@ export function uninstallGeminiStandby(home) {
   cleanSettingsHooks(join(geminiDir, 'settings.json'));
 
   return true;
+}
+
+export {
+  installDeepseekGlobal,
+  installDeepseekStandby,
+  uninstallDeepseekGlobal,
+  uninstallDeepseekStandby,
 }

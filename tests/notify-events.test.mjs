@@ -18,5 +18,6 @@ test('notify events keep only structural filters', () => {
   assert.equal(resolveNotifyHost(['node', 'notify.mjs', 'codex-notify']), 'codex');
   assert.equal(resolveNotifyHost(['node', 'notify.mjs', 'stop', '--codex']), 'codex');
   assert.equal(resolveNotifyHost(['node', 'notify.mjs', 'stop', '--gemini']), 'gemini');
+  assert.equal(resolveNotifyHost(['node', 'notify.mjs', 'stop', '--deepseek']), 'deepseek');
   assert.equal(resolveNotifyHost(['node', 'notify.mjs', 'stop']), 'claude');
 });
