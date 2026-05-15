@@ -11,6 +11,7 @@ export function shouldIgnoreFormattedSubagent(lastMsg, outputFormatEnabled) {
 export function resolveNotifyHost(argv = []) {
   const args = Array.from(argv, (value) => String(value || ''));
   const command = args[2] || args[0] || '';
+  if (args.includes('--deepseek')) return 'deepseek';
   if (args.includes('--gemini')) return 'gemini';
   if (args.includes('--codex') || command === 'codex-notify') return 'codex';
   return 'claude';

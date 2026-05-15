@@ -2,10 +2,11 @@ import { dirname } from 'node:path'
 
 import {
   appendSessionEvent,
+  getRuntimeScope,
   getSessionEventsPath,
   resetSessionEvents,
 } from './session-capsule.mjs'
-import { getProjectSessionScope } from './runtime-scope.mjs'
+import { ensureProjectLocalRuntime, getProjectSessionScope } from './runtime-scope.mjs'
 
 function sanitizeReplayValue(value) {
   if (typeof value === 'string') {
@@ -60,10 +61,27 @@ export function startReplaySession(cwd, {
   bootstrapFile = '',
   installMode = '',
   payload = {},
+  ensureProjectLocal = false,
   env,
   ppid,
 } = {}) {
-  const scope = getProjectSessionScope(cwd, { payload, env, ppid })
+  const scope = ensureProjectLocal
+    ? {
+      ...ensureProjectLocalRuntime(cwd, {
+        payload,
+        env,
+        ppid,
+        stateSeed: {
+          goal: '进入当前项目级执行流程',
+          doing: '正在初始化当前会话运行态',
+          context: '由运行时自动创建；后续按实际任务重写',
+          next: '根据当前用户请求继续执行当前流程',
+        },
+      }),
+      active: true,
+      scope: 'project-session',
+    }
+    : getProjectSessionScope(cwd, { payload, env, ppid })
   if (!scope.active) return ''
 
   const filePath = resetSessionEvents(cwd, { payload, env, ppid })
@@ -95,8 +113,8 @@ export function appendReplayEvent(cwd, {
   env,
   ppid,
 } = {}) {
-  const scope = getProjectSessionScope(cwd, { payload, env, ppid })
-  if (!scope.active || !event) return ''
+  const scope = getRuntimeScope(cwd, { payload, env, ppid })
+  if (scope.scope !== 'project-session' || !scope.active || !event) return ''
 
   return appendSessionEvent(cwd, sanitizeReplayValue({
     event,

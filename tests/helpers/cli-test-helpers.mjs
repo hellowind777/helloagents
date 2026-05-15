@@ -57,6 +57,8 @@ export function seedHostConfigs(home) {
       '',
     ].join('\n'),
   )
+
+  writeText(join(home, '.deepseek', 'AGENTS.md'), '# DeepSeek custom\n')
 }
 
 export function readCodexConfig(home) {

@@ -3,10 +3,10 @@ import { join } from 'node:path'
 
 import { DEFAULTS } from './cli-config.mjs'
 import { inspectCodexDoctor as inspectCodexDoctorImpl } from './cli-doctor-codex.mjs'
+import { inspectNativeDeepseekDoctor } from './cli-deepseek.mjs'
 import { printDoctorText } from './cli-doctor-render.mjs'
 import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
-import { readTopLevelTomlLine } from './cli-toml.mjs'
-import { loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
+import { FULL_CARRIER_PROFILE_MARKER, loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
 
 const runtime = {
   home: '',
@@ -78,9 +78,9 @@ function managedHooksMatch(actualHooks, expectedHooks) {
   return stringifySorted(pickManagedHooks(actualHooks || {})) === stringifySorted(expectedHooks || {})
 }
 
-function readExpectedCarrierContent(fileName, settings) {
+function readExpectedCarrierContent(fileName, settings, options = {}) {
   const bootstrap = safeRead(join(runtime.pkgRoot, fileName)) || ''
-  return normalizeText(buildRuntimeCarrier(bootstrap, settings))
+  return normalizeText(buildRuntimeCarrier(bootstrap, settings, options))
 }
 
 function buildDoctorIssue(code, cn, en) {
@@ -219,6 +219,78 @@ function inspectGeminiDoctor(settings) {
   return { host, label: runtime.getHostLabel(host), trackedMode, detectedMode, status, checks, issues, notes, suggestedFix: suggestDoctorFix(host, status, trackedMode) }
 }
 
+function inspectDeepseekDoctor(settings) {
+  const host = 'deepseek'
+  const trackedMode = normalizeDoctorMode(runtime.getTrackedHostMode(settings, host))
+  const detectedMode = normalizeDoctorMode(runtime.detectHostMode(host))
+  const deepseekDir = join(runtime.home, '.deepseek')
+  const carrierPath = join(deepseekDir, 'AGENTS.md')
+  const expectedCarrierFile = (detectedMode === 'global' || (detectedMode === 'none' && trackedMode === 'global'))
+    ? 'bootstrap.md'
+    : 'bootstrap-lite.md'
+  const checks = {
+    carrierMarker: (safeRead(carrierPath) || '').includes('HELLOAGENTS_START'),
+    carrierContentMatch: extractManagedCarrierContent(carrierPath)
+      === readExpectedCarrierContent(
+        expectedCarrierFile,
+        settings,
+        expectedCarrierFile === 'bootstrap.md' ? { profile: 'full' } : {},
+      ),
+    homeLink: safeRealTarget(join(deepseekDir, 'helloagents')) === runtime.pkgRoot,
+    fullProfile: (safeRead(carrierPath) || '').includes(FULL_CARRIER_PROFILE_MARKER),
+  }
+  const nativeDoctor = inspectNativeDeepseekDoctor()
+  const issues = []
+  const notes = []
+
+  if (trackedMode !== 'none' && detectedMode !== 'none' && trackedMode !== detectedMode) {
+    issues.push(buildDoctorIssue('tracked-mode-mismatch', '记录模式与检测模式不一致', 'Tracked mode does not match detected mode'))
+  }
+  if (detectedMode === 'standby') {
+    if (!checks.carrierMarker) issues.push(buildDoctorIssue('standby-carrier-missing', 'standby `~/.deepseek/AGENTS.md` 缺少 HelloAGENTS 标记', 'Standby `~/.deepseek/AGENTS.md` is missing the HELLOAGENTS marker'))
+    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('standby-carrier-drift', 'standby `~/.deepseek/AGENTS.md` 与当前标准模式规则不一致', 'Standby `~/.deepseek/AGENTS.md` differs from the current standby rules'))
+    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby `~/.deepseek/helloagents` 链接缺失或未指向稳定运行根目录', 'Standby `~/.deepseek/helloagents` link is missing or points to a different runtime root'))
+    if (checks.fullProfile) issues.push(buildDoctorIssue('standby-full-profile-residue', 'standby 模式下不应保留 full 标记', 'Standby mode should not keep the full profile marker'))
+  }
+  if (detectedMode === 'global') {
+    if (!checks.carrierMarker) issues.push(buildDoctorIssue('global-carrier-missing', 'global `~/.deepseek/AGENTS.md` 缺少 HelloAGENTS 标记', 'Global `~/.deepseek/AGENTS.md` is missing the HELLOAGENTS marker'))
+    if (checks.carrierMarker && !checks.carrierContentMatch) issues.push(buildDoctorIssue('global-carrier-drift', 'global `~/.deepseek/AGENTS.md` 与当前全局模式规则不一致', 'Global `~/.deepseek/AGENTS.md` differs from the current global rules'))
+    if (!checks.homeLink) issues.push(buildDoctorIssue('global-link-missing', 'global `~/.deepseek/helloagents` 链接缺失或未指向稳定运行根目录', 'Global `~/.deepseek/helloagents` link is missing or points to a different runtime root'))
+    if (!checks.fullProfile) issues.push(buildDoctorIssue('global-full-profile-missing', 'global 模式缺少 full 标记', 'Global mode is missing the full profile marker'))
+  }
+  if (trackedMode === 'none' && detectedMode !== 'none') {
+    issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
+  }
+  if (trackedMode !== 'none' && detectedMode === 'none') {
+    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应的受管文件或配置', 'Config says this CLI is installed, but no managed artifacts were detected'))
+  }
+  if (!nativeDoctor.available) {
+    notes.push(runtime.msg(
+      '未找到 deepseek 命令；已跳过 DeepSeek 原生 doctor。',
+      'The deepseek command was not found; DeepSeek native doctor was skipped.',
+    ))
+  } else if (!nativeDoctor.ok) {
+    issues.push(buildDoctorIssue('native-doctor-failed', 'DeepSeek 原生 doctor 返回非零状态', 'DeepSeek native doctor returned a non-zero status'))
+  }
+  if (nativeDoctor.available && nativeDoctor.parseError) {
+    issues.push(buildDoctorIssue('native-doctor-invalid-json', 'DeepSeek 原生 doctor 输出不是可解析的 JSON', 'DeepSeek native doctor output was not valid JSON'))
+  }
+
+  const status = summarizeDoctorStatus(issues, { host, trackedMode, detectedMode })
+  return {
+    host,
+    label: runtime.getHostLabel(host),
+    trackedMode,
+    detectedMode,
+    status,
+    checks,
+    issues,
+    notes,
+    nativeDoctor,
+    suggestedFix: suggestDoctorFix(host, status, trackedMode),
+  }
+}
+
 function parseDoctorArgs(args) {
   const wantsJson = args.includes('--json')
   const unknownFlags = args.filter((arg) => arg.startsWith('--') && arg !== '--json' && arg !== '--all')
@@ -239,12 +311,13 @@ function parseDoctorArgs(args) {
 function inspectDoctorHost(host, settings) {
   if (host === 'claude') return inspectClaudeDoctor(settings)
   if (host === 'gemini') return inspectGeminiDoctor(settings)
+  if (host === 'deepseek') return inspectDeepseekDoctor(settings)
   return inspectCodexDoctorImpl(runtime, settings)
 }
 
 function buildDoctorReport(host) {
   const settings = runtime.readSettings(true)
-  const hosts = host === 'all' ? ['claude', 'gemini', 'codex'] : [host]
+  const hosts = host === 'all' ? ['claude', 'gemini', 'codex', 'deepseek'] : [host]
   const reports = hosts.map((target) => inspectDoctorHost(target, settings))
   const summary = reports.reduce((acc, report) => {
     acc[report.status] = (acc[report.status] || 0) + 1

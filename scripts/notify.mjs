@@ -391,6 +391,7 @@ function cmdInject() {
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
   const bootstrapFile = resolveBootstrapFile(cwd, settings, HOST);
+  const shouldEnsureProjectLocal = bootstrapFile === 'bootstrap.md' || source === 'resume' || source === 'compact';
 
   startReplaySession(cwd, {
     host: HOST,
@@ -398,6 +399,7 @@ function cmdInject() {
     bootstrapFile,
     installMode: settings.install_mode || '',
     payload,
+    ensureProjectLocal: shouldEnsureProjectLocal,
   });
   if (!IS_SILENT) {
     appendReplayEvent(cwd, {
@@ -413,7 +415,10 @@ function cmdInject() {
     });
   }
   clearRouteContext({ cwd, payload });
-  clearTurnState(cwd, { payload });
+  clearTurnState(cwd, {
+    payload,
+    ensureProjectLocal: shouldEnsureProjectLocal,
+  });
   cleanupProjectSessions(cwd, {
     minIntervalMs: IS_SILENT ? PROJECT_SESSION_CLEANUP_COOLDOWN_MS : 0,
   });

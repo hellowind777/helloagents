@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
 import {
+  ensureProjectLocalRuntime,
   getProjectSessionScope,
   getRuntimeScope,
   readJsonFile,
@@ -44,6 +45,19 @@ function getEventSessionAlias(eventPayload = {}) {
 
 function getScope(cwd, options = {}) {
   const normalizedOptions = normalizeOptions(options)
+  const stateSeed = normalizedOptions.stateSeed && typeof normalizedOptions.stateSeed === 'object'
+    ? normalizedOptions.stateSeed
+    : {}
+  if (normalizedOptions.ensureProjectLocal === true) {
+    return {
+      ...ensureProjectLocalRuntime(cwd, {
+        ...normalizedOptions,
+        stateSeed,
+      }),
+      active: true,
+      scope: 'project-session',
+    }
+  }
   if (normalizedOptions.project === true) {
     return {
       ...getProjectSessionScope(cwd, normalizedOptions),

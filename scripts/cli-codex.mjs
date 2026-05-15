@@ -121,17 +121,17 @@ function removeCodexMarketplaceEntry(marketplaceFile) {
   return true;
 }
 
-function injectCodexRuntimeCarrier(filePath, bootstrapPath, settings) {
+function injectCodexRuntimeCarrier(filePath, bootstrapPath, settings, options = {}) {
   const bootstrapContent = safeRead(bootstrapPath);
   if (!bootstrapContent) return false;
-  injectMarkedContent(filePath, buildRuntimeCarrier(bootstrapContent, settings).trimEnd());
+  injectMarkedContent(filePath, buildRuntimeCarrier(bootstrapContent, settings, options).trimEnd());
   return true;
 }
 
-function writeCodexRuntimeCarrier(filePath, bootstrapPath, settings) {
+function writeCodexRuntimeCarrier(filePath, bootstrapPath, settings, options = {}) {
   const bootstrapContent = safeRead(bootstrapPath);
   if (!bootstrapContent) return false;
-  safeWrite(filePath, buildRuntimeCarrier(bootstrapContent, settings));
+  safeWrite(filePath, buildRuntimeCarrier(bootstrapContent, settings, options));
   return true;
 }
 
@@ -298,9 +298,10 @@ export function installCodexGlobal(home, pkgRoot) {
     join(pkgRoot, CODEX_RUNTIME_CARRIER),
     join(pkgRoot, 'bootstrap.md'),
     settings,
+    { profile: 'full' },
   );
   const homeCarrierPath = join(codexDir, CODEX_RUNTIME_CARRIER);
-  injectCodexRuntimeCarrier(homeCarrierPath, join(pkgRoot, 'bootstrap.md'), settings);
+  injectCodexRuntimeCarrier(homeCarrierPath, join(pkgRoot, 'bootstrap.md'), settings, { profile: 'full' });
 
   ensureDir(join(home, '.agents', 'plugins'));
   updateCodexMarketplace(marketplaceFile);

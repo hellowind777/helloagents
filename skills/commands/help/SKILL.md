@@ -17,8 +17,9 @@ Trigger: ~help
 | ~build | 执行实现：按需求或方案包完成实现与验证 |
 | ~prd | 完整 PRD：头脑风暴式逐维度挖掘，生成现代产品需求文档 |
 | ~loop | 自主迭代优化：设定目标和指标，循环修改-验证-保留/回滚 |
-| ~wiki | 仅创建/同步项目知识库（`.helloagents/`） |
-| ~init | 完整初始化项目：知识库 + 项目级规则文件配置 |
+| ~wiki | 仅创建/同步项目知识库 |
+| ~init | 同 `~wiki` |
+| ~global | 初始化项目级全局模式 |
 | ~test | 为指定模块或最近变更编写完整测试 |
 | ~verify | 验证总入口：审查 + 运行验证命令 + 修复循环 |
 | ~commit | 规范化提交 + 知识库同步 |
@@ -31,8 +32,8 @@ Trigger: ~help
 - `~review` → 等同 `~verify` 的审查优先模式
 
 ### 自动激活技能
-以下技能仅在全局模式或已激活项目中自动激活（例如执行过 `~wiki`、`~init`，或已处于项目级连续流程）。
-纯标准模式未激活项目不会自动触发这些技能；但涉及 UI 的任务仍受 UI 质量基线约束。
+以下技能仅在全局模式或已初始化项目时自动激活（例如执行过 `~global`，或当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`）。
+纯标准模式、且项目未初始化时不会自动触发这些技能；但涉及 UI 的任务仍受 UI 质量基线约束。
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
 特定场景：hello-debug, hello-subagent, hello-write, hello-review
@@ -43,14 +44,14 @@ Trigger: ~help
 如果当前 CLI 存在工作区限制导致家目录不可读，则明确说明“无法直接读取配置文件，以下按已注入设置或默认值展示”，不要改用无关工具或伪造已读取结果。
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
-| output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
-| output_format | true | true=主代理最终收尾必须使用 HelloAGENTS 格式，流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
-| notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
-| ralph_loop_enabled | true | 自动验证循环（显式 ~verify / ~loop 或收尾要求时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
-| guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
-| kb_create_mode | 1 | 0=关闭/1=已激活项目或全局模式中编码自动/2=已激活项目或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
-| project_store_mode | "local" | "local"=知识库/方案包保留在项目本地 `.helloagents/`；"repo-shared"=本地 `.helloagents/` 仅保留激活/STATE/运行态，知识库与方案包改写到 `~/.helloagents/projects/<repo-key>/` | Claude Code + Gemini CLI + Codex CLI |
-| auto_commit_enabled | true | true=验证完成且有变更时自动执行本地提交；false=跳过自动提交，仍可手动用 `~commit` | Claude Code + Gemini CLI + Codex CLI |
-| commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |
-| install_mode | "standby" | 当前默认安装模式 | Claude Code + Gemini CLI + Codex CLI |
-| host_install_modes | {} | 单 CLI 模式记录，优先于 install_mode | Claude Code + Gemini CLI + Codex CLI |
+| output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| output_format | true | true=主代理最终收尾必须使用 HelloAGENTS 格式，流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| ralph_loop_enabled | true | 自动验证循环（显式 ~verify / ~loop 或收尾要求时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| kb_create_mode | 1 | 0=关闭/1=知识库已存在时自动同步/2=编码任务在知识库已存在或全局模式下自动创建或同步 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| project_store_mode | "local" | "local"=知识库/方案包保留在项目本地 `.helloagents/`；"repo-shared"=本地 `.helloagents/` 仅保留项目本地状态/运行态，知识库与方案包改写到 `~/.helloagents/projects/<repo-key>/` | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| auto_commit_enabled | true | true=验证完成且有变更时自动执行本地提交；false=跳过自动提交，仍可手动用 `~commit` | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| install_mode | "standby" | 当前默认安装模式 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| host_install_modes | {} | 单 CLI 模式记录，优先于 install_mode | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |

@@ -40,6 +40,25 @@ test('single-host install and cleanup only touch the targeted CLI in standby mod
   assert.equal(readJson(configFile).host_install_modes.claude, undefined)
 })
 
+test('single-host install and cleanup support DeepSeek standby mode', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'deepseek'])
+
+  assert.match(readText(join(home, '.deepseek', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.ok(existsSync(join(home, '.deepseek', 'helloagents')))
+  assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/)
+  assert.equal(readJson(configFile).host_install_modes.deepseek, 'standby')
+
+  runCli(pkgRoot, home, ['cleanup', 'deepseek'])
+
+  assert.doesNotMatch(readText(join(home, '.deepseek', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.equal(readJson(configFile).host_install_modes.deepseek, undefined)
+})
+
 test('single-host update reuses tracked codex mode and cleanup leaves other CLIs intact', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
@@ -51,6 +70,8 @@ test('single-host update reuses tracked codex mode and cleanup leaves other CLIs
   assert.ok(existsSync(pluginRoot))
   assert.equal(realpathSync(pluginRoot), realpathSync(join(home, '.helloagents', 'helloagents')))
   assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
+  assert.match(readText(join(pluginRoot, 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
   assert.equal(readJson(configFile).host_install_modes.codex, 'global')
 
   writeText(join(pkgRoot, 'bootstrap.md'), '# scoped global update\n')
@@ -112,10 +133,12 @@ test('all-host update preserves each CLI tracked mode when no mode flag is passe
   assert.equal(settings.host_install_modes.codex, 'global')
   assert.equal(settings.host_install_modes.claude, 'standby')
   assert.equal(settings.host_install_modes.gemini, 'standby')
+  assert.equal(settings.host_install_modes.deepseek, 'standby')
   assert.ok(existsSync(pluginRoot))
   assert.equal(realpathSync(pluginRoot), realpathSync(join(home, '.helloagents', 'helloagents')))
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /# refreshed global mode/)
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /# refreshed standby mode/)
+  assert.match(readText(join(home, '.deepseek', 'AGENTS.md')), /# refreshed standby mode/)
 })
 
 test('all-host install without a mode falls back to standby for untracked CLIs', () => {
@@ -137,8 +160,10 @@ test('all-host install without a mode falls back to standby for untracked CLIs',
   assert.equal(settings.host_install_modes.claude, 'standby')
   assert.equal(settings.host_install_modes.gemini, 'standby')
   assert.equal(settings.host_install_modes.codex, 'standby')
+  assert.equal(settings.host_install_modes.deepseek, 'standby')
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(existsSync(join(home, '.deepseek', 'helloagents')))
   assert.ok(!existsSync(join(home, 'plugins', 'helloagents')))
 })
 
@@ -157,6 +182,7 @@ test('all-host global install records only successful host setup', () => {
   assert.equal(settings.host_install_modes.claude, undefined)
   assert.equal(settings.host_install_modes.gemini, undefined)
   assert.equal(settings.host_install_modes.codex, 'global')
+  assert.equal(settings.host_install_modes.deepseek, 'global')
 })
 
 test('standby refresh updates injected carrier files for every CLI after bootstrap changes', () => {
@@ -172,6 +198,7 @@ test('standby refresh updates injected carrier files for every CLI after bootstr
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /# refreshed standby carrier/)
   assert.match(readText(join(home, '.gemini', 'GEMINI.md')), /# refreshed standby carrier/)
   assert.match(readText(join(home, '.codex', 'AGENTS.md')), /# refreshed standby carrier/)
+  assert.match(readText(join(home, '.deepseek', 'AGENTS.md')), /# refreshed standby carrier/)
 })
 
 test('codex cleanup removes an empty local marketplace file left behind by prior global installs', () => {

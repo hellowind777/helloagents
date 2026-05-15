@@ -125,6 +125,22 @@ test('install.sh install forwards postinstall deploy env for compact host mode s
   assert.equal(entries[0].mode, 'global')
 })
 
+test('install.sh accepts DeepSeek as a target', { skip: !POSIX_SHELL }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const { logPath, env } = createScriptEnv(home, {
+    HELLOAGENTS_ACTION: 'install',
+    HELLOAGENTS: 'deepseek:standby',
+  })
+
+  runInstallSh(pkgRoot, home, env)
+
+  const entries = readLogEntries(logPath)
+  assert.equal(entries.length, 1)
+  assert.equal(entries[0].target, 'deepseek')
+  assert.equal(entries[0].mode, 'standby')
+})
+
 test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expected npm commands', { skip: !POSIX_SHELL }, () => {
   const { root: pkgRoot } = createPackageFixture()
 
@@ -139,7 +155,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      'install -g github:hellowind777/helloagents#beta',
+      'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- codex --standby',
     ])
   }
@@ -169,7 +185,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      'install -g github:hellowind777/helloagents#beta',
+      'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- gemini --global',
     ])
   }
@@ -243,7 +259,7 @@ test('install.sh omits the mode for non-install actions so the CLI can reuse tra
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      'install -g github:hellowind777/helloagents#beta',
+      'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- gemini',
     ])
   }

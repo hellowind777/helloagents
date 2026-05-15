@@ -1,6 +1,15 @@
 import { spawnSync } from 'node:child_process'
 
-import { installClaudeStandby, installGeminiStandby, uninstallClaudeStandby, uninstallGeminiStandby } from './cli-hosts.mjs'
+import {
+  installClaudeStandby,
+  installDeepseekGlobal,
+  installDeepseekStandby,
+  installGeminiStandby,
+  uninstallClaudeStandby,
+  uninstallDeepseekGlobal,
+  uninstallDeepseekStandby,
+  uninstallGeminiStandby,
+} from './cli-hosts.mjs'
 import {
   cleanupCodexGlobalResidueForStandby,
   installCodexGlobal,
@@ -91,6 +100,10 @@ function installHostStandby(runtime, host) {
     installGeminiStandby(runtime.home, runtime.pkgRoot)
     return {}
   }
+  if (host === 'deepseek') {
+    installDeepseekStandby(runtime.home, runtime.pkgRoot)
+    return {}
+  }
   if (!installCodexStandby(runtime.home, runtime.pkgRoot)) return { skipped: true }
   cleanupCodexGlobalResidueForStandby(runtime.home)
   return {}
@@ -117,6 +130,10 @@ function installHostGlobal(runtime, host) {
       'Gemini CLI extension auto-install failed. Run manually: gemini extensions install https://github.com/hellowind777/helloagents',
     )
   }
+  if (host === 'deepseek') {
+    installDeepseekGlobal(runtime.home, runtime.pkgRoot)
+    return {}
+  }
   uninstallCodexStandby(runtime.home)
   return installCodexGlobal(runtime.home, runtime.pkgRoot) ? {} : { skipped: true }
 }
@@ -124,6 +141,7 @@ function installHostGlobal(runtime, host) {
 function cleanupHostStandby(runtime, host) {
   if (host === 'claude') return { skipped: !uninstallClaudeStandby(runtime.home) }
   if (host === 'gemini') return { skipped: !uninstallGeminiStandby(runtime.home) }
+  if (host === 'deepseek') return { skipped: !uninstallDeepseekStandby(runtime.home) }
   const standbyCleaned = uninstallCodexStandby(runtime.home)
   const globalResidueCleaned = uninstallCodexGlobal(runtime.home)
   return { skipped: !(standbyCleaned || globalResidueCleaned) }
@@ -150,6 +168,7 @@ function cleanupHostGlobal(runtime, host) {
       'Gemini CLI extension auto-remove failed. Run manually: gemini extensions uninstall helloagents',
     )
   }
+  if (host === 'deepseek') return { skipped: !uninstallDeepseekGlobal(runtime.home) }
   return { skipped: !uninstallCodexGlobal(runtime.home) }
 }
 
@@ -175,12 +194,18 @@ function installStandby(runtime) {
     console.log(runtime.msg('  - Codex CLI 未检测到，跳过', '  - Codex CLI not detected, skipped'))
     results.codex = { skipped: true }
   }
+  if (installDeepseekStandby(runtime.home, runtime.pkgRoot)) {
+    runtime.ok(runtime.msg('DeepSeek TUI 已配置（standby 模式）', 'DeepSeek TUI configured (standby mode)'))
+    results.deepseek = {}
+  } else {
+    results.deepseek = { skipped: true }
+  }
   return results
 }
 
 function installGlobal(runtime) {
   const results = {}
-  for (const host of ['claude', 'gemini', 'codex']) {
+  for (const host of ['claude', 'gemini', 'codex', 'deepseek']) {
     const result = installHostGlobal(runtime, host)
     reportHostAction(runtime, 'install', host, 'global', result)
     results[host] = result
@@ -198,6 +223,7 @@ export function uninstallAllHosts(runtime) {
   cleanupHostGlobal(runtime, 'gemini')
   uninstallCodexStandby(runtime.home)
   uninstallCodexGlobal(runtime.home)
+  uninstallDeepseekStandby(runtime.home)
 }
 
 export function runHostLifecycle(runtime, action, host, mode) {
