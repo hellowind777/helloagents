@@ -4,12 +4,12 @@ set -eu
 # HelloAGENTS one-shot installer.
 #
 # Environment:
-#   HELLOAGENTS=all|claude|gemini|codex[:standby|global]
+#   HELLOAGENTS=all|claude|gemini|codex|deepseek[:standby|global]
 #   HELLOAGENTS_ACTION=install|update|cleanup|uninstall|switch-branch|branch
-#   HELLOAGENTS_TARGET=all|claude|gemini|codex
+#   HELLOAGENTS_TARGET=all|claude|gemini|codex|deepseek
 #   HELLOAGENTS_MODE=standby|global
 #   HELLOAGENTS_BRANCH=main|beta|...
-#   HELLOAGENTS_PACKAGE=helloagents|github:owner/repo#ref|...
+#   HELLOAGENTS_PACKAGE=helloagents|https://github.com/owner/repo/archive/refs/heads/ref.tar.gz|...
 
 ACTION="${HELLOAGENTS_ACTION:-install}"
 TARGET="${HELLOAGENTS_TARGET:-}"
@@ -36,7 +36,7 @@ TARGET="$(printf '%s' "$TARGET" | tr '[:upper:]' '[:lower:]')"
 MODE="$(printf '%s' "$MODE" | tr '[:upper:]' '[:lower:]')"
 
 case "$TARGET" in
-  all|claude|gemini|codex) ;;
+  all|claude|gemini|codex|deepseek) ;;
   *) echo "Unsupported HELLOAGENTS target: $TARGET" >&2; exit 1 ;;
 esac
 
@@ -49,7 +49,7 @@ fi
 
 if [ -z "$PACKAGE" ]; then
   if [ -n "$BRANCH" ]; then
-    PACKAGE="github:hellowind777/helloagents#$BRANCH"
+    PACKAGE="https://github.com/hellowind777/helloagents/archive/refs/heads/$BRANCH.tar.gz"
   else
     PACKAGE="helloagents"
   fi

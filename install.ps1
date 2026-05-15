@@ -1,12 +1,12 @@
 # HelloAGENTS one-shot installer.
 #
 # Environment:
-#   HELLOAGENTS=all|claude|gemini|codex[:standby|global]
+#   HELLOAGENTS=all|claude|gemini|codex|deepseek[:standby|global]
 #   HELLOAGENTS_ACTION=install|update|cleanup|uninstall|switch-branch|branch
-#   HELLOAGENTS_TARGET=all|claude|gemini|codex
+#   HELLOAGENTS_TARGET=all|claude|gemini|codex|deepseek
 #   HELLOAGENTS_MODE=standby|global
 #   HELLOAGENTS_BRANCH=main|beta|...
-#   HELLOAGENTS_PACKAGE=helloagents|github:owner/repo#ref|...
+#   HELLOAGENTS_PACKAGE=helloagents|https://github.com/owner/repo/archive/refs/heads/ref.tar.gz|...
 
 $ErrorActionPreference = "Stop"
 
@@ -29,7 +29,7 @@ if (-not $Target) { $Target = "all" }
 $Target = $Target.ToLowerInvariant()
 if ($Mode) { $Mode = $Mode.ToLowerInvariant() }
 
-if (@("all", "claude", "gemini", "codex") -notcontains $Target) {
+if (@("all", "claude", "gemini", "codex", "deepseek") -notcontains $Target) {
     throw "Unsupported HELLOAGENTS target: $Target"
 }
 
@@ -39,7 +39,7 @@ if ($Mode -and @("standby", "global") -notcontains $Mode) {
 
 if (-not $Package) {
     if ($Branch) {
-        $Package = "github:hellowind777/helloagents#$Branch"
+        $Package = "https://github.com/hellowind777/helloagents/archive/refs/heads/$Branch.tar.gz"
     } else {
         $Package = "helloagents"
     }

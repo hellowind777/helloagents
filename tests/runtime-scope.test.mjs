@@ -202,6 +202,80 @@ test('unactivated runtime artifacts stay in the user-level transient directory',
   assert.equal(existsSync(join(project, '.helloagents')), false)
 })
 
+test('ensured project-local runtime creates session state even without an existing local store', () => {
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-ensure-local-runtime-')
+
+  writeSettings(home)
+
+  const payload = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { prompt: '~build do work' },
+        ensureProjectLocal: true,
+      })
+      process.stdout.write(JSON.stringify({
+        scope: scope.scope,
+        active: scope.active,
+        statePath: scope.statePath,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  assert.equal(payload.scope, 'project-session')
+  assert.equal(payload.active, true)
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
+  assert.equal(existsSync(payload.statePath), true)
+})
+
+test('ensured project-local runtime reuses the full-carrier project root from nested directories', () => {
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-ensure-local-initialized-project-')
+  const nested = join(project, 'packages', 'app')
+
+  writeSettings(home)
+  writeText(
+    join(project, 'CLAUDE.md'),
+    [
+      '<!-- HELLOAGENTS_PROFILE: full -->',
+      '<!-- HELLOAGENTS_START -->',
+      '# initialized project marker',
+      '<!-- HELLOAGENTS_END -->',
+      '',
+    ].join('\n'),
+  )
+  writeText(join(nested, 'index.js'), 'console.log("ok")\n')
+
+  const payload = runModuleEval({
+    cwd: nested,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(nested)}, {
+        payload: { prompt: '~build do work' },
+        ensureProjectLocal: true,
+      })
+      process.stdout.write(JSON.stringify({
+        cwd: scope.cwd,
+        statePath: scope.statePath,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  assert.equal(payload.cwd, project)
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
+  assert.equal(existsSync(payload.statePath), true)
+  assert.equal(existsSync(join(nested, '.helloagents')), false)
+})
+
 test('project session cleanup removes empty and route-only inactive sessions', () => {
   const project = createTempDir('helloagents-project-session-cleanup-')
 

@@ -41,12 +41,31 @@ function createBranchSwitchFixture() {
   }
 }
 
+test('switch-branch defaults to npm.cmd on Windows when no override is provided', () => {
+  if (process.platform !== 'win32') return
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const binDir = createTempDir('helloagents-branch-bin-default-')
+  const npmLog = join(home, 'npm-default.log')
+  const npmCmdPath = writeFakeCommand(binDir, 'npm', npmLog)
+  const env = {
+    PATH: `${binDir};${process.env.PATH || process.env.Path || ''}`,
+    Path: `${binDir};${process.env.PATH || process.env.Path || ''}`,
+  }
+
+  runCli(pkgRoot, home, ['switch-branch', 'beta', 'codex', '--standby'], env)
+
+  assert.equal(npmCmdPath.endsWith('npm.cmd'), true)
+  assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
+  assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- codex --standby/)
+})
+
 test('switch-branch installs a GitHub branch and refreshes a scoped global host through npm', () => {
   const { pkgRoot, home, env, npmLog } = createBranchSwitchFixture()
 
   runCli(pkgRoot, home, ['switch-branch', 'beta', 'claude', '--global'], env)
 
-  assert.match(readText(npmLog), /install -g github:hellowind777\/helloagents#beta/)
+  assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- claude --global/)
 })
 
@@ -55,12 +74,12 @@ test('branch accepts a full npm spec and refreshes all hosts through npm', () =>
 
   runCli(pkgRoot, home, [
     'branch',
-    'github:hellowind777/helloagents#beta',
+    'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
     '--all',
     '--standby',
   ], env)
 
-  assert.match(readText(npmLog), /install -g github:hellowind777\/helloagents#beta/)
+  assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- --all --standby/)
 })
 

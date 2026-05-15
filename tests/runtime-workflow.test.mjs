@@ -30,6 +30,16 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
 
   writeSettings(home, { install_mode: 'standby' })
   writeText(
+    join(project, 'CLAUDE.md'),
+    [
+      '<!-- HELLOAGENTS_PROFILE: full -->',
+      '<!-- HELLOAGENTS_START -->',
+      '# initialized project marker',
+      '<!-- HELLOAGENTS_END -->',
+      '',
+    ].join('\n'),
+  )
+  writeText(
     getSessionStatePath(project),
     [
       '# 恢复快照',

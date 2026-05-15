@@ -150,6 +150,7 @@ test('notify inject and command routing expose repo-shared project storage hints
   assert.match(payload.hookSpecificOutput.additionalContext, /当前项目存储/)
   assert.match(payload.hookSpecificOutput.additionalContext, /"project_store_mode": "repo-shared"/)
   assert.match(payload.hookSpecificOutput.additionalContext, /"knowledge_base_dir":/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /"project_local_dir":/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
