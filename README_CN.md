@@ -531,8 +531,8 @@ Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 | `~wiki` / `~init` | 只创建或同步知识库 |
 | `~global` | 创建知识库，同时写入项目级全局模式标记和包根链接 |
 | `kb_create_mode = 0` | 关闭自动知识更新 |
-| `kb_create_mode = 1` | 知识库已存在或全局模式中，编码任务自动更新知识 |
-| `kb_create_mode = 2` | 知识库已存在或全局模式中，更积极地更新知识 |
+| `kb_create_mode = 1` | 仅在知识库已存在时自动同步 |
+| `kb_create_mode = 2` | 编码任务在知识库已存在或全局模式下自动创建或同步 |
 
 ## 工作流与交付
 
@@ -620,7 +620,7 @@ UI 任务遵循以下优先级：
 | `notify_level` | `0` | `0` 关闭，`1` 桌面通知，`2` 声音，`3` 两者 |
 | `ralph_loop_enabled` | `true` | 显式 `~verify` / `~loop` 或收尾要求时运行验证 |
 | `guard_enabled` | `true` | 拦截危险命令 |
-| `kb_create_mode` | `1` | 控制知识库自动更新 |
+| `kb_create_mode` | `1` | `0` 关闭，`1` 自动同步已有知识库，`2` 编码任务自动创建或同步知识库 |
 | `project_store_mode` | `"local"` | `local` 或 `repo-shared` |
 | `auto_commit_enabled` | `true` | 验证完成且工作区有变更时自动创建本地提交；`false` 只跳过自动提交 |
 | `commit_attribution` | `""` | 提交信息附加署名 |

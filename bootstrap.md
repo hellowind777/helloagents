@@ -265,8 +265,10 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
 - 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`artifacts/loop-results.tsv`、`capsule.json`、`events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/verify.json`、`artifacts/review.json`、`artifacts/closeout.json`）
-- 按 `kb_create_mode` 同步知识库（0=关闭 / 1=知识库已存在或全局模式中的编码任务自动 / 2=知识库已存在或全局模式中始终）：
-  - `.helloagents/` 不存在则按 templates/ 创建知识库文件（`context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`）
+- 按 `kb_create_mode` 同步知识库（0=关闭 / 1=知识库已存在时自动同步，未创建则不自动补建 / 2=编码任务在知识库已存在或全局模式下自动创建或同步）：
+  - `0` → 跳过
+  - `1` → 仅在知识库已存在时按模板增量同步；未创建则不自动补建
+  - `2` → 仅在编码任务中生效；知识库已存在时按模板增量同步；若知识库不存在但当前项目已处于全局模式，则按 templates/ 创建或补全 `context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
   - 已存在且完整则按模板格式更新 `CHANGELOG.md`、相关 `modules/*.md`、增量经验 delta 追加
 - 符合条件时触发 `hello-reflect`（详见 `hello-reflect` SKILL.md）
@@ -320,7 +322,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - archive/_index.md — 归档索引
 
 ### 知识记录（受 `kb_create_mode` 控制）
-- 0=关闭；1=知识库已存在或全局模式中的编码任务自动同步；2=知识库已存在或全局模式中始终同步
+- 0=关闭；1=知识库已存在时自动同步；2=编码任务在知识库已存在或全局模式下自动创建或同步
 - context.md — 项目架构、技术栈、目录结构、模块索引
 - guidelines.md — 编码约定（仅含非显而易见的约定）
 - CHANGELOG.md — 变更历史
