@@ -117,7 +117,7 @@ ${msg('单 CLI 管理', 'Scoped CLI management')}:
 ${msg('分支切换', 'Branch switching')}:
   helloagents switch-branch beta
   helloagents switch-branch beta claude --global
-  helloagents branch github:hellowind777/helloagents#beta --all --standby
+  helloagents branch beta --all --standby
   ${msg('先通过 npm 安装指定 ref，再通过 npm 脚本同步宿主 CLI', 'Installs the requested ref with npm first, then syncs host CLIs through npm scripts')}
 
 ${msg('诊断', 'Diagnostics')}:

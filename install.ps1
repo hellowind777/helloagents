@@ -6,7 +6,7 @@
 #   HELLOAGENTS_TARGET=all|claude|gemini|codex|deepseek
 #   HELLOAGENTS_MODE=standby|global
 #   HELLOAGENTS_BRANCH=main|beta|...
-#   HELLOAGENTS_PACKAGE=helloagents|github:owner/repo#ref|...
+#   HELLOAGENTS_PACKAGE=helloagents|https://github.com/owner/repo/archive/refs/heads/ref.tar.gz|...
 
 $ErrorActionPreference = "Stop"
 
@@ -39,7 +39,7 @@ if ($Mode -and @("standby", "global") -notcontains $Mode) {
 
 if (-not $Package) {
     if ($Branch) {
-        $Package = "github:hellowind777/helloagents#$Branch"
+        $Package = "https://github.com/hellowind777/helloagents/archive/refs/heads/$Branch.tar.gz"
     } else {
         $Package = "helloagents"
     }
