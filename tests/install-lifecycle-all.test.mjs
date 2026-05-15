@@ -23,6 +23,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.deepseek', 'helloagents')))
 
   runCli(pkgRoot, home, ['install', '--all', '--standby'])
 
@@ -67,6 +68,9 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.equal(realTarget(join(home, '.claude', 'helloagents')), runtimeRoot)
   assert.equal(realTarget(join(home, '.gemini', 'helloagents')), runtimeRoot)
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
+  assert.equal(realTarget(join(home, '.deepseek', 'helloagents')), runtimeRoot)
+  assert.match(readText(join(home, '.deepseek', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.doesNotMatch(readText(join(home, '.deepseek', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
 
   writeText(join(runtimeRoot, 'bootstrap-lite.md'), '# standby updated\n')
   assert.equal(readText(join(home, '.claude', 'helloagents', 'bootstrap-lite.md')), '# standby updated\n')
@@ -76,6 +80,8 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.equal(readJson(configFile).install_mode, 'global')
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
+  assert.equal(realTarget(join(home, '.deepseek', 'helloagents')), runtimeRoot)
+  assert.match(readText(join(home, '.deepseek', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
 
   const pluginRoot = join(home, 'plugins', 'helloagents')
   const pluginCacheRoot = join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local')
@@ -117,11 +123,14 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.ok(!existsSync(pluginCacheRoot))
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
+  assert.equal(realTarget(join(home, '.deepseek', 'helloagents')), runtimeRoot)
+  assert.doesNotMatch(readText(join(home, '.deepseek', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
 
   runCli(pkgRoot, home, ['preuninstall'])
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.deepseek', 'helloagents')))
   assert.ok(!hasTimestampedBackup(home, 'config.toml'))
   const finalCodexConfig = readText(codexConfigPath)
   assert.match(finalCodexConfig, /C:\/original\/bootstrap\.md/)
@@ -233,4 +242,5 @@ test('global mode switch records only successful host setup', () => {
   assert.equal(settings.host_install_modes.claude, undefined)
   assert.equal(settings.host_install_modes.gemini, undefined)
   assert.equal(settings.host_install_modes.codex, 'global')
+  assert.equal(settings.host_install_modes.deepseek, 'global')
 })

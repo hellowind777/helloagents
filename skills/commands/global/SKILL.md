@@ -24,7 +24,7 @@ Trigger: ~global
    - `.codex/skills/helloagents` symlink → `{插件根目录}/`
    这些链接用于项目级规则定位 HelloAGENTS 的 `skills/`、`templates/` 和 `scripts/`；宿主若支持递归发现 `SKILL.md`，也可直接识别包内 skills。
 4. 读取 `{插件根目录}` 中的全量规则模板，在受管内容第一行写入 `<!-- HELLOAGENTS_PROFILE: full -->`，再用 `<!-- HELLOAGENTS_START -->` / `<!-- HELLOAGENTS_END -->` 标记包裹后写入：
-   - `AGENTS.md`（项目根目录，Codex 读取）
+   - `AGENTS.md`（项目根目录，Codex 与 DeepSeek TUI 读取）
    - `CLAUDE.md`（项目根目录，Claude Code 读取）
    - `.gemini/GEMINI.md`（Gemini CLI 读取，需先创建 .gemini/ 目录）
    注意：如果文件已存在且包含标记，替换标记内的内容；如果文件已存在但无标记，追加到末尾；如果文件不存在，创建新文件

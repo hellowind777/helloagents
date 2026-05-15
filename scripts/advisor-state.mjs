@@ -15,7 +15,7 @@ import {
 
 export const ADVISOR_EVIDENCE_FILE_NAME = 'advisor.json'
 const VALID_ADVISOR_OUTCOMES = new Set(['clean', 'findings'])
-const VALID_SOURCES = new Set(['claude', 'codex', 'gemini'])
+const VALID_SOURCES = new Set(['claude', 'codex', 'gemini', 'deepseek'])
 
 function normalizeStringArray(values) {
   if (!Array.isArray(values)) return []

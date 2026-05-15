@@ -10,7 +10,7 @@ import {
 import { installAllHosts, runHostLifecycle, uninstallAllHosts } from './cli-lifecycle-hosts.mjs'
 import { ensureDir, safeJson, safeWrite } from './cli-utils.mjs'
 
-export const HOSTS = ['claude', 'gemini', 'codex']
+export const HOSTS = ['claude', 'gemini', 'codex', 'deepseek']
 
 const runtime = {
   home: '',

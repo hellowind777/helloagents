@@ -47,7 +47,7 @@
 
 AI 编码 CLI 写代码很快，但也容易停在建议、跳过检查、丢失项目上下文，或在真正完成前就报告完成。
 
-HelloAGENTS 叠加在 Claude Code、Gemini CLI 和 Codex CLI 之上，帮助模型选择合适流程、使用任务相关的质量技能、维护项目知识库，并在交付前完成验证。
+HelloAGENTS 叠加在 Claude Code、Gemini CLI、Codex CLI 和 DeepSeek TUI 之上，帮助模型选择合适流程、使用任务相关的质量技能、维护项目知识库，并在交付前完成验证。
 
 <table>
 <tr>
@@ -265,7 +265,7 @@ helloagents install --all --global
 ~help
 ```
 
-应能看到 13 个对话命令和当前设置。
+应能看到 14 个对话命令和当前设置。
 
 ### 4）创建项目知识
 
@@ -275,10 +275,10 @@ helloagents install --all --global
 ~wiki
 ```
 
-完整初始化项目：
+初始化项目级全局模式：
 
 ```text
-~init
+~global
 ```
 
 ## CLI 管理
@@ -306,13 +306,14 @@ helloagents codex goals enable
 - `claude`
 - `gemini`
 - `codex`
+- `deepseek`
 - `--all`
 
 省略 `--standby` 或 `--global` 时，HelloAGENTS 会先复用该 CLI 已记录或检测到的模式，再回退到 `standby`。
 
 ### npm 和一键脚本入口
 
-当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。
+当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`、`deepseek`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。
 
 宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。
 
@@ -435,6 +436,7 @@ npm uninstall -g helloagents
 | Claude Code | `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks / 权限和符号链接 |
 | Gemini CLI | `~/.gemini/GEMINI.md`、`~/.gemini/settings.json`、`~/.gemini/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks 和符号链接 |
 | Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents`、受管备份 | 删除受管标记块、受管配置键、受管 hooks、符号链接和最近一次受管备份 |
+| DeepSeek TUI | `~/.deepseek/AGENTS.md`、`~/.deepseek/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块和符号链接 |
 
 ### 全局模式文件
 
@@ -443,6 +445,7 @@ npm uninstall -g helloagents
 | Claude Code | 原生插件安装 | 由 Claude Code 插件系统管理 |
 | Gemini CLI | 原生扩展安装 | 由 Gemini 扩展系统管理 |
 | Codex CLI | 原生本地插件流程 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/ -> ~/.helloagents/helloagents`、`~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents` |
+| DeepSeek TUI | 受管 AGENTS 载体 | `~/.deepseek/AGENTS.md`、`~/.deepseek/helloagents -> ~/.helloagents/helloagents` |
 
 全局模式下，HelloAGENTS 会自动尝试宿主原生命令。若宿主命令不可用，再手动执行：
 
@@ -455,6 +458,8 @@ gemini extensions install https://github.com/hellowind777/helloagents
 Claude Code 会自动尝试等价的 `claude plugin marketplace add ...` 和 `claude plugin install ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。全局安装后需要重启宿主 CLI。
 
 Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
+
+DeepSeek TUI 走原生 `AGENTS.md` 规则模型。standby 会把轻量载体写到 `~/.deepseek/AGENTS.md`；global 会写入完整载体并附带 `<!-- HELLOAGENTS_PROFILE: full -->`。如果系统中存在 `deepseek` 命令，`helloagents doctor` 还会额外读取 `deepseek doctor --json` 的摘要，并与 HelloAGENTS 自己的受管检查一起展示。
 
 ## 对话命令
 
@@ -664,6 +669,14 @@ Codex 默认走规则文件驱动。
 - `/goal` 保持 Codex 原生能力；需要长程执行时，用 `helloagents codex goals enable` 显式启用
 - 感知 goal 的命令从 `tasks.md`、`contract.json` 和 `state_path` 恢复；不会自动创建 goal，也不会在 HelloAGENTS 验证和收尾前标记完成
 
+### DeepSeek TUI
+
+- 标准模式写入 `~/.deepseek/AGENTS.md`
+- 标准模式创建 `~/.deepseek/helloagents -> ~/.helloagents/helloagents`
+- 全局模式仍使用 `~/.deepseek/AGENTS.md`，但写入带 `<!-- HELLOAGENTS_PROFILE: full -->` 的完整载体
+- 项目级已初始化项目仍以项目规则文件中的 full 标记判断，因此 DeepSeek 与 Codex 共享同一套已初始化项目语义
+- `helloagents doctor` 会在 `deepseek` 命令存在时合并 `deepseek doctor --json` 摘要
+
 ## 验证
 
 运行全部测试：
@@ -672,15 +685,15 @@ Codex 默认走规则文件驱动。
 npm test
 ```
 
-当前测试共 124 项，覆盖：
+当前测试覆盖：
 
 - 安装、更新、清理、卸载、分支切换和模式切换
 - shell 与 PowerShell 一键脚本分发链路，以及包装脚本在安装、更新、清理、卸载和分支切换中的模式传递规则
-- Claude、Gemini、Codex 的配置合并、恢复，以及原生全局清理行为
+- Claude、Gemini、Codex、DeepSeek 的宿主集成行为
 - Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、hook trust 状态、本地插件、marketplace 和缓存行为
 - Windows 下 Codex 旧式受管 notify 变体的清理，以及受管 notify 恢复规则
 - Codex `/goal` 功能开关、长程路由上下文和 goal 感知命令契约
-- `helloagents doctor`
+- `helloagents doctor`，包括 DeepSeek 原生 doctor 摘要处理
 - 项目存储和 `repo-shared`
 - 会话级 `state_path`、运行态信号和证据
 - 运行时注入、选路、Guard、验证、视觉证据、交付门控、收尾去重，以及原生安装失败后的模式记录
