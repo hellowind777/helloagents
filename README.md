@@ -100,7 +100,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-reflect` | reusable lessons and knowledge updates |
 
 All UI work first follows the shared UI quality baseline.
-In global mode, projects with a full project carrier, or explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
+In global mode, in initialized projects, or in explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
 When visual evidence is required, HelloAGENTS records it in the current session `artifacts/visual.json`.
 
 ### 2) Commands for different work styles
@@ -116,7 +116,8 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
 | `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
 | `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Full project setup: knowledge base, full project carrier files, and package-root links |
+| `~init` | Same as `~wiki` |
+| `~global` | Initialize project-level global mode |
 | `~test` | Write tests for a target module or recent change |
 | `~verify` | Review, run verification commands, fix failures, and close out |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -146,9 +147,9 @@ The knowledge base helps future turns understand the repo without re-discovering
 | `plans/<feature>/` | active plan packages |
 | `archive/` | archived plan packages |
 
-`~wiki` creates or updates the knowledge base only.
+`~wiki` and `~init` create or update the knowledge base only.
 
-`~init` does more: it creates or updates the knowledge base, writes full project carrier files, and refreshes project-level HelloAGENTS package-root links for supported hosts.
+`~global` does more: it creates or updates the knowledge base, writes the project-level global-mode marker, and refreshes project-level HelloAGENTS package-root links for supported hosts.
 
 ### 4) Structured plan packages
 
@@ -467,14 +468,14 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Implement from a clear request or active plan | `~build "finish task 2 in the plan"` |
 | Build a full product requirement document | `~prd "modern dashboard for operations team"` |
 | Iterate toward a metric | `~loop "reduce bundle size" --metric "npm run size" --direction lower` |
-| Create or refresh project knowledge only | `~wiki` |
-| Fully activate project workflow | `~init` |
+| Create or refresh project knowledge only | `~wiki` / `~init` |
+| Initialize project-level global mode | `~global` |
 | Validate current work | `~verify` |
 | Generate commit message and sync knowledge | `~commit` |
 
-### Full carrier vs lite carrier
+### Knowledge base vs project-level global mode
 
-In standby mode, projects without a full project carrier get lighter rules and explicit `~command` entry points. A project enters the full project workflow after `~init` writes a project carrier with `<!-- HELLOAGENTS_PROFILE: full -->`.
+In standby mode, projects that are not initialized get lighter rules and explicit `~command` entry points. A project enters project-level global mode after `~global` writes `<!-- HELLOAGENTS_PROFILE: full -->`.
 
 In global mode, HelloAGENTS applies full rules by default.
 
@@ -523,11 +524,11 @@ Once the task creates or modifies local files, or otherwise leaves local output 
 
 | Command or setting | Behavior |
 |--------------------|----------|
-| `~wiki` | creates or syncs the knowledge base only |
-| `~init` | creates knowledge base plus full project carrier files and package-root links |
+| `~wiki` / `~init` | creates or syncs the knowledge base only |
+| `~global` | creates knowledge base plus project-level global-mode marker and package-root links |
 | `kb_create_mode = 0` | disables automatic knowledge updates |
-| `kb_create_mode = 1` | updates knowledge automatically for coding tasks in full-carrier projects or global mode |
-| `kb_create_mode = 2` | updates knowledge more aggressively in full-carrier projects or global mode |
+| `kb_create_mode = 1` | updates knowledge automatically for coding tasks when the KB already exists or in global mode |
+| `kb_create_mode = 2` | updates knowledge more aggressively when the KB already exists or in global mode |
 
 ## Workflow and Delivery
 
@@ -696,15 +697,15 @@ Both.
 - `skills/` defines task-specific behavior
 - `scripts/` provides runtime helpers for routing, guard, notify, verification, state, and evidence
 
-### Should I use `~wiki` or `~init`?
+### Should I use `~wiki`, `~init`, or `~global`?
 
-Use `~wiki` when you only want project knowledge.
+Use `~wiki` or `~init` when you only want project knowledge.
 
-Use `~init` when you also want project-level rule files and project-level HelloAGENTS package-root links.
+Use `~global` when you also want project-level global mode.
 
 ### What is the difference between standby and global?
 
-`standby` is lighter and explicit. It deploys rules to selected CLIs and keeps full project workflow behind a full project carrier.
+`standby` is lighter and explicit. It deploys rules to selected CLIs and keeps project-level global mode behind `~global`.
 
 `global` applies full rules broadly. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
 

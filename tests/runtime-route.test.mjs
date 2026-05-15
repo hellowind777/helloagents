@@ -445,7 +445,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     [
       '<!-- HELLOAGENTS_PROFILE: full -->',
       '<!-- HELLOAGENTS_START -->',
-      '# project carrier',
+      '# initialized project marker',
       '<!-- HELLOAGENTS_END -->',
       '',
     ].join('\n'),
@@ -623,10 +623,10 @@ test('notify runtime uses host_install_modes before global install_mode', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
 })
 
-test('project full carrier switches semantic route to full bootstrap in standby mode', () => {
+test('project global-mode marker switches semantic route to full bootstrap in standby mode', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
-  const project = createTempDir('helloagents-route-full-carrier-')
+  const project = createTempDir('helloagents-route-global-marker-')
   const env = buildHomeEnv(home)
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
 
@@ -636,7 +636,7 @@ test('project full carrier switches semantic route to full bootstrap in standby 
     [
       '<!-- HELLOAGENTS_PROFILE: full -->',
       '<!-- HELLOAGENTS_START -->',
-      '# project carrier',
+      '# initialized project marker',
       '<!-- HELLOAGENTS_END -->',
       '',
     ].join('\n'),

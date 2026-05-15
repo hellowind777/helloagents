@@ -236,7 +236,7 @@ test('ensured project-local runtime creates session state even without an existi
 test('ensured project-local runtime reuses the full-carrier project root from nested directories', () => {
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
-  const project = createTempDir('helloagents-ensure-local-full-carrier-')
+  const project = createTempDir('helloagents-ensure-local-initialized-project-')
   const nested = join(project, 'packages', 'app')
 
   writeSettings(home)
@@ -245,7 +245,7 @@ test('ensured project-local runtime reuses the full-carrier project root from ne
     [
       '<!-- HELLOAGENTS_PROFILE: full -->',
       '<!-- HELLOAGENTS_START -->',
-      '# project carrier',
+      '# initialized project marker',
       '<!-- HELLOAGENTS_END -->',
       '',
     ].join('\n'),

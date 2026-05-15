@@ -34,7 +34,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     [
       '<!-- HELLOAGENTS_PROFILE: full -->',
       '<!-- HELLOAGENTS_START -->',
-      '# project carrier',
+      '# initialized project marker',
       '<!-- HELLOAGENTS_END -->',
       '',
     ].join('\n'),

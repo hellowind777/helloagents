@@ -17,8 +17,9 @@ Trigger: ~help
 | ~build | 执行实现：按需求或方案包完成实现与验证 |
 | ~prd | 完整 PRD：头脑风暴式逐维度挖掘，生成现代产品需求文档 |
 | ~loop | 自主迭代优化：设定目标和指标，循环修改-验证-保留/回滚 |
-| ~wiki | 仅创建/同步项目知识库（`.helloagents/`） |
-| ~init | 完整初始化项目：知识库 + 项目级规则文件配置 |
+| ~wiki | 仅创建/同步项目知识库 |
+| ~init | 同 `~wiki` |
+| ~global | 初始化项目级全局模式 |
 | ~test | 为指定模块或最近变更编写完整测试 |
 | ~verify | 验证总入口：审查 + 运行验证命令 + 修复循环 |
 | ~commit | 规范化提交 + 知识库同步 |
@@ -31,8 +32,8 @@ Trigger: ~help
 - `~review` → 等同 `~verify` 的审查优先模式
 
 ### 自动激活技能
-以下技能仅在全局模式或项目已写入 full carrier 时自动激活（例如执行过 `~init`，或当前项目级 carrier 已包含 `<!-- HELLOAGENTS_PROFILE: full -->`）。
-纯标准模式、且项目未写入 full carrier 时不会自动触发这些技能；但涉及 UI 的任务仍受 UI 质量基线约束。
+以下技能仅在全局模式或已初始化项目时自动激活（例如执行过 `~global`，或当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`）。
+纯标准模式、且项目未初始化时不会自动触发这些技能；但涉及 UI 的任务仍受 UI 质量基线约束。
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
 特定场景：hello-debug, hello-subagent, hello-write, hello-review
@@ -48,7 +49,7 @@ Trigger: ~help
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
 | ralph_loop_enabled | true | 自动验证循环（显式 ~verify / ~loop 或收尾要求时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
-| kb_create_mode | 1 | 0=关闭/1=项目已写入 full carrier 或全局模式中编码自动/2=项目已写入 full carrier 或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
+| kb_create_mode | 1 | 0=关闭/1=项目已有知识库或全局模式中编码自动/2=项目已有知识库或全局模式中始终 | Claude Code + Gemini CLI + Codex CLI |
 | project_store_mode | "local" | "local"=知识库/方案包保留在项目本地 `.helloagents/`；"repo-shared"=本地 `.helloagents/` 仅保留项目本地状态/运行态，知识库与方案包改写到 `~/.helloagents/projects/<repo-key>/` | Claude Code + Gemini CLI + Codex CLI |
 | auto_commit_enabled | true | true=验证完成且有变更时自动执行本地提交；false=跳过自动提交，仍可手动用 `~commit` | Claude Code + Gemini CLI + Codex CLI |
 | commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |
