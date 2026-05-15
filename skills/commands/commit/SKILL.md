@@ -26,6 +26,6 @@ Trigger: ~commit [message]
 ## 知识库同步
 提交后，继续复用上方已解析的同一份设置获取 `kb_create_mode`，不要再次读取 `~/.helloagents/helloagents.json`：
 - 0 = 跳过
-- 1 = 编码任务自动同步（默认）
-- 2 = 始终同步
+- 1 = 知识库已存在时自动同步（默认）
+- 2 = 编码任务在知识库已存在或全局模式下自动创建或同步
 同步范围与更新格式按当前已加载的 HelloAGENTS CONSOLIDATE 阶段执行。

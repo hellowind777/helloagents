@@ -527,8 +527,8 @@ Once the task creates or modifies local files, or otherwise leaves local output 
 | `~wiki` / `~init` | creates or syncs the knowledge base only |
 | `~global` | creates knowledge base plus project-level global-mode marker and package-root links |
 | `kb_create_mode = 0` | disables automatic knowledge updates |
-| `kb_create_mode = 1` | updates knowledge automatically for coding tasks when the KB already exists or in global mode |
-| `kb_create_mode = 2` | updates knowledge more aggressively when the KB already exists or in global mode |
+| `kb_create_mode = 1` | syncs knowledge automatically only when the KB already exists |
+| `kb_create_mode = 2` | for coding tasks, auto-creates or syncs the KB when it already exists or the project is in global mode |
 
 ## Workflow and Delivery
 
@@ -616,7 +616,7 @@ Default shape:
 | `notify_level` | `0` | `0` off, `1` desktop, `2` sound, `3` both |
 | `ralph_loop_enabled` | `true` | run verification for explicit `~verify` / `~loop` or required closeout gates |
 | `guard_enabled` | `true` | block dangerous commands |
-| `kb_create_mode` | `1` | control automatic knowledge base updates |
+| `kb_create_mode` | `1` | `0` off, `1` sync existing KB automatically, `2` auto-create or sync the KB for coding tasks |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
 | `auto_commit_enabled` | `true` | auto-create a local commit at closeout when verification passed and the working tree changed; `false` skips only the automatic commit |
 | `commit_attribution` | `""` | optional text appended to commit messages |
