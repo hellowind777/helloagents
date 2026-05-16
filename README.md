@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.30-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.31-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -47,7 +47,7 @@
 
 AI coding CLIs can move fast, but they can also stop at advice, skip checks, lose project context, or report completion before the work is really done.
 
-HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, Codex CLI, and DeepSeek TUI. It helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
+HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex CLI. It helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
 
 <table>
 <tr>
@@ -306,14 +306,13 @@ Supported targets:
 - `claude`
 - `gemini`
 - `codex`
-- `deepseek`
 - `--all`
 
 If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/detected mode for that CLI, then falls back to `standby`.
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, `codex`, or `deepseek`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -436,7 +435,6 @@ npm uninstall -g helloagents
 | Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks/permissions, and symlink |
 | Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks, and symlink |
 | Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents`, managed backups | removes managed marker block, managed config keys, managed hooks, symlink, and the latest managed backup |
-| DeepSeek TUI | `~/.deepseek/AGENTS.md`, `~/.deepseek/helloagents -> ~/.helloagents/helloagents` | removes managed marker block and symlink |
 
 ### Global mode files
 
@@ -445,7 +443,6 @@ npm uninstall -g helloagents
 | Claude Code | native plugin install | managed by Claude Code plugin system |
 | Gemini CLI | native extension install | managed by Gemini extension system |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
-| DeepSeek TUI | managed AGENTS carrier | `~/.deepseek/AGENTS.md`, `~/.deepseek/helloagents -> ~/.helloagents/helloagents` |
 
 In global mode, HelloAGENTS now attempts the host-native install commands automatically. If a host command is unavailable, run the same commands manually:
 
@@ -458,8 +455,6 @@ gemini extensions install https://github.com/hellowind777/helloagents
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.
 
 Codex global mode is installed by HelloAGENTS automatically through the local-plugin path.
-
-DeepSeek TUI follows its native `AGENTS.md` model. Standby writes the lite carrier to `~/.deepseek/AGENTS.md`; global writes the full carrier plus `<!-- HELLOAGENTS_PROFILE: full -->`. HelloAGENTS doctor also reads `deepseek doctor --json` when the `deepseek` command is available and surfaces its summary next to HelloAGENTS-managed checks.
 
 ## Commands in Chat
 
@@ -665,14 +660,6 @@ Codex is rules-file driven by default.
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
 - Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
-### DeepSeek TUI
-
-- standby writes `~/.deepseek/AGENTS.md`
-- standby creates `~/.deepseek/helloagents -> ~/.helloagents/helloagents`
-- global keeps using `~/.deepseek/AGENTS.md`, but writes the full HelloAGENTS carrier with `<!-- HELLOAGENTS_PROFILE: full -->`
-- project-level initialized projects still rely on the project carrier marker, so DeepSeek follows the same initialized-project behavior as Codex
-- `helloagents doctor` merges HelloAGENTS-managed checks with the summary from `deepseek doctor --json` when that command exists
-
 ## Verification
 
 Run all tests:
@@ -685,11 +672,11 @@ The current suite covers:
 
 - install, update, cleanup, uninstall, branch switching, and mode switching
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
-- Claude, Gemini, Codex, and DeepSeek host integration behavior
+- Claude, Gemini, and Codex host integration behavior
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
-- `helloagents doctor`, including DeepSeek native doctor summary handling
+- `helloagents doctor`
 - project storage and `repo-shared` behavior
 - session-scoped `state_path`, runtime signals, and evidence
 - runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, and successful-mode tracking after native install failures

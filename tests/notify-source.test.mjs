@@ -45,21 +45,6 @@ test('notification source falls back to terminal session env and then parent pro
   assert.equal(ppidSource.sourceLabel, 'Gemini · demo-app · 会话 67890')
 })
 
-test('notification source renders DeepSeek host labels', () => {
-  const source = resolveNotificationSource({
-    host: 'deepseek',
-    cwd: 'D:/GitHub/dev/demo-app',
-    payload: {
-      sessionId: 'deepseek-session-1234abcd',
-    },
-    env: {},
-    ppid: 54321,
-  })
-
-  assert.equal(source.hostLabel, 'DeepSeek TUI')
-  assert.equal(source.sourceLabel, 'DeepSeek TUI · demo-app · 会话 1234abcd')
-})
-
 test('desktop notification content keeps source label separate from event message', () => {
   const notification = buildDesktopNotificationContent('warning', {
     sourceLabel: 'Codex · helloagents · 会话 67890',
