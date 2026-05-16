@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { chmodSync, rmSync } from 'node:fs'
+import { rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -199,95 +199,4 @@ test('doctor flags missing codex hook trust as drift', () => {
   assert.equal(codex.checks.managedHookTrust, false)
   assert.ok(codex.issues.some((issue) => issue.code === 'standby-hook-trust-missing'))
   assert.ok(codex.issues.some((issue) => /machine-local hook trust metadata/.test(issue.message)))
-})
-
-test('doctor reports DeepSeek standby health and skips native doctor when command is missing', () => {
-  const { root: pkgRoot } = createPackageFixture()
-  const home = createHomeFixture()
-
-  runCli(pkgRoot, home, ['postinstall'])
-  runCli(pkgRoot, home, ['install', 'deepseek', '--standby'])
-
-  const result = runCli(pkgRoot, home, ['doctor', 'deepseek', '--json'], {
-    HELLOAGENTS_DEEPSEEK_CMD: join(home, 'missing-deepseek.cmd'),
-  })
-  const report = JSON.parse(result.stdout)
-  const deepseek = report.hosts.find((entry) => entry.host === 'deepseek')
-
-  assert.equal(deepseek.status, 'ok')
-  assert.equal(deepseek.detectedMode, 'standby')
-  assert.equal(deepseek.trackedMode, 'standby')
-  assert.equal(deepseek.checks.carrierMarker, true)
-  assert.equal(deepseek.checks.carrierContentMatch, true)
-  assert.equal(deepseek.checks.homeLink, true)
-  assert.equal(deepseek.checks.fullProfile, false)
-  assert.equal(deepseek.nativeDoctor.available, false)
-  assert.equal(deepseek.nativeDoctor.note, 'command-not-found')
-  assert.ok(deepseek.notes.some((note) => /native doctor/i.test(note)))
-})
-
-test('doctor reports DeepSeek global health and includes native doctor summary when available', () => {
-  const { root: pkgRoot } = createPackageFixture()
-  const home = createHomeFixture()
-  const fakeDoctor = process.platform === 'win32'
-    ? join(home, 'deepseek-doctor.cmd')
-    : join(home, 'deepseek')
-
-  if (process.platform === 'win32') {
-    const helperScript = join(home, 'deepseek-doctor-helper.js')
-    writeText(
-      helperScript,
-      [
-        'process.stdout.write(JSON.stringify({',
-        '  version: "1.2.3",',
-        '  config_path: "C:/Users/test/.deepseek/config.toml",',
-        '  skills: { selected: ["default", "helloagents"] },',
-        '  mcp: { present: true },',
-        '  sandbox: { available: true },',
-        '  capability: { resolved_provider: "openai", resolved_model: "gpt-5" },',
-        '}) + "\\n")',
-        '',
-      ].join('\n'),
-    )
-    writeText(
-      fakeDoctor,
-      [
-        '@echo off',
-        `"${process.execPath}" "${helperScript}" %*`,
-        'exit /b 0',
-        '',
-      ].join('\r\n'),
-    )
-  } else {
-    writeText(
-      fakeDoctor,
-      [
-        '#!/bin/sh',
-        'printf \'{"version":"1.2.3","config_path":"/tmp/.deepseek/config.toml","skills":{"selected":["default","helloagents"]},"mcp":{"present":true},"sandbox":{"available":true},"capability":{"resolved_provider":"openai","resolved_model":"gpt-5"}}\\n\'',
-        'exit 0',
-        '',
-      ].join('\n'),
-    )
-    chmodSync(fakeDoctor, 0o755)
-  }
-
-  runCli(pkgRoot, home, ['postinstall'])
-  runCli(pkgRoot, home, ['install', 'deepseek', '--global'])
-
-  const result = runCli(pkgRoot, home, ['doctor', 'deepseek', '--json'], {
-    HELLOAGENTS_DEEPSEEK_CMD: fakeDoctor,
-  })
-  const report = JSON.parse(result.stdout)
-  const deepseek = report.hosts.find((entry) => entry.host === 'deepseek')
-
-  assert.equal(deepseek.status, 'ok')
-  assert.equal(deepseek.detectedMode, 'global')
-  assert.equal(deepseek.trackedMode, 'global')
-  assert.equal(deepseek.checks.fullProfile, true)
-  assert.equal(deepseek.nativeDoctor.available, true)
-  assert.equal(deepseek.nativeDoctor.ok, true)
-  assert.equal(deepseek.nativeDoctor.summary.version, '1.2.3')
-  assert.equal(deepseek.nativeDoctor.summary.resolvedProvider, 'openai')
-  assert.equal(deepseek.nativeDoctor.summary.resolvedModel, 'gpt-5')
-  assert.deepEqual(deepseek.nativeDoctor.summary.skillsSelected, ['default', 'helloagents'])
 })

@@ -461,7 +461,7 @@ test('stop blocks explicit auto when turn-state is missing', () => {
 
   const payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
+  assert.match(payload.reason, /显式 ~auto 当前对话不应直接停下/)
   assert.match(payload.reason, /缺少主代理 turn-state/)
 })
 
@@ -496,7 +496,7 @@ test('codex notify blocks explicit auto when turn-state is missing', () => {
 
   const payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
+  assert.match(payload.reason, /显式 ~auto 当前对话不应直接停下/)
   assert.match(payload.reason, /缺少主代理 turn-state/)
 })
 

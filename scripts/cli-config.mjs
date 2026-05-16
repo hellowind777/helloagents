@@ -34,6 +34,14 @@ export function ensureConfig(helloagentsHome, configFile, safeJson, ensureDir) {
   for (const [key, val] of Object.entries(DEFAULTS)) {
     if (!(key in reconciled)) reconciled[key] = val;
   }
+  if (!reconciled.host_install_modes || typeof reconciled.host_install_modes !== 'object' || Array.isArray(reconciled.host_install_modes)) {
+    reconciled.host_install_modes = {};
+  } else {
+    reconciled.host_install_modes = Object.fromEntries(
+      Object.entries(reconciled.host_install_modes)
+        .filter(([host, mode]) => ['claude', 'gemini', 'codex'].includes(host) && typeof mode === 'string' && mode),
+    );
+  }
   if (JSON.stringify(reconciled) !== JSON.stringify(existing)) {
     writeFileSync(configFile, JSON.stringify(reconciled, null, 2), 'utf-8');
   }

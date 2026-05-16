@@ -52,7 +52,7 @@ export function createPackageFixture() {
 
 export function createHomeFixture() {
   const home = createTempDir('helloagents-home-');
-  for (const dir of ['.claude', '.codex', '.gemini', '.deepseek']) {
+  for (const dir of ['.claude', '.codex', '.gemini']) {
     mkdirSync(join(home, dir), { recursive: true });
   }
   return home;
