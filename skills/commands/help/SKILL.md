@@ -45,7 +45,7 @@ Trigger: ~help
 | 配置项 | 默认值 | 作用 | 适用 CLI |
 |--------|-------|------|---------|
 | output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
-| output_format | true | true=主代理最终收尾必须使用 HelloAGENTS 格式，流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
+| output_format | true | true=主代理最终回复必须使用 HelloAGENTS 格式，流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
 | ralph_loop_enabled | true | 自动验证循环（显式 ~verify / ~loop 或收尾要求时触发 lint/test/build） | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI + DeepSeek TUI |

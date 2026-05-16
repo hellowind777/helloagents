@@ -6,7 +6,7 @@
 配置文件: ~/.helloagents/helloagents.json
 `output_language` 非空时，所有用户可见文本使用该语言；为空则跟随用户当前语言。
 会话级缓存优先：当前上下文已有"当前用户设置"、原始 JSON 或读取摘要，且覆盖所需配置项时，直接复用。
-仅在缺少所需项、用户要求刷新，或本轮修改后需要核验时读取；对 Codex 来说，首次对话前若当前上下文仍缺少所需配置项，必须先读取一次 `~/.helloagents/helloagents.json`，压缩/恢复后的首次对话同样先重读一次；输出格式只在缺少 `output_format` 已知值时触发读取。
+仅在缺少所需项、用户要求刷新，或本次修改后需要核验时读取；对 Codex 来说，首次对话前若当前上下文仍缺少所需配置项，必须先读取一次 `~/.helloagents/helloagents.json`，压缩/恢复后的首次对话同样先重读一次；输出格式只在缺少 `output_format` 已知值时触发读取。
 同一会话内，同一路径的配置文件、模块、SKILL、模板只读一次并跨轮复用；读取失败必须明示，并按默认值或已知设置执行。
 
 ## 通用交付规则（强制）
@@ -107,8 +107,8 @@
 ## 交互、停顿与收尾
 ### 输出格式
 适用条件：
-- 当 `helloagents.json` 的 `output_format` 为 `true` 时，主代理必须在本轮最后一条、且确认**不再继续调用工具、不再继续执行**的**收尾消息**中使用输出格式。
-- 若某个 skill 在本轮明确要求输出停顿、确认或总结，也仅当该消息同时是**本轮最终收尾消息**时，才可使用输出格式。
+- 当 `helloagents.json` 的 `output_format` 为 `true` 时，主代理必须在每轮对话最后一条、且确认**不再继续调用工具、不再继续执行**的**最终回复**中使用输出格式。
+- 若某个 skill 在当前对话明确要求输出停顿、确认或总结，也仅当该消息同时是**当前对话的最终回复**时，才可使用输出格式。
 
 排除条件：
 - 当 `output_format` 为 `false` 时，所有回复保持自然输出，不得使用输出格式。
@@ -126,16 +126,16 @@
 图标：💡直接响应（一次性答复 / 只读分析） | ⚡快速执行（低风险直接执行） | 🔵规划流程（方案 / 规划产出） | ✅完成（已完成且无待确认动作） | ❓等待输入（等待用户输入 / 授权） | ⚠️警告（存在重要风险或限制） | ❌错误（发生错误或已阻塞）
 
 使用约束：
-- 首行必须保留 `【HelloAGENTS】` 和连字符 `-`，不得省略；状态图标与收尾内容必须一致。正文仍在等待用户输入、确认、授权或补充信息（含确认是否执行已给出的方案或修改）时，只能使用 `❓等待输入`；仅在本轮执行已完成且不存在待确认动作时，才能使用 `✅完成`。同一条最终收尾消息只使用一次该格式；若主体需要分段，在同一个外层块内分节，不得在正文中再次输出 `【HelloAGENTS】` 或第二个 `🔄 下一步`。
+- 首行必须保留 `【HelloAGENTS】` 和连字符 `-`，不得省略；状态图标与收尾内容必须一致。正文仍在等待用户输入、确认、授权或补充信息（含确认是否执行已给出的方案或修改）时，只能使用 `❓等待输入`；仅在当前对话执行已完成且不存在待确认动作时，才能使用 `✅完成`。同一条最终回复只使用一次该格式；若主体需要分段，在同一个外层块内分节，不得在正文中再次输出 `【HelloAGENTS】` 或第二个 `🔄 下一步`。
 - `🔄 下一步` 必须写真正的下一步动作，不写单纯当前状态或条件式能力表述。若正在等待确认，写清待确认动作；若仍有已授权且可继续执行的动作，不得收尾，必须继续执行；若当前任务已完整结束且确无合理后续，可明确写出任务已结束、无后续动作，不补条件式邀约。
 
 ### 收尾状态信号
-- `turn-state` 只在运行时必须识别本轮“完成 / 等待输入 / 阻塞”时写入；普通问候、普通问答、T0 只读分析和一次性解释不调用
-- 必须调用场景：显式 `~auto` / `~loop`；非只读任务完成验证并进入收尾；需要让运行时识别本轮已完成、等待输入或已阻塞时；已进入项目连续流程或方案包闭环
+- `turn-state` 只在运行时必须识别当前对话“完成 / 等待输入 / 阻塞”时写入；普通问候、普通问答、T0 只读分析和一次性解释不调用
+- 必须调用场景：显式 `~auto` / `~loop`；非只读任务完成验证并进入收尾；需要让运行时识别当前对话已完成、等待输入或已阻塞时；已进入项目连续流程或方案包闭环
 - 首选参数式调用，保证一次完成：`helloagents-turn-state write --kind complete --role main`；也可用 stdin JSON。不要查找、读取或拼接 `turn-state.mjs` 源码路径
-- 本轮已完成且不再等待用户输入 → `helloagents-turn-state write --kind complete --role main`
+- 当前对话已完成且不再等待用户输入 → `helloagents-turn-state write --kind complete --role main`
 - 因阻塞判定等待用户输入、确认、授权或补充信息（含未授权的外部副作用确认） → 写 `kind=waiting`、`role=main`，并同时写 `reasonCategory` 与 `reason`
-- 因错误、缺少前置条件或外部依赖而本轮停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
+- 因错误、缺少前置条件或外部依赖而当前对话停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - `reasonCategory` 只允许：`ambiguity`、`missing-input`、`missing-file`、`missing-credential`、`unauthorized-side-effect`、`high-risk-confirmation`、`external-dependency`、`error`
 - 显式 `~auto` / `~loop` 下，`waiting` / `blocked` 还必须写入 `blocker.target`、`blocker.evidence`、`blocker.requiredAction`；阶段汇报、单轮探测完成、路线调整或“下一步建议”不构成停下理由
 - 子代理不得写 turn-state；子代理结束只直接返回结果，不为主代理代写完成态
@@ -173,7 +173,7 @@
 以下情况才构成中途停下并请求用户输入的正当理由：
 - 需求存在影响执行结果的真实歧义
 - 缺少继续执行所必需的信息、文件、路径或凭据
-- 将产生外部副作用，但本轮尚未获得对应授权（含等待确认是否实施已给方案）
+- 将产生外部副作用，但当前任务尚未获得对应授权（含等待确认是否实施已给方案）
 - 操作属于高风险或不可逆，按安全规则必须确认
 除上述情况外，默认继续执行。
 
@@ -202,14 +202,14 @@
 - 当前项目已初始化，或已存在方案包 / `contract.json` / 证据文件时，以完整流程、对应 skill 与运行时交付约束为准，不得降级为本节
 - 只读分析、创意探索、方案比较、中间进度和阻塞汇报不适用本节
 - Codex `/goal` 只作为外层长程续跑与预算控制；HelloAGENTS 仍负责方案、执行、验证和收尾。若 active goal 的目标已全部完成，先完成 HelloAGENTS 验证、收尾检查与本地版本检查点，再调用 `update_goal` 标记 complete；不得因预算接近耗尽、单轮结束或准备停下而标记 complete
-- 本地版本检查点：非只读任务完成验证且产生工作区变更时，若 `auto_commit_enabled=true`，最终收尾前自动执行本地提交；若 `auto_commit_enabled=false`，跳过这一步。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。显式 `~commit` 不受这个开关影响。不自动远程 `git push`，除非用户明确要求
+- 本地版本检查点：非只读任务完成验证且产生工作区变更时，若 `auto_commit_enabled=true`，最终回复前自动执行本地提交；若 `auto_commit_enabled=false`，跳过这一步。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。显式 `~commit` 不受这个开关影响。不自动远程 `git push`，除非用户明确要求
 
 ### 命令路由
 - `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名；`~review` 是 `~verify` 的兼容别名
 - `~test` — 为指定模块或最近变更编写测试
-- 路径定义：`{HELLOAGENTS_READ_ROOT}` = 本轮已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/` 与 `templates/`
+- 路径定义：`{HELLOAGENTS_READ_ROOT}` = 当前对话已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/` 与 `templates/`
 - `~command` 路由：用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。若当前上下文已解析出具体命令技能文件路径，直接使用它；否则先确定当前技能根目录：
-  - 优先使用当前上下文中已注入的“本轮 HelloAGENTS 读取根目录”
+  - 优先使用当前上下文中已注入的“当前对话 HelloAGENTS 读取根目录”
   - 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
 - 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`、DeepSeek `~/.deepseek/helloagents`）只作为兼容别名，不作为优先探测路径
   - 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
@@ -225,7 +225,7 @@
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{workspace}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{workspace}/default/STATE.md`
 - `{workspace}` 为当前 Git 分支、`detached-{sha}` 或非 Git 项目的 `workspace`；`.helloagents/sessions/active.json` 只记录当前活跃会话索引，避免同一会话被拆成多个目录
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
-templates/ 查找路径（按优先级；首次确定模板根目录后，本轮复用）：
+templates/ 查找路径（按优先级；首次确定模板根目录后，本会话复用）：
 按上文 `~command` 路由中的相同技能根目录规则确定；确定根目录后读取其中的 `templates/`。
 
 ### 流程状态（不受 `kb_create_mode` 控制，始终可写）
@@ -268,7 +268,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本轮
 - artifacts/closeout.json — 当前会话最近一次成功收尾的交付证据快照
 
 ### 主线判断依据
-1. 当前用户最新消息、显式 `~command`、本轮已确认的范围与结论
+1. 当前用户最新消息、显式 `~command`、当前对话已确认的范围与结论
 2. 当前活跃方案包 / PRD、代码与验证证据
 3. 当前状态文件（`state_path`，只用于补齐最近进度）
 4. 其他知识记录与历史归档
