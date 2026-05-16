@@ -32,7 +32,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(helloagents, /按当前已加载的 HelloAGENTS 规则处理/)
   assert.match(helloagents, /不得把等待输入包装成完成态/)
   assert.match(helloagents, /helloagents-turn-state write --kind complete --role main/)
-  assert.match(helloagents, /需要让运行时识别本轮已完成、等待输入或已阻塞时/)
+  assert.match(helloagents, /需要让运行时识别当前对话已完成、等待输入或已阻塞时/)
   assert.match(helloagents, /普通问候、普通问答、T0 只读分析和一次性解释不调用/)
   assert.match(helloagents, /普通问答、解释、分析、改写、邮件回复和其他一次性交付虽然不进入完整实现、验证或收尾流程，但仍属于交付/)
   assert.match(helloagents, /默认只交付与当前请求直接对应的一版最终结果/)
@@ -207,7 +207,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.match(build, /执行 `~build` 时，通用阶段边界按当前已加载的 HelloAGENTS 规则执行/)
   assert.match(build, /优先按当前已加载的 HelloAGENTS 规则恢复当前任务，并遵循“.helloagents\/ 文件读取优先级”/)
   assert.match(build, /先读取 `state_path`/)
-  assert.match(build, /“完成标准”当作本轮实现约束/)
+  assert.match(build, /“完成标准”当作本次实现约束/)
   assert.match(build, /按 `tasks\.md` 未完成项、`contract\.json` 与 `state_path` 恢复实现位置/)
   assert.match(build, /不要自动创建新 goal/)
   assert.match(build, /先转入 `~verify` 与 HelloAGENTS 收尾，再标记 goal complete/)
@@ -222,7 +222,7 @@ test('workflow skill contracts stay aligned with command aliases and artifacts',
   assert.doesNotMatch(build, /需要时同步知识库、`CHANGELOG\.md`、modules 文档与反思/)
 
   const testSkill = readText(join(REPO_ROOT, 'skills', 'commands', 'test', 'SKILL.md'))
-  assert.match(testSkill, /从 `tasks\.md` 未完成项、`contract\.json` 与 `state_path` 推导本轮测试范围/)
+  assert.match(testSkill, /从 `tasks\.md` 未完成项、`contract\.json` 与 `state_path` 推导本次测试范围/)
   assert.match(testSkill, /测试通过只作为 goal 交付证据，不直接标记 goal complete/)
 
   const help = readText(join(REPO_ROOT, 'skills', 'commands', 'help', 'SKILL.md'))

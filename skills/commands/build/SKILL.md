@@ -20,15 +20,15 @@ Trigger: ~build [description]
 
 ### 1. 恢复与定位
 
-- 优先按当前已加载的 HelloAGENTS 规则恢复当前任务，并遵循“.helloagents/ 文件读取优先级”；若当前消息明确要继续上次任务、会话刚经历恢复 / 压缩，或本轮运行在 Codex active goal 下，先读取 `state_path`，再用当前用户消息、活跃方案包 / PRD 与代码事实确认当前任务
+- 优先按当前已加载的 HelloAGENTS 规则恢复当前任务，并遵循“.helloagents/ 文件读取优先级”；若当前消息明确要继续上次任务、会话刚经历恢复 / 压缩，或当前运行在 Codex active goal 下，先读取 `state_path`，再用当前用户消息、活跃方案包 / PRD 与代码事实确认当前任务
 - 若存在最近的活跃方案包，读取对应的：
   - `requirements.md`
   - `plan.md`
   - `tasks.md`
   - `contract.json`
-  - 实现时优先把 `tasks.md` 中每个任务的“完成标准”当作本轮实现约束，不要只按任务标题猜测范围
+  - 实现时优先把 `tasks.md` 中每个任务的“完成标准”当作本次实现约束，不要只按任务标题猜测范围
   - `contract.json` 存在时，优先按其中的 `verifyMode`、`reviewerFocus`、`testerFocus` 理解后续验证边界
-- 若本轮运行在 Codex active goal 下，按 `tasks.md` 未完成项、`contract.json` 与 `state_path` 恢复实现位置；不要自动创建新 goal，也不要把 goal 目标原文替代方案包
+- 若当前运行在 Codex active goal 下，按 `tasks.md` 未完成项、`contract.json` 与 `state_path` 恢复实现位置；不要自动创建新 goal，也不要把 goal 目标原文替代方案包
 - 若当前上下文中已注入“当前工作流约束”或“当前推荐下一命令”，先服从它；只有推荐仍为 `~build`，或用户明确提出新增实现范围时，才继续 `~build`
 - 其余项目知识库与相关代码文件，按 HelloAGENTS 项目上下文要求读取
 - 若任务涉及 UI，按以下优先级读取并遵循：当前活跃 `plan.md` / PRD 中的 UI 决策 > 逻辑 `.helloagents/DESIGN.md`（实际路径按当前项目存储模式解析） > 已读取的 `hello-ui` 规则；同时所有 UI 任务都必须满足 UI 质量基线

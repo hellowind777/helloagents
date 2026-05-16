@@ -84,7 +84,7 @@ test('stop blocks explicit auto soft handoff even with waiting turn-state', () =
   const payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /blocker\.target/)
-  assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
+  assert.match(payload.reason, /显式 ~auto 当前对话不应直接停下/)
 })
 
 test('stop allows explicit auto waiting when the blocker is concrete', () => {
@@ -183,7 +183,7 @@ test('stop allows explicit auto closeout when the final message keeps a single H
         '结论：你的判断基本成立，但根因在收尾契约缺少单次包装约束。',
         '',
         '## 根因',
-        '收尾消息在同一条回复里重复输出了外层标题。',
+        '最终回复在同一条回复里重复输出了外层标题。',
         '',
         '## 修复',
         '把所有内容合并到同一个外层块内。',
