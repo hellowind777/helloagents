@@ -225,7 +225,7 @@
 先确定当前技能根目录：
 - 优先使用当前上下文中已注入的“当前对话 HelloAGENTS 读取根目录”
 - 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
-- 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`、DeepSeek `~/.deepseek/helloagents`）只作为兼容别名，不作为优先探测路径
+- 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`）只作为兼容别名，不作为优先探测路径
 - 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
 - 全局模式或已初始化项目时，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
 路径确定一次即可，不预读、不扫描整个目录，也不重复探测同一路径。

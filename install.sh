@@ -4,9 +4,9 @@ set -eu
 # HelloAGENTS one-shot installer.
 #
 # Environment:
-#   HELLOAGENTS=all|claude|gemini|codex|deepseek[:standby|global]
+#   HELLOAGENTS=all|claude|gemini|codex[:standby|global]
 #   HELLOAGENTS_ACTION=install|update|cleanup|uninstall|switch-branch|branch
-#   HELLOAGENTS_TARGET=all|claude|gemini|codex|deepseek
+#   HELLOAGENTS_TARGET=all|claude|gemini|codex
 #   HELLOAGENTS_MODE=standby|global
 #   HELLOAGENTS_BRANCH=main|beta|...
 #   HELLOAGENTS_PACKAGE=helloagents|https://github.com/owner/repo/archive/refs/heads/ref.tar.gz|...
@@ -36,7 +36,7 @@ TARGET="$(printf '%s' "$TARGET" | tr '[:upper:]' '[:lower:]')"
 MODE="$(printf '%s' "$MODE" | tr '[:upper:]' '[:lower:]')"
 
 case "$TARGET" in
-  all|claude|gemini|codex|deepseek) ;;
+  all|claude|gemini|codex) ;;
   *) echo "Unsupported HELLOAGENTS target: $TARGET" >&2; exit 1 ;;
 esac
 
