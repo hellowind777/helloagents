@@ -6,7 +6,6 @@ const HOST_LABELS = {
   codex: 'Codex',
   claude: 'Claude Code',
   gemini: 'Gemini',
-  deepseek: 'DeepSeek TUI',
 }
 
 function normalizePath(filePath = '') {

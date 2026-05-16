@@ -10,7 +10,7 @@ import {
 import { installAllHosts, runHostLifecycle, uninstallAllHosts } from './cli-lifecycle-hosts.mjs'
 import { ensureDir, safeJson, safeWrite } from './cli-utils.mjs'
 
-export const HOSTS = ['claude', 'gemini', 'codex', 'deepseek']
+export const HOSTS = ['claude', 'gemini', 'codex']
 
 const runtime = {
   home: '',
@@ -28,14 +28,28 @@ export function initCliLifecycle(options) {
   Object.assign(runtime, options)
 }
 
+function sanitizeSettings(settings = {}) {
+  const next = settings && typeof settings === 'object' ? { ...settings } : {}
+  const tracked = next.host_install_modes
+  if (!tracked || typeof tracked !== 'object' || Array.isArray(tracked)) {
+    next.host_install_modes = {}
+    return next
+  }
+  next.host_install_modes = Object.fromEntries(
+    Object.entries(tracked).filter(([host, mode]) => HOSTS.includes(host) && typeof mode === 'string' && mode),
+  )
+  return next
+}
+
 export function readSettings(shouldEnsure = false) {
   if (shouldEnsure) ensureConfig(runtime.helloagentsHome, runtime.configFile, safeJson, ensureDir)
-  return safeJson(runtime.configFile) || {}
+  return sanitizeSettings(safeJson(runtime.configFile) || {})
 }
 
 function writeSettings(settings) {
+  const sanitized = sanitizeSettings(settings)
   ensureDir(runtime.helloagentsHome)
-  writeFileSync(runtime.configFile, JSON.stringify(settings, null, 2), 'utf-8')
+  writeFileSync(runtime.configFile, JSON.stringify(sanitized, null, 2), 'utf-8')
 }
 
 function hasTrackedHostModes(settings) {

@@ -109,7 +109,7 @@ test('Codex silent hooks do not emit additional context and de-duplicate Stop ha
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /显式 ~auto 本轮不应直接停下/)
+  assert.match(payload.reason, /显式 ~auto 当前对话不应直接停下/)
   let evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
     session: '12345678',
   }))
@@ -408,7 +408,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /# HelloAGENTS\b/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 运行根目录/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /本轮 HelloAGENTS 读取根目录/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前对话 HelloAGENTS 读取根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /turnStateCommand/)
   assert.match(payload.hookSpecificOutput.additionalContext, /helloagents-turn-state write/)
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)

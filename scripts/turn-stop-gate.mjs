@@ -39,7 +39,7 @@ function buildBlockReason(routeContext, detail, cwd) {
   const commandLabel = `~${routeContext.skillName}`
   const workflowHint = buildWorkflowHint(cwd)
   return [
-    `[HelloAGENTS Runtime] 显式 ${commandLabel} 本轮不应直接停下。`,
+    `[HelloAGENTS Runtime] 显式 ${commandLabel} 当前对话不应直接停下。`,
     detail,
     workflowHint,
     '若无真实阻塞，请继续沿当前路径执行。',
@@ -74,7 +74,7 @@ function validateFormattedCloseoutMessage(routeContext, payload, cwd) {
   if (!firstNonEmptyLine || !/^[💡⚡🔵✅❓⚠️❌]【HelloAGENTS】- /.test(firstNonEmptyLine)) {
     return buildBlockReason(
       routeContext,
-      '最终收尾消息使用了 HelloAGENTS 外层格式，但首个非空行不是规范标题行。',
+      '最终回复使用了 HelloAGENTS 外层格式，但首个非空行不是规范标题行。',
       cwd,
     )
   }
@@ -82,7 +82,7 @@ function validateFormattedCloseoutMessage(routeContext, payload, cwd) {
   if (countMatches(message, /[💡⚡🔵✅❓⚠️❌]【HelloAGENTS】-/g) > 1) {
     return buildBlockReason(
       routeContext,
-      '最终收尾消息重复输出了 HelloAGENTS 标题；请把所有内容合并到同一个外层块内。',
+      '最终回复重复输出了 HelloAGENTS 标题；请把所有内容合并到同一个外层块内。',
       cwd,
     )
   }
@@ -90,7 +90,7 @@ function validateFormattedCloseoutMessage(routeContext, payload, cwd) {
   if (countMatches(message, /^🔄 下一步:/gm) > 1) {
     return buildBlockReason(
       routeContext,
-      '最终收尾消息重复输出了 `🔄 下一步`；请只保留一个真实下一步。',
+      '最终回复重复输出了 `🔄 下一步`；请只保留一个真实下一步。',
       cwd,
     )
   }
@@ -140,7 +140,7 @@ function validateTurnState(routeContext, turnState, cwd, payload = {}) {
       cwd,
     )
   }
-  return buildBlockReason(routeContext, `当前 turn-state 为 \`${turnState.kind}\`，不能作为本轮结束状态。`, cwd)
+  return buildBlockReason(routeContext, `当前 turn-state 为 \`${turnState.kind}\`，不能作为当前对话结束状态。`, cwd)
 }
 
 export function evaluateTurnStopGate(payload = {}) {

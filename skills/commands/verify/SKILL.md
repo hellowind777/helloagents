@@ -12,13 +12,13 @@ Trigger: ~verify [scope]
    - 若当前上下文中已注入“当前工作流约束”或“当前推荐下一命令”，先服从它
    - 即使命令通过，也不能越过当前方案包边界：不完整方案包不能视为可信交付记录，未闭合方案包不能被整体报告为已完成
    - 当推荐路径已进入 `~verify` / 收尾时，优先把本命令用于审查、验真和交付收尾
-   - 若当前存在活跃方案包，先读取 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`，把它们当作本轮验证契约；不要只看命令结果
-   - 若本轮运行在 Codex active goal 下，按 active goal 关联方案包和 `state_path` 复核范围；`/goal` 只负责续跑，不改变验证契约
-   - 若 `contract.json` 声明 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，则本轮还必须补齐当前会话 `artifacts/advisor.json`；advisor / style advisor 都是可选能力，不是默认常驻步骤
-   - 若 `contract.json` 声明 `ui.visualValidation.required=true`，则本轮还必须补齐当前会话 `artifacts/visual.json`；视觉验收优先用截图/浏览器工具，没有工具时才降级为结构化代码级自检
+   - 若当前存在活跃方案包，先读取 `requirements.md`、`plan.md`、`tasks.md`、`contract.json`，把它们当作当前验证契约；不要只看命令结果
+   - 若当前运行在 Codex active goal 下，按 active goal 关联方案包和 `state_path` 复核范围；`/goal` 只负责续跑，不改变验证契约
+   - 若 `contract.json` 声明 `advisor.required=true` 或 `ui.styleAdvisor.required=true`，则本次验证还必须补齐当前会话 `artifacts/advisor.json`；advisor / style advisor 都是可选能力，不是默认常驻步骤
+   - 若 `contract.json` 声明 `ui.visualValidation.required=true`，则本次验证还必须补齐当前会话 `artifacts/visual.json`；视觉验收优先用截图/浏览器工具，没有工具时才降级为结构化代码级自检
 1. 先决定验证分流：
    - 若当前上下文中已注入“验证分流”，先按该分流执行
-   - 用户显式使用 `~review` 时，即使本轮没有注入分流，也按审查优先起步
+   - 用户显式使用 `~review` 时，即使当前没有注入分流，也按审查优先起步
    - 若没有注入分流、也不是 `~review`，默认先做全量验证；执行中一旦发现高风险流程、关键权限/配置/迁移/发布边界或明显未覆盖的风险点，立即补做 `hello-review`
 2. 审查优先模式：
    - 获取变更范围：无参数默认未提交变更；`staged` 代表暂存区；指定文件/目录则只审查对应范围
