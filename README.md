@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.31-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.32-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -211,6 +211,7 @@ Runtime evidence files include:
 - `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
 Delivery gate, guard, and loop messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
+That wrapper is now reserved for direct final-user delivery only. Intermediate reports, delegated task results, and sub-agent replies stay natural, and sub-agent stop hooks reject wrapped closeout replies.
 
 ### 7) Safer install, update, cleanup, and diagnostics
 
@@ -612,7 +613,7 @@ Default shape:
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `output_language` | `""` | follow the user language unless set |
-| `output_format` | `true` | main-agent final closeout must use the HelloAGENTS layout; intermediate and sub-agent output stays natural |
+| `output_format` | `true` | direct final-user closeout from the main agent uses the HelloAGENTS layout; intermediate, delegated, and sub-agent output stays natural |
 | `notify_level` | `0` | `0` off, `1` desktop, `2` sound, `3` both |
 | `ralph_loop_enabled` | `true` | run verification for explicit `~verify` / `~loop` or required closeout gates |
 | `guard_enabled` | `true` | block dangerous commands |
