@@ -92,10 +92,12 @@ test('skill and help docs describe output_format as final-summary only', () => {
   assert.match(subagentSkill, /不包装 HelloAGENTS 外层格式/);
 
   const readmeEn = read('README.md');
-  assert.match(readmeEn, /main-agent final closeout must use the HelloAGENTS layout/);
+  assert.match(readmeEn, /direct final-user closeout from the main agent uses the HelloAGENTS layout/);
+  assert.match(readmeEn, /That wrapper is now reserved for direct final-user delivery only/);
 
   const readmeCn = read('README_CN.md');
-  assert.match(readmeCn, /主代理最终回复必须使用 HelloAGENTS 格式/);
+  assert.match(readmeCn, /仅主代理直接面向最终用户的终局交付使用 HelloAGENTS 格式/);
+  assert.match(readmeCn, /这个外层格式现在只保留给直接面向最终用户的终局交付/);
 
   const helpSkill = read('skills/commands/help/SKILL.md');
   assert.match(helpSkill, /缺少下表任一配置项/);
