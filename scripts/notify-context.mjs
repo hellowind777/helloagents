@@ -54,6 +54,10 @@ function buildAliasRouteNote(skillName) {
   return '';
 }
 
+function buildDelegatedTaskHint() {
+  return '若当前输入明显来自上级代理、控制器或多代理协作上下文，且本次输出会交回上级代理继续汇总、决策或复述，而不是直接交付给最终用户，则按子代理处理：直接完成局部任务并返回结果、证据或阻塞项，不使用 HelloAGENTS 外层输出格式，不写 turn-state，不做面向最终用户的收尾。'
+}
+
 export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFile, host }) {
   const summaryParts = [];
   summaryParts.push('## HelloAGENTS 压缩摘要');
@@ -148,7 +152,7 @@ export function buildRouteInstruction({ skillName, extraRules = '', cwd, pkgRoot
   const commandHint = buildCommandRouteHint(canonicalSkillName, cwd, workflowOptions);
   const capabilityHint = buildCapabilityHint({ cwd, skillName: canonicalSkillName, options: workflowOptions });
   const projectStorageHint = buildProjectStorageHint(cwd, workflowOptions);
-  return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；不要再探测其他 helloagents 路径。${aliasNote ? ` ${aliasNote}` : ''}${projectStorageHint ? ` ${projectStorageHint}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
+  return `用户使用了 ~${skillName} 命令。当前命令技能文件已解析为：${skillPath}。请直接读取这个 SKILL.md；不要再探测其他 helloagents 路径。 ${buildDelegatedTaskHint()}${aliasNote ? ` ${aliasNote}` : ''}${projectStorageHint ? ` ${projectStorageHint}` : ''}${commandHint ? ` ${commandHint}` : ''}${capabilityHint ? ` ${capabilityHint}` : ''}${extraRules}`;
 }
 
 export function buildSemanticRouteInstruction(cwd, payload = {}) {
@@ -159,6 +163,7 @@ export function buildSemanticRouteInstruction(cwd, payload = {}) {
   return [
     '当前消息未使用 ~command。',
     '请根据用户请求的真实意图选路，不依赖关键词表。',
+    buildDelegatedTaskHint(),
     'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆操作。',
     '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动选择并继续执行后续阶段。',
     '若判定为 T3，默认先走 ~plan / ~prd；纯审查/验证请求才优先 ~verify。',

@@ -17,7 +17,7 @@ export function resolveBootstrapFile(cwd, settings = {}, host = '') {
 }
 
 function shouldBypassRoute(prompt) {
-  return !prompt || /^\[子代理任务\]/.test(prompt)
+  return !prompt
 }
 
 function buildHelpExtraRules(skillName) {

@@ -89,6 +89,30 @@ function runVerify(commands, cwd) {
   return failures;
 }
 
+function getLastAssistantMessage(data = {}) {
+  return String(
+    data.lastAssistantMessage
+    || data.last_assistant_message
+    || data['last-assistant-message']
+    || '',
+  ).trim();
+}
+
+function hasHelloagentsWrapper(message = '') {
+  if (!message.includes('【HelloAGENTS】')) return false;
+  const firstNonEmptyLine = message
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean);
+  return /^[💡⚡🔵✅❓⚠️❌]【HelloAGENTS】- /.test(firstNonEmptyLine || '') || message.includes('【HelloAGENTS】');
+}
+
+function validateSubagentOutput(data = {}) {
+  const message = getLastAssistantMessage(data);
+  if (!message || !hasHelloagentsWrapper(message)) return '';
+  return '[HelloAGENTS Runtime] 子代理输出不应使用 HelloAGENTS 外层格式。当前回复不是直接面向最终用户的终局交付，请改为自然输出，只返回结果、证据或阻塞项。';
+}
+
 /** Filter commands to fast checks only for subagent mode. Returns null if no fast commands found. */
 function filterSubagentCommands(commands) {
   const fast = commands.filter(cmd =>
@@ -116,6 +140,17 @@ export function evaluateRalphLoop(data = {}, runtime = {}) {
   const runtimeOptions = { payload: data };
   const isSubagent = runtime.isSubagent ?? IS_SUBAGENT;
   const hookEventName = runtime.hookEventName || HOOK_EVENT;
+
+  if (isSubagent) {
+    const formatReason = validateSubagentOutput(data);
+    if (formatReason) {
+      return {
+        decision: 'block',
+        reason: formatReason,
+        suppressOutput: true,
+      };
+    }
+  }
 
   let commands = detectCommands(cwd);
   if (!commands?.length) {

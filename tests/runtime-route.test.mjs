@@ -498,10 +498,19 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
   assert.match(payload.hookSpecificOutput.additionalContext, /不依赖关键词表/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /若当前输入明显来自上级代理、控制器或多代理协作上下文/)
   assert.match(payload.hookSpecificOutput.additionalContext, /Delivery Tier: T0=探索\/比较/)
   assert.match(payload.hookSpecificOutput.additionalContext, /默认先走 ~plan \/ ~prd/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前活跃 plan \/ PRD/)
   assert.match(payload.hookSpecificOutput.additionalContext, /状态文件只用于找回上次停在哪/)
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '[子代理任务] 只审查 auth 目录并把结果交回控制器' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /若当前输入明显来自上级代理、控制器或多代理协作上下文/)
 
   writeText(
     join(project, '.helloagents', 'plans', '202604040101_missing-state', 'requirements.md'),

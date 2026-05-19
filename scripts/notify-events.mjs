@@ -4,10 +4,6 @@ export function shouldIgnoreCodexNotifyClient(client) {
   return normalized !== 'codex' && !normalized.startsWith('codex-');
 }
 
-export function shouldIgnoreFormattedSubagent(lastMsg, outputFormatEnabled) {
-  return outputFormatEnabled && !lastMsg.includes('【HelloAGENTS】');
-}
-
 export function resolveNotifyHost(argv = []) {
   const args = Array.from(argv, (value) => String(value || ''));
   const command = args[2] || args[0] || '';
