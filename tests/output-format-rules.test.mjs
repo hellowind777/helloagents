@@ -46,7 +46,8 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /最终回复/);
     assert.match(content, /以下内容一律视为中间输出/);
     assert.match(content, /不得使用输出格式/);
-    assert.match(content, /子代理在任何场景下都不得使用输出格式/);
+    assert.match(content, /凡是不直接面向最终用户终局交付的回复/);
+    assert.match(content, /会交回上级代理\/控制器继续消费的回复/);
     assert.match(content, /首行必须保留 `【HelloAGENTS】` 和连字符 `-`，不得省略/);
     assert.match(content, /状态图标与收尾内容必须一致/);
   assert.match(content, /仅在当前对话执行已完成且不存在待确认动作时，才能使用 `✅完成`/);
@@ -65,9 +66,11 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
 test('skill and help docs describe output_format as final-summary only', () => {
   const helloagentsSkill = read('skills/helloagents/SKILL.md');
   assert.match(helloagentsSkill, /不得包装 HelloAGENTS 外层输出格式/);
-  assert.match(helloagentsSkill, /当前对话的最终回复/);
+  assert.match(helloagentsSkill, /直接面向最终用户、且当前对话已经结束的终局交付/);
   assert.match(helloagentsSkill, /通用输出格式/);
   assert.match(helloagentsSkill, /流式内容、进度或状态汇报、中间文本/);
+  assert.match(helloagentsSkill, /直接面向最终用户/);
+  assert.match(helloagentsSkill, /会交回上级代理/);
   assert.match(helloagentsSkill, /最终回复中的 `🔄 下一步` 写真实动作/);
   assert.match(helloagentsSkill, /已获授权且可继续执行时不得收尾/);
   assert.match(helloagentsSkill, /同一条最终回复只包装一次/);
@@ -85,13 +88,16 @@ test('skill and help docs describe output_format as final-summary only', () => {
 
   const subagentSkill = read('skills/hello-subagent/SKILL.md');
   assert.match(subagentSkill, /团队协作中的进度与状态汇报都属于中间输出/);
-  assert.match(subagentSkill, /当前对话的最终回复中才可使用 HelloAGENTS 外层输出格式/);
+  assert.match(subagentSkill, /交回上级代理继续汇总、决策或复述/);
+  assert.match(subagentSkill, /不包装 HelloAGENTS 外层格式/);
 
   const readmeEn = read('README.md');
-  assert.match(readmeEn, /main-agent final closeout must use the HelloAGENTS layout/);
+  assert.match(readmeEn, /direct final-user closeout from the main agent uses the HelloAGENTS layout/);
+  assert.match(readmeEn, /That wrapper is now reserved for direct final-user delivery only/);
 
   const readmeCn = read('README_CN.md');
-  assert.match(readmeCn, /主代理最终回复必须使用 HelloAGENTS 格式/);
+  assert.match(readmeCn, /仅主代理直接面向最终用户的终局交付使用 HelloAGENTS 格式/);
+  assert.match(readmeCn, /这个外层格式现在只保留给直接面向最终用户的终局交付/);
 
   const helpSkill = read('skills/commands/help/SKILL.md');
   assert.match(helpSkill, /缺少下表任一配置项/);

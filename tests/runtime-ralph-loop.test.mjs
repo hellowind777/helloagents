@@ -72,3 +72,32 @@ test('ralph loop covers build detection, breaker reset, and subagent fast-path f
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /未找到快速验证命令/)
 })
+
+test('ralph loop blocks HelloAGENTS wrapper in subagent output', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-subagent-output-')
+  const ralphScript = join(pkgRoot, 'scripts', 'ralph-loop.mjs')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+  writeJson(join(project, 'package.json'), {
+    name: 'subagent-output-project',
+    scripts: {
+      lint: 'node -e "process.exit(0)"',
+    },
+  })
+
+  const result = runNode(ralphScript, ['subagent'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      lastAssistantMessage: '✅【HelloAGENTS】- 子任务已完成\n\n局部结果。\n\n🔄 下一步: 等待主代理汇总',
+    }),
+  })
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.decision, 'block')
+  assert.match(payload.reason, /子代理输出不应使用 HelloAGENTS 外层格式/)
+})
