@@ -14,6 +14,14 @@ const PAYLOAD_KEY_ALIASES = {
   stop_hook_active: 'stopHookActive',
   'goal-id': 'goalId',
   goal_id: 'goalId',
+  is_subagent: 'isSubagent',
+  sub_agent: 'subagent',
+  parent_agent_id: 'parentAgentId',
+  parent_turn_id: 'parentTurnId',
+  delegated_by_agent_id: 'delegatedByAgentId',
+  agent_id: 'agentId',
+  agent_role: 'agentRole',
+  agent_kind: 'agentKind',
 }
 
 function assignAlias(target, source, sourceKey, targetKey) {

@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -11,7 +12,7 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import { getSessionEvidencePath, getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 test('codex notify gates only main complete turns from turn-state', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -144,6 +145,128 @@ test('codex notify gates only main complete turns from turn-state', () => {
     env,
   })
   assert.equal(result.stdout, '')
+})
+
+test('managed codex notify ignores clientless delegated completion events', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-codex-subagent-notify-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { output_format: true })
+  writeJson(join(home, '.codex', 'hooks.json'), {
+    hooks: {
+      Stop: [
+        {
+          matcher: '',
+          hooks: [
+            {
+              type: 'command',
+              command: 'helloagents-js notify stop --codex',
+              timeout: 120,
+            },
+          ],
+        },
+      ],
+    },
+  })
+
+  const result = runNode(notifyScript, ['codex-notify', JSON.stringify({
+    type: 'agent-turn-complete',
+    cwd: project,
+    sessionId: 'child001',
+    turnId: 'turn-child-1',
+    inputMessages: ['这是一个局部子任务。'],
+    lastAssistantMessage: 'OK',
+  })], {
+    cwd: project,
+    env,
+  })
+
+  assert.equal(result.stdout, '')
+  assert.equal(
+    existsSync(getSessionEvidencePath(project, 'codex-quick-notify.json', { session: 'child001' })),
+    false,
+  )
+})
+
+test('managed codex notify still records main completion evidence for client-tagged events', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-codex-main-notify-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { output_format: true })
+  writeText(join(project, '.helloagents', '.keep'), '')
+  writeJson(join(home, '.codex', 'hooks.json'), {
+    hooks: {
+      Stop: [
+        {
+          matcher: '',
+          hooks: [
+            {
+              type: 'command',
+              command: 'helloagents-js notify stop --codex',
+              timeout: 120,
+            },
+          ],
+        },
+      ],
+    },
+  })
+
+  const result = runNode(notifyScript, ['codex-notify', JSON.stringify({
+    type: 'agent-turn-complete',
+    client: 'codex_exec',
+    cwd: project,
+    sessionId: 'main001',
+    turnId: 'turn-main-1',
+    inputMessages: ['主任务提示'],
+    lastAssistantMessage: 'DONE',
+  })], {
+    cwd: project,
+    env,
+  })
+
+  assert.equal(result.stdout, '')
+  assert.equal(
+    existsSync(getSessionEvidencePath(project, 'codex-quick-notify.json', { session: 'main001' })),
+    true,
+  )
+})
+
+test('codex stop blocks HelloAGENTS wrapper for explicit subagent payload', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-codex-subagent-stop-')
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home)
+  writeJson(join(project, 'package.json'), {
+    name: 'subagent-stop-project',
+    scripts: {
+      lint: 'node -e "process.exit(0)"',
+    },
+  })
+
+  const result = runNode(notifyScript, ['stop', '--codex'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({
+      cwd: project,
+      sessionId: 'sub-stop-1',
+      isSubagent: true,
+      parentAgentId: 'parent-1',
+      lastAssistantMessage: '✅【HelloAGENTS】- 审查完成\n\n局部结果。\n\n🔄 下一步: 等待主代理汇总',
+    }),
+  })
+
+  const payload = parseStdoutJson(result)
+  assert.equal(payload.decision, 'block')
+  assert.match(payload.reason, /子代理输出不应使用 HelloAGENTS 外层格式/)
 })
 
 test('stop allows structured waiting turn-state and clears it', () => {

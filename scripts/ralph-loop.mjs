@@ -98,6 +98,59 @@ function getLastAssistantMessage(data = {}) {
   ).trim();
 }
 
+function hasTruthyAgentFlag(value) {
+  if (typeof value === 'boolean') return value;
+  const normalized = String(value || '').trim().toLowerCase();
+  return ['1', 'true', 'yes', 'subagent'].includes(normalized);
+}
+
+function hasNonEmptyValue(value) {
+  return String(value || '').trim().length > 0;
+}
+
+function looksLikeCodexDelegatedTurn(data = {}) {
+  if (!data || typeof data !== 'object') return false;
+  const client = String(data.client || '').trim();
+  const inputMessages = Array.isArray(data.inputMessages) ? data.inputMessages : [];
+  return !client && inputMessages.length > 1;
+}
+
+function inferSubagentFromPayload(data = {}) {
+  if (!data || typeof data !== 'object') return false;
+
+  if ([data.isSubagent, data.subagent].some(hasTruthyAgentFlag)) {
+    return true;
+  }
+
+  const roleLike = [
+    data.role,
+    data.agentRole,
+    data.agent_role,
+    data.agentKind,
+    data.agent_kind,
+    data.kind,
+  ]
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter(Boolean);
+
+  if (roleLike.some((value) => ['subagent', 'delegate', 'delegated', 'worker', 'explorer'].includes(value))) {
+    return true;
+  }
+
+  if ([
+    data.parentAgentId,
+    data.parent_agent_id,
+    data.parentTurnId,
+    data.parent_turn_id,
+    data.delegatedByAgentId,
+    data.delegated_by_agent_id,
+  ].some(hasNonEmptyValue)) {
+    return true;
+  }
+
+  return looksLikeCodexDelegatedTurn(data);
+}
+
 function hasHelloagentsWrapper(message = '') {
   if (!message.includes('【HelloAGENTS】')) return false;
   const firstNonEmptyLine = message
@@ -138,7 +191,7 @@ export function evaluateRalphLoop(data = {}, runtime = {}) {
 
   const cwd = data.cwd || process.cwd();
   const runtimeOptions = { payload: data };
-  const isSubagent = runtime.isSubagent ?? IS_SUBAGENT;
+  const isSubagent = runtime.isSubagent === true || inferSubagentFromPayload(data) || IS_SUBAGENT;
   const hookEventName = runtime.hookEventName || HOOK_EVENT;
 
   if (isSubagent) {

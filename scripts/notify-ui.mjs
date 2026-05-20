@@ -4,7 +4,7 @@
  */
 import { platform } from 'node:os';
 import { join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { appendFileSync, existsSync } from 'node:fs';
 import { execFileSync, spawn } from 'node:child_process';
 
 const PLAT = platform();
@@ -19,6 +19,17 @@ const NOTIFY_MESSAGES = {
 
 const WIN_APPID = 'HelloAgents.Notification';
 const DISABLE_OS_NOTIFICATIONS = process.env.HELLOAGENTS_DISABLE_OS_NOTIFICATIONS === '1';
+const TEST_NOTIFY_LOG = String(process.env.HELLOAGENTS_NOTIFY_TEST_LOG || '').trim();
+
+function recordTestTransport(kind, event) {
+  if (!TEST_NOTIFY_LOG) return false;
+  try {
+    appendFileSync(TEST_NOTIFY_LOG, `${kind} ${String(event || '')}\n`, 'utf-8');
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function escapeToastText(value = '') {
   return String(value)
@@ -100,6 +111,7 @@ function runSoundHelper(pkgRoot, event, mode = 'background') {
 
 export function playSound(pkgRoot, event, options = {}) {
   if (DISABLE_OS_NOTIFICATIONS) return;
+  if (recordTestTransport('sound', event)) return;
   const wav = resolveWav(pkgRoot, event);
   if (!wav) { process.stderr.write('\x07'); return; }
   if (runSoundHelper(pkgRoot, event, options.mode === 'blocking' ? 'blocking' : 'background')) return;
@@ -152,6 +164,7 @@ $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
 
 export function desktopNotify(pkgRoot, event, extra) {
   if (DISABLE_OS_NOTIFICATIONS) return;
+  if (recordTestTransport('desktop', event)) return;
   const notification = buildDesktopNotificationContent(event, extra);
   try {
     if (PLAT === 'win32') {
