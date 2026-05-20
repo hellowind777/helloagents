@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.32-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.33-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -661,7 +661,7 @@ Codex 默认走规则文件驱动。
 - 全局模式安装原生本地插件流程，但仍把 `~/.helloagents/helloagents` 作为唯一受管运行时源；插件根目录、插件缓存和 `~/.codex/helloagents` 都会回链到它
 - 清理时只删除 HelloAGENTS 自己写入的 hook trust 条目和旧式受管 notify 残留，不影响用户已有的 hook 状态
 - Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 HelloAGENTS 规则或路由说明
-- Codex 收尾会对 Stop hook 和原生 `codex-notify` 去重，避免同一轮重复通知
+- Codex 收尾会对 Stop hook 和原生 `codex-notify` 去重，避免同一轮重复通知；受管 Stop hook 生效时，client 为空的委派子任务完成事件也会保持静默
 - `/goal` 保持 Codex 原生能力；需要长程执行时，用 `helloagents codex goals enable` 显式启用
 - 感知 goal 的命令从 `tasks.md`、`contract.json` 和 `state_path` 恢复；不会自动创建 goal，也不会在 HelloAGENTS 验证和收尾前标记完成
 
@@ -684,7 +684,7 @@ npm test
 - `helloagents doctor`
 - 项目存储和 `repo-shared`
 - 会话级 `state_path`、运行态信号和证据
-- 运行时注入、选路、Guard、验证、视觉证据、交付门控、收尾去重，以及原生安装失败后的模式记录
+- 运行时注入、选路、Guard、验证、视觉证据、交付门控、收尾去重、子代理外层格式与通知静默保护，以及原生安装失败后的模式记录
 - README 与 skill 契约一致性
 
 ## FAQ

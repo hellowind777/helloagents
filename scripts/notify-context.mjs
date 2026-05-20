@@ -55,7 +55,7 @@ function buildAliasRouteNote(skillName) {
 }
 
 function buildDelegatedTaskHint() {
-  return '若当前输入明显来自上级代理、控制器或多代理协作上下文，且本次输出会交回上级代理继续汇总、决策或复述，而不是直接交付给最终用户，则按子代理处理：直接完成局部任务并返回结果、证据或阻塞项，不使用 HelloAGENTS 外层输出格式，不写 turn-state，不做面向最终用户的收尾。'
+  return '若当前任务由上级代理、控制器或宿主协作/委派机制创建，或本次输出会交回上级代理继续汇总、决策或复述，而不是直接交付给最终用户，则一律按子代理处理：直接完成局部任务并返回结果、证据或阻塞项；禁止输出 HelloAGENTS 外层格式、`🔄 下一步:`、turn-state 或面向最终用户的收尾。'
 }
 
 export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFile, host }) {
