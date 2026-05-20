@@ -37,7 +37,6 @@
     ],
     "websiteURL": "https://github.com/hellowind777/helloagents",
     "defaultPrompt": [
-      "Help me set up quality verification for my project",
       "Review my code for potential issues",
       "Guide me through the design workflow for a new feature",
       "Initialize HelloAGENTS configuration for this project"

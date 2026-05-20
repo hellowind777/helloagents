@@ -194,6 +194,7 @@ HelloAGENTS 现在只从 `state_path` 解析当前状态文件：
 `<workspace>` 是当前 Git 分支、detached HEAD 的 `detached-<sha>`，或非 Git 项目的 `workspace`。`.helloagents/sessions/active.json` 只记录当前活跃会话索引。
 
 `STATE.md` 只记录当前工作流做到哪里，不承担所有对话的统一记忆。
+如果后续在非交互 Codex 自动化里使用 `codex exec resume --output-schema`，它也只是机器可读结果通道，不替代 `state_path`、`turn-state` 或本地证据文件。
 
 ### 6）验证与交付证据
 
@@ -221,7 +222,7 @@ CLI 显式管理宿主文件：
 - `update` 刷新指定目标或全部目标
 - `cleanup` 删除受管注入和链接
 - `uninstall` 在移除包前执行对应清理
-- `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本和版本漂移
+- `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本和版本漂移；对 Codex 还会在可用时附带原生 `codex doctor` 结果
 - 单 CLI 模式记录只会在宿主安装成功后写入，避免原生全局安装失败后留下错误模式记录
 
 ## 快速开始
@@ -659,6 +660,7 @@ Codex 默认走规则文件驱动。
 - 这些 hook trust 状态是基于当前机器 `~/.codex/hooks.json` 真实绝对路径生成的本机状态；它不同于 `model_instructions_file = "~/.codex/AGENTS.md"` 这类可移植配置，应在每台机器上重新生成
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件流程，但仍把 `~/.helloagents/helloagents` 作为唯一受管运行时源；插件根目录、插件缓存和 `~/.codex/helloagents` 都会回链到它
+- 如果你主要看重 Codex app / 插件发现链路，优先使用 `global`；如果你主要看重更轻量、更显式的项目工作流，保留 `standby`
 - 清理时只删除 HelloAGENTS 自己写入的 hook trust 条目和旧式受管 notify 残留，不影响用户已有的 hook 状态
 - Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 HelloAGENTS 规则或路由说明
 - Codex 收尾会对 Stop hook 和原生 `codex-notify` 去重，避免同一轮重复通知；受管 Stop hook 生效时，client 为空的委派子任务完成事件也会保持静默
@@ -713,6 +715,7 @@ npm test
 `standby` 更轻量、更显式。它只把规则部署到指定 CLI，项目级全局模式由 `~global` 触发。
 
 `global` 默认更广泛地启用完整规则。Claude 和 Gemini 使用原生插件 / 扩展；Codex 使用本地插件路径。
+如果你主要看重 Codex app / 插件发现链路，用 `global`。如果你主要看重更轻量、更显式的项目工作流，继续用 `standby`。
 
 ### Codex hooks 会显示注入内容吗？
 

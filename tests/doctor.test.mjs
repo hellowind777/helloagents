@@ -55,6 +55,11 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   assert.equal(codex.checks.standaloneHooksMatch, true)
   assert.equal(codex.checks.managedHookTrust, true)
   assert.equal(codex.checks.managedHookTrustMatch, true)
+  assert.equal(typeof codex.nativeDoctor?.available, 'boolean')
+  if (codex.nativeDoctor?.available) {
+    assert.equal(typeof codex.nativeDoctor.ok, 'boolean')
+    assert.equal(Array.isArray(codex.nativeDoctor.summary?.skillsSelected), true)
+  }
 
   rmSync(join(home, '.codex', 'helloagents'), { recursive: true, force: true })
 
@@ -144,6 +149,7 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   assert.equal(codex.checks.standaloneHooksMatch, true)
   assert.equal(codex.checks.managedHookTrust, true)
   assert.equal(codex.checks.managedHookTrustMatch, true)
+  assert.equal(typeof codex.nativeDoctor?.available, 'boolean')
 })
 
 test('doctor treats latest Codex hooks=false as drift and legacy codex_hooks as a note', () => {

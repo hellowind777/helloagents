@@ -194,6 +194,7 @@ HelloAGENTS now resolves the current state file from `state_path`:
 `<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
 
 `STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation.
+If you later use `codex exec resume --output-schema` for non-interactive Codex automation, treat it only as a machine-readable result channel. It does not replace `state_path`, `turn-state`, or local evidence files.
 
 ### 6) Verification and delivery evidence
 
@@ -221,7 +222,7 @@ The CLI manages host files explicitly:
 - `update` refreshes the selected target or all targets
 - `cleanup` removes managed injections and links
 - `uninstall` performs scoped cleanup before package removal
-- `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, and versions
+- `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, and versions; for Codex, it also surfaces native `codex doctor` output when available
 - per-host mode tracking is written only after a host setup succeeds, so failed native global installs do not leave stale mode records
 
 ## Quick Start
@@ -655,6 +656,7 @@ Codex is rules-file driven by default.
 - that hook trust state is machine-local generated metadata derived from the current absolute `~/.codex/hooks.json` path; unlike `model_instructions_file = "~/.codex/AGENTS.md"`, it is not portable config and should be regenerated on each machine
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
+- for Codex app/plugin discovery, `global` is the native path; `standby` remains the lighter default for explicit project work
 - cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice, and clientless delegated child-completion events stay silent when the managed Stop hook is active
@@ -709,6 +711,7 @@ Use `~global` when you also want project-level global mode.
 `standby` is lighter and explicit. It deploys rules to selected CLIs and keeps project-level global mode behind `~global`.
 
 `global` applies full rules broadly. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
+If you mainly want Codex app/plugin discoverability, use `global`. If you mainly want a lighter, explicit project workflow, keep `standby`.
 
 ### Do Codex hooks show injected content?
 

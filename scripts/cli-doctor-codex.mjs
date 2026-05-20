@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { existsSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -73,6 +74,141 @@ function buildDoctorIssue(runtime, code, cn, en) {
   return {
     code,
     message: runtime.msg(cn, en),
+  }
+}
+
+function normalizeDoctorText(value = '') {
+  return String(value || '').replace(/\s+/g, ' ').trim()
+}
+
+function readFirstInteger(value = '') {
+  const match = String(value || '').match(/-?\d+/)
+  return match ? Number.parseInt(match[0], 10) : null
+}
+
+function readNativeDoctorDetail(checks, checkId, detailKey) {
+  return String(checks?.[checkId]?.details?.[detailKey] || '').trim()
+}
+
+function readNativeDoctorList(value = '') {
+  const normalized = normalizeDoctorText(value)
+  if (!normalized || normalized === '(none)') return []
+  return normalized.split(/\s*,\s*/).map((entry) => entry.trim()).filter(Boolean)
+}
+
+function summarizeNativeCodexDoctor(payload = {}) {
+  const checks = payload?.checks || {}
+  const configCheck = checks['config.load'] || {}
+  const sandboxCheck = checks['sandbox.helpers'] || {}
+  const mcpCount = readFirstInteger(readNativeDoctorDetail(checks, 'config.load', 'mcp servers'))
+  const fsSandbox = readNativeDoctorDetail(checks, 'sandbox.helpers', 'filesystem sandbox').toLowerCase()
+  const linuxHelper = readNativeDoctorDetail(checks, 'sandbox.helpers', 'codex-linux-sandbox helper').toLowerCase()
+    || readNativeDoctorDetail(checks, 'sandbox.helpers', 'linux helper').toLowerCase()
+  const execveHelper = readNativeDoctorDetail(checks, 'sandbox.helpers', 'execve wrapper helper').toLowerCase()
+
+  let sandboxAvailable = null
+  if (sandboxCheck && Object.keys(sandboxCheck).length > 0) {
+    sandboxAvailable = Boolean(
+      (fsSandbox && !fsSandbox.includes('unrestricted'))
+      || (linuxHelper && linuxHelper !== 'none')
+      || (execveHelper && execveHelper !== 'none')
+    )
+  }
+
+  return {
+    version: String(payload?.codexVersion || '').trim(),
+    configPath: readNativeDoctorDetail(checks, 'config.load', 'config.toml'),
+    resolvedProvider: readNativeDoctorDetail(checks, 'config.load', 'model provider'),
+    resolvedModel: readNativeDoctorDetail(checks, 'config.load', 'model'),
+    sandboxAvailable,
+    mcpPresent: typeof mcpCount === 'number' ? mcpCount > 0 : false,
+    skillsSelected: readNativeDoctorList(
+      readNativeDoctorDetail(checks, 'config.load', 'selected skills')
+      || readNativeDoctorDetail(checks, 'config.load', 'skills selected')
+    ),
+  }
+}
+
+function summarizeNativeCodexDoctorOutput(payload = {}) {
+  const checks = Object.values(payload?.checks || {})
+  const failedCheck = checks.find((check) => check?.status === 'fail')
+  if (failedCheck?.issues?.length) {
+    return normalizeDoctorText(failedCheck.issues.map((issue) => issue?.cause || issue?.measured || '').filter(Boolean).join(' | '))
+  }
+  if (failedCheck?.summary) return normalizeDoctorText(failedCheck.summary)
+
+  const warningCheck = checks.find((check) => check?.status === 'warn')
+  if (warningCheck?.issues?.length) {
+    return normalizeDoctorText(warningCheck.issues.map((issue) => issue?.cause || issue?.measured || '').filter(Boolean).join(' | '))
+  }
+  if (warningCheck?.summary) return normalizeDoctorText(warningCheck.summary)
+
+  return ''
+}
+
+function inspectNativeCodexDoctor(runtime) {
+  try {
+    const result = spawnSync('codex', ['doctor', '--json'], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        HOME: runtime.home || process.env.HOME,
+        USERPROFILE: runtime.home || process.env.USERPROFILE,
+        NO_COLOR: process.env.NO_COLOR || '1',
+      },
+      encoding: 'utf-8',
+      timeout: 20_000,
+      windowsHide: true,
+    })
+
+    if (result.error) {
+      return {
+        available: false,
+        ok: false,
+        status: '',
+        summary: null,
+        output: normalizeDoctorText(result.error.message || ''),
+      }
+    }
+
+    const stdout = String(result.stdout || '').trim()
+    if (!stdout) {
+      return {
+        available: true,
+        ok: result.status === 0,
+        status: '',
+        summary: null,
+        output: normalizeDoctorText(result.stderr || ''),
+      }
+    }
+
+    try {
+      const payload = JSON.parse(stdout)
+      const status = String(payload?.overallStatus || '').trim().toLowerCase()
+      return {
+        available: true,
+        ok: status ? status !== 'fail' : result.status === 0,
+        status,
+        summary: summarizeNativeCodexDoctor(payload),
+        output: summarizeNativeCodexDoctorOutput(payload),
+      }
+    } catch {
+      return {
+        available: true,
+        ok: result.status === 0,
+        status: '',
+        summary: null,
+        output: normalizeDoctorText(stdout || result.stderr || ''),
+      }
+    }
+  } catch (error) {
+    return {
+      available: false,
+      ok: false,
+      status: '',
+      summary: null,
+      output: normalizeDoctorText(error?.message || ''),
+    }
   }
 }
 
@@ -209,6 +345,7 @@ export function inspectCodexDoctor(runtime, settings) {
   const host = 'codex'
   const trackedMode = normalizeDoctorMode(runtime.getTrackedHostMode(settings, host))
   const detectedMode = normalizeDoctorMode(runtime.detectHostMode(host))
+  const nativeDoctor = inspectNativeCodexDoctor(runtime)
   const { checks, pluginVersion, cacheVersion } = buildCodexChecks(runtime, settings, trackedMode, detectedMode)
   checks.pluginVersionMatch = pluginVersion ? pluginVersion === runtime.pkgVersion : false
   checks.pluginCacheVersionMatch = cacheVersion ? cacheVersion === runtime.pkgVersion : false
@@ -230,7 +367,19 @@ export function inspectCodexDoctor(runtime, settings) {
   if (!checks.pluginCacheVersionMatch && !cacheVersion && detectedMode === 'global') notes.push(runtime.msg('未读到 global 插件缓存版本信息', 'Global plugin cache version was not readable'))
   if (detectedMode !== 'none' && !checks.codexGoalsFeature) notes.push(runtime.msg('Codex /goal 未启用；如需长程执行，可运行 `helloagents codex goals enable`。', 'Codex /goal is not enabled; run `helloagents codex goals enable` if you need long-running goals.'))
   if (detectedMode !== 'none' && checks.legacyCodexHooksFeature) notes.push(runtime.msg('检测到旧版 `codex_hooks`；HelloAGENTS 只兼容 Codex 最新版，请移除旧 key。', 'Legacy `codex_hooks` was detected; HelloAGENTS targets latest Codex only, so remove the old key.'))
+  if (!nativeDoctor.available) notes.push(runtime.msg('未检测到原生 `codex doctor`；当前仅检查 HelloAGENTS 受管覆盖层。', 'Native `codex doctor` was not available; only the HelloAGENTS managed overlay was checked.'))
 
   const status = summarizeDoctorStatus(issues, { trackedMode, detectedMode })
-  return { host, label: runtime.getHostLabel(host), trackedMode, detectedMode, status, checks, issues, notes, suggestedFix: suggestCodexDoctorFix(status, trackedMode) }
+  return {
+    host,
+    label: runtime.getHostLabel(host),
+    trackedMode,
+    detectedMode,
+    status,
+    checks,
+    nativeDoctor,
+    issues,
+    notes,
+    suggestedFix: suggestCodexDoctorFix(status, trackedMode),
+  }
 }

@@ -30,6 +30,8 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   const codexPlugin = JSON.parse(read('.codex-plugin/plugin.json'));
   assert.equal(codexPlugin.skills, './skills');
   assert.equal(codexPlugin.hooks, undefined);
+  assert.equal(Array.isArray(codexPlugin.interface?.defaultPrompt), true);
+  assert.equal(codexPlugin.interface.defaultPrompt.length <= 3, true);
 
   const geminiExtension = JSON.parse(read('gemini-extension.json'));
   assert.equal(geminiExtension.contextFileName, 'bootstrap.md');
