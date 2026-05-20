@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.32-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.33-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -657,7 +657,7 @@ Codex is rules-file driven by default.
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
 - cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
-- Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice
+- Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice, and clientless delegated child-completion events stay silent when the managed Stop hook is active
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
 - Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
@@ -680,7 +680,7 @@ The current suite covers:
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
 - session-scoped `state_path`, runtime signals, and evidence
-- runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, and successful-mode tracking after native install failures
+- runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, sub-agent wrapper and notification suppression, and successful-mode tracking after native install failures
 - README and skill contract alignment
 
 ## FAQ
