@@ -1,101 +1,75 @@
 ---
 name: ~loop
-description: 自主迭代优化循环 — 设定目标和指标，AI 自主循环修改-验证-保留/回滚，直到达成目标或达到迭代上限（~loop 命令）
+description: 长任务入口 — 在 Codex 中优先走 `/goal -> ~auto -> ~qa`，把长程续跑交给 `/goal`，把执行推进交给 `~auto`，把最终质量闭环交给 `~qa`（~loop 命令）
 policy:
   allow_implicit_invocation: false
 ---
-Trigger: ~loop <目标描述> [--iterations N] [--metric "命令"] [--direction higher|lower] [--guard "命令"]
+Trigger: ~loop <目标描述>
 
-## 交互式配置
+`~loop` 不再维护独立的指标实验循环。它是长任务入口，默认把链路收敛为：
 
-如果用户未提供完整参数，通过对话确认以下配置：
-- 目标：优化什么？（如：提升测试覆盖率、减少构建时间、提升性能分数）
-- 指标命令：运行什么命令获取数值？（如：`npm run test -- --coverage`）
-- 方向：higher（越高越好）还是 lower（越低越好）？
-- 迭代上限：最多跑几轮？（默认 20，无上限则设为 0）
-- 守卫命令（可选）：每轮必须通过的底线检查（如：`npm test`）
-- 作用范围：哪些文件/目录可以修改？
+`/goal -> ~auto -> ~qa`
 
-## 初始化
+其中：
+- `/goal` 负责长程续跑、恢复与预算
+- `~auto` 负责按方案包持续推进 AFK 任务
+- `~qa` 负责最终审查、验证命令、阻断修复、回归验证与收尾证据
 
-1. 确认 git 工作区干净（有未提交变更则先提醒用户处理）
-2. 确保 `.helloagents/` 目录和 `state_path` 存在；文件不存在时按 `templates/STATE.md` 创建。`~loop` 必须维护这个状态文件，不受 `kb_create_mode` 控制；“主线目标”固定写本次优化目标，避免混入其他任务
-3. 运行指标命令获取基线值，记录到 results log
-4. 如有守卫命令，运行确认基线通过
-5. 创建当前会话的 `.helloagents/sessions/{workspace}/{session}/artifacts/loop-results.tsv`
-6. 根据优化目标标记可能需要的 hello-* 质量技能（如性能优化标记 hello-perf，UI 优化标记 hello-ui）
-7. 重写 `state_path`：记录主线目标=当前优化目标、基线指标、守卫命令、下一步设为第一轮迭代的具体动作
+## 适用边界
 
-results log 格式：
-```
-# metric_direction: higher_is_better
-iteration	commit	metric	delta	guard	status	description
-0	a1b2c3d	85.2	0.0	pass	baseline	initial state
-```
+- 适合：多轮持续执行、跨会话恢复、较长的 AFK 任务
+- 不适合：普通小任务、单轮可完成任务、单纯质量审查；这些优先直接走 `~auto` 或 `~qa`
+- 真正的指标实验、benchmark 对赌、keep/revert 试验，不再由 `~loop` 承担
 
-## 八阶段循环
+## 流程
 
-`~loop` 的八阶段循环是统一执行流程（ROUTE/TIER→SPEC→PLAN→BUILD→QA→CONSOLIDATE）在迭代优化场景下的特化形式。每轮迭代的“修改”阶段遵循已标记的 hello-* 质量技能规范，“质量回归”阶段遵循 qa-review 的质量闭环规范。
-执行 `~loop` 时，涉及公共阶段边界、阻塞判定与收尾要求的部分，仍按当前已加载的 HelloAGENTS 规则执行；本 skill 负责补充 loop 场景的迭代顺序与回滚规则。
-若当前运行在 Codex `/goal` 下，`/goal` 只作为外层长程续跑与预算控制；`~loop` 仍负责指标、守卫、实验提交、keep/revert、results log、`state_path` 与收尾验证，不把 `/goal` 当成循环逻辑本身。
+### 0. 当前工作流优先
 
-除非达到迭代上限或命中阻塞判定，否则继续执行，不额外询问是否继续，也不把 `🔄 下一步` 当作单轮结果或继续执行占位。
-每轮迭代必须完整走完以下八个阶段：
+- 若当前上下文中已注入“当前工作流约束”或“当前推荐下一命令”，先服从它
+- `~loop` 不是绕过方案包和质量契约的越级入口；它只是把长任务执行链路固定为 `/goal -> ~auto -> ~qa`
 
-### 第 1 阶段：回顾
-- 读取 results log 最近 10-20 条记录
-- 运行 `git log --oneline -20` 查看最近变更
-- 运行 `git diff HEAD~1` 查看上一次变更
-- 如果 git log 有 results log 中未记录的 experiment commit → 上轮可能中断，先运行指标命令补录结果
-- 识别：什么有效、什么无效、什么还没试过
+### 1. 先落稳方案包
 
-### 第 2 阶段：构思
-- 基于 review 结果，选择下一个改进方向
-- 优先尝试未探索的方向
-- 避免重复已失败的方向（git history 是记忆）
-- 连续 5 次 discard → 升级策略：组合近似成功的尝试、尝试相反方向、考虑架构级变更
+- 优先复用当前活跃方案包
+- 若当前没有足够可信的方案包，而任务又属于长任务、跨模块任务或高风险任务，先补 `~plan` 或 `~prd`
+- `tasks.md` 必须能支撑长程执行：任务按顺序拆好，标注 `AFK` / `HITL`，写清依赖、涉及文件、完成标准和验证方式
+- `contract.json` 必须至少落成 `qaMode` 与 `qaFocus`
 
-### 第 3 阶段：修改
-- 做一个原子修改（单一关注点）
-- 只修改作用范围内的文件
-- 不修改测试文件和守卫命令涉及的文件
+### 2. Codex + goals 已启用时
 
-### 第 4 阶段：提交
-- 在验证之前提交（便于干净回滚）
-- commit message 格式：`experiment(<scope>): <description>`
+- 把 `~loop` 视为 Codex 的长任务入口，优先直接进入 `/goal`
+- `/goal` 不直接消费原始需求文档；只消费当前方案包里的 “Codex /goal 执行入口”
+- `/goal` 入口必须明确以下约束：
+  - 默认主执行命令是 `~auto`
+  - 按 `tasks.md` 顺序完成所有可执行 `AFK` 任务
+  - `HITL` 只在缺少用户决策、凭据、人工验收或其他真实阻塞时暂停
+  - 不得把单轮结果、阶段总结或“下一步建议”当成完成
+  - 全部 `AFK` 任务完成后，必须进入 `~qa`
+  - 只有 `~qa` 通过、当前会话证据写全、HelloAGENTS 收尾完成后，才允许标记 goal complete
+- 若当前已经运行在 Codex active goal 下，继续沿当前 goal 执行，不重复创建新 goal
 
-### 第 5 阶段：验证
-- 运行指标命令，获取新值
-- 计算 delta（新值 - 基线或上一次保留值）
-- 如有守卫命令，运行守卫检查
+### 3. 非 Codex 或 goals 不可用时
 
-### 第 6 阶段：决策
-- IMPROVED（指标改善 + 守卫通过）→ keep
-- SAME/WORSE（指标未改善）→ `git revert HEAD`（保留历史）
-- GUARD FAILED（指标改善但守卫失败）→ 尝试修复（最多 2 次），仍失败则 revert
-- CRASHED（命令执行失败）→ revert + 记录
+- 明确当前无法使用 Codex 原生 `/goal`
+- 仍按同一意图执行长任务，但只走 `~auto -> ~qa`
+- 这种情况只是无 `/goal` 的降级路径，不把它包装成等价的 goal 能力
 
-### 第 7 阶段：记录
-- 追加一行到 results log
-- status: baseline / keep / discard / crash / no-op
-- 重写 `state_path`：保持主线目标=当前优化目标，并记录当前迭代轮次、最近一次决策（keep / discard / crash）、当前最佳指标、下一步动作
+### 4. 执行期间的状态维护
 
-### 第 8 阶段：继续
-- 如果 iterations > 0 且 current_iteration >= max_iterations → 输出总结并停止
-- 否则 → 回到 Phase 1
+- `~loop` 必须维护 `state_path`
+- “主线目标”写当前长任务目标
+- “正在做什么”写当前 `AFK` 任务或当前收尾阶段
+- “下一步”写下一条具体可执行动作，必要时带文件路径
+- 若当前运行在 Codex active goal 下，`state_path` 仍只负责本地恢复，不替代 goal 自身状态
 
-## 总结输出
+### 5. 禁止事项
 
-循环结束时输出：
-- 基线值 → 最终值（改善幅度）
-- 总迭代次数 / 保留次数 / 丢弃次数
-- 最有效的 3 个改进
-- results log 路径
-- 重写 `state_path`：将“主线目标”保留为本次优化目标，“正在做什么”更新为已完成，保留最终结论摘要，清空阻塞项，并给出可立即执行的下一步（如继续优化、停止、切换目标）
-- 若 Codex `/goal` 处于 active 且目标已达成，完成 HelloAGENTS 验证和收尾后再标记 goal complete；不得因达到预算或单轮结束而标记 complete
+- 不再创建基线指标、results log、keep/revert 实验提交或守卫命令循环
+- 不把 `/goal` 当作质量验收器；最终质量闭环始终由 `~qa` 负责
+- 仍有可执行 `AFK` 任务时，不进入 complete
+- 没有最新 `qa-review.json`、需要的 `advisor.json` / `visual.json` / `closeout.json` 时，不得报告完成
 
-## 安全规则
-- 使用 `git revert`（保留历史）而非 `git reset --hard`（丢失历史）
-- 不修改测试文件和守卫命令涉及的文件
-- 单次修改涉及 >5 个文件 → 重新评估，可能需要拆分
-- 守卫命令是底线，指标改善但守卫失败 = 不可接受
+## 完成判定
+
+- 只有当长任务链路已经走到 `~qa`，并且质量闭环通过、收尾证据完整、HelloAGENTS 允许进入 CONSOLIDATE 时，`~loop` 才算完成
+- 若当前任务来自 Codex active goal，还要满足：当前 goal 的可执行 `AFK` 任务已全部完成，才允许标记 goal complete

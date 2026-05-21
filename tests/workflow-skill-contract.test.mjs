@@ -84,8 +84,9 @@ test('workflow skills stay aligned with the new qa-review architecture', () => {
   assert.match(help, /`~review` → 等同 `~qa`/)
 
   const loop = readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md'))
-  assert.match(loop, /ROUTE\/TIER→SPEC→PLAN→BUILD→QA→CONSOLIDATE/)
-  assert.match(loop, /qa-review 的质量闭环规范/)
+  assert.match(loop, /\/goal -> ~auto -> ~qa/)
+  assert.match(loop, /不再维护独立的指标实验循环/)
+  assert.match(loop, /最终质量闭环交给 `~qa`/)
   assert.doesNotMatch(loop, /hello-verify/)
 })
 

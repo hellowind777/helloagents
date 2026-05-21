@@ -124,8 +124,9 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]loop[\\/]SKILL\.md/)
   assert.match(payload.hookSpecificOutput.additionalContext, /用户已显式使用 ~loop/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /按 ~loop 的循环规则直接执行/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /不要把单轮结果写成“下一步建议”/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /把它视为长任务入口/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /\/goal -> ~auto -> ~qa/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /若当前宿主不支持 \/goal，则按 ~auto 持续推进/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,

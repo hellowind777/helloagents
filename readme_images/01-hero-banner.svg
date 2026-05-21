@@ -12,5 +12,5 @@
   <circle cx="140" cy="128" r="26" fill="rgba(255,255,255,0.12)"/>
   <text x="180" y="92" fill="#ffffff" font-size="44" font-family="system-ui, sans-serif" font-weight="700">HelloAGENTS</text>
   <text x="180" y="132" fill="#e0e7ff" font-size="18" font-family="system-ui, sans-serif">Quality-driven orchestration kernel for AI coding CLIs.</text>
-  <text x="180" y="162" fill="#bfdbfe" font-size="15" font-family="system-ui, sans-serif">14 Auto-Activated Skills · Checklist Gating · Guard System · Ralph Loop</text>
+  <text x="180" y="162" fill="#bfdbfe" font-size="15" font-family="system-ui, sans-serif">14 Auto-Activated Skills · Checklist Gating · Guard System · Unified QA Gate</text>
 </svg>
