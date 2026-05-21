@@ -99,7 +99,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-reflect` | reusable lessons and knowledge updates |
 
 All UI work first follows the shared UI quality baseline.
-In global mode, in initialized projects, or in explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
+In host global mode, in initialized projects, or in explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
 When visual evidence is required, HelloAGENTS records it in the current session `artifacts/visual.json`.
 
 ### 2) Commands for different work styles
@@ -114,9 +114,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~build` | Implementation from the current request or an existing plan |
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
 | `~loop` | Long-running entry; in Codex it prefers `/goal -> ~auto -> ~qa` |
-| `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Same as `~wiki` |
-| `~global` | Initialize project-level global mode |
+| `~init` | Initialize the project workflow and sync project knowledge |
 | `~test` | Write tests for a target module or recent change |
 | `~qa` | Run the unified quality loop: review, verification commands, fixes, and closeout |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -146,9 +144,7 @@ The knowledge base helps future turns understand the repo without re-discovering
 | `plans/<feature>/` | active plan packages |
 | `archive/` | archived plan packages |
 
-`~wiki` and `~init` create or update the knowledge base only.
-
-`~global` does more: it creates or updates the knowledge base, writes the project-level global-mode marker, and refreshes project-level HelloAGENTS package-root links for supported hosts.
+`~init` initializes the project workflow: it writes the project-level full carrier marker, prepares project state, and creates or updates the knowledge base.
 
 ### 4) Structured plan packages
 
@@ -266,20 +262,14 @@ Type:
 ~help
 ```
 
-You should see the 14 chat commands and the current settings.
+You should see the available chat commands and the current settings.
 
 ### 4) Create project knowledge
 
-For knowledge base only:
+Initialize the project workflow:
 
 ```text
-~wiki
-```
-
-For project-level global mode:
-
-```text
-~global
+~init
 ```
 
 ## CLI Management
@@ -477,16 +467,15 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Implement from a clear request or active plan | `~build "finish task 2 in the plan"` |
 | Build a full product requirement document | `~prd "modern dashboard for operations team"` |
 | Run a long Codex task through `/goal -> ~auto -> ~qa` | `~loop "finish the auth refactor"` |
-| Create or refresh project knowledge only | `~wiki` / `~init` |
-| Initialize project-level global mode | `~global` |
+| Initialize or refresh the project workflow | `~init` |
 | Validate current work | `~qa` |
 | Generate commit message and sync knowledge | `~commit` |
 
-### Knowledge base vs project-level global mode
+### Project initialization vs host global deployment
 
-In standby mode, projects that are not initialized get lighter rules and explicit `~command` entry points. A project enters project-level global mode after `~global` writes `<!-- HELLOAGENTS_PROFILE: full -->`.
+In standby mode, projects that are not initialized get lighter rules and explicit `~command` entry points. A project becomes initialized after `~init` writes the project-level `<!-- HELLOAGENTS_PROFILE: full -->` marker.
 
-In global mode, HelloAGENTS applies full rules by default.
+In global mode, HelloAGENTS applies full rules by default at the host level.
 
 ## Project Knowledge Base
 
@@ -530,11 +519,10 @@ Once the task creates or modifies local files, or otherwise leaves local output 
 
 | Command or setting | Behavior |
 |--------------------|----------|
-| `~wiki` / `~init` | creates or syncs the knowledge base only |
-| `~global` | creates knowledge base plus project-level global-mode marker and package-root links |
+| `~init` | initializes the project workflow and syncs the knowledge base |
 | `kb_create_mode = 0` | disables automatic knowledge updates |
 | `kb_create_mode = 1` | syncs knowledge automatically only when the KB already exists |
-| `kb_create_mode = 2` | for coding tasks, auto-creates or syncs the KB when it already exists or the project is in global mode |
+| `kb_create_mode = 2` | for coding tasks, auto-creates or syncs the KB when it already exists or the project is initialized |
 
 ## Workflow and Delivery
 
@@ -706,17 +694,17 @@ Both.
 - `skills/` defines task-specific behavior
 - `scripts/` provides runtime helpers for routing, guard, notify, verification, state, and evidence
 
-### Should I use `~wiki`, `~init`, or `~global`?
+### Should I use `~init` or `--global`?
 
-Use `~wiki` or `~init` when you only want project knowledge.
+Use `~init` inside a repo when you want to initialize that project workflow and sync project knowledge.
 
-Use `~global` when you also want project-level global mode.
+Use `helloagents --global` when you want host-wide deployment across supported CLIs.
 
 ### What is the difference between standby and global?
 
-`standby` is lighter and explicit. It deploys rules to selected CLIs and keeps project-level global mode behind `~global`.
+`standby` is lighter and explicit. It deploys rules to selected CLIs while leaving each repo uninitialized until you run `~init`.
 
-`global` applies full rules broadly. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
+`global` applies full rules broadly at the host level. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
 If you mainly want Codex app/plugin discoverability, use `global`. If you mainly want a lighter, explicit project workflow, keep `standby`.
 
 ### Do Codex hooks show injected content?

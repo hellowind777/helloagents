@@ -17,9 +17,7 @@ Trigger: ~help
 | ~build | 执行实现：按需求或方案包完成实现与局部验证 |
 | ~prd | 完整 PRD：头脑风暴式逐维度挖掘，生成现代产品需求文档 |
 | ~loop | 长任务入口：在 Codex 中优先走 `/goal -> ~auto -> ~qa` |
-| ~wiki | 仅创建/同步项目知识库 |
-| ~init | 同 `~wiki` |
-| ~global | 初始化项目级全局模式 |
+| ~init | 初始化项目工作流并同步知识库 |
 | ~test | 为指定模块或最近变更编写完整测试 |
 | ~qa | 统一质量总入口：审查 + 运行验证命令 + 修复循环 + 收尾前证据 |
 | ~commit | 规范化提交 + 知识库同步 |
@@ -32,7 +30,7 @@ Trigger: ~help
 - `~review` → 等同 `~qa`
 
 ### 自动激活技能
-以下技能仅在全局模式或已初始化项目时自动激活（例如执行过 `~global`，或当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`）。
+以下技能仅在宿主全局模式或已初始化项目时自动激活（例如当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`，通常由 `~init` 建立）。
 纯标准模式、且项目未初始化时不会自动触发这些技能；但涉及 UI 的任务仍受 UI 质量基线约束。
 
 编码时：hello-ui, hello-api, hello-data, hello-security, hello-errors, hello-perf, hello-arch, hello-test
@@ -49,7 +47,7 @@ Trigger: ~help
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
 | ralph_loop_enabled | true | 收尾 QA gate（显式 ~qa / ~loop 或收尾要求时触发审查、lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
-| kb_create_mode | 1 | 0=关闭/1=知识库已存在时自动同步/2=编码任务在知识库已存在或全局模式下自动创建或同步 | Claude Code + Gemini CLI + Codex CLI |
+| kb_create_mode | 1 | 0=关闭/1=知识库已存在时自动同步/2=编码任务在知识库已存在或当前项目已初始化时自动创建或同步 | Claude Code + Gemini CLI + Codex CLI |
 | project_store_mode | "local" | "local"=知识库/方案包保留在项目本地 `.helloagents/`；"repo-shared"=本地 `.helloagents/` 仅保留项目本地状态/运行态，知识库与方案包改写到 `~/.helloagents/projects/<repo-key>/` | Claude Code + Gemini CLI + Codex CLI |
 | auto_commit_enabled | true | true=验证完成且有变更时自动执行本地提交；false=跳过自动提交，仍可手动用 `~commit` | Claude Code + Gemini CLI + Codex CLI |
 | commit_attribution | "" | 空=不添加/填写内容则添加到 commit message | Claude Code + Gemini CLI + Codex CLI |
