@@ -18,13 +18,13 @@ test('ralph loop covers build detection, breaker reset, and subagent fast-path f
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
-  const project = createTempDir('helloagents-verify-')
+  const project = createTempDir('helloagents-qa-')
   const ralphScript = join(pkgRoot, 'scripts', 'ralph-loop.mjs')
 
   writeSettings(home)
   writeText(join(project, '.helloagents', '.keep'), '')
   writeJson(join(project, 'package.json'), {
-    name: 'verify-project',
+    name: 'qa-project',
     scripts: {
       lint: 'node -e "process.exit(0)"',
       typecheck: 'node -e "process.exit(0)"',
@@ -44,7 +44,7 @@ test('ralph loop covers build detection, breaker reset, and subagent fast-path f
   assert.equal(readJson(getSessionEvidencePath(project, 'loop-breaker.json')).consecutive_failures, 1)
 
   writeJson(join(project, 'package.json'), {
-    name: 'verify-project',
+    name: 'qa-project',
     scripts: {
       lint: 'node -e "process.exit(0)"',
       typecheck: 'node -e "process.exit(0)"',
@@ -61,7 +61,7 @@ test('ralph loop covers build detection, breaker reset, and subagent fast-path f
   payload = parseStdoutJson(result)
   assert.equal(payload.suppressOutput, true)
   assert.equal(readJson(getSessionEvidencePath(project, 'loop-breaker.json')).consecutive_failures, 0)
-  assert.equal(readJson(getSessionEvidencePath(project, 'verify.json')).fastOnly, false)
+  assert.equal(readJson(getSessionEvidencePath(project, 'qa-review.json')).fastOnly, true)
 
   writeText(join(project, '.helloagents', 'verify.yaml'), 'commands:\n  - "npm run test"\n')
   result = runNode(ralphScript, ['subagent'], {

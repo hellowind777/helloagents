@@ -6,8 +6,8 @@ policy:
 ---
 Trigger: ~build [description]
 
-`~build` 是执行实现命令。它负责读取现有需求、方案包与项目上下文，完成实现、局部验证、修复循环，并把结果交给后续验证与收尾。
-执行 `~build` 时，通用阶段边界按当前已加载的 HelloAGENTS 规则执行；本 skill 负责补充实现前定位、实现约束，以及进入 `~verify` / 收尾前的实现边界。
+`~build` 是执行实现命令。它负责读取现有需求、方案包与项目上下文，完成实现、局部验证、修复循环，并把结果交给后续质量闭环与收尾。
+执行 `~build` 时，通用阶段边界按当前已加载的 HelloAGENTS 规则执行；本 skill 负责补充实现前定位、实现约束，以及进入 `~qa` / 收尾前的实现边界。
 `.helloagents/` 在本 skill 中统一按项目级存储路径理解：状态文件只使用 `state_path`；会话证据使用当前 `state_path` 所在目录下的 `artifacts/*.json`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md`、`verify.yaml` 与方案包按当前上下文中已注入的项目知识/方案目录解析。
 
 ## 铁律
@@ -27,7 +27,7 @@ Trigger: ~build [description]
   - `tasks.md`
   - `contract.json`
   - 实现时优先把 `tasks.md` 中每个任务的“完成标准”当作本次实现约束，不要只按任务标题猜测范围
-  - `contract.json` 存在时，优先按其中的 `verifyMode`、`reviewerFocus`、`testerFocus` 理解后续验证边界
+  - `contract.json` 存在时，优先按其中的 `qaMode`、`qaFocus` 理解后续质量闭环边界
 - 若当前运行在 Codex active goal 下，按 `tasks.md` 未完成项、`contract.json` 与 `state_path` 恢复实现位置；不要自动创建新 goal，也不要把 goal 目标原文替代方案包
 - 若当前上下文中已注入“当前工作流约束”或“当前推荐下一命令”，先服从它；只有推荐仍为 `~build`，或用户明确提出新增实现范围时，才继续 `~build`
 - 其余项目知识库与相关代码文件，按 HelloAGENTS 项目上下文要求读取
@@ -53,17 +53,16 @@ Trigger: ~build [description]
   - 每次编辑后主动跑确定性检查
 - 可并行任务通过子代理执行，但不同子代理不得改同一文件
 
-### 4. 验证与修复循环
+### 4. 局部验证与修复循环
 
-- 读取 `hello-verify` SKILL.md
-- 运行 lint / typecheck / test / build 等验证
+- 按当前任务与 `tasks.md` 中的“验证方式”运行 lint / typecheck / test / build 等局部验证
 - 若失败，修复后重跑
-- 若涉及 review 场景，可按需读取 `hello-review`
+- 若当前实现已接近交付，主动对照 `qaFocus` 自检本次改动是否覆盖关键风险
 
 ### 5. 交付前处理
 
 - 有方案包时，只同步本次实现直接影响的任务状态；未完成项保持打开
-- 当前实现已闭合、且需要进入交付或收尾时，转入 `~verify`
-- 若 Codex active goal 仍有未完成 AFK 任务，继续下一项可执行任务；若目标已满足，先转入 `~verify` 与 HelloAGENTS 收尾，再标记 goal complete
-- 状态文件、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载的 HelloAGENTS 规则进入 VERIFY / CONSOLIDATE
+- 当前实现已闭合、且需要进入交付或收尾时，转入 `~qa`
+- 若 Codex active goal 仍有未完成 AFK 任务，继续下一项可执行任务；若目标已满足，先转入 `~qa` 与 HelloAGENTS 收尾，再标记 goal complete
+- 状态文件、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载的 HelloAGENTS 规则进入 QA / CONSOLIDATE
 - 不在 `~build` 内把仍未闭合的方案包整体报告为已完成

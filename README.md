@@ -88,14 +88,13 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-api` | API design, validation, error format, compatibility |
 | `hello-security` | auth, secrets, permissions, injection risks |
 | `hello-test` | TDD, coverage, edge cases, test structure |
-| `hello-verify` | review, command verification, delivery evidence, closeout |
+| `qa-review` | unified quality review, verification commands, blocking fixes, delivery evidence, closeout |
 | `hello-errors` | error handling, logs, retry and recovery behavior |
 | `hello-perf` | performance, caching, query and rendering risks |
 | `hello-data` | database, migrations, transactions, indexes |
 | `hello-arch` | architecture, boundaries, code size, maintainability |
 | `hello-debug` | bug diagnosis and escalation when stuck |
 | `hello-subagent` | subagent delegation and result integration |
-| `hello-review` | code review with structured findings |
 | `hello-write` | documentation, reports, and written deliverables |
 | `hello-reflect` | reusable lessons and knowledge updates |
 
@@ -119,7 +118,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~init` | Same as `~wiki` |
 | `~global` | Initialize project-level global mode |
 | `~test` | Write tests for a target module or recent change |
-| `~verify` | Review, run verification commands, fix failures, and close out |
+| `~qa` | Run the unified quality loop: review, verification commands, fixes, and closeout |
 | `~commit` | Generate a conventional commit message and sync knowledge |
 | `~clean` | Archive finished plans and clean temporary runtime files |
 | `~help` | Show commands and current settings |
@@ -128,7 +127,6 @@ Compatibility aliases:
 
 - `~do` → `~build`
 - `~design` → `~plan`
-- `~review` → `~verify` in review-first mode
 
 ### 3) Project knowledge base
 
@@ -205,7 +203,7 @@ Runtime evidence files include:
 - `.helloagents/sessions/<workspace>/<session>/capsule.json`
 - `.helloagents/sessions/<workspace>/<session>/events.jsonl`
 - `.helloagents/sessions/active.json`
-- `.helloagents/sessions/<workspace>/<session>/artifacts/review.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/qa-review.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
@@ -472,7 +470,7 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Iterate toward a metric | `~loop "reduce bundle size" --metric "npm run size" --direction lower` |
 | Create or refresh project knowledge only | `~wiki` / `~init` |
 | Initialize project-level global mode | `~global` |
-| Validate current work | `~verify` |
+| Validate current work | `~qa` |
 | Generate commit message and sync knowledge | `~commit` |
 
 ### Knowledge base vs project-level global mode
@@ -539,7 +537,7 @@ Once the task creates or modifies local files, or otherwise leaves local output 
 HelloAGENTS uses this stage model for structured work:
 
 ```text
-ROUTE / TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
+ROUTE / TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE
 ```
 
 | Stage | Purpose |
@@ -548,7 +546,7 @@ ROUTE / TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
 | `SPEC` | clarify goal, constraints, and success criteria |
 | `PLAN` | prepare plan files and choose needed skills |
 | `BUILD` | implement and run local checks |
-| `VERIFY` | review, run commands, check contract and evidence |
+| `QA` | review, run commands, check contract and evidence |
 | `CONSOLIDATE` | update state, knowledge, and closeout evidence |
 
 ### Delivery tiers
@@ -616,7 +614,7 @@ Default shape:
 | `output_language` | `""` | follow the user language unless set |
 | `output_format` | `true` | direct final-user closeout from the main agent uses the HelloAGENTS layout; intermediate, delegated, and sub-agent output stays natural |
 | `notify_level` | `0` | `0` off, `1` desktop, `2` sound, `3` both |
-| `ralph_loop_enabled` | `true` | run verification for explicit `~verify` / `~loop` or required closeout gates |
+| `ralph_loop_enabled` | `true` | run the quality loop for explicit `~qa` / `~loop` or required closeout gates |
 | `guard_enabled` | `true` | block dangerous commands |
 | `kb_create_mode` | `1` | `0` off, `1` sync existing KB automatically, `2` auto-create or sync the KB for coding tasks |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |

@@ -9,7 +9,13 @@ import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { clearVerifyEvidence, detectCommands, hasUnsafeVerifyCommand, writeVerifyEvidence } from './verify-state.mjs';
+import {
+  clearQaReviewEvidence,
+  detectCommands,
+  getQaReviewEvidenceStatus,
+  hasUnsafeQaCommand,
+  writeQaReviewEvidence,
+} from './qa-review-state.mjs';
 import {
   getRuntimeEvidencePath,
   readRuntimeEvidence,
@@ -70,7 +76,7 @@ function hasGitChanges(cwd) {
 function runVerify(commands, cwd) {
   const failures = [];
   for (const cmd of commands) {
-    if (hasUnsafeVerifyCommand([cmd])) {
+    if (hasUnsafeQaCommand([cmd])) {
       failures.push({ cmd, output: '已阻止：验证命令不允许使用 shell 组合操作符' });
       continue;
     }
@@ -219,17 +225,30 @@ export function evaluateRalphLoop(data = {}, runtime = {}) {
   const failures = runVerify(commands, cwd);
   if (failures.length === 0) {
     resetBreaker(cwd, runtimeOptions);
-    writeVerifyEvidence(cwd, {
-      commands: detectCommands(cwd),
-      fastOnly: isSubagent,
-      source: isSubagent ? 'subagent' : 'stop',
-    }, runtimeOptions);
+    const qaStatus = getQaReviewEvidenceStatus(cwd, {
+      required: true,
+      ...runtimeOptions,
+    });
+    if (qaStatus.status !== 'valid') {
+      writeQaReviewEvidence(cwd, {
+        source: isSubagent ? 'subagent' : 'ralph-loop',
+        originCommand: 'qa',
+        qaMode: 'standard',
+        scope: isSubagent ? 'subagent-fast-check' : 'runtime-fast-check',
+        outcome: 'clean',
+        conclusion: '自动命令检查通过。',
+        findings: [],
+        fileReferences: [],
+        commands: detectCommands(cwd),
+        fastOnly: true,
+      }, runtimeOptions);
+    }
 
     if (isSubagent) {
       return {
         hookSpecificOutput: {
           hookEventName,
-          additionalContext: '子代理快速验证通过（lint/typecheck）。请控制器审查变更后继续。',
+          additionalContext: '子代理快速 QA 命令检查通过（lint/typecheck）。请控制器继续完整 qa-review。',
         },
         suppressOutput: true,
       };
@@ -248,7 +267,7 @@ export function evaluateRalphLoop(data = {}, runtime = {}) {
     return { suppressOutput: true };
   }
 
-  clearVerifyEvidence(cwd, runtimeOptions);
+  clearQaReviewEvidence(cwd, runtimeOptions);
   const breaker = readBreaker(cwd, runtimeOptions);
   breaker.consecutive_failures += 1;
   breaker.last_failure = new Date().toISOString();

@@ -1,10 +1,10 @@
 import { basename } from 'node:path'
 
 import {
+  buildQaFocusHintFromSnapshot,
   buildStateRoleHintFromSnapshot,
   buildStateSyncHintFromSnapshot,
   buildUiContractHint,
-  buildVerifyModeHintFromSnapshot,
   getWorkflowSnapshot,
   readStateSnapshot,
   listPlanPackages,
@@ -54,7 +54,7 @@ export function buildWorkflowRouteHint(cwd, options = {}) {
   return `${recommendation.summary} 当前应执行 ~${recommendation.nextCommand}。执行路径：${recommendation.nextPath}。${recommendation.guidance}${suffix ? ` ${suffix}` : ''}`
 }
 
-function buildCommandRouteMessage(skillName, recommendation, verifyModeHint) {
+function buildCommandRouteMessage(skillName, recommendation, qaFocusHint) {
   if (skillName === 'auto') {
     return recommendation.stage === 'consolidate'
       ? `当前工作流约束：${recommendation.summary} 本次 ~auto 应直接完成当前收尾。${recommendation.guidance} 未命中阻塞判定前不要停下，也不要把收尾动作写成“下一步建议”。`
@@ -79,13 +79,13 @@ function buildCommandRouteMessage(skillName, recommendation, verifyModeHint) {
       ? `当前工作流约束：${recommendation.summary} 当前应执行 ~build。${recommendation.guidance}`
       : `当前工作流约束：${recommendation.summary} 当前不该继续 ~build；先按 ~${recommendation.nextCommand} 处理。只有在用户明确提出新增实现范围时，才继续 ~build。`
   }
-  if (skillName === 'verify') {
+  if (skillName === 'qa') {
     if (recommendation.stage === 'consolidate') {
       return `当前工作流约束：${recommendation.summary} 当前应直接进入 CONSOLIDATE。${recommendation.guidance}`
     }
-    return recommendation.nextCommand === 'verify'
-      ? `当前工作流约束：${recommendation.summary} 当前应执行 ~verify。${recommendation.guidance}`
-      : `当前工作流约束：${recommendation.summary} 当前不该把 ~verify 当成越级入口；先按 ~${recommendation.nextCommand} 处理。即使执行 ~verify，也不能越过当前工作流边界。${verifyModeHint ? ` 若本次仅做阶段内审查或验真，${verifyModeHint}` : ''}`
+    return recommendation.nextCommand === 'qa'
+      ? `当前工作流约束：${recommendation.summary} 当前应执行 ~qa。${recommendation.guidance}`
+      : `当前工作流约束：${recommendation.summary} 当前不该把 ~qa 当成越级入口；先按 ~${recommendation.nextCommand} 处理。即使执行 ~qa，也不能越过当前工作流边界。${qaFocusHint ? ` 若本次只是阶段内收尾，${qaFocusHint}` : ''}`
   }
   return `当前工作流约束：${recommendation.summary} 当前应执行 ~${recommendation.nextCommand}。${recommendation.guidance}`
 }
@@ -104,7 +104,7 @@ export function buildCommandRouteHint(skillName, cwd, options = {}) {
     return contextHints.join(' ')
   }
 
-  const message = buildCommandRouteMessage(skillName, recommendation, buildVerifyModeHintFromSnapshot(snapshot))
+  const message = buildCommandRouteMessage(skillName, recommendation, buildQaFocusHintFromSnapshot(snapshot))
   return [message, ...contextHints].join(' ')
 }
 

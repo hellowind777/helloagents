@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { resolveProjectPlanDir } from './project-storage.mjs'
 
 export const PLAN_CONTRACT_FILE_NAME = 'contract.json'
-const VALID_VERIFY_MODES = new Set(['test-first', 'review-first'])
+const VALID_QA_MODES = new Set(['standard', 'deep'])
 const VALID_ADVISOR_SOURCES = new Set(['claude', 'codex', 'gemini'])
 
 function normalizeStringArray(values) {
@@ -14,9 +14,9 @@ function normalizeStringArray(values) {
     .filter(Boolean))]
 }
 
-function normalizeVerifyMode(value) {
+function normalizeQaMode(value) {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : ''
-  return VALID_VERIFY_MODES.has(normalized) ? normalized : ''
+  return VALID_QA_MODES.has(normalized) ? normalized : ''
 }
 
 function normalizeUiStyleAdvisorContract(input = {}) {
@@ -88,12 +88,11 @@ export function readPlanContract(planDir) {
 
 export function normalizePlanContract(input = {}) {
   return {
-    version: 1,
+    version: 2,
     source: typeof input.source === 'string' && input.source.trim() ? input.source.trim() : 'manual',
     originCommand: typeof input.originCommand === 'string' ? input.originCommand.trim() : '',
-    verifyMode: normalizeVerifyMode(input.verifyMode),
-    reviewerFocus: normalizeStringArray(input.reviewerFocus),
-    testerFocus: normalizeStringArray(input.testerFocus),
+    qaMode: normalizeQaMode(input.qaMode),
+    qaFocus: normalizeStringArray(input.qaFocus),
     ui: normalizeUiContract(input.ui),
     advisor: normalizeAdvisorContract(input.advisor),
   }
@@ -128,14 +127,11 @@ export function getPlanContractIssues(contract = null) {
   const advisorRequirement = getAdvisorRequirement(normalized)
   const visualValidation = getVisualValidationRequirement(normalized)
   const issues = []
-  if (!normalizeVerifyMode(normalized.verifyMode)) {
-    issues.push('contract.json missing valid verifyMode')
+  if (!normalizeQaMode(normalized.qaMode)) {
+    issues.push('contract.json missing valid qaMode')
   }
-  if (normalizeStringArray(normalized.testerFocus).length === 0) {
-    issues.push('contract.json missing testerFocus')
-  }
-  if (normalizeVerifyMode(normalized.verifyMode) === 'review-first' && normalizeStringArray(normalized.reviewerFocus).length === 0) {
-    issues.push('contract.json missing reviewerFocus for review-first flow')
+  if (normalizeStringArray(normalized.qaFocus).length === 0) {
+    issues.push('contract.json missing qaFocus')
   }
   if (normalized.ui?.required && normalizeStringArray(normalized.ui.sourcePriority).length === 0) {
     issues.push('contract.json missing ui.sourcePriority')

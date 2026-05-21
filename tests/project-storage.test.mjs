@@ -17,7 +17,7 @@ import {
 import { getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
 
 const PROJECT_STORAGE_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'project-storage.mjs')).href
-const VERIFY_STATE_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'verify-state.mjs')).href
+const QA_REVIEW_STATE_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'qa-review-state.mjs')).href
 const WORKFLOW_PLAN_FILES_MODULE_URL = pathToFileURL(join(REPO_ROOT, 'scripts', 'workflow-plan-files.mjs')).href
 
 function assertCommandOk(result) {
@@ -105,7 +105,7 @@ test('repo-shared mode resolves shared verify.yaml and plan packages from local 
     cwd: project,
     env,
     source: `
-      const { detectCommands } = await import(${JSON.stringify(VERIFY_STATE_MODULE_URL)})
+      const { detectCommands } = await import(${JSON.stringify(QA_REVIEW_STATE_MODULE_URL)})
       const { getWorkflowSnapshot } = await import(${JSON.stringify(WORKFLOW_PLAN_FILES_MODULE_URL)})
       const snapshot = getWorkflowSnapshot(${JSON.stringify(project)})
       const primaryPlan = snapshot.plans[0] || null

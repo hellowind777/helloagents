@@ -11,7 +11,6 @@ import {
 const COMMAND_ALIASES = {
   do: 'build',
   design: 'plan',
-  review: 'verify',
 };
 
 function buildRuntimeRootBlock(pkgRoot) {
@@ -47,9 +46,6 @@ function buildAliasRouteNote(skillName) {
   }
   if (skillName === 'design') {
     return '兼容别名映射：本次按 ~plan 规则执行；方案文件使用 `plan.md`，项目级 UI 契约仍使用 `DESIGN.md`。';
-  }
-  if (skillName === 'review') {
-    return '兼容别名映射：本次按 ~verify 的审查优先模式执行。';
   }
   return '';
 }
@@ -165,8 +161,8 @@ export function buildSemanticRouteInstruction(cwd, payload = {}) {
     '请根据用户请求的真实意图选路，不依赖关键词表。',
     buildDelegatedTaskHint(),
     'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆操作。',
-    '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~verify=审查/验证；~plan=结构化规划；~prd=重型规格；~auto=自动选择并继续执行后续阶段。',
-    '若判定为 T3，默认先走 ~plan / ~prd；纯审查/验证请求才优先 ~verify。',
+    '路由映射：~idea=只读探索，不创建文件；~build=明确实现；~qa=统一质量审查/验证/修复/收尾；~plan=结构化规划；~prd=重型规格；~auto=自动选择并继续执行后续阶段。',
+    '若判定为 T3，默认先走 ~plan / ~prd；纯质量审查、验真或收尾请求才优先 ~qa。',
     `涉及 UI 任务时，设计决策优先级：当前活跃 plan / PRD → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → 已读取的 hello-ui 规则；同时所有 UI 任务都必须满足 UI 质量基线。`,
     projectStorageHint,
     workflowHint ? `项目状态：${workflowHint}` : '',

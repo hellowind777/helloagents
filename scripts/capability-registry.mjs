@@ -30,10 +30,12 @@ export function selectCapabilities({ cwd, skillName = '', options = {} }) {
         : '独立 advisor：当前契约要求进入收尾前写当前会话 `artifacts/advisor.json`，记录 advisor reason、focus、consultedSources 与结论。',
     })
   }
-  if (plan?.contract?.verifyMode === 'review-first') {
+  if ((plan?.contract?.qaFocus || []).length > 0) {
     capabilities.push({
-      id: 'review-evaluator',
-      description: '审查优先：当前验证主路径是 review-first，先做 hello-review，再做 hello-verify。',
+      id: 'qa-evaluator',
+      description: plan?.contract?.qaMode === 'deep'
+        ? `深度 qa-review：当前收尾主路径是 ~qa，按阻断性质量闭环执行；重点：${plan.contract.qaFocus.join('；')}。`
+        : `统一 qa-review：当前收尾主路径是 ~qa，重点：${plan.contract.qaFocus.join('；')}。`,
     })
   }
   if (plan?.contract?.ui?.required || existsSync(getProjectDesignContractPath(cwd))) {
