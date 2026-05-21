@@ -419,10 +419,10 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~wiki' }),
+    input: JSON.stringify({ cwd: project, prompt: '~init' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]wiki[\\/]SKILL\.md/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]init[\\/]SKILL\.md/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -625,7 +625,7 @@ test('notify runtime uses host_install_modes before global install_mode', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
 })
 
-test('project global-mode marker switches semantic route to full bootstrap in standby mode', () => {
+test('project initialized marker switches semantic route to full bootstrap in standby mode', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const project = createTempDir('helloagents-route-global-marker-')
