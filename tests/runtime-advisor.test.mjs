@@ -36,12 +36,11 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     ['# release', '', '## 任务列表', '- [√] 发布校验（涉及文件：release.md；完成标准：发布流程确认；验证方式：npm run test）', ''].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604050501_release', 'contract.json'), {
-    version: 1,
+    version: 2,
     source: 'plan',
     originCommand: 'plan',
-    verifyMode: 'test-first',
-    reviewerFocus: [],
-    testerFocus: ['发布流程确认'],
+    qaMode: 'standard',
+    qaFocus: ['发布流程确认'],
     ui: {
       required: false,
       designContract: false,
@@ -60,8 +59,11 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(getSessionEvidencePath(project, 'verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date().toISOString(),
+    qaMode: 'standard',
+    outcome: 'clean',
+    conclusion: '发布前质量闭环已通过。',
     commands: ['npm run test'],
     fastOnly: false,
     source: 'stop',
@@ -76,7 +78,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
   let result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~verify release closeout' }),
+    input: JSON.stringify({ cwd: project, prompt: '~qa release closeout' }),
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /按需能力：/)
@@ -98,7 +100,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
@@ -125,7 +127,7 @@ test('advisor contract stays optional but blocks closeout when explicitly requir
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       reason: '发布流程需要独立复查',
       focus: ['发布步骤与回滚边界'],
       preferredSources: ['codex'],
@@ -165,12 +167,11 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
     ['# dashboard', '', '## 任务列表', '- [√] 仪表盘收尾（涉及文件：src/ui/dashboard.tsx；完成标准：界面达到发布标准；验证方式：npm run test）', ''].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604060101_dashboard', 'contract.json'), {
-    version: 1,
+    version: 2,
     source: 'plan',
     originCommand: 'plan',
-    verifyMode: 'test-first',
-    reviewerFocus: [],
-    testerFocus: ['界面达到发布标准'],
+    qaMode: 'standard',
+    qaFocus: ['界面达到发布标准'],
     ui: {
       required: true,
       designContract: true,
@@ -189,8 +190,11 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(getSessionEvidencePath(project, 'verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date().toISOString(),
+    qaMode: 'standard',
+    outcome: 'clean',
+    conclusion: '仪表盘质量闭环已通过。',
     commands: ['npm run test'],
     fastOnly: false,
     source: 'stop',
@@ -205,7 +209,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
   let result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~verify finish the dashboard ui closeout' }),
+    input: JSON.stringify({ cwd: project, prompt: '~qa finish the dashboard ui closeout' }),
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /advisor-artifact=/)
@@ -226,7 +230,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       reason: '首页视觉方向需要独立复查',
       focus: [],
       consultedSources: ['codex'],
@@ -252,7 +256,7 @@ test('ui style advisor reuses advisor evidence when the UI contract explicitly r
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       reason: '首页视觉方向需要独立复查',
       focus: ['主视觉层级', '品牌记忆点'],
       consultedSources: ['codex'],

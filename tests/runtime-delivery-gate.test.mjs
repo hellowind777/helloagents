@@ -50,7 +50,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /未完成任务/)
   assert.match(payload.reason, /任务缺少可交付元数据/)
-  assert.match(payload.reason, /处理路径：~plan -> ~build \/ ~verify/)
+  assert.match(payload.reason, /处理路径：~plan -> ~build \/ ~qa/)
 
   result = runNode(turnStateScript, ['write'], {
     cwd: project,
@@ -105,12 +105,11 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
     ].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604050101_feature', 'contract.json'), {
-    version: 1,
+    version: 2,
     source: 'plan',
     originCommand: 'plan',
-    verifyMode: 'review-first',
-    reviewerFocus: ['认证边界'],
-    testerFocus: ['主流程满足需求边界', '界面层与主流程对齐'],
+    qaMode: 'deep',
+    qaFocus: ['认证边界', '主流程满足需求边界', '界面层与主流程对齐'],
     ui: {
       required: false,
       designContract: false,
@@ -132,11 +131,14 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /缺少最新验证证据/)
-  assert.match(payload.reason, /处理路径：~verify -> CONSOLIDATE/)
+  assert.match(payload.reason, /缺少最新 qa-review 证据/)
+  assert.match(payload.reason, /处理路径：~qa -> CONSOLIDATE/)
 
-  writeJson(getSessionEvidencePath(project, 'verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date(Date.now() - 721 * 60 * 60 * 1000).toISOString(),
+    qaMode: 'deep',
+    outcome: 'clean',
+    conclusion: '认证功能质量闭环通过。',
     commands: ['npm run test', 'npm run build'],
     fastOnly: false,
     source: 'stop',
@@ -153,37 +155,18 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /验证证据超过 720 小时/)
+  assert.match(payload.reason, /qa-review 证据超过 720 小时/)
 
-  writeJson(getSessionEvidencePath(project, 'verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date().toISOString(),
-    commands: ['npm run test', 'npm run build'],
-    fastOnly: false,
-    source: 'stop',
-    fingerprint: {
-      available: false,
-      unstaged: '',
-      staged: '',
-      combined: '',
-    },
-  })
-  result = runNode(gateScript, [], {
-    cwd: project,
-    env,
-    input: JSON.stringify({ cwd: project }),
-  })
-  payload = parseStdoutJson(result)
-  assert.match(payload.reason, /缺少最新审查证据/)
-
-  writeJson(getSessionEvidencePath(project, 'review.json'), {
-    updatedAt: new Date().toISOString(),
-    source: 'manual',
-    originCommand: 'review',
-    reviewMode: 'review-first',
-    conclusion: '发现 1 个阻塞问题。',
+    qaMode: 'deep',
     outcome: 'findings',
+    conclusion: '仍有 1 个阻断问题。',
     findings: ['src/core/app.ts:12 权限边界仍未覆盖'],
     fileReferences: ['src/core/app.ts:12'],
+    commands: ['npm run test', 'npm run build'],
+    fastOnly: false,
+    source: 'stop',
     fingerprint: {
       available: false,
       unstaged: '',
@@ -197,17 +180,19 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /阻塞问题/)
+  assert.match(payload.reason, /阻断问题/)
 
-  writeJson(getSessionEvidencePath(project, 'review.json'), {
+  writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date().toISOString(),
-    source: 'stop',
-    originCommand: 'review',
-    reviewMode: 'review-first',
-    conclusion: '未发现阻塞问题。',
+    source: 'manual',
+    originCommand: 'qa',
+    qaMode: 'deep',
+    conclusion: '未发现阻断问题。',
     outcome: 'clean',
     findings: [],
     fileReferences: ['src/core/app.ts:12'],
+    commands: ['npm run test', 'npm run build'],
+    fastOnly: false,
     fingerprint: {
       available: false,
       unstaged: '',
@@ -226,7 +211,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   writeJson(getSessionEvidencePath(project, 'closeout.json'), {
     updatedAt: new Date().toISOString(),
     source: 'manual',
-    originCommand: 'verify',
+    originCommand: 'qa',
     requirementsCoverage: {
       status: 'BLOCKED',
       summary: '仍有 1 条需求未覆盖',
@@ -256,7 +241,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       requirementsCoverage: {
         status: 'PASS',
         summary: '已对 requirements.md 做逐条核对，当前范围已覆盖，非目标未实现。',

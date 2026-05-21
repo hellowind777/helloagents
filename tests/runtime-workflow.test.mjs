@@ -26,7 +26,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   const project = createTempDir('helloagents-workflow-')
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
   const closeoutScript = join(pkgRoot, 'scripts', 'closeout-state.mjs')
-  const reviewScript = join(pkgRoot, 'scripts', 'review-state.mjs')
+  const qaScript = join(pkgRoot, 'scripts', 'qa-review-state.mjs')
 
   writeSettings(home, { install_mode: 'standby' })
   writeText(
@@ -79,12 +79,11 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     ].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604050101_feature', 'contract.json'), {
-    version: 1,
+    version: 2,
     source: 'plan',
     originCommand: 'plan',
-    verifyMode: 'review-first',
-    reviewerFocus: ['权限与会话边界'],
-    testerFocus: ['认证接口返回新会话字段', '登录页消费新会话字段'],
+    qaMode: 'deep',
+    qaFocus: ['权限与会话边界', '认证接口返回新会话字段', '登录页消费新会话字段'],
     ui: {
       required: true,
       designContract: true,
@@ -100,7 +99,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前应执行 ~build/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /执行路径：~build -> ~verify/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /执行路径：~build -> ~qa/)
   assert.match(payload.hookSpecificOutput.additionalContext, /编排提示：检测到可并行的开放任务/)
   assert.match(payload.hookSpecificOutput.additionalContext, /hello-subagent/)
   assert.match(payload.hookSpecificOutput.additionalContext, /按需能力：/)
@@ -113,7 +112,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]auto[\\/]SKILL\.md/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /本次 ~auto 的执行主路径：~build -> ~verify/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /本次 ~auto 的执行主路径：~build -> ~qa/)
   assert.match(payload.hookSpecificOutput.additionalContext, /未触发阻塞判定前不要停下/)
   assert.match(payload.hookSpecificOutput.additionalContext, /不要把阶段结果写成“下一步建议”/)
 
@@ -131,38 +130,31 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~verify check whether everything is done' }),
+    input: JSON.stringify({ cwd: project, prompt: '~qa check whether everything is done' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前不该把 ~verify 当成越级入口；先按 ~build 处理/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /即使执行 ~verify，也不能越过当前工作流边界/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /验证分流：当前更适合审查优先/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /review-evaluator=/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前不该把 ~qa 当成越级入口；先按 ~build 处理/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /即使执行 ~qa，也不能越过当前工作流边界/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /质量闭环：当前统一使用 qa-review/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /qa-evaluator=/)
 
-  result = runNode(notifyScript, ['route'], {
-    cwd: project,
-    env,
-    input: JSON.stringify({ cwd: project, prompt: '~review audit the current changes' }),
-  })
-  payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /兼容别名映射：本次按 ~verify 的审查优先模式执行/)
-
-  result = runNode(reviewScript, ['write'], {
+  result = runNode(qaScript, ['write'], {
     cwd: project,
     env,
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'review',
-      reviewMode: 'review-first',
+      originCommand: 'qa',
+      qaMode: 'deep',
       outcome: 'clean',
       conclusion: '未发现阻塞问题。',
       findings: [],
       fileReferences: ['src/api/auth.ts:12'],
+      commands: ['npm run test -- auth', 'npm run test -- login'],
     }),
   })
   payload = parseStdoutJson(result)
-  assert.equal(readJson(getSessionEvidencePath(project, 'review.json')).outcome, 'clean')
+  assert.equal(readJson(getSessionEvidencePath(project, 'qa-review.json')).outcome, 'clean')
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -180,6 +172,15 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /兼容别名映射：本次按 ~build 规则执行/)
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '~review audit the current changes' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /兼容别名映射：本次按 ~qa 规则执行/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /统一走 qa-review 质量闭环/)
 
   writeText(
     join(project, '.helloagents', 'plans', '202604050101_feature', 'tasks.md'),
@@ -201,7 +202,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前不该继续 ~build/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /除非用户明确提出新增实现范围，否则直接进入 CONSOLIDATE/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /直接进入 CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前已进入 CONSOLIDATE/)
   assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/closeout\.json/)
   assert.match(payload.hookSpecificOutput.additionalContext, /UI 约束提示/)
@@ -217,12 +218,11 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     ].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604050101_feature', 'contract.json'), {
-    version: 1,
+    version: 2,
     source: 'plan',
     originCommand: 'plan',
-    verifyMode: 'test-first',
-    reviewerFocus: [],
-    testerFocus: ['按既定验证方式完成自动验证'],
+    qaMode: 'standard',
+    qaFocus: ['按既定验证方式完成自动验证'],
     ui: {
       required: true,
       designContract: true,
@@ -240,8 +240,11 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
 
-  writeJson(getSessionEvidencePath(project, 'verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date().toISOString(),
+    qaMode: 'standard',
+    outcome: 'clean',
+    conclusion: '自动质量闭环已通过。',
     commands: ['npm run test', 'npm run build'],
     fastOnly: false,
     source: 'stop',
@@ -258,7 +261,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       requirementsCoverage: {
         status: 'PASS',
         summary: '已对 requirements.md 做逐条核对，当前范围已覆盖，非目标未实现。',

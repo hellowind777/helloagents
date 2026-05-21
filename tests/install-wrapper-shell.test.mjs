@@ -52,7 +52,7 @@ function createFakeNpm(binDir, logPath) {
     [
       '#!/bin/sh',
       'joined="$*"',
-      'printf \'args=%s|deploy=%s|target=%s|mode=%s|branch=%s|package=%s\\n\' "$joined" "${HELLOAGENTS_DEPLOY:-}" "${HELLOAGENTS_TARGET:-}" "${HELLOAGENTS_MODE:-}" "${HELLOAGENTS_BRANCH:-}" "${HELLOAGENTS_PACKAGE:-}" >> "$FAKE_NPM_LOG"',
+      'printf \'args=%s|deploy=%s|target=%s|mode=%s|branch=%s|package=%s|compact=%s\\n\' "$joined" "${HELLOAGENTS_DEPLOY:-}" "${HELLOAGENTS_TARGET:-}" "${HELLOAGENTS_MODE:-}" "${HELLOAGENTS_BRANCH:-}" "${HELLOAGENTS_PACKAGE:-}" "${HELLOAGENTS:-}" >> "$FAKE_NPM_LOG"',
       'if [ -n "${FAKE_NPM_FAIL_MATCH:-}" ] && [ "$joined" = "$FAKE_NPM_FAIL_MATCH" ]; then',
       '  exit 1',
       'fi',
@@ -142,6 +142,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
       'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- codex --standby',
     ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
 
   {
@@ -156,6 +157,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     assert.deepEqual(entries.map((entry) => entry.args), [
       'explore -g helloagents -- npm run cleanup-hosts -- --all --global',
     ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
 
   {
@@ -172,6 +174,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
       'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- gemini --global',
     ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
 
   {
@@ -200,6 +203,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
       'explore -g helloagents -- npm run uninstall -- claude --global',
       'uninstall -g helloagents',
     ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
 })
 
@@ -218,6 +222,7 @@ test('install.sh omits the mode for non-install actions so the CLI can reuse tra
       'update -g helloagents',
       'explore -g helloagents -- npm run sync-hosts -- codex',
     ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
 
   {
@@ -231,6 +236,7 @@ test('install.sh omits the mode for non-install actions so the CLI can reuse tra
     assert.deepEqual(entries.map((entry) => entry.args), [
       'explore -g helloagents -- npm run cleanup-hosts -- --all',
     ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
 
   {
@@ -246,5 +252,6 @@ test('install.sh omits the mode for non-install actions so the CLI can reuse tra
       'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- gemini',
     ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
 })

@@ -48,7 +48,7 @@ function writeCompleteState(turnStateScript, project, env) {
       cwd: project,
       role: 'main',
       kind: 'complete',
-      phase: 'verify',
+      phase: 'qa',
     }),
   })
   parseStdoutJson(result)

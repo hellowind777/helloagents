@@ -1,13 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
   "source": "{~plan | ~prd}",
   "originCommand": "{plan | prd}",
-  "verifyMode": "{test-first | review-first}",
-  "reviewerFocus": [
-    "{仅 review-first 必填：reviewer 需要重点检查的边界}"
-  ],
-  "testerFocus": [
-    "{tester 需要重点验证的边界}"
+  "qaMode": "{standard | deep}",
+  "qaFocus": [
+    "{qa-review 需要重点检查或回归验证的边界}"
   ],
   "ui": {
     "required": false,

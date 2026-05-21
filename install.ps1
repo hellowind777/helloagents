@@ -53,6 +53,23 @@ function Invoke-Npm {
     }
 }
 
+function Clear-HelloagentsEnv {
+    foreach ($name in @(
+        "HELLOAGENTS",
+        "HELLOAGENTS_ACTION",
+        "HELLOAGENTS_TARGET",
+        "HELLOAGENTS_HOST",
+        "HELLOAGENTS_MODE",
+        "HELLOAGENTS_BRANCH",
+        "HELLOAGENTS_PACKAGE",
+        "HELLOAGENTS_DEPLOY"
+    )) {
+        Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+    }
+}
+
+Clear-HelloagentsEnv
+
 function Enable-PostinstallDeploy {
     $env:HELLOAGENTS_DEPLOY = "1"
     $env:HELLOAGENTS_TARGET = $Target
