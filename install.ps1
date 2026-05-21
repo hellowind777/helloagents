@@ -15,6 +15,7 @@ $Target = if ($env:HELLOAGENTS_TARGET) { $env:HELLOAGENTS_TARGET } else { "" }
 $Mode = if ($env:HELLOAGENTS_MODE) { $env:HELLOAGENTS_MODE } else { "" }
 $Branch = if ($env:HELLOAGENTS_BRANCH) { $env:HELLOAGENTS_BRANCH } else { "" }
 $Package = if ($env:HELLOAGENTS_PACKAGE) { $env:HELLOAGENTS_PACKAGE } else { "" }
+$HasExplicitPackage = [bool]$Package
 
 if ($env:HELLOAGENTS) {
     $Parts = $env:HELLOAGENTS.Split(":", 2)
@@ -110,7 +111,7 @@ switch ($Action) {
         Invoke-Npm -NpmArgs @("install", "-g", $Package)
     }
     "update" {
-        if ($Branch -or $env:HELLOAGENTS_PACKAGE) {
+        if ($Branch -or $HasExplicitPackage) {
             Invoke-Npm -NpmArgs @("install", "-g", $Package)
         } else {
             & npm update -g helloagents
@@ -124,14 +125,14 @@ switch ($Action) {
         Cleanup-Hosts
     }
     "switch-branch" {
-        if (-not $Branch -and -not $env:HELLOAGENTS_PACKAGE) {
+        if (-not $Branch -and -not $HasExplicitPackage) {
             throw "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for switch-branch"
         }
         Invoke-Npm -NpmArgs @("install", "-g", $Package)
         Sync-Hosts
     }
     "branch" {
-        if (-not $Branch -and -not $env:HELLOAGENTS_PACKAGE) {
+        if (-not $Branch -and -not $HasExplicitPackage) {
             throw "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for branch"
         }
         Invoke-Npm -NpmArgs @("install", "-g", $Package)
