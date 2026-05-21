@@ -264,7 +264,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 所有任务：
 - 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
-- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`capsule.json`、`events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/qa-review.json`、`artifacts/closeout.json`）
+- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（可选 `events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/qa-review.json`、`artifacts/closeout.json`）；`STATE.md` 作为唯一主状态保留
 - 按 `kb_create_mode` 同步知识库（0=关闭 / 1=知识库已存在时自动同步，未创建则不自动补建 / 2=编码任务在知识库已存在或全局模式下自动创建或同步）：
   - `0` → 跳过
   - `1` → 仅在知识库已存在时按模板增量同步；未创建则不自动补建
@@ -290,7 +290,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 - `.helloagents/` 表示项目本地存储路径，负责知识、方案、状态与运行态；它不再作为项目是否已初始化的判定信号
-- `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/`
+- `state_path` 指向的状态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/STATE.md`；当前会话的 `turn-state`、路由上下文和 artifact 索引写入这个文件的元数据，`artifacts/*.json` 仅在需要结构化证据时按需生成，`events.jsonl` 仅在显式 trace 模式下写入
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{workspace}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{workspace}/default/STATE.md`
 - `{workspace}` 为当前 Git 分支、`detached-{sha}` 或非 Git 项目的 `workspace`；`.helloagents/sessions/active.json` 只记录当前活跃会话索引，避免同一会话被拆成多个目录
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中

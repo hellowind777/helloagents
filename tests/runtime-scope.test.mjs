@@ -276,7 +276,7 @@ test('ensured project-local runtime reuses the full-carrier project root from ne
   assert.equal(existsSync(join(nested, '.helloagents')), false)
 })
 
-test('project session cleanup removes empty and route-only inactive sessions', () => {
+test('project session cleanup keeps only the active session and removes stale temp files', () => {
   const project = createTempDir('helloagents-project-session-cleanup-')
 
   writeText(join(project, '.helloagents', '.keep'), '')
@@ -291,16 +291,20 @@ test('project session cleanup removes empty and route-only inactive sessions', (
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'artifacts', 'codex-native-stop.json'), '{}\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'openroute', 'capsule.json'), '{}\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'full1', 'STATE.md'), '# full\n')
+  writeText(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp'), 'tmp\n')
   mkdirSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1'), { recursive: true })
 
   const result = cleanupProjectSessions(project)
 
   assert.equal(result.errors.length, 0)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'active1')), true)
-  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'full1')), true)
-  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'openroute')), true)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'full1')), false)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'openroute')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'route1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), false)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp')), false)
+  assert.equal(result.removedInactiveDirs.length > 0, true)
+  assert.equal(result.removedNoStateDirs.length > 0, true)
 })
 
 test('project session cleanup skips repeated scans inside cooldown window', () => {

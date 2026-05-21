@@ -198,15 +198,17 @@ HelloAGENTS 现在只从 `state_path` 解析当前状态文件：
 
 HelloAGENTS 不把“命令通过”和“任务完成”简单画等号。交付还可能要求需求覆盖、任务清单、审查证据、advisor 证据和视觉证据。
 
-运行态证据文件包括：
+运行态现在尽量收敛，只保留真正有用的文件：
 
-- `.helloagents/sessions/<workspace>/<session>/capsule.json`
-- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
+- `.helloagents/sessions/<workspace>/<session>/STATE.md`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/qa-review.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
+- 仅用于 Codex 原生收尾去重的 `~/.codex/.helloagents/notify-state.json`
+
+`turn-state`、路由上下文和 artifact 索引都写进 `STATE.md` 的元数据，不再单独生成 `capsule.json`。`events.jsonl` 改为可选 trace 输出，默认不写。
 
 交付门控、守卫和 QA gate 提示使用执行性表述，例如处理路径、收尾动作和视觉验收动作。阻塞流程会说明下一步要做什么，而不是把可执行步骤写成泛化建议。最终回复还会强制只保留一个 HelloAGENTS 外层块，避免同一条回复重复输出完成标题。
 这个外层格式现在只保留给直接面向最终用户的终局交付。中间汇报、委派任务结果和子代理回复都保持自然输出；子代理结束钩子也会拦截错误的外层收尾格式。
@@ -513,8 +515,6 @@ Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 运行态文件仍保留在当前项目本地：
 
 - `state_path`
-- `.helloagents/sessions/<workspace>/<session>/capsule.json`
-- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
 
@@ -526,7 +526,7 @@ Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 ~/.helloagents/runtime/<scope-key>/
 ```
 
-这里仅保存短期的 `capsule.json`、`events.jsonl` 和 `artifacts/`，不作为项目知识库。过期临时会话会按 TTL 清理。
+这里仅保存短期的 `STATE.md` 和 `artifacts/`。`events.jsonl` 只有在启用 trace 时才会写入，不作为默认运行态文件。它也不属于项目知识库。过期临时会话会按 TTL 清理。
 
 一旦任务会创建或修改本地文件，或会在当前项目留下本地输出，HelloAGENTS 就会自动创建项目本地 `.helloagents/sessions/.../STATE.md`，而不是只停留在用户级临时运行态。
 

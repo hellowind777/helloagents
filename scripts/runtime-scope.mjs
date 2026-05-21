@@ -493,6 +493,7 @@ function buildTransientRuntimeDir(cwd, options = {}) {
     session: token,
     sessionMode: token === DEFAULT_STATE_SESSION_TOKEN ? 'default' : 'transient-session',
     sessionDir: join(getUserRuntimeRoot(), hash),
+    statePath: join(getUserRuntimeRoot(), hash, 'STATE.md'),
     capsulePath: join(getUserRuntimeRoot(), hash, CAPSULE_FILE_NAME),
     eventsPath: join(getUserRuntimeRoot(), hash, EVENTS_FILE_NAME),
     artifactsDir: join(getUserRuntimeRoot(), hash, PROJECT_ARTIFACTS_DIR_NAME),
