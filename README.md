@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.34-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.35-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -78,9 +78,9 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 
 ## Core Features
 
-### 1) 14 task-aware quality skills
+### 1) 14 built-in workflow skills
 
-HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current stage needs them, so simple tasks stay light while complex work gets stricter checks.
+HelloAGENTS ships 14 built-in skills. They are loaded only when the current stage needs them, so simple tasks stay light while complex work gets stricter checks.
 
 | Skill | Focus |
 |-------|-------|
@@ -89,6 +89,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-security` | auth, secrets, permissions, injection risks |
 | `hello-test` | TDD, coverage, edge cases, test structure |
 | `qa-review` | unified quality review, verification commands, blocking fixes, delivery evidence, closeout |
+| `helloagents` | command routing, workflow stage rules, project knowledge, and state coordination |
 | `hello-errors` | error handling, logs, retry and recovery behavior |
 | `hello-perf` | performance, caching, query and rendering risks |
 | `hello-data` | database, migrations, transactions, indexes |
@@ -303,7 +304,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -359,7 +360,7 @@ After the package is installed, you can also call its npm scripts directly:
 npm explore -g helloagents -- npm run deploy:global
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
-npm explore -g helloagents -- npm run uninstall -- --all --standby
+npm explore -g helloagents -- npm run uninstall -- --all
 ```
 
 Fresh installs can still use `HELLOAGENTS=target[:mode]` directly. For update, branch switching, or any forced host re-sync of an already installed package, the explicit `npm run sync-hosts` step above is the deterministic path.
@@ -421,7 +422,7 @@ Use normal npm commands when you only want to change the package and not sync ho
 ```bash
 npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 npm update -g helloagents
-npm explore -g helloagents -- npm run uninstall -- --all --standby
+npm explore -g helloagents -- npm run uninstall -- --all
 npm uninstall -g helloagents
 ```
 
@@ -655,6 +656,7 @@ Codex is rules-file driven by default.
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice, and clientless delegated child-completion events stay silent when the managed Stop hook is active
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
+- Current OpenAI docs still mark `/goal` as experimental, and Codex app support is still preview. HelloAGENTS therefore treats `/goal` as an opt-in Codex-native accelerator, not as a required runtime dependency
 - Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
 ## Verification
@@ -720,7 +722,7 @@ Yes.
 
 ### Does `npm uninstall -g helloagents` remove project knowledge?
 
-No. Run `npm explore -g helloagents -- npm run uninstall -- --all --standby` before package removal to clean host integrations and the stable runtime copy. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
+No. Run `npm explore -g helloagents -- npm run uninstall -- --all` before package removal so HelloAGENTS can reuse the tracked or detected mode for each CLI and clean host integrations plus the stable runtime copy. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
 
 ## Troubleshooting
 
