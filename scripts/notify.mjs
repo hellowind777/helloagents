@@ -41,7 +41,7 @@ const EVENT_NAME = {
   UserPromptSubmit: IS_GEMINI ? 'BeforeAgent' : 'UserPromptSubmit',
   PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
 };
-const RALPH_LOOP_ROUTE_COMMANDS = new Set(['verify', 'loop']);
+const RALPH_LOOP_ROUTE_COMMANDS = new Set(['qa', 'loop']);
 const CODEX_HOOKS_FILE = join(homedir(), '.codex', 'hooks.json');
 const GATE_MODULE_LOADERS = {
   'turn-stop-gate': () => import('./turn-stop-gate.mjs'),

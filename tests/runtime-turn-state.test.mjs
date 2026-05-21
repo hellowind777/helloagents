@@ -64,7 +64,7 @@ test('codex notify gates only main complete turns from turn-state', () => {
       cwd: project,
       role: 'subagent',
       kind: 'complete',
-      phase: 'verify',
+      phase: 'qa',
     }),
   })
   parseStdoutJson(result)
@@ -361,17 +361,17 @@ test('ordinary complete turns skip automatic Ralph Loop verification', () => {
   assert.equal(payload.decision, undefined)
 })
 
-test('explicit verify route still runs Ralph Loop verification', () => {
+test('explicit qa route still runs Ralph Loop verification', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
-  const project = createTempDir('helloagents-turn-state-verify-route-')
+  const project = createTempDir('helloagents-turn-state-qa-route-')
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
   const turnStateScript = join(pkgRoot, 'scripts', 'turn-state.mjs')
 
   writeSettings(home, { ralph_loop_enabled: true })
   writeJson(join(project, 'package.json'), {
-    name: 'verify-route-project',
+    name: 'qa-route-project',
     scripts: {
       test: 'node -e "process.exit(1)"',
     },
@@ -382,7 +382,7 @@ test('explicit verify route still runs Ralph Loop verification', () => {
     env,
     input: JSON.stringify({
       cwd: project,
-      prompt: '~verify run checks',
+      prompt: '~qa run checks',
     }),
   })
   parseStdoutJson(result)
@@ -394,7 +394,7 @@ test('explicit verify route still runs Ralph Loop verification', () => {
       cwd: project,
       role: 'main',
       kind: 'complete',
-      phase: 'verify',
+      phase: 'qa',
     }),
   })
   parseStdoutJson(result)
@@ -404,7 +404,7 @@ test('explicit verify route still runs Ralph Loop verification', () => {
     env,
     input: JSON.stringify({
       cwd: project,
-      lastAssistantMessage: '验证完成。',
+      lastAssistantMessage: '质量闭环已完成。',
     }),
   })
 
@@ -452,7 +452,7 @@ test('turn-state writes pure cwd into the session capsule', () => {
       cwd: project,
       role: 'main',
       kind: 'complete',
-      phase: 'verify',
+      phase: 'qa',
     }),
   })
   let payload = parseStdoutJson(result)

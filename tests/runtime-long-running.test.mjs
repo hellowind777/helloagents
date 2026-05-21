@@ -24,7 +24,7 @@ import {
   captureWorkspaceFingerprint,
   EVIDENCE_MAX_AGE_MS,
 } from '../scripts/runtime-artifacts.mjs'
-import { getVerifyEvidenceStatus, writeVerifyEvidence } from '../scripts/verify-state.mjs'
+import { getQaReviewEvidenceStatus, writeQaReviewEvidence } from '../scripts/qa-review-state.mjs'
 import {
   LONG_RUNNING_TTL_HOURS,
   LONG_RUNNING_TTL_MS,
@@ -148,26 +148,31 @@ test('turn-state and evidence stay valid across long-running goal sessions', () 
     ...SESSION_PAYLOAD,
     role: 'main',
     kind: 'complete',
-    phase: 'verify',
+    phase: 'qa',
   })
   const validNow = Date.parse(turn.updatedAt) + (LONG_RUNNING_TTL_HOURS - 1) * HOURS
   const staleNow = Date.parse(turn.updatedAt) + (LONG_RUNNING_TTL_HOURS + 1) * HOURS
   assert.equal(readTurnState(project, { now: validNow, payload: SESSION_PAYLOAD })?.kind, 'complete')
 
-  writeVerifyEvidence(project, {
+  writeQaReviewEvidence(project, {
+    qaMode: 'standard',
+    outcome: 'clean',
+    conclusion: '长任务质量闭环通过。',
     commands: ['npm run test'],
     source: 'test',
   }, {
     payload: SESSION_PAYLOAD,
   })
 
-  let status = getVerifyEvidenceStatus(project, {
+  let status = getQaReviewEvidenceStatus(project, {
+    required: true,
     now: validNow,
     payload: SESSION_PAYLOAD,
   })
   assert.equal(status.status, 'valid')
 
-  status = getVerifyEvidenceStatus(project, {
+  status = getQaReviewEvidenceStatus(project, {
+    required: true,
     now: staleNow,
     payload: SESSION_PAYLOAD,
   })

@@ -190,7 +190,7 @@ test('unactivated runtime artifacts stay in the user-level transient directory',
       const { writeRuntimeEvidence } = await import(${JSON.stringify(RUNTIME_ARTIFACTS_MODULE_URL)})
       const path = writeRuntimeEvidence(
         ${JSON.stringify(project)},
-        'verify.json',
+        'qa-review.json',
         { updatedAt: new Date().toISOString(), commands: [] },
         { payload: { sessionId: 'abc123' } },
       )
@@ -198,7 +198,7 @@ test('unactivated runtime artifacts stay in the user-level transient directory',
     `,
   })
 
-  assert.match(payload.path, /[\\/]\.helloagents[\\/]runtime[\\/][^\\/]+[\\/]artifacts[\\/]verify\.json$/)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]runtime[\\/][^\\/]+[\\/]artifacts[\\/]qa-review\.json$/)
   assert.equal(existsSync(join(project, '.helloagents')), false)
 })
 

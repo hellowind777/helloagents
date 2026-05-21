@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.33-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.34-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -88,14 +88,13 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-api` | API design, validation, error format, compatibility |
 | `hello-security` | auth, secrets, permissions, injection risks |
 | `hello-test` | TDD, coverage, edge cases, test structure |
-| `hello-verify` | review, command verification, delivery evidence, closeout |
+| `qa-review` | unified quality review, verification commands, blocking fixes, delivery evidence, closeout |
 | `hello-errors` | error handling, logs, retry and recovery behavior |
 | `hello-perf` | performance, caching, query and rendering risks |
 | `hello-data` | database, migrations, transactions, indexes |
 | `hello-arch` | architecture, boundaries, code size, maintainability |
 | `hello-debug` | bug diagnosis and escalation when stuck |
 | `hello-subagent` | subagent delegation and result integration |
-| `hello-review` | code review with structured findings |
 | `hello-write` | documentation, reports, and written deliverables |
 | `hello-reflect` | reusable lessons and knowledge updates |
 
@@ -119,7 +118,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~init` | Same as `~wiki` |
 | `~global` | Initialize project-level global mode |
 | `~test` | Write tests for a target module or recent change |
-| `~verify` | Review, run verification commands, fix failures, and close out |
+| `~qa` | Run the unified quality loop: review, verification commands, fixes, and closeout |
 | `~commit` | Generate a conventional commit message and sync knowledge |
 | `~clean` | Archive finished plans and clean temporary runtime files |
 | `~help` | Show commands and current settings |
@@ -128,7 +127,7 @@ Compatibility aliases:
 
 - `~do` → `~build`
 - `~design` → `~plan`
-- `~review` → `~verify` in review-first mode
+- `~review` → `~qa`
 
 ### 3) Project knowledge base
 
@@ -194,6 +193,7 @@ HelloAGENTS now resolves the current state file from `state_path`:
 `<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
 
 `STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation.
+If you later use `codex exec resume --output-schema` for non-interactive Codex automation, treat it only as a machine-readable result channel. It does not replace `state_path`, `turn-state`, or local evidence files.
 
 ### 6) Verification and delivery evidence
 
@@ -204,7 +204,7 @@ Runtime evidence files include:
 - `.helloagents/sessions/<workspace>/<session>/capsule.json`
 - `.helloagents/sessions/<workspace>/<session>/events.jsonl`
 - `.helloagents/sessions/active.json`
-- `.helloagents/sessions/<workspace>/<session>/artifacts/review.json`
+- `.helloagents/sessions/<workspace>/<session>/artifacts/qa-review.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
@@ -221,8 +221,8 @@ The CLI manages host files explicitly:
 - `update` refreshes the selected target or all targets
 - `cleanup` removes managed injections and links
 - `uninstall` performs scoped cleanup before package removal
-- `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, and versions
-- per-host mode tracking is written only after a host setup succeeds, so failed native global installs do not leave stale mode records
+- `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, and versions; for Codex, it also surfaces native `codex doctor` output when available
+- per-host mode tracking is written only after host setup succeeds, and failed native global cleanup keeps the host tracked as `global` instead of silently layering standby on top
 
 ## Quick Start
 
@@ -313,7 +313,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -328,11 +328,13 @@ HELLOAGENTS=codex npm install -g helloagents
 # Install to Codex in global mode
 HELLOAGENTS=codex:global npm install -g helloagents
 
-# Update and sync Claude in standby mode
-HELLOAGENTS=claude:standby npm update -g helloagents
+# Update the package, then refresh Claude in standby mode
+npm update -g helloagents
+npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
-# Switch to the beta branch and sync all CLIs in standby mode
-HELLOAGENTS=all:standby npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+# Switch to the beta branch, then refresh all CLIs in standby mode
+npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # Clean Gemini integration before package uninstall
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -348,11 +350,13 @@ $env:HELLOAGENTS="codex"; npm install -g helloagents
 # Install to Codex in global mode
 $env:HELLOAGENTS="codex:global"; npm install -g helloagents
 
-# Update and sync Claude in standby mode
-$env:HELLOAGENTS="claude:standby"; npm update -g helloagents
+# Update the package, then refresh Claude in standby mode
+npm update -g helloagents
+npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
-# Switch to the beta branch and sync all CLIs in standby mode
-$env:HELLOAGENTS="all:standby"; npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+# Switch to the beta branch, then refresh all CLIs in standby mode
+npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # Clean Gemini integration before package uninstall
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -367,6 +371,8 @@ npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
 npm explore -g helloagents -- npm run uninstall -- --all --standby
 ```
+
+Fresh installs can still use `HELLOAGENTS=target[:mode]` directly. For update, branch switching, or any forced host re-sync of an already installed package, the explicit `npm run sync-hosts` step above is the deterministic path.
 
 #### One-shot scripts
 
@@ -408,7 +414,7 @@ $env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https:/
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
-The PowerShell wrapper now forwards the same npm arguments as `install.sh`, so install, update, cleanup, uninstall, and `switch-branch` stay on the same lifecycle path.
+The shell and PowerShell wrappers now parse `HELLOAGENTS` once, clear lifecycle env before update, branch switching, and uninstall, and then run one explicit sync or cleanup path.
 
 ### Branch switching
 
@@ -455,6 +461,8 @@ gemini extensions install https://github.com/hellowind777/helloagents
 
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.
 
+When you switch Claude or Gemini back to standby, HelloAGENTS first removes the native plugin or extension. If that cleanup fails, the host stays tracked as `global` instead of silently stacking standby on top.
+
 Codex global mode is installed by HelloAGENTS automatically through the local-plugin path.
 
 ## Commands in Chat
@@ -471,7 +479,7 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Iterate toward a metric | `~loop "reduce bundle size" --metric "npm run size" --direction lower` |
 | Create or refresh project knowledge only | `~wiki` / `~init` |
 | Initialize project-level global mode | `~global` |
-| Validate current work | `~verify` |
+| Validate current work | `~qa` |
 | Generate commit message and sync knowledge | `~commit` |
 
 ### Knowledge base vs project-level global mode
@@ -538,7 +546,7 @@ Once the task creates or modifies local files, or otherwise leaves local output 
 HelloAGENTS uses this stage model for structured work:
 
 ```text
-ROUTE / TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
+ROUTE / TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE
 ```
 
 | Stage | Purpose |
@@ -547,7 +555,7 @@ ROUTE / TIER → SPEC → PLAN → BUILD → VERIFY → CONSOLIDATE
 | `SPEC` | clarify goal, constraints, and success criteria |
 | `PLAN` | prepare plan files and choose needed skills |
 | `BUILD` | implement and run local checks |
-| `VERIFY` | review, run commands, check contract and evidence |
+| `QA` | review, run commands, check contract and evidence |
 | `CONSOLIDATE` | update state, knowledge, and closeout evidence |
 
 ### Delivery tiers
@@ -615,7 +623,7 @@ Default shape:
 | `output_language` | `""` | follow the user language unless set |
 | `output_format` | `true` | direct final-user closeout from the main agent uses the HelloAGENTS layout; intermediate, delegated, and sub-agent output stays natural |
 | `notify_level` | `0` | `0` off, `1` desktop, `2` sound, `3` both |
-| `ralph_loop_enabled` | `true` | run verification for explicit `~verify` / `~loop` or required closeout gates |
+| `ralph_loop_enabled` | `true` | run the quality loop for explicit `~qa` / `~loop` or required closeout gates |
 | `guard_enabled` | `true` | block dangerous commands |
 | `kb_create_mode` | `1` | `0` off, `1` sync existing KB automatically, `2` auto-create or sync the KB for coding tasks |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
@@ -634,6 +642,7 @@ Default shape:
 - standby updates `~/.claude/settings.json` with managed hooks and permissions
 - standby creates `~/.claude/helloagents -> ~/.helloagents/helloagents`
 - global mode uses Claude Code's plugin system
+- switching from global back to standby removes the native plugin first; if that cleanup fails, HelloAGENTS keeps Claude tracked as `global`
 
 ### Gemini CLI
 
@@ -641,6 +650,7 @@ Default shape:
 - standby updates `~/.gemini/settings.json` with managed hooks
 - standby creates `~/.gemini/helloagents -> ~/.helloagents/helloagents`
 - global mode uses Gemini's extension system
+- switching from global back to standby removes the native extension first; if that cleanup fails, HelloAGENTS keeps Gemini tracked as `global`
 
 ### Codex CLI
 
@@ -655,6 +665,7 @@ Codex is rules-file driven by default.
 - that hook trust state is machine-local generated metadata derived from the current absolute `~/.codex/hooks.json` path; unlike `model_instructions_file = "~/.codex/AGENTS.md"`, it is not portable config and should be regenerated on each machine
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
+- for Codex app/plugin discovery, `global` is the native path; `standby` remains the lighter default for explicit project work
 - cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice, and clientless delegated child-completion events stay silent when the managed Stop hook is active
@@ -672,8 +683,8 @@ npm test
 The current suite covers:
 
 - install, update, cleanup, uninstall, branch switching, and mode switching
-- one-shot shell and PowerShell lifecycle dispatch, plus wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
-- Claude, Gemini, and Codex host integration behavior
+- one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
+- Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
@@ -709,6 +720,7 @@ Use `~global` when you also want project-level global mode.
 `standby` is lighter and explicit. It deploys rules to selected CLIs and keeps project-level global mode behind `~global`.
 
 `global` applies full rules broadly. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
+If you mainly want Codex app/plugin discoverability, use `global`. If you mainly want a lighter, explicit project workflow, keep `standby`.
 
 ### Do Codex hooks show injected content?
 

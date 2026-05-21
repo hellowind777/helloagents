@@ -88,7 +88,7 @@ test('replay artifact stays inactive until project activation and records event-
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       requirementsCoverage: {
         status: 'PASS',
         summary: 'requirements covered',

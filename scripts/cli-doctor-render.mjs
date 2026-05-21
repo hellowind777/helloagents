@@ -20,7 +20,8 @@ export function printDoctorText(runtime, report) {
     if (entry.nativeDoctor) {
       console.log(`  native_doctor.available: ${entry.nativeDoctor.available ? 'ok' : 'missing'}`)
       if (entry.nativeDoctor.available) {
-        console.log(`  native_doctor.ok: ${entry.nativeDoctor.ok ? 'ok' : 'missing'}`)
+        console.log(`  native_doctor.ok: ${entry.nativeDoctor.ok ? 'ok' : 'fail'}`)
+        if (entry.nativeDoctor.status) console.log(`  native_doctor.status: ${entry.nativeDoctor.status}`)
       }
       if (entry.nativeDoctor.summary) {
         if (entry.nativeDoctor.summary.version) console.log(`  native_doctor.version: ${entry.nativeDoctor.summary.version}`)

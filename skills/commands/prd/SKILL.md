@@ -105,7 +105,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 生成 tasks.md（每个任务默认是端到端垂直切片，标注 AFK / HITL、依赖、具体文件路径、预期变更、完成标准与验证方式；任务独立可验证）
 - 在 `tasks.md` 中保留 “Codex /goal 执行入口”，让 Codex 按已拆分任务、验收边界和 `contract.json` 执行；不要把完整 PRD 原文直接当作 `/goal` 目标
 - 生成 decisions.md（贯穿全程的决策日志）
-- 生成 `contract.json`（至少包含 `verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需先明确审美方向时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
+- 生成 `contract.json`（至少包含 `qaMode`、`qaFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需先明确审美方向时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）
 - 使用 `scripts/plan-contract.mjs write` 写 `contract.json`，不要只把验证路径留在自然语言说明里
 - 涉及 UI 的项目：生成或更新 `.helloagents/DESIGN.md`（按当前项目存储模式解析）；若原文件不存在，先按模板建立最小设计契约，再同步已确认的稳定 UI 决策
 - 重写 `state_path`，其中“主线目标”写本次 PRD 要完成的产品 / 功能目标，不保留其他任务的内容
@@ -127,7 +127,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 
 按 tasks.md 逐项完成，每项进入当前已加载的 HelloAGENTS 统一执行流程，完成后同步重写 `state_path`。
 任务状态标记仅写入 tasks.md、验收清单或验证结果；普通说明、方案解释、状态汇报不用 [√] / [-] / [ ]。
-所有任务完成后进入当前已加载的 HelloAGENTS VERIFY / CONSOLIDATE 收尾阶段。
+所有任务完成后进入当前已加载的 HelloAGENTS QA / CONSOLIDATE 收尾阶段。
 可并行的任务标记后用子代理并行执行（不同子代理不改同一文件）。
 执行过程中遇到阻塞（依赖缺失、指令不清、验证反复失败）→ 立即停下询问用户，不猜测。
 执行过程中遇到高风险操作（删除文件/修改配置/数据库变更）→ 暂停确认。

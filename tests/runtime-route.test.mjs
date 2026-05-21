@@ -597,7 +597,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, prompt: 'run tests and do a security review for auth changes' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /~verify=审查\/验证/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /~qa=统一质量审查\/验证\/修复\/收尾/)
 })
 
 test('notify runtime uses host_install_modes before global install_mode', () => {
