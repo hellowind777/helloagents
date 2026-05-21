@@ -282,7 +282,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 
 ### 命令路由
 - 默认按上文“统一执行流程中的 ROUTE / TIER”选路；除显式 `~command` 外，不另起独立路由规则
-- `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名
+- `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名；`~review` 是 `~qa` 的兼容别名
 - `~command` 路由：用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。若当前上下文已解析出具体命令技能文件路径，直接使用它；否则按上文相同的技能根目录规则确定，确定根目录后读取其中的 `skills/commands/{name}/SKILL.md`。不要额外探测项目目录里的 HelloAGENTS skills 路径，也不要扫描整个目录或对同一命令重复探测多个路径。
 
 ## 项目存储与上下文

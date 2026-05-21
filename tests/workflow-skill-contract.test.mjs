@@ -27,7 +27,7 @@ test('workflow skills stay aligned with the new qa-review architecture', () => {
   assert.match(helloagents, /`~qa`/)
   assert.match(helloagents, /`~do` → 直接按 `~build` 的 command skill 路径读取并执行/)
   assert.match(helloagents, /`~design` → 直接按 `~plan` 的 command skill 路径读取并执行/)
-  assert.doesNotMatch(helloagents, /`~review`/)
+  assert.match(helloagents, /`~review` → 直接按 `~qa` 的 command skill 路径读取并执行/)
   assert.doesNotMatch(helloagents, /hello-review/)
   assert.doesNotMatch(helloagents, /hello-verify/)
 
@@ -81,7 +81,7 @@ test('workflow skills stay aligned with the new qa-review architecture', () => {
   assert.match(help, /\| ~qa \| 统一质量总入口/)
   assert.match(help, /完成时：qa-review, hello-reflect/)
   assert.doesNotMatch(help, /~verify/)
-  assert.doesNotMatch(help, /~review/)
+  assert.match(help, /`~review` → 等同 `~qa`/)
 
   const loop = readText(join(REPO_ROOT, 'skills', 'commands', 'loop', 'SKILL.md'))
   assert.match(loop, /ROUTE\/TIER→SPEC→PLAN→BUILD→QA→CONSOLIDATE/)
@@ -95,20 +95,20 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.match(readme, /`~qa`/)
   assert.match(readme, /artifacts\/qa-review\.json/)
   assert.match(readme, /ROUTE \/ TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE/)
+  assert.match(readme, /`~review` → `~qa`/)
   assert.doesNotMatch(readme, /hello-review/)
   assert.doesNotMatch(readme, /hello-verify/)
   assert.doesNotMatch(readme, /~verify/)
-  assert.doesNotMatch(readme, /~review/)
 
   const readmeCn = readText(join(REPO_ROOT, 'README_CN.md'))
   assert.match(readmeCn, /`qa-review`/)
   assert.match(readmeCn, /`~qa`/)
   assert.match(readmeCn, /artifacts\/qa-review\.json/)
   assert.match(readmeCn, /ROUTE \/ TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE/)
+  assert.match(readmeCn, /`~review` → `~qa`/)
   assert.doesNotMatch(readmeCn, /hello-review/)
   assert.doesNotMatch(readmeCn, /hello-verify/)
   assert.doesNotMatch(readmeCn, /~verify/)
-  assert.doesNotMatch(readmeCn, /~review/)
 })
 
 test('runtime rule files avoid maintainer-facing prose', () => {

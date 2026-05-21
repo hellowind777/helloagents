@@ -173,6 +173,15 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /兼容别名映射：本次按 ~build 规则执行/)
 
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '~review audit the current changes' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /兼容别名映射：本次按 ~qa 规则执行/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /统一走 qa-review 质量闭环/)
+
   writeText(
     join(project, '.helloagents', 'plans', '202604050101_feature', 'tasks.md'),
     [

@@ -205,7 +205,7 @@
 - 本地版本检查点：非只读任务完成验证且产生工作区变更时，若 `auto_commit_enabled=true`，最终回复前自动执行本地提交；若 `auto_commit_enabled=false`，跳过这一步。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。显式 `~commit` 不受这个开关影响。不自动远程 `git push`，除非用户明确要求
 
 ### 命令路由
-- `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名
+- `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名；`~review` 是 `~qa` 的兼容别名
 - `~test` — 为指定模块或最近变更编写测试
 - 路径定义：`{HELLOAGENTS_READ_ROOT}` = 当前对话已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/` 与 `templates/`
 - `~command` 路由：用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。若当前上下文已解析出具体命令技能文件路径，直接使用它；否则先确定当前技能根目录：

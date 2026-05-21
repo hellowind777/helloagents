@@ -158,6 +158,7 @@ test('workflow templates and bootstrap stay aligned with qa-review artifacts', (
     assert.match(content, /`T0`/)
     assert.match(content, /`T3`/)
     assert.match(content, /`~do` 是 `~build` 的兼容别名/)
+    assert.match(content, /`~review` 是 `~qa` 的兼容别名/)
     assert.match(content, /artifacts\/qa-review\.json/)
     assert.match(content, /artifacts\/closeout\.json/)
     assert.match(content, /### UI 质量基线/)
@@ -167,6 +168,5 @@ test('workflow templates and bootstrap stay aligned with qa-review artifacts', (
     assert.match(content, /auto_commit_enabled=false/)
     assert.doesNotMatch(content, /artifacts\/review\.json/)
     assert.doesNotMatch(content, /artifacts\/verify\.json/)
-    assert.doesNotMatch(content, /`~review`/)
   }
 })
