@@ -127,6 +127,7 @@ Compatibility aliases:
 
 - `~do` → `~build`
 - `~design` → `~plan`
+- `~review` → `~qa`
 
 ### 3) Project knowledge base
 

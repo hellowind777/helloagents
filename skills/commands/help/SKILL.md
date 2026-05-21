@@ -29,6 +29,7 @@ Trigger: ~help
 兼容别名：
 - `~do` → 等同 `~build`
 - `~design` → 等同 `~plan`
+- `~review` → 等同 `~qa`
 
 ### 自动激活技能
 以下技能仅在全局模式或已初始化项目时自动激活（例如执行过 `~global`，或当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`）。

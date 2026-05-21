@@ -11,6 +11,7 @@ import {
 const COMMAND_ALIASES = {
   do: 'build',
   design: 'plan',
+  review: 'qa',
 };
 
 function buildRuntimeRootBlock(pkgRoot) {
@@ -46,6 +47,9 @@ function buildAliasRouteNote(skillName) {
   }
   if (skillName === 'design') {
     return '兼容别名映射：本次按 ~plan 规则执行；方案文件使用 `plan.md`，项目级 UI 契约仍使用 `DESIGN.md`。';
+  }
+  if (skillName === 'review') {
+    return '兼容别名映射：本次按 ~qa 规则执行；统一走 qa-review 质量闭环。';
   }
   return '';
 }
