@@ -3,9 +3,6 @@ import { join } from 'node:path'
 
 import {
   ACTIVE_SESSION_FILE_NAME,
-  CAPSULE_FILE_NAME,
-  EVENTS_FILE_NAME,
-  PROJECT_ARTIFACTS_DIR_NAME,
   PROJECT_SESSIONS_DIR_NAME,
   getProjectActivationDir,
   getProjectRoot,
@@ -33,29 +30,6 @@ function isDirectoryEmptyRecursive(dirPath) {
   })
 }
 
-function listFilesRecursive(dirPath) {
-  const entries = readdirSync(dirPath, { withFileTypes: true })
-  return entries.flatMap((entry) => {
-    const entryPath = join(dirPath, entry.name)
-    if (entry.isDirectory()) {
-      return listFilesRecursive(entryPath).map((child) => `${entry.name}/${child}`)
-    }
-    return entry.isFile() ? [entry.name] : []
-  })
-}
-
-function isRouteOnlySessionDir(sessionDir) {
-  if (existsSync(join(sessionDir, 'STATE.md'))) return false
-  const files = listFilesRecursive(sessionDir).map((file) => file.replace(/\\/g, '/'))
-  if (files.length === 0) return false
-  if (!files.includes(`${PROJECT_ARTIFACTS_DIR_NAME}/codex-native-stop.json`)) return false
-  return files.every((file) => [
-    CAPSULE_FILE_NAME,
-    EVENTS_FILE_NAME,
-    `${PROJECT_ARTIFACTS_DIR_NAME}/codex-native-stop.json`,
-  ].includes(file))
-}
-
 function shouldKeepSession(active, workspace, session) {
   const activeWorkspace = active.workspace || active.branch || ''
   return activeWorkspace === workspace && active.session === session
@@ -75,6 +49,21 @@ function writeCleanupCheckpoint(activePath, active, now) {
   })
 }
 
+function hasStateSnapshot(sessionDir) {
+  return existsSync(join(sessionDir, 'STATE.md'))
+}
+
+function isTransientSessionTemp(entryName = '') {
+  return /^\.[0-9]+-[0-9a-f-]+\.tmp$/i.test(entryName)
+}
+
+function cleanupTransientSessionTemps(sessionsDir, result) {
+  for (const entry of readdirSync(sessionsDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !isTransientSessionTemp(entry.name)) continue
+    removePath(join(sessionsDir, entry.name), result, 'removedTempFiles')
+  }
+}
+
 export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 0 } = {}) {
   const projectRoot = getProjectRoot(cwd)
   const activationDir = getProjectActivationDir(projectRoot)
@@ -84,7 +73,9 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
   const result = {
     sessionsDir,
     removedEmptyDirs: [],
-    removedRouteOnlyDirs: [],
+    removedInactiveDirs: [],
+    removedNoStateDirs: [],
+    removedTempFiles: [],
     errors: [],
     skipped: false,
   }
@@ -96,6 +87,12 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
       result.skipped = true
       return result
     }
+  }
+
+  try {
+    cleanupTransientSessionTemps(sessionsDir, result)
+  } catch (error) {
+    result.errors.push(`${sessionsDir}: ${error.message}`)
   }
 
   for (const workspaceEntry of readdirSync(sessionsDir, { withFileTypes: true })) {
@@ -110,8 +107,10 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
       try {
         if (isDirectoryEmptyRecursive(sessionDir)) {
           removePath(sessionDir, result, 'removedEmptyDirs')
-        } else if (isRouteOnlySessionDir(sessionDir)) {
-          removePath(sessionDir, result, 'removedRouteOnlyDirs')
+        } else if (!hasStateSnapshot(sessionDir)) {
+          removePath(sessionDir, result, 'removedNoStateDirs')
+        } else {
+          removePath(sessionDir, result, 'removedInactiveDirs')
         }
       } catch (error) {
         result.errors.push(`${sessionDir}: ${error.message}`)

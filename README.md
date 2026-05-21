@@ -198,15 +198,17 @@ HelloAGENTS now resolves the current state file from `state_path`:
 
 HelloAGENTS does not treat “tests passed” and “task complete” as the same thing. Delivery can also require plan coverage, task checklist status, review evidence, advisor evidence, and visual evidence.
 
-Runtime evidence files include:
+Runtime state now stays intentionally small:
 
-- `.helloagents/sessions/<workspace>/<session>/capsule.json`
-- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
+- `.helloagents/sessions/<workspace>/<session>/STATE.md`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/qa-review.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
+- `~/.codex/.helloagents/notify-state.json` for Codex-native closeout de-duplication only
+
+`turn-state`, route context, and the artifact index are stored inside `STATE.md` metadata instead of a separate `capsule.json`. `events.jsonl` is opt-in trace output, not a default runtime file.
 
 Delivery gate, guard, and QA gate messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
 That wrapper is now reserved for direct final-user delivery only. Intermediate reports, delegated task results, and sub-agent replies stay natural, and sub-agent stop hooks reject wrapped closeout replies.
@@ -509,8 +511,6 @@ When `project_store_mode = "repo-shared"`:
 Runtime state and evidence remain local to the working project:
 
 - `state_path`
-- `.helloagents/sessions/<workspace>/<session>/capsule.json`
-- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
 
@@ -522,7 +522,7 @@ For read-only work with no local output, if neither the current directory nor it
 ~/.helloagents/runtime/<scope-key>/
 ```
 
-This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
+This only stores short-lived `STATE.md` and `artifacts/`. Optional `events.jsonl` trace files are only written when trace mode is enabled. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
 
 Once the task creates or modifies local files, or otherwise leaves local output in the current project, HelloAGENTS creates the project-local `.helloagents/sessions/.../STATE.md` automatically instead of keeping that task only in the user-level transient runtime.
 

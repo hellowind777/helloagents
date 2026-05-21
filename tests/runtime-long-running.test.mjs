@@ -6,12 +6,11 @@ import { join } from 'node:path'
 import {
   createHomeFixture,
   createTempDir,
-  readJson,
   runCommand,
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionCapsulePath } from '../scripts/session-capsule.mjs'
+import { readSessionCapsule, writeSessionCapsule } from '../scripts/session-capsule.mjs'
 import {
   UNBOUND_ROUTE_CONTEXT_TTL_MS,
   getApplicableRouteContext,
@@ -40,10 +39,9 @@ function activateProject(project) {
 }
 
 function writeCapsuleRouteUpdatedAt(project, updatedAt, payload = SESSION_PAYLOAD) {
-  const capsulePath = getSessionCapsulePath(project, { payload })
-  const capsule = readJson(capsulePath)
+  const capsule = readSessionCapsule(project, { payload })
   capsule.route.updatedAt = updatedAt
-  writeJson(capsulePath, capsule)
+  writeSessionCapsule(project, capsule, { payload })
 }
 
 test('long-running runtime TTLs stay aligned for Codex goal sessions', () => {
