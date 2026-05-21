@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.33-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.34-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -222,7 +222,7 @@ The CLI manages host files explicitly:
 - `cleanup` removes managed injections and links
 - `uninstall` performs scoped cleanup before package removal
 - `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, and versions; for Codex, it also surfaces native `codex doctor` output when available
-- per-host mode tracking is written only after a host setup succeeds, so failed native global installs do not leave stale mode records
+- per-host mode tracking is written only after host setup succeeds, and failed native global cleanup keeps the host tracked as `global` instead of silently layering standby on top
 
 ## Quick Start
 
@@ -313,7 +313,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -328,11 +328,13 @@ HELLOAGENTS=codex npm install -g helloagents
 # Install to Codex in global mode
 HELLOAGENTS=codex:global npm install -g helloagents
 
-# Update and sync Claude in standby mode
-HELLOAGENTS=claude:standby npm update -g helloagents
+# Update the package, then refresh Claude in standby mode
+npm update -g helloagents
+npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
-# Switch to the beta branch and sync all CLIs in standby mode
-HELLOAGENTS=all:standby npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+# Switch to the beta branch, then refresh all CLIs in standby mode
+npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # Clean Gemini integration before package uninstall
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -348,11 +350,13 @@ $env:HELLOAGENTS="codex"; npm install -g helloagents
 # Install to Codex in global mode
 $env:HELLOAGENTS="codex:global"; npm install -g helloagents
 
-# Update and sync Claude in standby mode
-$env:HELLOAGENTS="claude:standby"; npm update -g helloagents
+# Update the package, then refresh Claude in standby mode
+npm update -g helloagents
+npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
-# Switch to the beta branch and sync all CLIs in standby mode
-$env:HELLOAGENTS="all:standby"; npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+# Switch to the beta branch, then refresh all CLIs in standby mode
+npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # Clean Gemini integration before package uninstall
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -367,6 +371,8 @@ npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
 npm explore -g helloagents -- npm run uninstall -- --all --standby
 ```
+
+Fresh installs can still use `HELLOAGENTS=target[:mode]` directly. For update, branch switching, or any forced host re-sync of an already installed package, the explicit `npm run sync-hosts` step above is the deterministic path.
 
 #### One-shot scripts
 
@@ -408,7 +414,7 @@ $env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https:/
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
-The PowerShell wrapper now forwards the same npm arguments as `install.sh`, so install, update, cleanup, uninstall, and `switch-branch` stay on the same lifecycle path.
+The shell and PowerShell wrappers now parse `HELLOAGENTS` once, clear lifecycle env before update, branch switching, and uninstall, and then run one explicit sync or cleanup path.
 
 ### Branch switching
 
@@ -454,6 +460,8 @@ gemini extensions install https://github.com/hellowind777/helloagents
 ```
 
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.
+
+When you switch Claude or Gemini back to standby, HelloAGENTS first removes the native plugin or extension. If that cleanup fails, the host stays tracked as `global` instead of silently stacking standby on top.
 
 Codex global mode is installed by HelloAGENTS automatically through the local-plugin path.
 
@@ -634,6 +642,7 @@ Default shape:
 - standby updates `~/.claude/settings.json` with managed hooks and permissions
 - standby creates `~/.claude/helloagents -> ~/.helloagents/helloagents`
 - global mode uses Claude Code's plugin system
+- switching from global back to standby removes the native plugin first; if that cleanup fails, HelloAGENTS keeps Claude tracked as `global`
 
 ### Gemini CLI
 
@@ -641,6 +650,7 @@ Default shape:
 - standby updates `~/.gemini/settings.json` with managed hooks
 - standby creates `~/.gemini/helloagents -> ~/.helloagents/helloagents`
 - global mode uses Gemini's extension system
+- switching from global back to standby removes the native extension first; if that cleanup fails, HelloAGENTS keeps Gemini tracked as `global`
 
 ### Codex CLI
 
@@ -673,8 +683,8 @@ npm test
 The current suite covers:
 
 - install, update, cleanup, uninstall, branch switching, and mode switching
-- one-shot shell and PowerShell lifecycle dispatch, plus wrapper mode-routing rules for install, update, cleanup, uninstall, and branch switching
-- Claude, Gemini, and Codex host integration behavior
+- one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
+- Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts

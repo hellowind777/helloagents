@@ -39,6 +39,7 @@ function createFakeNpm(binDir, logPath) {
       '  mode = $env:HELLOAGENTS_MODE',
       '  branch = $env:HELLOAGENTS_BRANCH',
       '  package = $env:HELLOAGENTS_PACKAGE',
+      '  compact = $env:HELLOAGENTS',
       '} | ConvertTo-Json -Compress',
       'Add-Content -LiteralPath $env:FAKE_NPM_LOG -Value $payload',
       '$joined = $ArgList -join " "',
@@ -141,6 +142,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
       ['install', '-g', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'codex', '--standby'],
     ])
+    assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
 
   {
@@ -155,6 +157,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
     assert.deepEqual(entries.map((entry) => entry.args), [
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'cleanup-hosts', '--', '--all', '--global'],
     ])
+    assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
 
   {
@@ -171,6 +174,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
       ['install', '-g', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'gemini', '--global'],
     ])
+    assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
 
   {
@@ -205,6 +209,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'uninstall', '--', 'claude', '--global'],
       ['uninstall', '-g', 'helloagents'],
     ])
+    assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
 })
 
@@ -223,6 +228,7 @@ test('install.ps1 omits the mode for non-install actions so the CLI can reuse tr
       ['update', '-g', 'helloagents'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'codex'],
     ])
+    assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
 
   {
@@ -236,6 +242,7 @@ test('install.ps1 omits the mode for non-install actions so the CLI can reuse tr
     assert.deepEqual(entries.map((entry) => entry.args), [
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'cleanup-hosts', '--', '--all'],
     ])
+    assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
 
   {
@@ -251,5 +258,6 @@ test('install.ps1 omits the mode for non-install actions so the CLI can reuse tr
       ['install', '-g', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'gemini'],
     ])
+    assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
 })
