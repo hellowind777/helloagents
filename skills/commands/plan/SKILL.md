@@ -12,7 +12,7 @@ Trigger: ~plan [description]
 
 ## 铁律
 - 在用户确认方案之前，禁止编写任何实现代码、创建任何实现文件、或执行任何实现操作
-- 需求澄清阶段不读取实现类技能（hello-ui / hello-test / hello-verify 等），需求明确后再按需读取
+- 需求澄清阶段不读取实现类技能（hello-ui / hello-test / qa-review 等），需求明确后再按需读取
 - 方案必须整理为可执行产物，不停留在泛化建议
 - 若当前任务来自 `~auto`，则“开始执行”视为已包含在 `~auto` 授权内；方案包写入后默认继续执行，只有命中阻塞判定时才停下。`~design` 是 `~plan` 的兼容别名，只有在 `~auto` 内触发其语义时才默认继续进入 `~build`
 - 涉及 UI 时，当前方案包中的 UI 决策优先于 `.helloagents/DESIGN.md`；`.helloagents/DESIGN.md`（按当前项目存储模式解析）优先于已读取的 `hello-ui` 规则；同时所有 UI 任务都必须满足 UI 质量基线
@@ -66,7 +66,7 @@ Trigger: ~plan [description]
 
 用户确认方向后，一次性输出完整可执行方案：
 - 架构与文件结构
-- 完成定义（功能完成时必须为真的条件、关键验收点、验证主路径= `test-first` 或 `review-first`、reviewer / tester 各自要验证什么）
+- 完成定义（功能完成时必须为真的条件、关键验收点、`qaMode`、`qaFocus`、进入收尾前必须补齐的质量证据）
 - 数据流与错误处理
 - 验证策略
 - 涉及 UI 时的设计方向、状态覆盖与 `DESIGN.md` 更新点
@@ -82,7 +82,7 @@ Trigger: ~plan [description]
   - `plan.md`
   - `tasks.md`
   - `contract.json`
-- 写 `contract.json` 时，至少落成以下字段：`verifyMode`、`reviewerFocus`、`testerFocus`；涉及 UI 时再写 `ui.required`、`ui.designContract` 与 `ui.sourcePriority`
+- 写 `contract.json` 时，至少落成以下字段：`qaMode`、`qaFocus`；涉及 UI 时再写 `ui.required`、`ui.designContract` 与 `ui.sourcePriority`
 - 只有在 UI 方向确需先明确时，才额外写 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason` 与 `ui.styleAdvisor.focus`；它复用当前会话 `artifacts/advisor.json`，不是默认常驻步骤
 - 只有在 UI 验收确有收益时，才额外写 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens` 与 `ui.visualValidation.states`；不要把视觉验收扩成所有 UI 任务的固定步骤
 - 只有在 `T3`、非 UI 的高风险审查或确需额外跨模型建议时，才写 `advisor.required`、`advisor.reason`、`advisor.focus` 与 `advisor.preferredSources`；不要把 advisor 变成默认常驻流程
@@ -114,9 +114,8 @@ Trigger: ~plan [description]
 - “Codex /goal 执行入口”只作为长程执行提示，不计入任务列表；入口必须让 Codex 按已拆好的 `tasks.md` 执行，而不是直接消费未拆分需求文档
 
 方案包中的 `contract.json` 必须满足：
-- `verifyMode` 只能是 `test-first` 或 `review-first`
-- `testerFocus` 必填
-- `review-first` 时 `reviewerFocus` 必填
+- `qaMode` 只能是 `standard` 或 `deep`
+- `qaFocus` 必填
 - 涉及 UI 时显式写出 UI 契约来源优先级
 - 若启用 `ui.styleAdvisor`，必须写清触发原因与 focus
 - 若启用 `ui.visualValidation`，必须写清触发原因，以及至少一组关键 screens 或 states

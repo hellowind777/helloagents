@@ -36,12 +36,11 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     ['# ui release', '', '## 任务列表', '- [√] 发布前 UI 验收（涉及文件：src/ui/home.tsx；完成标准：首页与关键状态符合设计契约；验证方式：npm run test）', ''].join('\n'),
   )
   writeJson(join(project, '.helloagents', 'plans', '202604060201_ui-release', 'contract.json'), {
-    version: 1,
+    version: 2,
     source: 'plan',
     originCommand: 'plan',
-    verifyMode: 'test-first',
-    reviewerFocus: [],
-    testerFocus: ['首页与关键状态符合设计契约'],
+    qaMode: 'standard',
+    qaFocus: ['首页与关键状态符合设计契约'],
     ui: {
       required: true,
       designContract: true,
@@ -61,8 +60,11 @@ test('visual validation stays optional but blocks closeout when the UI contract 
       test: 'node -e "process.exit(0)"',
     },
   })
-  writeJson(getSessionEvidencePath(project, 'verify.json'), {
+  writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date().toISOString(),
+    qaMode: 'standard',
+    outcome: 'clean',
+    conclusion: 'UI 质量闭环已通过。',
     commands: ['npm run test'],
     fastOnly: false,
     source: 'stop',
@@ -77,7 +79,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
   let result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~verify finish the UI release closeout' }),
+    input: JSON.stringify({ cwd: project, prompt: '~qa finish the UI release closeout' }),
   })
   let payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /visual-evaluator=/)
@@ -98,7 +100,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       reason: '发布前需要独立视觉验收',
       tooling: ['playwright', 'screenshots'],
       screensChecked: ['desktop-home', 'mobile-home'],
@@ -125,7 +127,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       reason: '发布前需要独立视觉验收',
       tooling: ['playwright', 'screenshots'],
       screensChecked: ['desktop-home', 'mobile-home'],
@@ -152,7 +154,7 @@ test('visual validation stays optional but blocks closeout when the UI contract 
     input: JSON.stringify({
       cwd: project,
       source: 'manual',
-      originCommand: 'verify',
+      originCommand: 'qa',
       reason: '发布前需要独立视觉验收',
       tooling: ['playwright', 'screenshots'],
       screensChecked: ['desktop-home', 'mobile-home'],

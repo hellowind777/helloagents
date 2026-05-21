@@ -107,12 +107,11 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   writeText(join(gateProject, '.helloagents', 'plans', '202604050201_release', 'plan.md'), '# release plan\n')
   writeText(join(gateProject, '.helloagents', 'plans', '202604050201_release', 'tasks.md'), '# release tasks\n\n- [ ] 最终验证\n')
   writeJson(join(gateProject, '.helloagents', 'plans', '202604050201_release', 'contract.json'), {
-    version: 1,
+    version: 2,
     source: 'plan',
     originCommand: 'plan',
-    verifyMode: 'test-first',
-    reviewerFocus: [],
-    testerFocus: ['最终验证通过'],
+    qaMode: 'standard',
+    qaFocus: ['最终验证通过'],
     ui: {
       required: false,
       designContract: false,
@@ -131,8 +130,8 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /VERIFY \/ CONSOLIDATE/)
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~build -> ~verify/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /QA \/ CONSOLIDATE/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~build -> ~qa/)
 
   writeText(join(planFirstProject, '.helloagents', 'plans', '202604050301_schema', 'requirements.md'), '# schema requirements\n')
   writeText(join(planFirstProject, '.helloagents', 'plans', '202604050301_schema', 'tasks.md'), '# schema tasks\n\n- [ ] plan first\n')
