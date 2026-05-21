@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
@@ -9,8 +9,10 @@ import {
   readJsonFile,
   writeJsonFileAtomic,
 } from './runtime-scope.mjs'
+import { LONG_RUNNING_TTL_MS } from './runtime-ttl.mjs'
 
 export const PROJECT_SESSION_CLEANUP_COOLDOWN_MS = 10 * 60 * 1000
+export const PROJECT_SESSION_MAX_AGE_MS = LONG_RUNNING_TTL_MS
 
 function removePath(filePath, result, bucket) {
   try {
@@ -53,6 +55,19 @@ function hasStateSnapshot(sessionDir) {
   return existsSync(join(sessionDir, 'STATE.md'))
 }
 
+function readSessionStateMtimeMs(sessionDir) {
+  try {
+    return statSync(join(sessionDir, 'STATE.md')).mtimeMs
+  } catch {
+    return 0
+  }
+}
+
+function isStaleStateSession(sessionDir, now, maxAgeMs) {
+  const mtimeMs = readSessionStateMtimeMs(sessionDir)
+  return !Number.isFinite(mtimeMs) || mtimeMs <= 0 || (now - mtimeMs > maxAgeMs)
+}
+
 function isTransientSessionTemp(entryName = '') {
   return /^\.[0-9]+-[0-9a-f-]+\.tmp$/i.test(entryName)
 }
@@ -64,7 +79,7 @@ function cleanupTransientSessionTemps(sessionsDir, result) {
   }
 }
 
-export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 0 } = {}) {
+export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 0, maxAgeMs = PROJECT_SESSION_MAX_AGE_MS } = {}) {
   const projectRoot = getProjectRoot(cwd)
   const activationDir = getProjectActivationDir(projectRoot)
   const sessionsDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME)
@@ -109,7 +124,7 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
           removePath(sessionDir, result, 'removedEmptyDirs')
         } else if (!hasStateSnapshot(sessionDir)) {
           removePath(sessionDir, result, 'removedNoStateDirs')
-        } else {
+        } else if (isStaleStateSession(sessionDir, now, maxAgeMs)) {
           removePath(sessionDir, result, 'removedInactiveDirs')
         }
       } catch (error) {

@@ -187,15 +187,15 @@ test('transient runtime cleanup keeps sessions inside the long-running TTL windo
   const freshDate = new Date(now - (LONG_RUNNING_TTL_HOURS - 1) * HOURS)
   const staleDate = new Date(now - (LONG_RUNNING_TTL_HOURS + 1) * HOURS)
 
-  writeText(join(freshDir, 'capsule.json'), '{}\n')
-  writeText(join(staleDir, 'capsule.json'), '{}\n')
+  writeText(join(freshDir, 'STATE.md'), '# fresh\n')
+  writeText(join(staleDir, 'STATE.md'), '# stale\n')
   utimesSync(freshDir, freshDate, freshDate)
   utimesSync(staleDir, staleDate, staleDate)
 
   const result = cleanupUserRuntimeRoot({ home, now })
   assert.equal(result.errors.length, 0)
   assert.deepEqual(result.removedExpiredDirs, [staleDir])
-  assert.equal(existsSync(join(freshDir, 'capsule.json')), true)
+  assert.equal(existsSync(join(freshDir, 'STATE.md')), true)
 })
 
 test('workspace fingerprint includes git HEAD so committed changes invalidate old evidence', () => {

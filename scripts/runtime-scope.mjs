@@ -12,7 +12,6 @@ import { FULL_CARRIER_PROFILE_MARKER } from './cli-utils.mjs'
 export const PROJECT_DIR_NAME = '.helloagents'
 export const PROJECT_SESSIONS_DIR_NAME = 'sessions'
 export const PROJECT_ARTIFACTS_DIR_NAME = 'artifacts'
-export const CAPSULE_FILE_NAME = 'capsule.json'
 export const EVENTS_FILE_NAME = 'events.jsonl'
 export const ACTIVE_SESSION_FILE_NAME = 'active.json'
 export const DEFAULT_STATE_SESSION_TOKEN = 'default'
@@ -463,7 +462,6 @@ export function getProjectSessionScope(cwd, options = {}) {
     activationDir,
     sessionDir,
     statePath: join(sessionDir, 'STATE.md'),
-    capsulePath: join(sessionDir, CAPSULE_FILE_NAME),
     eventsPath: join(sessionDir, EVENTS_FILE_NAME),
     artifactsDir: join(sessionDir, PROJECT_ARTIFACTS_DIR_NAME),
     key: `${projectRoot}::${workspace}::${session}`,
@@ -494,7 +492,6 @@ function buildTransientRuntimeDir(cwd, options = {}) {
     sessionMode: token === DEFAULT_STATE_SESSION_TOKEN ? 'default' : 'transient-session',
     sessionDir: join(getUserRuntimeRoot(), hash),
     statePath: join(getUserRuntimeRoot(), hash, 'STATE.md'),
-    capsulePath: join(getUserRuntimeRoot(), hash, CAPSULE_FILE_NAME),
     eventsPath: join(getUserRuntimeRoot(), hash, EVENTS_FILE_NAME),
     artifactsDir: join(getUserRuntimeRoot(), hash, PROJECT_ARTIFACTS_DIR_NAME),
     key: `${normalizedCwd}::transient::${token}`,

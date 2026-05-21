@@ -405,6 +405,16 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /turnStateCommand/)
   assert.match(payload.hookSpecificOutput.additionalContext, /helloagents-turn-state write/)
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
+  assert.equal(existsSync(join(project, '.helloagents')), false)
+
+  result = runNode(notifyScript, ['inject'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, source: 'resume' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(existsSync(join(project, '.helloagents')), false)
+  assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /会话已恢复\/压缩/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
