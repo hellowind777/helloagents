@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.33-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.34-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -222,7 +222,7 @@ CLI 显式管理宿主文件：
 - `cleanup` 删除受管注入和链接
 - `uninstall` 在移除包前执行对应清理
 - `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本和版本漂移；对 Codex 还会在可用时附带原生 `codex doctor` 结果
-- 单 CLI 模式记录只会在宿主安装成功后写入，避免原生全局安装失败后留下错误模式记录
+- 单 CLI 模式记录只会在宿主安装成功后写入；如果原生全局清理失败，也会继续保留 `global` 记录，而不是悄悄叠加 standby
 
 ## 快速开始
 
@@ -313,7 +313,7 @@ helloagents codex goals enable
 
 ### npm 和一键脚本入口
 
-当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。
+当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。对于已经装好的包，如需确保宿主一定刷新，优先在包命令后显式执行一次 `npm explore -g helloagents -- npm run sync-hosts -- ...`。
 
 宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。
 
@@ -328,11 +328,13 @@ HELLOAGENTS=codex npm install -g helloagents
 # 安装到 Codex，全局模式
 HELLOAGENTS=codex:global npm install -g helloagents
 
-# 更新并同步 Claude，标准模式
-HELLOAGENTS=claude:standby npm update -g helloagents
+# 先更新包，再刷新 Claude，标准模式
+npm update -g helloagents
+npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
-# 切换到 beta 分支并同步全部 CLI，标准模式
-HELLOAGENTS=all:standby npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+# 先切到 beta 分支，再刷新全部 CLI，标准模式
+npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # 卸载包前清理 Gemini 集成
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -348,11 +350,13 @@ $env:HELLOAGENTS="codex"; npm install -g helloagents
 # 安装到 Codex，全局模式
 $env:HELLOAGENTS="codex:global"; npm install -g helloagents
 
-# 更新并同步 Claude，标准模式
-$env:HELLOAGENTS="claude:standby"; npm update -g helloagents
+# 先更新包，再刷新 Claude，标准模式
+npm update -g helloagents
+npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
-# 切换到 beta 分支并同步全部 CLI，标准模式
-$env:HELLOAGENTS="all:standby"; npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+# 先切到 beta 分支，再刷新全部 CLI，标准模式
+npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # 卸载包前清理 Gemini 集成
 npm explore -g helloagents -- npm run uninstall -- gemini --standby
@@ -367,6 +371,8 @@ npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
 npm explore -g helloagents -- npm run uninstall -- --all --standby
 ```
+
+首次安装仍然可以直接用 `HELLOAGENTS=目标[:模式]`。但对于更新、切换分支或强制重同步已安装包，以上显式 `npm run sync-hosts` 路径更确定。
 
 #### 一键脚本
 
@@ -408,7 +414,7 @@ $env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https:/
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
-PowerShell 包装脚本现在会传递与 `install.sh` 相同的 npm 参数，因此安装、更新、清理、卸载和 `switch-branch` 走的是同一条生命周期链路。
+Shell 和 PowerShell 一键脚本现在都会先解析一次 `HELLOAGENTS`，再在更新、切分支和卸载前清掉生命周期环境变量，然后只走一条显式同步或清理链路。
 
 ### 分支切换
 
@@ -454,6 +460,8 @@ gemini extensions install https://github.com/hellowind777/helloagents
 ```
 
 Claude Code 会自动尝试等价的 `claude plugin marketplace add ...` 和 `claude plugin install ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。全局安装后需要重启宿主 CLI。
+
+当你把 Claude 或 Gemini 从全局模式切回标准模式时，HelloAGENTS 会先移除原生插件或扩展。如果这一步失败，会继续把该宿主记录为 `global`，而不是静默叠加 standby。
 
 Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 
@@ -638,6 +646,7 @@ UI 任务遵循以下优先级：
 - 标准模式在 `~/.claude/settings.json` 中写入受管 hooks 和权限
 - 标准模式创建 `~/.claude/helloagents -> ~/.helloagents/helloagents`
 - 全局模式使用 Claude Code 插件系统
+- 从全局模式切回标准模式前会先移除原生插件；如果失败，HelloAGENTS 会继续把 Claude 记录为 `global`
 
 ### Gemini CLI
 
@@ -645,6 +654,7 @@ UI 任务遵循以下优先级：
 - 标准模式在 `~/.gemini/settings.json` 中写入受管 hooks
 - 标准模式创建 `~/.gemini/helloagents -> ~/.helloagents/helloagents`
 - 全局模式使用 Gemini 扩展系统
+- 从全局模式切回标准模式前会先移除原生扩展；如果失败，HelloAGENTS 会继续把 Gemini 记录为 `global`
 
 ### Codex CLI
 
@@ -677,8 +687,8 @@ npm test
 当前测试覆盖：
 
 - 安装、更新、清理、卸载、分支切换和模式切换
-- shell 与 PowerShell 一键脚本分发链路，以及包装脚本在安装、更新、清理、卸载和分支切换中的模式传递规则
-- Claude、Gemini、Codex 的宿主集成行为
+- shell 与 PowerShell 一键脚本分发链路，以及包装脚本在安装、更新、清理、卸载和分支切换中的环境清理与模式传递规则
+- Claude、Gemini、Codex 的宿主集成行为，包括全局切回标准模式的清理和原生清理失败时的模式保留
 - Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、hook trust 状态、本地插件、marketplace 和缓存行为
 - Windows 下 Codex 旧式受管 notify 变体的清理，以及受管 notify 恢复规则
 - Codex `/goal` 功能开关、长程路由上下文和 goal 感知命令契约

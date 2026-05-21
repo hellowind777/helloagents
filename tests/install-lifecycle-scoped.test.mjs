@@ -289,3 +289,84 @@ test('single-host global install does not record a mode when the native host com
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.claude, undefined)
 })
+
+test('single-host standby install removes the tracked Claude global plugin before writing standby files', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const fakeBin = createTempDir('helloagents-claude-standby-bin-')
+  const claudeLog = join(home, 'claude-standby.log')
+  const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'claude', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_CLAUDE_CMD: claudeCommand,
+  })
+
+  runCli(pkgRoot, home, ['install', 'claude', '--standby'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_CLAUDE_CMD: claudeCommand,
+  })
+
+  assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
+  assert.match(readText(claudeLog), /plugin remove helloagents/)
+  assert.ok(existsSync(join(home, '.claude', 'helloagents')))
+  assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/)
+  assert.equal(readJson(configFile).host_install_modes.claude, 'standby')
+})
+
+test('failed Claude global cleanup keeps the tracked global mode and skips standby injection', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const fakeBin = createTempDir('helloagents-claude-failover-bin-')
+  const claudeLog = join(home, 'claude-failover.log')
+  const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'claude', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_CLAUDE_CMD: claudeCommand,
+  })
+
+  runCli(pkgRoot, home, ['install', 'claude', '--standby'], {
+    HELLOAGENTS_CLAUDE_CMD: join(home, 'missing-claude.cmd'),
+  })
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.claude, 'global')
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/)
+  assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
+})
+
+test('failed Gemini global cleanup keeps the tracked global mode', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const fakeBin = createTempDir('helloagents-gemini-failover-bin-')
+  const geminiLog = join(home, 'gemini-failover.log')
+  const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'gemini', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GEMINI_CMD: geminiCommand,
+  })
+
+  runCli(pkgRoot, home, ['cleanup', 'gemini', '--global'], {
+    HELLOAGENTS_GEMINI_CMD: join(home, 'missing-gemini.cmd'),
+  })
+
+  const settings = readJson(configFile)
+  assert.equal(settings.host_install_modes.gemini, 'global')
+  assert.match(readText(geminiLog), /extensions install https:\/\/github\.com\/hellowind777\/helloagents/)
+})

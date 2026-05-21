@@ -55,6 +55,19 @@ if [ -z "$PACKAGE" ]; then
   fi
 fi
 
+clear_lifecycle_env() {
+  unset HELLOAGENTS
+  unset HELLOAGENTS_ACTION
+  unset HELLOAGENTS_TARGET
+  unset HELLOAGENTS_HOST
+  unset HELLOAGENTS_MODE
+  unset HELLOAGENTS_BRANCH
+  unset HELLOAGENTS_PACKAGE
+  unset HELLOAGENTS_DEPLOY
+}
+
+clear_lifecycle_env
+
 sync_hosts() {
   if [ "$TARGET" = "all" ]; then
     if [ -n "$MODE" ]; then
