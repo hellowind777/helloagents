@@ -159,8 +159,8 @@ test('user runtime cleanup removes expired transient sessions only', () => {
   const now = Date.now()
   const oldDate = new Date(now - 10 * 24 * 60 * 60 * 1000)
 
-  writeText(join(expiredDir, 'capsule.json'), '{}\n')
-  writeText(join(freshDir, 'capsule.json'), '{}\n')
+  writeText(join(expiredDir, 'STATE.md'), '# expired\n')
+  writeText(join(freshDir, 'STATE.md'), '# fresh\n')
   mkdirSync(expiredDir, { recursive: true })
   utimesSync(expiredDir, oldDate, oldDate)
 
@@ -276,8 +276,10 @@ test('ensured project-local runtime reuses the full-carrier project root from ne
   assert.equal(existsSync(join(nested, '.helloagents')), false)
 })
 
-test('project session cleanup keeps only the active session and removes stale temp files', () => {
+test('project session cleanup keeps active and recent state sessions, and removes stale or stateless leftovers', () => {
   const project = createTempDir('helloagents-project-session-cleanup-')
+  const now = Date.now()
+  const oldDate = new Date(now - 40 * 24 * 60 * 60 * 1000)
 
   writeText(join(project, '.helloagents', '.keep'), '')
   writeText(join(project, '.helloagents', 'sessions', 'active.json'), JSON.stringify({
@@ -286,19 +288,22 @@ test('project session cleanup keeps only the active session and removes stale te
     updatedAt: new Date().toISOString(),
   }))
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'active1', 'STATE.md'), '# active\n')
-  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'capsule.json'), '{}\n')
+  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'route.txt'), 'route\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'events.jsonl'), '{}\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'artifacts', 'codex-native-stop.json'), '{}\n')
-  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'openroute', 'capsule.json'), '{}\n')
+  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'openroute', 'route.txt'), 'route\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'full1', 'STATE.md'), '# full\n')
+  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'full2', 'STATE.md'), '# recent\n')
   writeText(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp'), 'tmp\n')
   mkdirSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1'), { recursive: true })
+  utimesSync(join(project, '.helloagents', 'sessions', 'workspace', 'full1', 'STATE.md'), oldDate, oldDate)
 
-  const result = cleanupProjectSessions(project)
+  const result = cleanupProjectSessions(project, { now })
 
   assert.equal(result.errors.length, 0)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'active1')), true)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'full1')), false)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'full2')), true)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'openroute')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'route1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), false)
