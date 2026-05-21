@@ -113,7 +113,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~plan` | Requirements, solution design, task breakdown, and plan package |
 | `~build` | Implementation from the current request or an existing plan |
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
-| `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
+| `~loop` | Long-running entry; in Codex it prefers `/goal -> ~auto -> ~qa` |
 | `~wiki` | Create or sync only the project knowledge base |
 | `~init` | Same as `~wiki` |
 | `~global` | Initialize project-level global mode |
@@ -179,7 +179,7 @@ For `~prd`, HelloAGENTS also creates PRD files such as:
 
 `contract.json` is used by the workflow to decide verification scope, reviewer/tester focus, optional advisor checks, and optional visual validation.
 
-`tasks.md` also includes a Codex `/goal` entry. For long-running Codex work, use that prepared entry instead of giving `/goal` a raw product document. HelloAGENTS keeps `/goal` as Codex-native continuation and budget control, while plan files, task boundaries, verification, and closeout remain controlled by HelloAGENTS.
+`tasks.md` also includes a Codex `/goal` entry. For long-running Codex work, use that prepared entry instead of giving `/goal` a raw product document. The default chain is `/goal -> ~auto -> ~qa`: Codex keeps the long-running continuation, `~auto` executes the AFK work, and `~qa` remains the final quality gate before closeout.
 
 ### 5) State and recovery
 
@@ -192,8 +192,7 @@ HelloAGENTS now resolves the current state file from `state_path`:
 
 `<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
 
-`STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation.
-If you later use `codex exec resume --output-schema` for non-interactive Codex automation, treat it only as a machine-readable result channel. It does not replace `state_path`, `turn-state`, or local evidence files.
+`STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation. Codex `/goal` does not replace `state_path`, `turn-state`, or local evidence files; it only handles long-running continuation on the Codex side.
 
 ### 6) Verification and delivery evidence
 
@@ -208,9 +207,8 @@ Runtime evidence files include:
 - `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
-- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
-Delivery gate, guard, and loop messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
+Delivery gate, guard, and QA gate messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
 That wrapper is now reserved for direct final-user delivery only. Intermediate reports, delegated task results, and sub-agent replies stay natural, and sub-agent stop hooks reject wrapped closeout replies.
 
 ### 7) Safer install, update, cleanup, and diagnostics
@@ -476,7 +474,7 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Review a plan before implementation | `~plan "refactor payment module"` |
 | Implement from a clear request or active plan | `~build "finish task 2 in the plan"` |
 | Build a full product requirement document | `~prd "modern dashboard for operations team"` |
-| Iterate toward a metric | `~loop "reduce bundle size" --metric "npm run size" --direction lower` |
+| Run a long Codex task through `/goal -> ~auto -> ~qa` | `~loop "finish the auth refactor"` |
 | Create or refresh project knowledge only | `~wiki` / `~init` |
 | Initialize project-level global mode | `~global` |
 | Validate current work | `~qa` |
@@ -515,7 +513,6 @@ Runtime state and evidence remain local to the working project:
 - `.helloagents/sessions/<workspace>/<session>/events.jsonl`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
-- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
 ### Temporary sessions outside project-local storage
 
@@ -623,7 +620,7 @@ Default shape:
 | `output_language` | `""` | follow the user language unless set |
 | `output_format` | `true` | direct final-user closeout from the main agent uses the HelloAGENTS layout; intermediate, delegated, and sub-agent output stays natural |
 | `notify_level` | `0` | `0` off, `1` desktop, `2` sound, `3` both |
-| `ralph_loop_enabled` | `true` | run the quality loop for explicit `~qa` / `~loop` or required closeout gates |
+| `ralph_loop_enabled` | `true` | run the QA stop gate for explicit `~qa` / `~loop` or required closeout gates |
 | `guard_enabled` | `true` | block dangerous commands |
 | `kb_create_mode` | `1` | `0` off, `1` sync existing KB automatically, `2` auto-create or sync the KB for coding tasks |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |

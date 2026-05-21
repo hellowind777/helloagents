@@ -103,6 +103,7 @@ test('workflow runtime contract stays aligned with the unified qa-review archite
   assert.match(workflowState, /当前不该把 ~qa 当成越级入口/)
   assert.match(workflowState, /当前应直接进入 CONSOLIDATE/)
   assert.match(workflowState, /用户已显式使用 ~loop/)
+  assert.match(workflowState, /\/goal -> ~auto -> ~qa/)
 
   const workflowRecommendation = readText(join(REPO_ROOT, 'scripts', 'workflow-recommendation.mjs'))
   assert.match(workflowRecommendation, /~qa -> CONSOLIDATE/)

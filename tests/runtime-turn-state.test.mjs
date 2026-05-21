@@ -319,7 +319,7 @@ test('stop allows structured waiting turn-state and clears it', () => {
   assert.equal(payload.state, null)
 })
 
-test('ordinary complete turns skip automatic Ralph Loop verification', () => {
+test('ordinary complete turns skip automatic QA gate verification', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
@@ -361,7 +361,7 @@ test('ordinary complete turns skip automatic Ralph Loop verification', () => {
   assert.equal(payload.decision, undefined)
 })
 
-test('explicit qa route still runs Ralph Loop verification', () => {
+test('explicit qa route still runs QA gate verification', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
@@ -410,7 +410,7 @@ test('explicit qa route still runs Ralph Loop verification', () => {
 
   const payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /Ralph Loop/)
+  assert.match(payload.reason, /QA Gate/)
   assert.match(payload.reason, /npm run test/)
 })
 
