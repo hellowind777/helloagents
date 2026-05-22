@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.34-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.35-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -78,9 +78,9 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 
 ## Core Features
 
-### 1) 14 task-aware quality skills
+### 1) 14 built-in workflow skills
 
-HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current stage needs them, so simple tasks stay light while complex work gets stricter checks.
+HelloAGENTS ships 14 built-in skills. They are loaded only when the current stage needs them, so simple tasks stay light while complex work gets stricter checks.
 
 | Skill | Focus |
 |-------|-------|
@@ -89,6 +89,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-security` | auth, secrets, permissions, injection risks |
 | `hello-test` | TDD, coverage, edge cases, test structure |
 | `qa-review` | unified quality review, verification commands, blocking fixes, delivery evidence, closeout |
+| `helloagents` | command routing, workflow stage rules, project knowledge, and state coordination |
 | `hello-errors` | error handling, logs, retry and recovery behavior |
 | `hello-perf` | performance, caching, query and rendering risks |
 | `hello-data` | database, migrations, transactions, indexes |
@@ -99,7 +100,7 @@ HelloAGENTS includes 14 `hello-*` skills. They are loaded only when the current 
 | `hello-reflect` | reusable lessons and knowledge updates |
 
 All UI work first follows the shared UI quality baseline.
-In global mode, in initialized projects, or in explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
+In host global mode, in initialized projects, or in explicit UI workflows, `hello-ui` adds deeper design-contract execution, design-system mapping, and visual validation on top of that baseline.
 When visual evidence is required, HelloAGENTS records it in the current session `artifacts/visual.json`.
 
 ### 2) Commands for different work styles
@@ -113,10 +114,8 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | `~plan` | Requirements, solution design, task breakdown, and plan package |
 | `~build` | Implementation from the current request or an existing plan |
 | `~prd` | Modern product requirements document through guided dimension-by-dimension exploration |
-| `~loop` | Iterative improvement with metric, guard command, keep/revert decisions |
-| `~wiki` | Create or sync only the project knowledge base |
-| `~init` | Same as `~wiki` |
-| `~global` | Initialize project-level global mode |
+| `~loop` | Long-running entry; in Codex it prefers `/goal -> ~auto -> ~qa` |
+| `~init` | Initialize the project workflow and sync project knowledge |
 | `~test` | Write tests for a target module or recent change |
 | `~qa` | Run the unified quality loop: review, verification commands, fixes, and closeout |
 | `~commit` | Generate a conventional commit message and sync knowledge |
@@ -146,9 +145,7 @@ The knowledge base helps future turns understand the repo without re-discovering
 | `plans/<feature>/` | active plan packages |
 | `archive/` | archived plan packages |
 
-`~wiki` and `~init` create or update the knowledge base only.
-
-`~global` does more: it creates or updates the knowledge base, writes the project-level global-mode marker, and refreshes project-level HelloAGENTS package-root links for supported hosts.
+`~init` initializes the project workflow: it writes the project-level full carrier marker, prepares project state, and creates or updates the knowledge base.
 
 ### 4) Structured plan packages
 
@@ -179,7 +176,7 @@ For `~prd`, HelloAGENTS also creates PRD files such as:
 
 `contract.json` is used by the workflow to decide verification scope, reviewer/tester focus, optional advisor checks, and optional visual validation.
 
-`tasks.md` also includes a Codex `/goal` entry. For long-running Codex work, use that prepared entry instead of giving `/goal` a raw product document. HelloAGENTS keeps `/goal` as Codex-native continuation and budget control, while plan files, task boundaries, verification, and closeout remain controlled by HelloAGENTS.
+`tasks.md` also includes a Codex `/goal` entry. For long-running Codex work, use that prepared entry instead of giving `/goal` a raw product document. The default chain is `/goal -> ~auto -> ~qa`: Codex keeps the long-running continuation, `~auto` executes the AFK work, and `~qa` remains the final quality gate before closeout.
 
 ### 5) State and recovery
 
@@ -192,25 +189,25 @@ HelloAGENTS now resolves the current state file from `state_path`:
 
 `<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
 
-`STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation.
-If you later use `codex exec resume --output-schema` for non-interactive Codex automation, treat it only as a machine-readable result channel. It does not replace `state_path`, `turn-state`, or local evidence files.
+`STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation. Codex `/goal` does not replace `state_path`, `turn-state`, or local evidence files; it only handles long-running continuation on the Codex side.
 
 ### 6) Verification and delivery evidence
 
 HelloAGENTS does not treat “tests passed” and “task complete” as the same thing. Delivery can also require plan coverage, task checklist status, review evidence, advisor evidence, and visual evidence.
 
-Runtime evidence files include:
+Runtime state now stays intentionally small:
 
-- `.helloagents/sessions/<workspace>/<session>/capsule.json`
-- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
+- `.helloagents/sessions/<workspace>/<session>/STATE.md`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/qa-review.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
-- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
+- `~/.codex/.helloagents/notify-state.json` for Codex-native closeout de-duplication only
 
-Delivery gate, guard, and loop messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
+`turn-state`, route context, and the artifact index are stored inside `STATE.md` metadata instead of a separate `capsule.json`. `events.jsonl` is opt-in trace output, not a default runtime file.
+
+Delivery gate, guard, and QA gate messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
 That wrapper is now reserved for direct final-user delivery only. Intermediate reports, delegated task results, and sub-agent replies stay natural, and sub-agent stop hooks reject wrapped closeout replies.
 
 ### 7) Safer install, update, cleanup, and diagnostics
@@ -266,20 +263,14 @@ Type:
 ~help
 ```
 
-You should see the 14 chat commands and the current settings.
+You should see the available chat commands and the current settings.
 
 ### 4) Create project knowledge
 
-For knowledge base only:
+Initialize the project workflow:
 
 ```text
-~wiki
-```
-
-For project-level global mode:
-
-```text
-~global
+~init
 ```
 
 ## CLI Management
@@ -313,7 +304,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -369,7 +360,7 @@ After the package is installed, you can also call its npm scripts directly:
 npm explore -g helloagents -- npm run deploy:global
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 npm explore -g helloagents -- npm run cleanup-hosts -- codex --standby
-npm explore -g helloagents -- npm run uninstall -- --all --standby
+npm explore -g helloagents -- npm run uninstall -- --all
 ```
 
 Fresh installs can still use `HELLOAGENTS=target[:mode]` directly. For update, branch switching, or any forced host re-sync of an already installed package, the explicit `npm run sync-hosts` step above is the deterministic path.
@@ -431,7 +422,7 @@ Use normal npm commands when you only want to change the package and not sync ho
 ```bash
 npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 npm update -g helloagents
-npm explore -g helloagents -- npm run uninstall -- --all --standby
+npm explore -g helloagents -- npm run uninstall -- --all
 npm uninstall -g helloagents
 ```
 
@@ -476,17 +467,16 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Review a plan before implementation | `~plan "refactor payment module"` |
 | Implement from a clear request or active plan | `~build "finish task 2 in the plan"` |
 | Build a full product requirement document | `~prd "modern dashboard for operations team"` |
-| Iterate toward a metric | `~loop "reduce bundle size" --metric "npm run size" --direction lower` |
-| Create or refresh project knowledge only | `~wiki` / `~init` |
-| Initialize project-level global mode | `~global` |
+| Run a long Codex task through `/goal -> ~auto -> ~qa` | `~loop "finish the auth refactor"` |
+| Initialize or refresh the project workflow | `~init` |
 | Validate current work | `~qa` |
 | Generate commit message and sync knowledge | `~commit` |
 
-### Knowledge base vs project-level global mode
+### Project initialization vs host global deployment
 
-In standby mode, projects that are not initialized get lighter rules and explicit `~command` entry points. A project enters project-level global mode after `~global` writes `<!-- HELLOAGENTS_PROFILE: full -->`.
+In standby mode, projects that are not initialized get lighter rules and explicit `~command` entry points. A project becomes initialized after `~init` writes the project-level `<!-- HELLOAGENTS_PROFILE: full -->` marker.
 
-In global mode, HelloAGENTS applies full rules by default.
+In global mode, HelloAGENTS applies full rules by default at the host level.
 
 ## Project Knowledge Base
 
@@ -511,11 +501,8 @@ When `project_store_mode = "repo-shared"`:
 Runtime state and evidence remain local to the working project:
 
 - `state_path`
-- `.helloagents/sessions/<workspace>/<session>/capsule.json`
-- `.helloagents/sessions/<workspace>/<session>/events.jsonl`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
-- `.helloagents/sessions/<workspace>/<session>/artifacts/loop-results.tsv`
 
 ### Temporary sessions outside project-local storage
 
@@ -525,7 +512,7 @@ For read-only work with no local output, if neither the current directory nor it
 ~/.helloagents/runtime/<scope-key>/
 ```
 
-This only stores short-lived `capsule.json`, `events.jsonl`, and `artifacts/`. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
+This only stores short-lived `STATE.md` and `artifacts/`. Optional `events.jsonl` trace files are only written when trace mode is enabled. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
 
 Once the task creates or modifies local files, or otherwise leaves local output in the current project, HelloAGENTS creates the project-local `.helloagents/sessions/.../STATE.md` automatically instead of keeping that task only in the user-level transient runtime.
 
@@ -533,11 +520,10 @@ Once the task creates or modifies local files, or otherwise leaves local output 
 
 | Command or setting | Behavior |
 |--------------------|----------|
-| `~wiki` / `~init` | creates or syncs the knowledge base only |
-| `~global` | creates knowledge base plus project-level global-mode marker and package-root links |
+| `~init` | initializes the project workflow and syncs the knowledge base |
 | `kb_create_mode = 0` | disables automatic knowledge updates |
 | `kb_create_mode = 1` | syncs knowledge automatically only when the KB already exists |
-| `kb_create_mode = 2` | for coding tasks, auto-creates or syncs the KB when it already exists or the project is in global mode |
+| `kb_create_mode = 2` | for coding tasks, auto-creates or syncs the KB when it already exists or the project is initialized |
 
 ## Workflow and Delivery
 
@@ -623,7 +609,7 @@ Default shape:
 | `output_language` | `""` | follow the user language unless set |
 | `output_format` | `true` | direct final-user closeout from the main agent uses the HelloAGENTS layout; intermediate, delegated, and sub-agent output stays natural |
 | `notify_level` | `0` | `0` off, `1` desktop, `2` sound, `3` both |
-| `ralph_loop_enabled` | `true` | run the quality loop for explicit `~qa` / `~loop` or required closeout gates |
+| `ralph_loop_enabled` | `true` | run the QA stop gate for explicit `~qa` / `~loop` or required closeout gates |
 | `guard_enabled` | `true` | block dangerous commands |
 | `kb_create_mode` | `1` | `0` off, `1` sync existing KB automatically, `2` auto-create or sync the KB for coding tasks |
 | `project_store_mode` | `"local"` | `local` or `repo-shared` |
@@ -670,6 +656,7 @@ Codex is rules-file driven by default.
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice, and clientless delegated child-completion events stay silent when the managed Stop hook is active
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
+- Current OpenAI docs still mark `/goal` as experimental, and Codex app support is still preview. HelloAGENTS therefore treats `/goal` as an opt-in Codex-native accelerator, not as a required runtime dependency
 - Goal-aware commands resume from `tasks.md`, `contract.json`, and `state_path`; they do not create goals automatically or mark them complete before HelloAGENTS verification and closeout
 
 ## Verification
@@ -709,17 +696,17 @@ Both.
 - `skills/` defines task-specific behavior
 - `scripts/` provides runtime helpers for routing, guard, notify, verification, state, and evidence
 
-### Should I use `~wiki`, `~init`, or `~global`?
+### Should I use `~init` or `--global`?
 
-Use `~wiki` or `~init` when you only want project knowledge.
+Use `~init` inside a repo when you want to initialize that project workflow and sync project knowledge.
 
-Use `~global` when you also want project-level global mode.
+Use `helloagents --global` when you want host-wide deployment across supported CLIs.
 
 ### What is the difference between standby and global?
 
-`standby` is lighter and explicit. It deploys rules to selected CLIs and keeps project-level global mode behind `~global`.
+`standby` is lighter and explicit. It deploys rules to selected CLIs while leaving each repo uninitialized until you run `~init`.
 
-`global` applies full rules broadly. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
+`global` applies full rules broadly at the host level. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
 If you mainly want Codex app/plugin discoverability, use `global`. If you mainly want a lighter, explicit project workflow, keep `standby`.
 
 ### Do Codex hooks show injected content?
@@ -735,7 +722,7 @@ Yes.
 
 ### Does `npm uninstall -g helloagents` remove project knowledge?
 
-No. Run `npm explore -g helloagents -- npm run uninstall -- --all --standby` before package removal to clean host integrations and the stable runtime copy. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
+No. Run `npm explore -g helloagents -- npm run uninstall -- --all` before package removal so HelloAGENTS can reuse the tracked or detected mode for each CLI and clean host integrations plus the stable runtime copy. Project `.helloagents/` files and `~/.helloagents/helloagents.json` are intentionally preserved unless you remove them yourself.
 
 ## Troubleshooting
 

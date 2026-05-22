@@ -459,7 +459,7 @@ function cmdInject() {
   const cwd = payload.cwd || process.cwd();
   const settings = getSettings();
   const bootstrapFile = resolveBootstrapFile(cwd, settings, HOST);
-  const shouldEnsureProjectLocal = bootstrapFile === 'bootstrap.md' || source === 'resume' || source === 'compact';
+  const shouldEnsureProjectLocal = isProjectRuntimeActive(cwd);
 
   startReplaySession(cwd, {
     host: HOST,

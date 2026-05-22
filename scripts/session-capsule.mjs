@@ -10,6 +10,7 @@ import {
   writeActiveProjectSession,
   writeJsonFileAtomic,
 } from './runtime-scope.mjs'
+import { readStateDocument, writeStateDocument } from './state-document.mjs'
 
 export { getRuntimeScope }
 
@@ -68,7 +69,7 @@ function getScope(cwd, options = {}) {
 }
 
 export function getSessionCapsulePath(cwd = process.cwd(), options = {}) {
-  return getScope(cwd, options).capsulePath
+  return getScope(cwd, options).statePath
 }
 
 export function getSessionEventsPath(cwd = process.cwd(), options = {}) {
@@ -93,8 +94,9 @@ export function getSessionArtifactRelativePath(cwd, fileName, options = {}) {
 
 export function readSessionCapsule(cwd = process.cwd(), options = {}) {
   const scope = getScope(cwd, options)
-  const capsule = readJsonFile(scope.capsulePath, null)
-  if (!capsule || typeof capsule !== 'object') return buildEmptyCapsule(scope)
+  const { metadata } = readStateDocument(scope.statePath)
+  const capsule = metadata && typeof metadata === 'object' ? metadata : null
+  if (!capsule || Array.isArray(capsule)) return buildEmptyCapsule(scope)
   return {
     ...buildEmptyCapsule(scope),
     ...capsule,
@@ -109,7 +111,24 @@ export function readSessionCapsule(cwd = process.cwd(), options = {}) {
 }
 
 export function writeSessionCapsule(cwd, capsule, options = {}) {
-  const scope = getScope(cwd, options)
+  const normalizedOptions = normalizeOptions(options)
+  const scope = getScope(cwd, normalizedOptions)
+  const currentDocument = readStateDocument(scope.statePath)
+  const hasBody = Boolean(currentDocument.body && currentDocument.body.trim())
+  if (!hasBody && normalizedOptions.ensureProjectLocal !== true && !existsSync(scope.statePath)) {
+    return {
+      ...buildEmptyCapsule(scope),
+      ...capsule,
+      scope: scope.scope,
+      key: scope.key,
+      cwd: scope.cwd,
+      branch: scope.branch,
+      workspace: scope.workspace || scope.branch,
+      session: scope.session,
+      sessionMode: scope.sessionMode,
+      updatedAt: new Date().toISOString(),
+    }
+  }
   const nextCapsule = {
     ...buildEmptyCapsule(scope),
     ...capsule,
@@ -122,9 +141,12 @@ export function writeSessionCapsule(cwd, capsule, options = {}) {
     sessionMode: scope.sessionMode,
     updatedAt: new Date().toISOString(),
   }
-  writeJsonFileAtomic(scope.capsulePath, nextCapsule)
+  writeStateDocument(scope.statePath, {
+    metadata: nextCapsule,
+    body: currentDocument.body,
+  })
   writeActiveProjectSession(scope, {
-    env: normalizeOptions(options).env,
+    env: normalizedOptions.env,
   })
   return nextCapsule
 }
@@ -151,8 +173,8 @@ export function writeCapsuleSection(cwd, section, value, options = {}) {
 }
 
 export function clearCapsuleSection(cwd, section, options = {}) {
-  const capsulePath = getSessionCapsulePath(cwd, options)
-  if (!existsSync(capsulePath)) return false
+  const statePath = getSessionCapsulePath(cwd, options)
+  if (!existsSync(statePath)) return false
 
   const capsule = readSessionCapsule(cwd, options)
   if (!Object.prototype.hasOwnProperty.call(capsule, section)) return false
@@ -180,6 +202,13 @@ export function appendSessionEvent(cwd, eventPayload, options = {}) {
   const eventName = eventPayload?.event || ''
   if (!eventName) return ''
 
+  writeActiveProjectSession(scope, {
+    host: eventPayload.host || '',
+    source: eventPayload.source || eventName,
+    env: scopedOptions.env,
+  })
+  if (!shouldRecordSessionEvents(scopedOptions)) return ''
+
   mkdirSync(dirname(scope.eventsPath), { recursive: true })
   const payload = {
     ts: new Date().toISOString(),
@@ -192,17 +221,13 @@ export function appendSessionEvent(cwd, eventPayload, options = {}) {
     encoding: 'utf-8',
     flag: 'a',
   })
-  writeActiveProjectSession(scope, {
-    host: eventPayload.host || '',
-    source: eventPayload.source || eventName,
-    env: scopedOptions.env,
-  })
   return scope.eventsPath
 }
 
 export function resetSessionEvents(cwd, options = {}) {
   const scope = getScope(cwd, options)
   if (scope.scope === 'project-session' && !scope.active) return ''
+  if (!shouldRecordSessionEvents(options)) return ''
   mkdirSync(dirname(scope.eventsPath), { recursive: true })
   writeFileSync(scope.eventsPath, '', 'utf-8')
   return scope.eventsPath
@@ -241,4 +266,17 @@ export function clearSessionArtifact(cwd, fileName, options = {}) {
 
 export function removeSessionCapsule(cwd, options = {}) {
   removeRuntimeFile(getSessionCapsulePath(cwd, options))
+}
+
+function shouldRecordSessionEvents(options = {}) {
+  const normalizedOptions = normalizeOptions(options)
+  const payload = normalizedOptions.payload || {}
+  if (normalizedOptions.traceEvents === true || payload.traceEvents === true || payload._helloagentsTraceEvents === true) {
+    return true
+  }
+
+  const raw = String(normalizedOptions.env?.HELLOAGENTS_TRACE_EVENTS || process.env.HELLOAGENTS_TRACE_EVENTS || '')
+    .trim()
+    .toLowerCase()
+  return raw === '1' || raw === 'true' || raw === 'yes'
 }
