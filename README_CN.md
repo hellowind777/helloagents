@@ -447,7 +447,7 @@ npm uninstall -g helloagents
 ```text
 /plugin marketplace add hellowind777/helloagents
 /plugin install helloagents@helloagents
-gemini extensions install https://github.com/hellowind777/helloagents
+helloagents install gemini --global
 ```
 
 Claude Code 会自动尝试等价的 `claude plugin marketplace add ...` 和 `claude plugin install ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。全局安装后需要重启宿主 CLI。

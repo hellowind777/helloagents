@@ -447,7 +447,7 @@ In global mode, HelloAGENTS now attempts the host-native install commands automa
 ```text
 /plugin marketplace add hellowind777/helloagents
 /plugin install helloagents@helloagents
-gemini extensions install https://github.com/hellowind777/helloagents
+helloagents install gemini --global
 ```
 
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.

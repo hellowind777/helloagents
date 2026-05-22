@@ -282,6 +282,7 @@ test('all-host mode switch from global to standby removes native Claude and Gemi
   assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
   assert.match(readText(claudeLog), /plugin remove helloagents/)
-  assert.match(readText(geminiLog), /extensions install https:\/\/github\.com\/hellowind777\/helloagents/)
+  assert.match(readText(geminiLog), /extensions link .*\.helloagents[\\/]+helloagents/)
   assert.match(readText(geminiLog), /extensions uninstall helloagents/)
+  assert.ok(existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
 })

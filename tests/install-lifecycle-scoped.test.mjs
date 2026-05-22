@@ -213,7 +213,8 @@ test('global install attempts Claude and Gemini native installers when commands 
 
   assert.match(readText(claudeLog), /plugin marketplace add hellowind777\/helloagents/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
-  assert.match(readText(geminiLog), /extensions install https:\/\/github\.com\/hellowind777\/helloagents/)
+  assert.match(readText(geminiLog), /extensions link .*\.helloagents[\\/]+helloagents/)
+  assert.ok(existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'global')
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.gemini, 'global')
 })
@@ -368,5 +369,5 @@ test('failed Gemini global cleanup keeps the tracked global mode', () => {
 
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.gemini, 'global')
-  assert.match(readText(geminiLog), /extensions install https:\/\/github\.com\/hellowind777\/helloagents/)
+  assert.match(readText(geminiLog), /extensions link .*\.helloagents[\\/]+helloagents/)
 })
