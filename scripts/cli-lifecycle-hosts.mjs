@@ -19,7 +19,6 @@ const CLAUDE_COMMAND = process.env.HELLOAGENTS_CLAUDE_CMD || 'claude'
 const GEMINI_COMMAND = process.env.HELLOAGENTS_GEMINI_CMD || 'gemini'
 const CLAUDE_MARKETPLACE = 'hellowind777/helloagents'
 const CLAUDE_PLUGIN = 'helloagents@helloagents'
-const GEMINI_EXTENSION = 'https://github.com/hellowind777/helloagents'
 
 function runHostCommand(command, args) {
   const needsShell = process.platform === 'win32' && /\.cmd$/i.test(command)
@@ -60,8 +59,8 @@ function installClaudeGlobalPlugin() {
   return { ok: install.ok, output: install.output || add.output }
 }
 
-function installGeminiGlobalExtension() {
-  return runHostCommand(GEMINI_COMMAND, ['extensions', 'install', GEMINI_EXTENSION])
+function installGeminiGlobalExtension(runtimeRoot) {
+  return runHostCommand(GEMINI_COMMAND, ['extensions', 'link', runtimeRoot])
 }
 
 function removeClaudeGlobalPlugin() {
@@ -157,11 +156,11 @@ function installHostGlobal(runtime, host) {
   if (host === 'gemini') {
     uninstallGeminiStandby(runtime.home)
     return buildNativeResult(
-      installGeminiGlobalExtension(),
+      installGeminiGlobalExtension(runtime.pkgRoot),
       '已自动安装 Gemini CLI 扩展；重启 Gemini CLI 后生效',
       'Gemini CLI extension installed automatically; restart Gemini CLI to apply',
-      'Gemini CLI 扩展自动安装失败，请手动执行: gemini extensions install https://github.com/hellowind777/helloagents',
-      'Gemini CLI extension auto-install failed. Run manually: gemini extensions install https://github.com/hellowind777/helloagents',
+      `Gemini CLI 扩展自动安装失败，请手动执行: gemini extensions link ${runtime.pkgRoot}`,
+      `Gemini CLI extension auto-install failed. Run manually: gemini extensions link ${runtime.pkgRoot}`,
     )
   }
   uninstallCodexStandby(runtime.home)
