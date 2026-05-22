@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, realpathSync } from 'node:fs'
+import { platform } from 'node:os'
 import { join } from 'node:path'
 
 import { CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_CONFIG_HEADER, CODEX_PLUGIN_NAME } from './cli-codex.mjs'
@@ -147,8 +148,9 @@ function summarizeNativeCodexDoctorOutput(payload = {}) {
 }
 
 function inspectNativeCodexDoctor(runtime) {
+  const command = platform() === 'win32' ? 'codex.cmd' : 'codex'
   try {
-    const result = spawnSync('codex', ['doctor', '--json'], {
+    const result = spawnSync(command, ['doctor', '--json'], {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -158,6 +160,7 @@ function inspectNativeCodexDoctor(runtime) {
       },
       encoding: 'utf-8',
       timeout: 20_000,
+      shell: platform() === 'win32',
       windowsHide: true,
     })
 

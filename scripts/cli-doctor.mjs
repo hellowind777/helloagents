@@ -106,7 +106,7 @@ function suggestDoctorFix(host, status, trackedMode) {
     return `helloagents update ${host}${trackedMode && trackedMode !== 'none' ? ` --${trackedMode}` : ''}`
   }
   if (status === 'manual-plugin') {
-    if (host === 'claude') return '/plugin marketplace add hellowind777/helloagents; /plugin install helloagents@helloagents'
+    if (host === 'claude') return '/plugin marketplace add https://github.com/hellowind777/helloagents.git; /plugin install helloagents@helloagents'
     if (host === 'gemini') return 'helloagents install gemini --global'
   }
   if (status === 'not-installed') {

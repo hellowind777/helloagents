@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.35-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.36-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -442,10 +442,10 @@ npm uninstall -g helloagents
 | Gemini CLI | native extension install | managed by Gemini extension system |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-In global mode, HelloAGENTS now attempts the host-native install commands automatically. If a host command is unavailable, run the same commands manually:
+In global mode, HelloAGENTS now attempts the host-native install commands automatically. For Claude Code, the marketplace should be added from the Git URL so the plugin source stays on HTTPS and avoids an SSH-only clone during installation. If a host command is unavailable, run the same commands manually:
 
 ```text
-/plugin marketplace add hellowind777/helloagents
+/plugin marketplace add https://github.com/hellowind777/helloagents.git
 /plugin install helloagents@helloagents
 helloagents install gemini --global
 ```

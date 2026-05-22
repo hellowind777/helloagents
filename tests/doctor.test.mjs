@@ -206,3 +206,19 @@ test('doctor flags missing codex hook trust as drift', () => {
   assert.ok(codex.issues.some((issue) => issue.code === 'standby-hook-trust-missing'))
   assert.ok(codex.issues.some((issue) => /machine-local hook trust metadata/.test(issue.message)))
 })
+
+test('doctor reports native Codex doctor when codex.cmd is available on Windows', { skip: process.platform !== 'win32' }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(join(home, '.codex', 'config.toml'), '[features]\nunified_exec = true\n')
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  const report = JSON.parse(result.stdout)
+  const codex = report.hosts.find((entry) => entry.host === 'codex')
+
+  assert.equal(codex.nativeDoctor.available, true)
+})

@@ -211,7 +211,7 @@ test('global install attempts Claude and Gemini native installers when commands 
     HELLOAGENTS_GEMINI_CMD: geminiCommand,
   })
 
-  assert.match(readText(claudeLog), /plugin marketplace add hellowind777\/helloagents/)
+  assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
   assert.match(readText(geminiLog), /extensions link .*\.helloagents[\\/]+helloagents/)
   assert.ok(existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
@@ -313,6 +313,7 @@ test('single-host standby install removes the tracked Claude global plugin befor
     HELLOAGENTS_CLAUDE_CMD: claudeCommand,
   })
 
+  assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
   assert.match(readText(claudeLog), /plugin remove helloagents/)
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
@@ -344,6 +345,7 @@ test('failed Claude global cleanup keeps the tracked global mode and skips stand
   assert.equal(settings.host_install_modes.claude, 'global')
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/)
+  assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
 })
 

@@ -24,7 +24,8 @@ export function buildWindowsSoundCommand(filePath = '') {
 }
 
 function playWindows(filePath) {
-  const result = spawnSync('powershell', [
+  const command = process.platform === 'win32' ? 'powershell.exe' : 'powershell'
+  const result = spawnSync(command, [
     '-NoProfile',
     '-c',
     buildWindowsSoundCommand(filePath),
