@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.35-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.36-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -442,10 +442,10 @@ npm uninstall -g helloagents
 | Gemini CLI | 原生扩展安装 | 由 Gemini 扩展系统管理 |
 | Codex CLI | 原生本地插件流程 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/ -> ~/.helloagents/helloagents`、`~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-全局模式下，HelloAGENTS 会自动尝试宿主原生命令。若宿主命令不可用，再手动执行：
+全局模式下，HelloAGENTS 会自动尝试宿主原生命令。对 Claude Code，marketplace 应使用 Git URL 添加，这样插件安装阶段会继续走 HTTPS，不会落回 SSH-only clone。若宿主命令不可用，再手动执行：
 
 ```text
-/plugin marketplace add hellowind777/helloagents
+/plugin marketplace add https://github.com/hellowind777/helloagents.git
 /plugin install helloagents@helloagents
 helloagents install gemini --global
 ```
