@@ -127,6 +127,7 @@ test('install.sh install forwards postinstall deploy env for compact host mode s
 
 test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expected npm commands', { skip: !POSIX_SHELL }, () => {
   const { root: pkgRoot } = createPackageFixture()
+  const customPackage = 'https://example.com/helloagents-custom.tgz'
 
   {
     const home = createHomeFixture()
@@ -141,6 +142,22 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     assert.deepEqual(entries.map((entry) => entry.args), [
       'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- codex --standby',
+    ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
+  }
+
+  {
+    const home = createHomeFixture()
+    const { logPath, env } = createScriptEnv(home, {
+      HELLOAGENTS_ACTION: 'update',
+      HELLOAGENTS_PACKAGE: customPackage,
+      HELLOAGENTS_TARGET: 'codex',
+    })
+    runInstallSh(pkgRoot, home, env)
+    const entries = readLogEntries(logPath)
+    assert.deepEqual(entries.map((entry) => entry.args), [
+      `install -g ${customPackage}`,
+      'explore -g helloagents -- npm run sync-hosts -- codex',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
@@ -172,6 +189,23 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
       'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
+      'explore -g helloagents -- npm run sync-hosts -- gemini --global',
+    ])
+    assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
+  }
+
+  {
+    const home = createHomeFixture()
+    const { logPath, env } = createScriptEnv(home, {
+      HELLOAGENTS_ACTION: 'switch-branch',
+      HELLOAGENTS_PACKAGE: customPackage,
+      HELLOAGENTS_TARGET: 'gemini',
+      HELLOAGENTS_MODE: 'global',
+    })
+    runInstallSh(pkgRoot, home, env)
+    const entries = readLogEntries(logPath)
+    assert.deepEqual(entries.map((entry) => entry.args), [
+      `install -g ${customPackage}`,
       'explore -g helloagents -- npm run sync-hosts -- gemini --global',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))

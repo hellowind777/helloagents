@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * HelloAGENTS Ralph Loop — Quality verification gate
+ * HelloAGENTS QA Gate — Quality verification gate
  * Runs on SubagentStop (Claude Code) and Stop (Codex CLI).
  * Auto-detects lint/test commands and blocks if they fail.
  */
@@ -258,7 +258,7 @@ export function evaluateRalphLoop(data = {}, runtime = {}) {
       return {
         hookSpecificOutput: {
           hookEventName,
-          additionalContext: '⚠️ [Ralph Loop] 验证通过但未检测到代码变更（git diff 为空）。如果确实完成了编码任务，请确认变更已保存。',
+          additionalContext: '⚠️ [QA Gate] 验证通过但未检测到代码变更（git diff 为空）。如果确实完成了编码任务，请确认变更已保存。',
         },
         suppressOutput: true,
       };
@@ -279,7 +279,7 @@ export function evaluateRalphLoop(data = {}, runtime = {}) {
   const details = failures.map(f => `\u2717 ${f.cmd}\n${f.output}`).join('\n\n');
   return {
     decision: 'block',
-    reason: `[Ralph Loop] 验证失败：\n\n${details}\n\n请先修复以上问题，再报告完成。${breakerWarning}`,
+    reason: `[QA Gate] 验证失败：\n\n${details}\n\n请先修复以上问题，再报告完成。${breakerWarning}`,
     suppressOutput: true,
   };
 }
@@ -297,7 +297,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   } catch (error) {
     process.stdout.write(JSON.stringify({
       decision: 'block',
-      reason: `[Ralph Loop] 验证脚本执行异常，已暂停完成通知。\n原因：${error?.message || error}`,
+      reason: `[QA Gate] 验证脚本执行异常，已暂停完成通知。\n原因：${error?.message || error}`,
       suppressOutput: true,
     }));
   }

@@ -12,7 +12,7 @@
 - [ ] 任务3（AFK/HITL）：端到端行为描述（依赖：...；涉及文件：...；预期变更：...；完成标准：...；验证方式：...）
 
 ## Codex /goal 执行入口
-[可选。需要长程执行时复制到 Codex：/goal 按 `.helloagents/plans/{feature}/tasks.md` 执行本方案；遵守 `requirements.md`、`plan.md`、`contract.json`。按顺序完成所有 AFK 任务；HITL 仅在缺少外部决策、凭据或人工验收时暂停。不要把完整 PRD 原文直接当作 `/goal` 目标。完成前更新 tasks.md、运行契约验证并完成 HelloAGENTS 收尾。]
+[可选。需要长程执行时复制到 Codex：/goal 按 `.helloagents/plans/{feature}/tasks.md` 执行本方案；遵守 `requirements.md`、`plan.md`、`contract.json`。默认主执行命令是 `~auto`；按顺序完成所有 AFK 任务；HITL 仅在缺少外部决策、凭据或人工验收时暂停。不要把完整 PRD 原文直接当作 `/goal` 目标。全部 AFK 任务完成后必须进入 `~qa`，写最新质量证据并完成 HelloAGENTS 收尾，再标记 goal complete。]
 
 ## 进度
 [执行过程中更新]

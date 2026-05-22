@@ -6,12 +6,11 @@ import { join } from 'node:path'
 import {
   createHomeFixture,
   createTempDir,
-  readJson,
   runCommand,
   writeJson,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionCapsulePath } from '../scripts/session-capsule.mjs'
+import { readSessionCapsule, writeSessionCapsule } from '../scripts/session-capsule.mjs'
 import {
   UNBOUND_ROUTE_CONTEXT_TTL_MS,
   getApplicableRouteContext,
@@ -40,10 +39,9 @@ function activateProject(project) {
 }
 
 function writeCapsuleRouteUpdatedAt(project, updatedAt, payload = SESSION_PAYLOAD) {
-  const capsulePath = getSessionCapsulePath(project, { payload })
-  const capsule = readJson(capsulePath)
+  const capsule = readSessionCapsule(project, { payload })
   capsule.route.updatedAt = updatedAt
-  writeJson(capsulePath, capsule)
+  writeSessionCapsule(project, capsule, { payload })
 }
 
 test('long-running runtime TTLs stay aligned for Codex goal sessions', () => {
@@ -189,15 +187,15 @@ test('transient runtime cleanup keeps sessions inside the long-running TTL windo
   const freshDate = new Date(now - (LONG_RUNNING_TTL_HOURS - 1) * HOURS)
   const staleDate = new Date(now - (LONG_RUNNING_TTL_HOURS + 1) * HOURS)
 
-  writeText(join(freshDir, 'capsule.json'), '{}\n')
-  writeText(join(staleDir, 'capsule.json'), '{}\n')
+  writeText(join(freshDir, 'STATE.md'), '# fresh\n')
+  writeText(join(staleDir, 'STATE.md'), '# stale\n')
   utimesSync(freshDir, freshDate, freshDate)
   utimesSync(staleDir, staleDate, staleDate)
 
   const result = cleanupUserRuntimeRoot({ home, now })
   assert.equal(result.errors.length, 0)
   assert.deepEqual(result.removedExpiredDirs, [staleDir])
-  assert.equal(existsSync(join(freshDir, 'capsule.json')), true)
+  assert.equal(existsSync(join(freshDir, 'STATE.md')), true)
 })
 
 test('workspace fingerprint includes git HEAD so committed changes invalidate old evidence', () => {

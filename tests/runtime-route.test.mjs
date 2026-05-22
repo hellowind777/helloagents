@@ -13,7 +13,12 @@ import {
   writeText,
 } from './helpers/test-env.mjs'
 import { normalizeNotifyPayload } from '../scripts/notify-payload.mjs'
-import { getSessionEvidencePath, getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getSessionStatePath,
+  parseStdoutJson,
+  readCodexNotifySlot,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('CLI runtime entry dispatches Codex notify payloads', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -110,9 +115,7 @@ test('Codex silent hooks do not emit additional context and de-duplicate Stop ha
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /显式 ~auto 当前对话不应直接停下/)
-  let evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
-    session: '12345678',
-  }))
+  let evidence = readCodexNotifySlot(home, 'nativeStop')
   assert.equal(evidence.turnId, 'turn-1')
   assert.equal(evidence.source, 'stop')
 
@@ -179,9 +182,7 @@ test('Codex native notify writes closeout evidence before Stop and prevents doub
   assert.equal(result.status, 0, result.stderr || result.stdout)
   assert.equal(result.stdout, '')
 
-  let evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
-    session: '12345678',
-  }))
+  let evidence = readCodexNotifySlot(home, 'nativeStop')
   assert.equal(evidence.turnId, 'turn-1')
   assert.equal(evidence.source, 'codex-notify')
   assert.equal(evidence.turnKind, 'complete')
@@ -195,9 +196,7 @@ test('Codex native notify writes closeout evidence before Stop and prevents doub
   assert.equal(payload.suppressOutput, true)
   assert.equal(payload.decision, undefined)
 
-  evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
-    session: '12345678',
-  }))
+  evidence = readCodexNotifySlot(home, 'nativeStop')
   assert.equal(evidence.source, 'codex-notify')
 })
 
@@ -251,9 +250,7 @@ test('Codex native notify consumes waiting closeout once and Stop does not synth
   assert.equal(result.status, 0, result.stderr || result.stdout)
   assert.equal(result.stdout, '')
 
-  let evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
-    session: '12345678',
-  }))
+  let evidence = readCodexNotifySlot(home, 'nativeStop')
   assert.equal(evidence.source, 'codex-notify')
   assert.equal(evidence.turnKind, 'waiting')
 
@@ -266,9 +263,7 @@ test('Codex native notify consumes waiting closeout once and Stop does not synth
   assert.equal(payload.suppressOutput, true)
   assert.equal(payload.decision, undefined)
 
-  evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
-    session: '12345678',
-  }))
+  evidence = readCodexNotifySlot(home, 'nativeStop')
   assert.equal(evidence.source, 'codex-notify')
 })
 
@@ -339,9 +334,7 @@ test('Codex managed Stop hook takes over complete closeout and native notify sta
   assert.equal(payload.suppressOutput, true)
   assert.equal(payload.decision, undefined)
 
-  const evidence = readJson(getSessionEvidencePath(project, 'codex-native-stop.json', {
-    session: '12345678',
-  }))
+  const evidence = readCodexNotifySlot(home, 'nativeStop')
   assert.equal(evidence.turnId, 'turn-1')
   assert.equal(evidence.source, 'stop')
   assert.equal(evidence.turnKind, 'complete')
@@ -384,7 +377,7 @@ test('project active session keeps hook and local turn-state writes in one direc
   })
   const payload = parseStdoutJson(result)
 
-  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]abcdef[\\/]capsule\.json$/)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]abcdef[\\/]STATE\.md$/)
   const active = readJson(join(project, '.helloagents', 'sessions', 'active.json'))
   assert.equal(active.session, 'abcdef')
   assert.equal(active.aliases.xyz999, 'abcdef')
@@ -412,6 +405,16 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /turnStateCommand/)
   assert.match(payload.hookSpecificOutput.additionalContext, /helloagents-turn-state write/)
   assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
+  assert.equal(existsSync(join(project, '.helloagents')), false)
+
+  result = runNode(notifyScript, ['inject'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, source: 'resume' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.equal(existsSync(join(project, '.helloagents')), false)
+  assert.doesNotMatch(payload.hookSpecificOutput.additionalContext, /会话已恢复\/压缩/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -426,10 +429,10 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~wiki' }),
+    input: JSON.stringify({ cwd: project, prompt: '~init' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]wiki[\\/]SKILL\.md/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]init[\\/]SKILL\.md/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -632,7 +635,7 @@ test('notify runtime uses host_install_modes before global install_mode', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
 })
 
-test('project global-mode marker switches semantic route to full bootstrap in standby mode', () => {
+test('project initialized marker switches semantic route to full bootstrap in standby mode', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const project = createTempDir('helloagents-route-global-marker-')

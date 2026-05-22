@@ -61,7 +61,7 @@ function buildCommandRouteMessage(skillName, recommendation, qaFocusHint) {
       : `当前工作流约束：${recommendation.summary} 本次 ~auto 的执行主路径：${recommendation.nextPath}。${recommendation.guidance} 命中主路径后继续执行后续阶段；未触发阻塞判定前不要停下，也不要把阶段结果写成“下一步建议”。`
   }
   if (skillName === 'loop') {
-    return `当前工作流约束：用户已显式使用 ~loop，应按 ~loop 的循环规则直接执行。现有工作流只作上下文参考：${recommendation.summary} ${recommendation.guidance} 除非达到迭代上限、达成目标或命中阻塞判定，否则不要停下，也不要把单轮结果写成“下一步建议”。`
+    return `当前工作流约束：用户已显式使用 ~loop，应把它视为长任务入口，默认按“/goal -> ~auto -> ~qa”直接推进。现有工作流只作上下文参考：${recommendation.summary} ${recommendation.guidance} 若当前宿主不支持 /goal，则按 ~auto 持续推进，并在交付前强制进入 ~qa。未命中阻塞判定前不要停下，也不要把阶段结果写成“下一步建议”。`
   }
   if (skillName === 'plan') {
     if (recommendation.stage === 'consolidate') {

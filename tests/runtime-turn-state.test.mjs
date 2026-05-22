@@ -12,7 +12,13 @@ import {
   runNode,
   writeText,
 } from './helpers/test-env.mjs'
-import { getSessionEvidencePath, getSessionStatePath, parseStdoutJson, writeSettings } from './helpers/runtime-test-helpers.mjs'
+import {
+  getCodexNotifyStatePath,
+  getSessionStatePath,
+  parseStdoutJson,
+  readCodexNotifySlot,
+  writeSettings,
+} from './helpers/runtime-test-helpers.mjs'
 
 test('codex notify gates only main complete turns from turn-state', () => {
   const { root: pkgRoot } = createPackageFixture()
@@ -186,7 +192,7 @@ test('managed codex notify ignores clientless delegated completion events', () =
 
   assert.equal(result.stdout, '')
   assert.equal(
-    existsSync(getSessionEvidencePath(project, 'codex-quick-notify.json', { session: 'child001' })),
+    existsSync(getCodexNotifyStatePath(home)),
     false,
   )
 })
@@ -232,7 +238,7 @@ test('managed codex notify still records main completion evidence for client-tag
 
   assert.equal(result.stdout, '')
   assert.equal(
-    existsSync(getSessionEvidencePath(project, 'codex-quick-notify.json', { session: 'main001' })),
+    Boolean(readCodexNotifySlot(home, 'quickNotify')),
     true,
   )
 })
@@ -319,7 +325,7 @@ test('stop allows structured waiting turn-state and clears it', () => {
   assert.equal(payload.state, null)
 })
 
-test('ordinary complete turns skip automatic Ralph Loop verification', () => {
+test('ordinary complete turns skip automatic QA gate verification', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
@@ -361,7 +367,7 @@ test('ordinary complete turns skip automatic Ralph Loop verification', () => {
   assert.equal(payload.decision, undefined)
 })
 
-test('explicit qa route still runs Ralph Loop verification', () => {
+test('explicit qa route still runs QA gate verification', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
@@ -410,7 +416,7 @@ test('explicit qa route still runs Ralph Loop verification', () => {
 
   const payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
-  assert.match(payload.reason, /Ralph Loop/)
+  assert.match(payload.reason, /QA Gate/)
   assert.match(payload.reason, /npm run test/)
 })
 
@@ -436,7 +442,7 @@ test('turn-state rejects waiting without blocker details', () => {
   assert.match(`${result.stderr}${result.stdout}`, /requires reasonCategory and reason/)
 })
 
-test('turn-state writes pure cwd into the session capsule', () => {
+test('turn-state writes pure cwd into the session state file', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const env = buildHomeEnv(home)
@@ -456,7 +462,7 @@ test('turn-state writes pure cwd into the session capsule', () => {
     }),
   })
   let payload = parseStdoutJson(result)
-  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]default[\\/]capsule\.json$/)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]default[\\/]STATE\.md$/)
   assert.equal(payload.payload.cwd, project)
   assert.equal(payload.payload.key.endsWith('::workspace::default'), true)
 

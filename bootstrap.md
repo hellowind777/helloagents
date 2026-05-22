@@ -209,7 +209,7 @@
 - 审查 / 验真 / 交付前质量闭环 → `~qa`
 - 不确定或希望端到端自动推进时使用 `~auto`
 
-当前项目只要已初始化（例如执行过 `~global`，或当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`），就按项目级完整流程执行。
+当前项目只要已初始化（当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`，通常由 `~init` 建立），就按项目级完整流程执行。
 
 #### 2. SPEC — 澄清目标与验收
 根据任务需要，按需读取项目上下文（知识库文件和项目文件），明确：
@@ -227,7 +227,7 @@
 - 若当前上下文未注入，则使用稳定运行根目录 `~/.helloagents/helloagents`
 - 宿主固定链接（Codex `~/.codex/helloagents`、Claude `~/.claude/helloagents`、Gemini `~/.gemini/helloagents`）只作为兼容别名，不作为优先探测路径
 - 仍无法确定时，明确说明缺少 HelloAGENTS 读取根目录；不要递归扫描 `$HOME`、`Downloads`、项目目录或旧版本目录
-- 全局模式或已初始化项目时，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
+- 宿主全局模式或已初始化项目时，技能是否需要使用由当前已加载 AGENTS 规则决定；不要因此额外探测项目目录里的 HelloAGENTS skills 路径
 路径确定一次即可，不预读、不扫描整个目录，也不重复探测同一路径。
 hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.md`
 包内脚本优先使用稳定命令入口；涉及 turn-state 时按“收尾状态信号”执行。
@@ -264,11 +264,11 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 所有任务：
 - 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按上文“流程状态”中的适用范围执行。属于“强制创建并持续更新”范围时，重写 `state_path` 指向的文件（“正在做什么”更新为已完成，清空关键上下文 / 下一步 / 阻塞项）；属于“已有则更新”范围时，仅在文件已存在时重写；属于“不创建”范围时不生成此文件
-- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（`artifacts/loop-results.tsv`、`capsule.json`、`events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/qa-review.json`、`artifacts/closeout.json`）
-- 按 `kb_create_mode` 同步知识库（0=关闭 / 1=知识库已存在时自动同步，未创建则不自动补建 / 2=编码任务在知识库已存在或全局模式下自动创建或同步）：
+- 有方案包且任务已完成 → 将整个 `plans/{feature}/` 目录归档到 `.helloagents/archive/YYYY-MM/`，并更新 `archive/_index.md`。清理当前会话临时文件（可选 `events.jsonl`、`artifacts/loop-breaker.json`、`artifacts/qa-review.json`、`artifacts/closeout.json`）；`STATE.md` 作为唯一主状态保留
+- 按 `kb_create_mode` 同步知识库（0=关闭 / 1=知识库已存在时自动同步，未创建则不自动补建 / 2=编码任务在知识库已存在或当前项目已初始化时自动创建或同步）：
   - `0` → 跳过
   - `1` → 仅在知识库已存在时按模板增量同步；未创建则不自动补建
-  - `2` → 仅在编码任务中生效；知识库已存在时按模板增量同步；若知识库不存在但当前项目已处于全局模式，则按 templates/ 创建或补全 `context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`
+  - `2` → 仅在编码任务中生效；知识库已存在时按模板增量同步；若知识库不存在但当前项目已初始化，则按 templates/ 创建或补全 `context.md`、`guidelines.md`、`verify.yaml`、`CHANGELOG.md`、`modules/`
   - 已存在但不完整（缺少上述核心文件）→ 按 templates/ 补全缺失文件，不覆盖已有文件
   - 已存在且完整则按模板格式更新 `CHANGELOG.md`、相关 `modules/*.md`、增量经验 delta 追加
 - 符合条件时触发 `hello-reflect`（详见 `hello-reflect` SKILL.md）
@@ -290,7 +290,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 - `.helloagents/` 表示项目本地存储路径，负责知识、方案、状态与运行态；它不再作为项目是否已初始化的判定信号
-- `state_path` 指向的状态文件、当前会话 `capsule.json`、`events.jsonl`、`artifacts/*.json`、`artifacts/loop-results.tsv` 等运行态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/`
+- `state_path` 指向的状态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/STATE.md`；当前会话的 `turn-state`、路由上下文和 artifact 索引写入这个文件的元数据，`artifacts/*.json` 仅在需要结构化证据时按需生成，`events.jsonl` 仅在显式 trace 模式下写入
 - `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{workspace}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{workspace}/default/STATE.md`
 - `{workspace}` 为当前 Git 分支、`detached-{sha}` 或非 Git 项目的 `workspace`；`.helloagents/sessions/active.json` 只记录当前活跃会话索引，避免同一会话被拆成多个目录
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
@@ -301,7 +301,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本会
 - 状态文件（`state_path`）— ≤70 行，用来记录“上次做到哪里”。判断当前任务时，当前用户消息、显式命令、活跃方案包 / PRD、代码与验证证据优先于状态文件
   内容：主线目标、正在做什么、关键上下文（决策/变更/假设）、下一步（具体可执行动作含文件路径）、阻塞项
   适用边界：
-  - 强制创建并持续更新：`~wiki`、`~init`、`~global`、`~plan`、`~build`、`~auto`、`~prd`、`~loop`，以及进入工作流阶段、已初始化项目的连续任务，或任何会创建/修改本地文件、会在当前工作区留下实际输出或操作记录的非只读任务
+  - 强制创建并持续更新：`~init`、`~plan`、`~build`、`~auto`、`~prd`、`~loop`，以及进入工作流阶段、已初始化项目的连续任务，或任何会创建/修改本地文件、会在当前工作区留下实际输出或操作记录的非只读任务
   - 强制更新，不要求首次创建：`~clean`，主代理汇总子代理结果后
   - 已有则更新：`~qa`、`~test`、`~commit`
   - 不创建：`~help`、`~idea`、普通问答、一次性只读任务、子代理自身执行过程、压缩/恢复钩子
@@ -322,7 +322,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本会
 - archive/_index.md — 归档索引
 
 ### 知识记录（受 `kb_create_mode` 控制）
-- 0=关闭；1=知识库已存在时自动同步；2=编码任务在知识库已存在或全局模式下自动创建或同步
+- 0=关闭；1=知识库已存在时自动同步；2=编码任务在知识库已存在或当前项目已初始化时自动创建或同步
 - context.md — 项目架构、技术栈、目录结构、模块索引
 - guidelines.md — 编码约定（仅含非显而易见的约定）
 - CHANGELOG.md — 变更历史
@@ -330,8 +330,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本会
 - modules/*.md — 模块文档和经验
 
 ### 临时文件（`~clean` 时清理）
-- artifacts/loop-results.tsv — 当前会话的 ~loop 迭代记录
-- artifacts/loop-breaker.json — 当前会话的质量循环断路器状态，仅在 `~loop` 或自动质量闭环触发时写入
+- artifacts/loop-breaker.json — 当前会话的 QA gate 断路器状态，仅在收尾 QA gate 连续失败时写入
 - artifacts/qa-review.json — 当前会话最近一次成功 qa-review 的证据快照
 - artifacts/closeout.json — 当前会话最近一次成功收尾的交付证据快照
 

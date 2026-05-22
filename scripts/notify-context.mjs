@@ -137,7 +137,7 @@ export function buildInjectContext({ source, bootstrap, settings, pkgRoot, host,
   if (capabilityHint) context += `\n\n## 当前按需能力\n${capabilityHint}`;
   if (stateSyncHint) context += `\n\n## 状态文件提醒\n${stateSyncHint}`;
   context += settingsBlock;
-  if (source === 'resume' || source === 'compact') {
+  if ((source === 'resume' || source === 'compact') && stateSnapshot.exists) {
     context += `\n\n> ⚠️ 会话已恢复/压缩，请先读取 \`state_path\` 指向的 \`${stateSnapshot.statePath.replace(/\\/g, '/')}\`；先看当前用户消息，如果仍是同一任务，再参考状态文件。`;
   }
   return context;

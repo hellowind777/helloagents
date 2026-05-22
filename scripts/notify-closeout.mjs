@@ -1,14 +1,55 @@
 import { createHash } from 'node:crypto'
 import { closeSync, mkdirSync, openSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
+import { homedir } from 'node:os'
 
-import { getRuntimeEvidencePath, readRuntimeEvidence, writeRuntimeEvidence } from './runtime-artifacts.mjs'
-
-export const CODEX_CLOSEOUT_EVIDENCE_FILE = 'codex-native-stop.json'
-export const CODEX_QUICK_NOTIFY_EVIDENCE_FILE = 'codex-quick-notify.json'
-const CODEX_CLOSEOUT_LOCK_FILE = 'codex-native-stop.lock'
+export const CODEX_NOTIFY_STATE_FILE = 'notify-state.json'
+export const CODEX_NOTIFY_LOCK_FILE = 'notify.lock'
 const WEAK_KEY_TTL_MS = 10_000
 const LOCK_STALE_MS = 120_000
+
+function getHomeDir(env = process.env) {
+  return env.HOME || env.USERPROFILE || homedir()
+}
+
+export function getCodexNotifyDir(env = process.env) {
+  return join(getHomeDir(env), '.codex', '.helloagents')
+}
+
+export function getCodexNotifyStatePath(env = process.env) {
+  return join(getCodexNotifyDir(env), CODEX_NOTIFY_STATE_FILE)
+}
+
+export function getCodexNotifyLockPath(env = process.env) {
+  return join(getCodexNotifyDir(env), CODEX_NOTIFY_LOCK_FILE)
+}
+
+function readNotifyState(env = process.env) {
+  try {
+    const value = JSON.parse(readFileSync(getCodexNotifyStatePath(env), 'utf-8'))
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return { version: 1, nativeStop: null, quickNotify: null }
+    }
+    return {
+      version: 1,
+      nativeStop: value.nativeStop && typeof value.nativeStop === 'object' ? value.nativeStop : null,
+      quickNotify: value.quickNotify && typeof value.quickNotify === 'object' ? value.quickNotify : null,
+    }
+  } catch {
+    return { version: 1, nativeStop: null, quickNotify: null }
+  }
+}
+
+function writeNotifyState(state, env = process.env) {
+  const filePath = getCodexNotifyStatePath(env)
+  mkdirSync(dirname(filePath), { recursive: true })
+  writeFileSync(filePath, `${JSON.stringify({
+    version: 1,
+    nativeStop: state?.nativeStop || null,
+    quickNotify: state?.quickNotify || null,
+  }, null, 2)}\n`, 'utf-8')
+  return filePath
+}
 
 function getTurnId(payload = {}) {
   return String(payload.turnId || payload.turn_id || payload['turn-id'] || '').trim()
@@ -118,13 +159,10 @@ export function matchesCodexCloseoutEvidence(evidence, snapshot, now = Date.now(
   return intersects(snapshot.weakKeys, weakKeys)
 }
 
-/**
- * Try to claim the current Codex closeout so Stop and native notify handle one turn only once.
- */
 export function beginCodexCloseoutClaim(cwd, { payload = {}, turnState = null, source = '' } = {}) {
   const snapshot = buildCodexCloseoutSnapshot({ payload, turnState })
-  const lockPath = getRuntimeEvidencePath(cwd, CODEX_CLOSEOUT_LOCK_FILE, { payload })
-  const evidencePath = getRuntimeEvidencePath(cwd, CODEX_CLOSEOUT_EVIDENCE_FILE, { payload })
+  const lockPath = getCodexNotifyLockPath()
+  const evidencePath = getCodexNotifyStatePath()
   const now = Date.now()
   const lockPayload = {
     source,
@@ -164,8 +202,8 @@ export function beginCodexCloseoutClaim(cwd, { payload = {}, turnState = null, s
     }
   }
 
-  const evidence = readRuntimeEvidence(cwd, CODEX_CLOSEOUT_EVIDENCE_FILE, { payload })
-  if (matchesCodexCloseoutEvidence(evidence, snapshot, now)) {
+  const notifyState = readNotifyState()
+  if (matchesCodexCloseoutEvidence(notifyState.nativeStop, snapshot, now)) {
     releaseLockFile(lockPath)
     return {
       claimed: false,
@@ -186,15 +224,13 @@ export function beginCodexCloseoutClaim(cwd, { payload = {}, turnState = null, s
   }
 }
 
-/**
- * Persist the handled closeout fingerprint and release the in-flight lock.
- */
 export function finalizeCodexCloseoutClaim(claim, meta = {}) {
   if (!claim?.claimed) return
 
   try {
     if (meta.handled !== false) {
-      writeRuntimeEvidence(claim.cwd, CODEX_CLOSEOUT_EVIDENCE_FILE, {
+      const notifyState = readNotifyState()
+      notifyState.nativeStop = {
         version: 2,
         updatedAt: new Date().toISOString(),
         source: meta.source || claim.source || '',
@@ -205,7 +241,8 @@ export function finalizeCodexCloseoutClaim(claim, meta = {}) {
         messageHash: claim.snapshot.messageHash,
         strongKeys: claim.snapshot.strongKeys,
         weakKeys: claim.snapshot.weakKeys,
-      }, { payload: claim.payload })
+      }
+      writeNotifyState(notifyState)
     }
   } finally {
     releaseLockFile(claim.lockPath)
@@ -214,7 +251,8 @@ export function finalizeCodexCloseoutClaim(claim, meta = {}) {
 
 export function writeCodexQuickNotifyEvidence(cwd, { payload = {}, turnState = null, event = '' } = {}) {
   const snapshot = buildCodexCloseoutSnapshot({ payload, turnState })
-  return writeRuntimeEvidence(cwd, CODEX_QUICK_NOTIFY_EVIDENCE_FILE, {
+  const notifyState = readNotifyState()
+  notifyState.quickNotify = {
     version: 1,
     updatedAt: new Date().toISOString(),
     event,
@@ -223,11 +261,12 @@ export function writeCodexQuickNotifyEvidence(cwd, { payload = {}, turnState = n
     messageHash: snapshot.messageHash,
     strongKeys: snapshot.strongKeys,
     weakKeys: snapshot.weakKeys,
-  }, { payload })
+  }
+  return writeNotifyState(notifyState)
 }
 
 export function hasCodexQuickNotifyEvidence(cwd, { payload = {}, turnState = null } = {}) {
   const snapshot = buildCodexCloseoutSnapshot({ payload, turnState })
-  const evidence = readRuntimeEvidence(cwd, CODEX_QUICK_NOTIFY_EVIDENCE_FILE, { payload })
-  return matchesCodexCloseoutEvidence(evidence, snapshot)
+  const notifyState = readNotifyState()
+  return matchesCodexCloseoutEvidence(notifyState.quickNotify, snapshot)
 }

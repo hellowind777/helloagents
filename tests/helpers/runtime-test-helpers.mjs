@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
 
-import { writeJson } from './test-env.mjs'
+import { readJson, writeJson } from './test-env.mjs'
 
 export function parseStdoutJson(result) {
   assert.equal(result.status, 0, result.stderr || result.stdout)
@@ -14,6 +14,14 @@ export function getSessionStatePath(project, { workspace = 'workspace', session 
 
 export function getSessionEvidencePath(project, fileName, { workspace = 'workspace', session = 'default' } = {}) {
   return join(project, '.helloagents', 'sessions', workspace, session, 'artifacts', fileName)
+}
+
+export function getCodexNotifyStatePath(home) {
+  return join(home, '.codex', '.helloagents', 'notify-state.json')
+}
+
+export function readCodexNotifySlot(home, slot) {
+  return (readJson(getCodexNotifyStatePath(home)) || {})[slot] || null
 }
 
 export function writeSettings(home, overrides = {}) {

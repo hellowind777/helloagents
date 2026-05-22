@@ -16,6 +16,10 @@ TARGET="${HELLOAGENTS_TARGET:-}"
 MODE="${HELLOAGENTS_MODE:-}"
 BRANCH="${HELLOAGENTS_BRANCH:-}"
 PACKAGE="${HELLOAGENTS_PACKAGE:-}"
+HAS_EXPLICIT_PACKAGE=0
+if [ -n "$PACKAGE" ]; then
+  HAS_EXPLICIT_PACKAGE=1
+fi
 
 if [ -n "${HELLOAGENTS:-}" ]; then
   SPEC_TARGET="${HELLOAGENTS%%:*}"
@@ -128,7 +132,7 @@ case "$ACTION" in
     npm install -g "$PACKAGE"
     ;;
   update)
-    if [ -n "$BRANCH" ] || [ -n "${HELLOAGENTS_PACKAGE:-}" ]; then
+    if [ -n "$BRANCH" ] || [ "$HAS_EXPLICIT_PACKAGE" -eq 1 ]; then
       npm install -g "$PACKAGE"
     else
       npm update -g helloagents || npm install -g helloagents
@@ -139,7 +143,7 @@ case "$ACTION" in
     cleanup_hosts
     ;;
   switch-branch|branch)
-    if [ -z "$BRANCH" ] && [ -z "${HELLOAGENTS_PACKAGE:-}" ]; then
+    if [ -z "$BRANCH" ] && [ "$HAS_EXPLICIT_PACKAGE" -ne 1 ]; then
       echo "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for switch-branch" >&2
       exit 1
     fi
