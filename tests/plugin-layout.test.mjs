@@ -1,12 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 
 import { REPO_ROOT } from './helpers/test-env.mjs';
 
 function read(relativePath) {
   return readFileSync(join(REPO_ROOT, relativePath), 'utf-8');
+}
+
+function listRelativeFiles(rootPath, currentPath = rootPath) {
+  return readdirSync(currentPath).flatMap((name) => {
+    const fullPath = join(currentPath, name);
+    if (statSync(fullPath).isDirectory()) {
+      return listRelativeFiles(rootPath, fullPath);
+    }
+    return [relative(rootPath, fullPath).replace(/\\/g, '/')];
+  }).sort();
 }
 
 test('plugin manifests and host hook files match their target CLIs', () => {
@@ -21,10 +31,7 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.equal(claudeMarketplace.name, 'helloagents');
   assert.doesNotMatch(claudeMarketplace.description, /Development/);
   assert.equal(claudeMarketplace.plugins[0].name, 'helloagents');
-  assert.deepEqual(claudeMarketplace.plugins[0].source, {
-    source: 'github',
-    repo: 'hellowind777/helloagents',
-  });
+  assert.equal(claudeMarketplace.plugins[0].source, './plugins/helloagents-claude');
   assert.equal(claudeMarketplace.plugins[0].version, undefined);
 
   const codexPlugin = JSON.parse(read('.codex-plugin/plugin.json'));
@@ -58,6 +65,38 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.match(codexHooks, /--codex --silent/);
   assert.match(codexHooks, /\$\{PLUGIN_ROOT\}/);
   assert.doesNotMatch(codexHooks, /statusMessage/);
+});
+
+test('claude marketplace package isolates claude hooks and stays in sync with shared runtime files', () => {
+  const packageRoot = join(REPO_ROOT, 'plugins', 'helloagents-claude');
+  const packageManifest = JSON.parse(read('plugins/helloagents-claude/.claude-plugin/plugin.json'));
+  assert.equal(packageManifest.hooks, undefined);
+
+  assert.equal(
+    read('plugins/helloagents-claude/hooks/hooks.json'),
+    read('hooks/hooks-claude.json'),
+  );
+
+  for (const file of ['bootstrap.md', 'bootstrap-lite.md', 'package.json']) {
+    assert.equal(read(`plugins/helloagents-claude/${file}`), read(file));
+  }
+
+  for (const dir of ['assets', 'scripts', 'skills', 'templates']) {
+    const sourceRoot = join(REPO_ROOT, dir);
+    const packageDir = join(packageRoot, dir);
+    const expectedFiles = listRelativeFiles(sourceRoot);
+    const actualFiles = listRelativeFiles(packageDir);
+    assert.deepEqual(actualFiles, expectedFiles, `${dir} file list drifted`);
+    for (const file of expectedFiles) {
+      const sourcePath = join(sourceRoot, file);
+      const packagePath = join(packageDir, file);
+      assert.deepEqual(
+        readFileSync(packagePath),
+        readFileSync(sourcePath),
+        `${dir}/${file} drifted`,
+      );
+    }
+  }
 });
 
 test('bootstrap path rules no longer depend on host-name placeholders or wrong carrier-relative skills paths', () => {

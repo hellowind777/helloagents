@@ -21,6 +21,7 @@ const PACKAGE_FIXTURE_ENTRIES = [
   'install.sh',
   'LICENSE.md',
   'package.json',
+  'plugins',
   'README.md',
   'README_CN.md',
   'scripts',

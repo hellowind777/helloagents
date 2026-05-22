@@ -1,0 +1,20 @@
+{
+  "name": "helloagents",
+  "version": "3.0.35",
+  "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, unified QA gates, safety guards, and notifications.",
+  "author": {
+    "name": "HelloWind",
+    "email": "hellowind777@gmail.com"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "orchestration",
+    "subagent",
+    "routing",
+    "quality",
+    "notification",
+    "safety"
+  ],
+  "repository": "https://github.com/hellowind777/helloagents",
+  "skills": "./skills"
+}
