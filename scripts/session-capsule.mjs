@@ -68,6 +68,21 @@ function getScope(cwd, options = {}) {
   return getRuntimeScope(cwd, normalizedOptions)
 }
 
+function shouldMaterializeSessionState(options = {}) {
+  const normalizedOptions = normalizeOptions(options)
+  if (normalizedOptions.ensureProjectLocal === true) return true
+  if (normalizedOptions.project === true) return true
+  if (normalizedOptions.traceEvents === true) return true
+
+  const payload = normalizedOptions.payload || {}
+  if (payload.traceEvents === true || payload._helloagentsTraceEvents === true) return true
+
+  const raw = String(normalizedOptions.env?.HELLOAGENTS_TRACE_EVENTS || process.env.HELLOAGENTS_TRACE_EVENTS || '')
+    .trim()
+    .toLowerCase()
+  return raw === '1' || raw === 'true' || raw === 'yes'
+}
+
 export function getSessionCapsulePath(cwd = process.cwd(), options = {}) {
   return getScope(cwd, options).statePath
 }
@@ -113,9 +128,10 @@ export function readSessionCapsule(cwd = process.cwd(), options = {}) {
 export function writeSessionCapsule(cwd, capsule, options = {}) {
   const normalizedOptions = normalizeOptions(options)
   const scope = getScope(cwd, normalizedOptions)
+  const shouldMaterialize = shouldMaterializeSessionState(normalizedOptions)
   const currentDocument = readStateDocument(scope.statePath)
   const hasBody = Boolean(currentDocument.body && currentDocument.body.trim())
-  if (!hasBody && normalizedOptions.ensureProjectLocal !== true && !existsSync(scope.statePath)) {
+  if (!hasBody && !shouldMaterialize && !existsSync(scope.statePath)) {
     return {
       ...buildEmptyCapsule(scope),
       ...capsule,
@@ -128,6 +144,14 @@ export function writeSessionCapsule(cwd, capsule, options = {}) {
       sessionMode: scope.sessionMode,
       updatedAt: new Date().toISOString(),
     }
+  }
+  if (!hasBody && shouldMaterialize && !existsSync(scope.statePath)) {
+    ensureProjectLocalRuntime(cwd, {
+      ...normalizedOptions,
+      stateSeed: normalizedOptions.stateSeed && typeof normalizedOptions.stateSeed === 'object'
+        ? normalizedOptions.stateSeed
+        : {},
+    })
   }
   const nextCapsule = {
     ...buildEmptyCapsule(scope),
