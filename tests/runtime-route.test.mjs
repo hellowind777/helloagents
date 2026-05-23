@@ -377,7 +377,7 @@ test('project active session keeps hook and local turn-state writes in one direc
   })
   const payload = parseStdoutJson(result)
 
-  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]abcdef[\\/]STATE\.md$/)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]STATE\.md$/)
   const active = readJson(join(project, '.helloagents', 'sessions', 'active.json'))
   assert.equal(active.session, 'abcdef')
   assert.deepEqual(active.aliases, {})
@@ -679,7 +679,7 @@ test('non-readonly command route creates project-local state in non-full standby
   })
   const payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]build[\\/]SKILL\.md/)
-  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md')), true)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'STATE.md')), true)
 })
 
 test('notify route keeps command skills on the runtime root even if project-level skill dirs exist', () => {

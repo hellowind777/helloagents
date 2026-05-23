@@ -221,8 +221,8 @@
 路径: {CWD}/.helloagents/
 所有文件的创建和更新必须按 templates/ 目录中对应模板的格式执行，不可自由发挥格式。
 - `.helloagents/` 表示项目本地存储路径，负责知识、方案、状态与运行态；它不再作为项目是否已初始化的判定信号
-- `state_path` 指向的状态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/{session}/STATE.md`；当前会话的 `turn-state`、路由上下文和 artifact 索引写入这个文件的元数据，`artifacts/*.json` 仅在需要结构化证据时按需生成，`events.jsonl` 仅在显式 trace 模式下写入
-- `state_path` 是状态文件的唯一位置。宿主提供会话标识时，写入 `.helloagents/sessions/{workspace}/{session}/STATE.md`；没有稳定会话标识时，写入 `.helloagents/sessions/{workspace}/default/STATE.md`
+- `state_path` 指向的状态文件始终保留在项目本地 `.helloagents/sessions/{workspace}/STATE.md`；当前工作区的 `turn-state`、路由上下文和 artifact 索引写入同目录 `runtime.json`，`artifacts/*.json` 仅在需要结构化证据时按需生成，`events.jsonl` 仅在显式 trace 模式下写入
+- `state_path` 是状态文件的唯一位置，统一写入 `.helloagents/sessions/{workspace}/STATE.md`。宿主会话标识只用于同目录 `runtime.json` 的机器运行态，不再额外拆目录
 - `{workspace}` 为当前 Git 分支、`detached-{sha}` 或非 Git 项目的 `workspace`；`.helloagents/sessions/active.json` 只记录当前活跃会话索引，避免同一会话被拆成多个目录
 - 若 helloagents.json 中 `project_store_mode = "repo-shared"`，`context.md`、`guidelines.md`、`CHANGELOG.md`、`verify.yaml`、`DESIGN.md`、`modules/`、`plans/`、`archive/` 改按当前上下文中已注入的“当前项目存储”/“项目知识/方案目录”解析；未注入具体路径时，按当前存储模式自行解析，不要假定这些文件一定实际位于当前工作树中
 templates/ 查找路径（按优先级；首次确定模板根目录后，本会话复用）：

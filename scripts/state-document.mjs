@@ -3,6 +3,7 @@ import { dirname } from 'node:path'
 
 const STATE_META_BEGIN = '<!-- HELLOAGENTS_STATE_META'
 const STATE_META_END = 'HELLOAGENTS_STATE_META -->'
+export const AUTO_CREATED_STATE_MARKER = '由运行时自动创建；后续按实际任务重写'
 
 function normalizeText(content = '') {
   return String(content || '').replace(/^\uFEFF/, '')
@@ -62,13 +63,11 @@ export function readStateDocument(filePath) {
 
 export function composeStateDocument({ metadata = {}, body = '' } = {}) {
   const normalizedBody = normalizeText(body).replace(/^\n+/, '')
-  return [
-    STATE_META_BEGIN,
-    JSON.stringify(metadata, null, 2),
-    STATE_META_END,
-    '',
-    normalizedBody,
-  ].join('\n').replace(/\n+$/, '\n')
+  return normalizedBody ? `${normalizedBody.replace(/\n+$/, '')}\n` : ''
+}
+
+export function looksLikeAutoCreatedState(body = '') {
+  return normalizeText(body).includes(AUTO_CREATED_STATE_MARKER)
 }
 
 export function writeStateDocument(filePath, { metadata = {}, body = '' } = {}) {

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import {
   appendSessionEvent,
   clearCapsuleSection,
-  getSessionCapsulePath,
   getRuntimeScope,
   readCapsuleSection,
   writeCapsuleSection,
@@ -108,7 +107,7 @@ export function readTurnState(cwd = process.cwd(), { now = Date.now(), ...option
   return {
     cwd: normalizePath(entry.cwd),
     key: entry.key || '',
-    path: getSessionCapsulePath(cwd, options),
+    path: getRuntimeScope(cwd, options).statePath,
     updatedAt: entry.updatedAt,
     ...normalized,
   }
@@ -288,7 +287,7 @@ function main() {
     const payload = writeTurnState(cwd, input)
     process.stdout.write(JSON.stringify({
       suppressOutput: true,
-      path: getSessionCapsulePath(cwd, input),
+      path: getRuntimeScope(cwd, input).statePath,
       payload,
     }))
     return
