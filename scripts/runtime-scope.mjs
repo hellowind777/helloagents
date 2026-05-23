@@ -14,6 +14,7 @@ export const PROJECT_SESSIONS_DIR_NAME = 'sessions'
 export const PROJECT_ARTIFACTS_DIR_NAME = 'artifacts'
 export const EVENTS_FILE_NAME = 'events.jsonl'
 export const ACTIVE_SESSION_FILE_NAME = 'active.json'
+export const PROJECT_RUNTIME_FILE_NAME = 'runtime.json'
 export const DEFAULT_STATE_SESSION_TOKEN = 'default'
 export const USER_RUNTIME_DIR_NAME = 'runtime'
 export { cleanupUserRuntimeRoot, getUserRuntimeRoot, USER_RUNTIME_MAX_AGE_MS }
@@ -377,14 +378,13 @@ function resolveActiveAliasSession({ activationDir, projectRoot, workspace, alia
 }
 
 export function writeActiveProjectSession(scope, { host = '', source = '', env = process.env } = {}) {
-  if (!scope?.active || !scope.activationDir || !scope.session) return ''
+  if (!scope?.active || !scope.activationDir || !scope.workspace) return ''
 
   const activePath = getActiveSessionPath(scope.activationDir)
   const current = readJsonFile(activePath, null) || {}
   const aliases = current.aliases && typeof current.aliases === 'object' ? current.aliases : {}
   const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
   if (envToken && envToken !== scope.session) aliases[envToken] = scope.session
-
   writeJsonFileAtomic(activePath, {
     version: 1,
     cwd: scope.cwd,
@@ -453,7 +453,7 @@ export function getProjectSessionScope(cwd, options = {}) {
     projectRoot,
     workspace,
   })
-  const sessionDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME, workspace, session)
+  const sessionDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME, workspace)
 
   return {
     cwd: projectRoot,
@@ -467,7 +467,8 @@ export function getProjectSessionScope(cwd, options = {}) {
     statePath: join(sessionDir, 'STATE.md'),
     eventsPath: join(sessionDir, EVENTS_FILE_NAME),
     artifactsDir: join(sessionDir, PROJECT_ARTIFACTS_DIR_NAME),
-    key: `${projectRoot}::${workspace}::${session}`,
+    runtimePath: join(sessionDir, PROJECT_RUNTIME_FILE_NAME),
+    key: `${projectRoot}::${workspace}`,
   }
 }
 
@@ -497,6 +498,7 @@ function buildTransientRuntimeDir(cwd, options = {}) {
     statePath: join(getUserRuntimeRoot(), hash, 'STATE.md'),
     eventsPath: join(getUserRuntimeRoot(), hash, EVENTS_FILE_NAME),
     artifactsDir: join(getUserRuntimeRoot(), hash, PROJECT_ARTIFACTS_DIR_NAME),
+    runtimePath: join(getUserRuntimeRoot(), hash, PROJECT_RUNTIME_FILE_NAME),
     key: `${normalizedCwd}::transient::${token}`,
   }
 }

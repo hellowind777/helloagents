@@ -114,8 +114,8 @@ export function getProjectSessionStateScope(cwd, options = {}) {
   const scope = getProjectSessionScope(cwd, normalizeRuntimeOptions(options))
 
   return {
-    stateScope: 'session',
-    stateSessionToken: scope.session,
+    stateScope: 'workspace',
+    stateSessionToken: '',
     stateSessionMode: scope.sessionMode,
     stateWorkspace: scope.workspace || scope.branch,
     sessionDir: scope.sessionDir,
@@ -246,9 +246,6 @@ export function buildProjectStorageHint(cwd, options = {}) {
   const summary = getProjectStoreSummary(cwd, options)
   const hints = []
   hints.push(`当前状态文件写入 \`${summary.promptStatePath}\``)
-  if (summary.stateSessionMode === 'default') {
-    hints.push(`当前宿主未提供稳定会话标识，因此使用工作区默认位置 \`${summary.stateSessionToken}\``)
-  }
   if (summary.usesSharedStore) {
     hints.push(`项目存储：\`project_store_mode=repo-shared\`；项目本地存储/会话运行态目录仍是 \`${summary.promptActivationDir}\`，知识库/方案目录改为 \`${summary.promptStoreDir}\``)
   }
@@ -277,9 +274,6 @@ export function buildProjectStorageBlock(cwd, options = {}) {
 
   const explanations = []
   explanations.push('说明：状态文件只使用 `state_path`。')
-  if (summary.stateSessionMode === 'default') {
-    explanations.push('说明：当前宿主未提供稳定会话标识，因此使用工作区默认位置。')
-  }
   if (summary.usesSharedStore) {
     explanations.push('说明：状态文件与会话产物写项目本地存储目录；`context.md`、`guidelines.md`、`DESIGN.md`、`verify.yaml`、`modules/`、`plans/`、`archive/` 写知识库/方案目录。')
   } else {
