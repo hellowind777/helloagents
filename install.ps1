@@ -16,6 +16,7 @@ $Mode = if ($env:HELLOAGENTS_MODE) { $env:HELLOAGENTS_MODE } else { "" }
 $Branch = if ($env:HELLOAGENTS_BRANCH) { $env:HELLOAGENTS_BRANCH } else { "" }
 $Package = if ($env:HELLOAGENTS_PACKAGE) { $env:HELLOAGENTS_PACKAGE } else { "" }
 $HasExplicitPackage = [bool]$Package
+$HasExplicitTarget = $false
 
 if ($env:HELLOAGENTS) {
     $Parts = $env:HELLOAGENTS.Split(":", 2)
@@ -25,6 +26,8 @@ if ($env:HELLOAGENTS) {
     if (-not $Target) { $Target = $Parts[0] }
     if (-not $Mode -and $Parts.Count -gt 1) { $Mode = $Parts[1] }
 }
+
+$HasExplicitTarget = [bool]$Target
 
 if (-not $Target) { $Target = "all" }
 $Target = $Target.ToLowerInvariant()
@@ -107,7 +110,9 @@ function Uninstall-Hosts {
 
 switch ($Action) {
     "install" {
-        Enable-PostinstallDeploy
+        if ($HasExplicitTarget) {
+            Enable-PostinstallDeploy
+        }
         Invoke-Npm -NpmArgs @("install", "-g", $Package)
     }
     "update" {

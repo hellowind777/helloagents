@@ -167,7 +167,7 @@ test('notify inject exposes session-scoped state path when session identifiers e
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
-    WT_SESSION: 'wt-session-abcdef123456',
+    HELLOAGENTS_NOTIFY_SESSION_ID: 'host-session-abcdef123456',
   }
   const project = createTempDir('helloagents-storage-session-inject-')
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
@@ -196,7 +196,7 @@ test('session-scoped state path isolates branch and terminal session in session-
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
-    WT_SESSION: 'wt-session-abcdef123456',
+    HELLOAGENTS_NOTIFY_SESSION_ID: 'host-session-abcdef123456',
   }
   const repo = createTempDir('helloagents-storage-session-')
 
@@ -229,7 +229,7 @@ test('workflow snapshot reads the current session STATE or workspace default slo
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
-    WT_SESSION: 'wt-session-abcdef123456',
+    HELLOAGENTS_NOTIFY_SESSION_ID: 'host-session-abcdef123456',
   }
   const repo = createTempDir('helloagents-storage-session-fallback-')
   const feature = '202604080101_session-plan'

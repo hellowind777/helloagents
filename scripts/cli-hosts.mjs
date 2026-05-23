@@ -65,7 +65,7 @@ export function installGeminiStandby(home, pkgRoot) {
   createLink(pkgRoot, join(geminiDir, 'helloagents'));
 
   const settingsPath = join(geminiDir, 'settings.json');
-  const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks.json', '${extensionPath}');
+  const hooksData = loadHooksWithCliEntry(pkgRoot, 'hooks-gemini.json', '${extensionPath}');
   if (hooksData) mergeSettingsHooks(settingsPath, hooksData);
 
   return true;

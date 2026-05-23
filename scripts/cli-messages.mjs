@@ -21,9 +21,9 @@ function codexGlobalStatus({ home, msg }) {
 
 function pluginCommands() {
   return [
-    '    Claude Code:  /plugin marketplace add hellowind777/helloagents',
+    '    Claude Code:  /plugin marketplace add https://github.com/hellowind777/helloagents.git',
     '                  /plugin install helloagents@helloagents',
-    '    Gemini CLI:   gemini extensions install https://github.com/hellowind777/helloagents',
+    '    Gemini CLI:   helloagents install gemini --global',
   ].join('\n')
 }
 

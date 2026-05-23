@@ -7,7 +7,7 @@ import {
   readSessionArtifact,
   writeSessionArtifact,
 } from './session-capsule.mjs'
-import { EVIDENCE_MAX_AGE_MS, LONG_RUNNING_TTL_HOURS } from './runtime-ttl.mjs'
+import { EVIDENCE_MAX_AGE_MS, LONG_RUNNING_TTL_HOURS, STANDARD_RUNTIME_TTL_HOURS } from './runtime-ttl.mjs'
 
 export { EVIDENCE_MAX_AGE_MS }
 
@@ -87,7 +87,7 @@ export function validateEvidenceTimestamp(evidence, now, label) {
       required: true,
       status: 'stale-time',
       evidence,
-      details: [`${label}超过 ${LONG_RUNNING_TTL_HOURS} 小时`],
+      details: [`${label}超过 ${STANDARD_RUNTIME_TTL_HOURS} 小时（长任务上限：${LONG_RUNNING_TTL_HOURS} 小时）`],
     }
   }
   return null

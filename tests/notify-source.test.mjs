@@ -29,7 +29,7 @@ test('notification source falls back to terminal session env and then parent pro
     cwd: 'D:/GitHub/dev/demo-app',
     payload: {},
     env: {
-      WT_SESSION: 'wt-session-abcdef',
+      HELLOAGENTS_NOTIFY_SESSION_ID: 'host-session-abcdef',
     },
     ppid: 22222,
   })

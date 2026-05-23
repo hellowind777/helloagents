@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.35-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.37-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -189,6 +189,8 @@ HelloAGENTS now resolves the current state file from `state_path`:
 
 `<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
 
+For project-local sessions, HelloAGENTS now only uses stable host identifiers such as `sessionId`, `conversationId`, `threadId`, or `HELLOAGENTS_NOTIFY_SESSION_ID`. It no longer uses terminal/window ids such as `WT_SESSION`, `TERM_SESSION_ID`, or `WINDOWID` to create extra project session directories.
+
 `STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation. Codex `/goal` does not replace `state_path`, `turn-state`, or local evidence files; it only handles long-running continuation on the Codex side.
 
 ### 6) Verification and delivery evidence
@@ -206,6 +208,9 @@ Runtime state now stays intentionally small:
 - `~/.codex/.helloagents/notify-state.json` for Codex-native closeout de-duplication only
 
 `turn-state`, route context, and the artifact index are stored inside `STATE.md` metadata instead of a separate `capsule.json`. `events.jsonl` is opt-in trace output, not a default runtime file.
+Project-local `STATE.md` is now materialized more lazily, and legacy root-level `.helloagents/artifacts/*.log` files are cleaned up automatically instead of growing as a second history system.
+
+Standard runtime evidence and transient runtime state now expire after 72 hours. Long-running Codex goal flows still keep their 720-hour upper bound where the workflow explicitly needs it.
 
 Delivery gate, guard, and QA gate messages use action-oriented wording such as processing path, closeout action, and visual validation action, so blocked flows show what to do next without turning executable steps into optional suggestions. Final closeout also enforces a single HelloAGENTS wrapper, so one reply does not emit duplicate closeout headers.
 That wrapper is now reserved for direct final-user delivery only. Intermediate reports, delegated task results, and sub-agent replies stay natural, and sub-agent stop hooks reject wrapped closeout replies.
@@ -304,7 +309,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root.
 
@@ -405,7 +410,7 @@ $env:HELLOAGENTS="codex:standby"; $env:HELLOAGENTS_ACTION="cleanup"; irm https:/
 $env:HELLOAGENTS="gemini"; $env:HELLOAGENTS_ACTION="uninstall"; irm https://raw.githubusercontent.com/hellowind777/helloagents/main/install.ps1 | iex
 ```
 
-The shell and PowerShell wrappers now parse `HELLOAGENTS` once, clear lifecycle env before update, branch switching, and uninstall, and then run one explicit sync or cleanup path.
+The shell and PowerShell wrappers now parse `HELLOAGENTS` once, keep plain package install/update behavior when no target is specified, clear lifecycle env before update, branch switching, and uninstall, and then run one explicit sync or cleanup path.
 
 ### Branch switching
 
@@ -442,12 +447,12 @@ npm uninstall -g helloagents
 | Gemini CLI | native extension install | managed by Gemini extension system |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-In global mode, HelloAGENTS now attempts the host-native install commands automatically. If a host command is unavailable, run the same commands manually:
+In global mode, HelloAGENTS now attempts the host-native install commands automatically. For Claude Code, the marketplace should be added from the Git URL so the plugin source stays on HTTPS and avoids an SSH-only clone during installation. If a host command is unavailable, run the same commands manually:
 
 ```text
-/plugin marketplace add hellowind777/helloagents
+/plugin marketplace add https://github.com/hellowind777/helloagents.git
 /plugin install helloagents@helloagents
-gemini extensions install https://github.com/hellowind777/helloagents
+helloagents install gemini --global
 ```
 
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.

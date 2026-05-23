@@ -125,6 +125,24 @@ test('install.sh install forwards postinstall deploy env for compact host mode s
   assert.equal(entries[0].mode, 'global')
 })
 
+test('install.sh install without an explicit target only installs the package', { skip: !POSIX_SHELL }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const { logPath, env } = createScriptEnv(home, {
+    HELLOAGENTS_ACTION: 'install',
+  })
+
+  runInstallSh(pkgRoot, home, env)
+
+  const entries = readLogEntries(logPath)
+  assert.equal(entries.length, 1)
+  assert.equal(entries[0].args, 'install -g helloagents')
+  assert.equal(entries[0].deploy, '')
+  assert.equal(entries[0].target, '')
+  assert.equal(entries[0].mode, '')
+  assert.equal(entries[0].compact, '')
+})
+
 test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expected npm commands', { skip: !POSIX_SHELL }, () => {
   const { root: pkgRoot } = createPackageFixture()
   const customPackage = 'https://example.com/helloagents-custom.tgz'

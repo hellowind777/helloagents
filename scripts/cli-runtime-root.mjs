@@ -1,4 +1,4 @@
-import { mkdtempSync, realpathSync, renameSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, realpathSync, renameSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
 import { copyEntries, ensureDir, removeIfExists } from './cli-utils.mjs'
@@ -63,6 +63,13 @@ function retryTransientFs(operation) {
   throw lastError
 }
 
+function materializeGeminiHooks(root) {
+  const source = join(root, 'hooks', 'hooks-gemini.json')
+  const target = join(root, 'hooks', 'hooks.json')
+  if (!existsSync(source)) return
+  copyFileSync(source, target)
+}
+
 /** Sync package runtime files into the stable root without copying repo-only files. */
 export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
   const source = resolve(sourceRoot)
@@ -77,6 +84,7 @@ export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
 
   try {
     copyEntries(source, staging, RUNTIME_ROOT_ENTRIES)
+    materializeGeminiHooks(staging)
     retryTransientFs(() => {
       removeIfExists(target)
       renameSync(staging, target)

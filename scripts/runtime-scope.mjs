@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, 
 import { dirname, join, normalize, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
-import { resolveSessionToken } from './session-token.mjs'
+import { resolveProjectSessionToken, resolveSessionToken } from './session-token.mjs'
 import { USER_RUNTIME_MAX_AGE_MS } from './runtime-ttl.mjs'
 import { cleanupUserRuntimeRoot, getUserRuntimeRoot } from './runtime-user-cleanup.mjs'
 import { FULL_CARRIER_PROFILE_MARKER } from './cli-utils.mjs'
@@ -323,21 +323,14 @@ function findProjectActivationDir(cwd) {
 
 function resolvePayloadSessionToken(payload = {}) {
   if (payload?._helloagentsSessionAlias) return ''
-  return resolveSessionToken({
+  return resolveProjectSessionToken({
     payload,
     env: {},
-    ppid: 0,
-    allowPpidFallback: false,
   })
 }
 
 function resolveEnvSessionToken(env = process.env) {
-  return resolveSessionToken({
-    payload: {},
-    env,
-    ppid: 0,
-    allowPpidFallback: false,
-  })
+  return resolveProjectSessionToken({ payload: {}, env })
 }
 
 function resolveTransientSessionToken({ payload = {}, env = process.env, ppid = process.ppid } = {}) {
@@ -437,11 +430,21 @@ function chooseProjectSession({ payload, env, activationDir, projectRoot, worksp
   return { session: DEFAULT_STATE_SESSION_TOKEN, sessionMode: 'default' }
 }
 
+function removeLegacyProjectArtifacts(activationDir) {
+  if (!activationDir) return
+  const artifactsDir = join(activationDir, PROJECT_ARTIFACTS_DIR_NAME)
+  if (!existsSync(artifactsDir)) return
+  try {
+    rmSync(artifactsDir, { recursive: true, force: true })
+  } catch {}
+}
+
 export function getProjectSessionScope(cwd, options = {}) {
   const normalizedCwd = normalizePath(cwd || process.cwd())
   const projectRoot = getProjectRoot(normalizedCwd)
   const { payload = {}, env = process.env } = normalizeRuntimeOptions(options)
   const activationDir = getProjectActivationDir(projectRoot)
+  removeLegacyProjectArtifacts(activationDir)
   const workspace = resolveWorkspaceName(projectRoot)
   const { session, sessionMode } = chooseProjectSession({
     payload,

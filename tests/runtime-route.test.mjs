@@ -380,7 +380,7 @@ test('project active session keeps hook and local turn-state writes in one direc
   assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]abcdef[\\/]STATE\.md$/)
   const active = readJson(join(project, '.helloagents', 'sessions', 'active.json'))
   assert.equal(active.session, 'abcdef')
-  assert.equal(active.aliases.xyz999, 'abcdef')
+  assert.deepEqual(active.aliases, {})
 })
 
 test('notify inject and semantic route cover standby and recovery hints', () => {

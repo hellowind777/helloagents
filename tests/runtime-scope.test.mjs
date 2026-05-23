@@ -151,6 +151,37 @@ test('request identifiers do not create project session directories', () => {
   assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
 })
 
+test('terminal environment identifiers do not create new project session directories', () => {
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'wt-session-abcdef123456',
+    TERM_SESSION_ID: 'term-session-abcdef123456',
+  }
+  const project = createTempDir('helloagents-terminal-session-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  const payload = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, { payload: {} })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  assert.equal(payload.session, 'default')
+  assert.equal(payload.sessionMode, 'default')
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
+})
+
 test('user runtime cleanup removes expired transient sessions only', () => {
   const home = createHomeFixture()
   const runtimeRoot = getUserRuntimeRoot(home)
@@ -292,8 +323,35 @@ test('project session cleanup keeps active and recent state sessions, and remove
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'events.jsonl'), '{}\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'artifacts', 'codex-native-stop.json'), '{}\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'openroute', 'route.txt'), 'route\n')
+  writeText(
+    join(project, '.helloagents', 'sessions', 'workspace', 'seed1', 'STATE.md'),
+    [
+      '# 恢复快照',
+      '',
+      '## 主线目标',
+      '进入当前项目级执行流程',
+      '',
+      '## 正在做什么',
+      '正在初始化当前会话运行态',
+      '',
+      '## 关键上下文',
+      '由运行时自动创建；后续按实际任务重写',
+      '',
+      '## 下一步',
+      '根据当前用户请求继续执行当前流程',
+      '',
+      '## 阻塞项',
+      '（无）',
+      '',
+      '## 方案',
+      '',
+      '## 已标记技能',
+      '',
+    ].join('\n'),
+  )
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'full1', 'STATE.md'), '# full\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'full2', 'STATE.md'), '# recent\n')
+  writeText(join(project, '.helloagents', 'artifacts', 'claude-plugin-load.log'), 'debug\n')
   writeText(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp'), 'tmp\n')
   mkdirSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1'), { recursive: true })
   utimesSync(join(project, '.helloagents', 'sessions', 'workspace', 'full1', 'STATE.md'), oldDate, oldDate)
@@ -308,8 +366,11 @@ test('project session cleanup keeps active and recent state sessions, and remove
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'route1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp')), false)
+  assert.equal(existsSync(join(project, '.helloagents', 'artifacts')), false)
   assert.equal(result.removedInactiveDirs.length > 0, true)
   assert.equal(result.removedNoStateDirs.length > 0, true)
+  assert.equal(result.removedSeedDirs.length > 0, true)
+  assert.equal(result.removedLegacyArtifacts.length > 0, true)
 })
 
 test('project session cleanup skips repeated scans inside cooldown window', () => {

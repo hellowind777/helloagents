@@ -17,6 +17,7 @@ MODE="${HELLOAGENTS_MODE:-}"
 BRANCH="${HELLOAGENTS_BRANCH:-}"
 PACKAGE="${HELLOAGENTS_PACKAGE:-}"
 HAS_EXPLICIT_PACKAGE=0
+HAS_EXPLICIT_TARGET=0
 if [ -n "$PACKAGE" ]; then
   HAS_EXPLICIT_PACKAGE=1
 fi
@@ -33,6 +34,10 @@ if [ -n "${HELLOAGENTS:-}" ]; then
   fi
   TARGET="${TARGET:-$SPEC_TARGET}"
   MODE="${MODE:-$SPEC_MODE}"
+fi
+
+if [ -n "$TARGET" ]; then
+  HAS_EXPLICIT_TARGET=1
 fi
 
 TARGET="${TARGET:-all}"
@@ -128,7 +133,9 @@ enable_postinstall_deploy() {
 
 case "$ACTION" in
   install)
-    enable_postinstall_deploy
+    if [ "$HAS_EXPLICIT_TARGET" -eq 1 ]; then
+      enable_postinstall_deploy
+    fi
     npm install -g "$PACKAGE"
     ;;
   update)
