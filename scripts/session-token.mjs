@@ -17,6 +17,19 @@ const PAYLOAD_SESSION_KEYS = [
   'tab',
 ]
 
+const PROJECT_PAYLOAD_SESSION_KEYS = [
+  'sessionId',
+  'session_id',
+  'session',
+  'conversationId',
+  'conversation_id',
+  'conversation',
+  'threadId',
+  'thread_id',
+  'thread-id',
+  'thread',
+]
+
 const ENV_SESSION_KEYS = [
   'HELLOAGENTS_NOTIFY_SESSION_ID',
   'WT_SESSION',
@@ -26,6 +39,10 @@ const ENV_SESSION_KEYS = [
   'WINDOWID',
   'WEZTERM_PANE',
   'TAB_ID',
+]
+
+const PROJECT_ENV_SESSION_KEYS = [
+  'HELLOAGENTS_NOTIFY_SESSION_ID',
 ]
 
 function readStringCandidate(input, key) {
@@ -50,23 +67,41 @@ export function sanitizeSessionToken(value = '') {
   return cleaned.slice(0, 8)
 }
 
+function resolveTokenFromKeys(input, keys = []) {
+  for (const key of keys) {
+    const value = sanitizeSessionToken(readStringCandidate(input, key))
+    if (value) return value
+  }
+  return ''
+}
+
 export function resolveSessionToken({
   payload = {},
   env = process.env,
   ppid = process.ppid,
   allowPpidFallback = true,
 } = {}) {
-  for (const key of PAYLOAD_SESSION_KEYS) {
-    const value = sanitizeSessionToken(readStringCandidate(payload, key))
-    if (value) return value
-  }
+  const payloadToken = resolveTokenFromKeys(payload, PAYLOAD_SESSION_KEYS)
+  if (payloadToken) return payloadToken
 
-  for (const key of ENV_SESSION_KEYS) {
-    const value = sanitizeSessionToken(env?.[key] || '')
-    if (value) return value
-  }
+  const envToken = resolveTokenFromKeys(env, ENV_SESSION_KEYS)
+  if (envToken) return envToken
 
   return allowPpidFallback && ppid ? String(ppid) : ''
 }
 
-export { ENV_SESSION_KEYS, PAYLOAD_SESSION_KEYS }
+export function resolveProjectSessionToken({
+  payload = {},
+  env = process.env,
+} = {}) {
+  const payloadToken = resolveTokenFromKeys(payload, PROJECT_PAYLOAD_SESSION_KEYS)
+  if (payloadToken) return payloadToken
+  return resolveTokenFromKeys(env, PROJECT_ENV_SESSION_KEYS)
+}
+
+export {
+  ENV_SESSION_KEYS,
+  PAYLOAD_SESSION_KEYS,
+  PROJECT_ENV_SESSION_KEYS,
+  PROJECT_PAYLOAD_SESSION_KEYS,
+}

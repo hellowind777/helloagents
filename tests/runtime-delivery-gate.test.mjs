@@ -155,7 +155,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
     input: JSON.stringify({ cwd: project }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.reason, /qa-review 证据超过 720 小时/)
+  assert.match(payload.reason, /qa-review 证据超过 72 小时/)
 
   writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date().toISOString(),

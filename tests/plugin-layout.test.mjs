@@ -21,10 +21,10 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.equal(claudeMarketplace.name, 'helloagents');
   assert.doesNotMatch(claudeMarketplace.description, /Development/);
   assert.equal(claudeMarketplace.plugins[0].name, 'helloagents');
-  assert.deepEqual(claudeMarketplace.plugins[0].source, {
-    source: 'github',
-    repo: 'hellowind777/helloagents',
-  });
+  assert.equal(claudeMarketplace.plugins[0].source, './');
+  assert.equal(claudeMarketplace.plugins[0].skills, undefined);
+  assert.equal(claudeMarketplace.plugins[0].hooks, undefined);
+  assert.equal(claudeMarketplace.plugins[0].strict, undefined);
   assert.equal(claudeMarketplace.plugins[0].version, undefined);
 
   const codexPlugin = JSON.parse(read('.codex-plugin/plugin.json'));
@@ -36,7 +36,7 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   const geminiExtension = JSON.parse(read('gemini-extension.json'));
   assert.equal(geminiExtension.contextFileName, 'bootstrap.md');
 
-  const geminiHooks = read('hooks/hooks.json');
+  const geminiHooks = read('hooks/hooks-gemini.json');
   assert.match(geminiHooks, /BeforeAgent/);
   assert.match(geminiHooks, /pre-write --gemini/);
   assert.match(geminiHooks, /write_file\|edit_file/);
@@ -50,6 +50,7 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.match(claudeHooks, /\$\{CLAUDE_PLUGIN_ROOT\}/);
   assert.match(claudeHooks, /--claude/);
   assert.doesNotMatch(claudeHooks, /BeforeAgent/);
+  assert.throws(() => read('hooks/hooks.json'));
 
   const codexHooks = read('hooks/hooks-codex.json');
   assert.match(codexHooks, /SessionStart/);

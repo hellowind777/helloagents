@@ -10,9 +10,11 @@ import {
   writeJsonFileAtomic,
 } from './runtime-scope.mjs'
 import { LONG_RUNNING_TTL_MS } from './runtime-ttl.mjs'
+import { readStateDocument } from './state-document.mjs'
 
 export const PROJECT_SESSION_CLEANUP_COOLDOWN_MS = 10 * 60 * 1000
 export const PROJECT_SESSION_MAX_AGE_MS = LONG_RUNNING_TTL_MS
+const AUTO_CREATED_STATE_MARKER = '由运行时自动创建；后续按实际任务重写'
 
 function removePath(filePath, result, bucket) {
   try {
@@ -21,6 +23,10 @@ function removePath(filePath, result, bucket) {
   } catch (error) {
     result.errors.push(`${filePath}: ${error.message}`)
   }
+}
+
+function isDebugLog(entryName = '') {
+  return /\.log$/i.test(entryName)
 }
 
 function isDirectoryEmptyRecursive(dirPath) {
@@ -55,6 +61,15 @@ function hasStateSnapshot(sessionDir) {
   return existsSync(join(sessionDir, 'STATE.md'))
 }
 
+function isAutoCreatedSeedSession(sessionDir) {
+  const statePath = join(sessionDir, 'STATE.md')
+  if (!existsSync(statePath)) return false
+
+  const { metadata, body } = readStateDocument(statePath)
+  if (metadata && typeof metadata === 'object' && Object.keys(metadata).length > 0) return false
+  return String(body || '').includes(AUTO_CREATED_STATE_MARKER)
+}
+
 function readSessionStateMtimeMs(sessionDir) {
   try {
     return statSync(join(sessionDir, 'STATE.md')).mtimeMs
@@ -79,6 +94,32 @@ function cleanupTransientSessionTemps(sessionsDir, result) {
   }
 }
 
+function cleanupLegacyProjectArtifacts(activationDir, result) {
+  const artifactsDir = join(activationDir, 'artifacts')
+  if (!existsSync(artifactsDir)) return
+
+  let removableEntries = []
+  try {
+    removableEntries = readdirSync(artifactsDir, { withFileTypes: true })
+  } catch (error) {
+    result.errors.push(`${artifactsDir}: ${error.message}`)
+    return
+  }
+
+  for (const entry of removableEntries) {
+    if (!entry.isFile() || !isDebugLog(entry.name)) continue
+    removePath(join(artifactsDir, entry.name), result, 'removedLegacyArtifacts')
+  }
+
+  try {
+    if (isDirectoryEmptyRecursive(artifactsDir)) {
+      removePath(artifactsDir, result, 'removedLegacyArtifacts')
+    }
+  } catch (error) {
+    result.errors.push(`${artifactsDir}: ${error.message}`)
+  }
+}
+
 export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 0, maxAgeMs = PROJECT_SESSION_MAX_AGE_MS } = {}) {
   const projectRoot = getProjectRoot(cwd)
   const activationDir = getProjectActivationDir(projectRoot)
@@ -90,7 +131,9 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
     removedEmptyDirs: [],
     removedInactiveDirs: [],
     removedNoStateDirs: [],
+    removedSeedDirs: [],
     removedTempFiles: [],
+    removedLegacyArtifacts: [],
     errors: [],
     skipped: false,
   }
@@ -109,6 +152,7 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
   } catch (error) {
     result.errors.push(`${sessionsDir}: ${error.message}`)
   }
+  cleanupLegacyProjectArtifacts(activationDir, result)
 
   for (const workspaceEntry of readdirSync(sessionsDir, { withFileTypes: true })) {
     if (!workspaceEntry.isDirectory()) continue
@@ -124,6 +168,8 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
           removePath(sessionDir, result, 'removedEmptyDirs')
         } else if (!hasStateSnapshot(sessionDir)) {
           removePath(sessionDir, result, 'removedNoStateDirs')
+        } else if (isAutoCreatedSeedSession(sessionDir)) {
+          removePath(sessionDir, result, 'removedSeedDirs')
         } else if (isStaleStateSession(sessionDir, now, maxAgeMs)) {
           removePath(sessionDir, result, 'removedInactiveDirs')
         }

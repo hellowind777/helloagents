@@ -125,6 +125,21 @@ test('install.ps1 install forwards postinstall deploy env for compact host mode 
   assert.equal(entries[0].mode, 'global')
 })
 
+test('install.ps1 install without an explicit target only installs the package', { skip: !PWSH }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const { logPath, env } = createScriptEnv(home, {
+    HELLOAGENTS_ACTION: 'install',
+  })
+
+  runInstallPs1(pkgRoot, home, env)
+
+  const entries = readLogEntries(logPath)
+  assert.equal(entries.length, 1)
+  assert.deepEqual(entries[0].args, ['install', '-g', 'helloagents'])
+  assert.ok(!entries[0].deploy && !entries[0].target && !entries[0].mode && !entries[0].compact)
+})
+
 test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the expected npm commands', { skip: !PWSH }, () => {
   const { root: pkgRoot } = createPackageFixture()
   const customPackage = 'https://example.com/helloagents-custom.tgz'

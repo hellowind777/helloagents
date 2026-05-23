@@ -9,10 +9,7 @@
     {
       "name": "helloagents",
       "description": "Quality-driven orchestration kernel for AI CLIs: intelligent routing, quality verification, safety guards, and notifications",
-      "source": {
-        "source": "github",
-        "repo": "hellowind777/helloagents"
-      },
+      "source": "./",
       "author": {
         "name": "HelloWind",
         "email": "hellowind777@gmail.com"

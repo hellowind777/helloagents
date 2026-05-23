@@ -56,6 +56,7 @@ test('workflow runtime contract stays aligned with the unified qa-review archite
   assert.match(qaReviewState, /getQaReviewEvidenceStatus/)
   assert.match(qaReviewState, /最新 qa-review 证据只覆盖快速命令检查/)
   assert.match(runtimeTtl, /LONG_RUNNING_TTL_HOURS = 720/)
+  assert.match(runtimeTtl, /STANDARD_RUNTIME_TTL_HOURS = 72/)
   assert.match(runtimeArtifacts, /validateEvidenceTimestamp/)
   assert.equal(existsSync(join(REPO_ROOT, 'scripts', 'review-state.mjs')), false)
   assert.equal(existsSync(join(REPO_ROOT, 'scripts', 'verify-state.mjs')), false)

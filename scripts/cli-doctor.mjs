@@ -106,8 +106,8 @@ function suggestDoctorFix(host, status, trackedMode) {
     return `helloagents update ${host}${trackedMode && trackedMode !== 'none' ? ` --${trackedMode}` : ''}`
   }
   if (status === 'manual-plugin') {
-    if (host === 'claude') return '/plugin marketplace add hellowind777/helloagents; /plugin install helloagents@helloagents'
-    if (host === 'gemini') return 'gemini extensions install https://github.com/hellowind777/helloagents'
+    if (host === 'claude') return '/plugin marketplace add https://github.com/hellowind777/helloagents.git; /plugin install helloagents@helloagents'
+    if (host === 'gemini') return 'helloagents install gemini --global'
   }
   if (status === 'not-installed') {
     return `helloagents install ${host} --standby`
@@ -176,7 +176,7 @@ function inspectGeminiDoctor(settings) {
   const detectedMode = normalizeDoctorMode(runtime.detectHostMode(host))
   const geminiDir = join(runtime.home, '.gemini')
   const geminiSettings = safeJson(join(geminiDir, 'settings.json')) || {}
-  const expectedHooks = readExpectedHooks('hooks.json', '${extensionPath}')
+  const expectedHooks = readExpectedHooks('hooks-gemini.json', '${extensionPath}')
   const checks = {
     carrierMarker: (safeRead(join(geminiDir, 'GEMINI.md')) || '').includes('HELLOAGENTS_START'),
     carrierContentMatch: extractManagedCarrierContent(join(geminiDir, 'GEMINI.md'))
