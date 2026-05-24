@@ -5,9 +5,13 @@ import { dirname, join, normalize, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
 import {
+  PROJECT_CONVERSATION_PAYLOAD_KEYS,
+  PROJECT_SESSION_PAYLOAD_KEYS,
+  PROJECT_THREAD_PAYLOAD_KEYS,
   resolveProjectSessionAliasToken,
   resolveProjectSessionToken,
   resolveSessionToken,
+  sanitizeSessionToken,
 } from './session-token.mjs'
 import { USER_RUNTIME_MAX_AGE_MS } from './runtime-ttl.mjs'
 import { cleanupUserRuntimeRoot, getUserRuntimeRoot } from './runtime-user-cleanup.mjs'
@@ -334,6 +338,31 @@ function resolvePayloadSessionToken(payload = {}) {
   })
 }
 
+function readRawPayloadValue(payload = {}, key = '') {
+  if (!payload || typeof payload !== 'object') return ''
+  const value = payload[key]
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'number') return String(value)
+  return ''
+}
+
+function readPayloadSessionIdentity(payload = {}) {
+  const groups = [
+    ['session', PROJECT_SESSION_PAYLOAD_KEYS],
+    ['conversation', PROJECT_CONVERSATION_PAYLOAD_KEYS],
+    ['thread', PROJECT_THREAD_PAYLOAD_KEYS],
+  ]
+
+  for (const [kind, keys] of groups) {
+    for (const key of keys) {
+      const value = sanitizeRuntimeSegment(sanitizeSessionToken(readRawPayloadValue(payload, key)), '')
+      if (value) return { kind, token: value }
+    }
+  }
+
+  return { kind: '', token: '' }
+}
+
 function resolveEnvSessionToken(env = process.env) {
   return resolveProjectSessionToken({ payload: {}, env })
 }
@@ -358,12 +387,33 @@ function buildScopedSessionToken(kind = '', raw = '') {
   return `${normalizedKind}-${value}`
 }
 
+function buildSessionAliasKeys({ payload = {}, env = process.env } = {}) {
+  const keys = []
+  const payloadIdentity = readPayloadSessionIdentity(payload)
+  if (payloadIdentity.token) {
+    keys.push(`${payloadIdentity.kind}:${payloadIdentity.token}`)
+  }
+
+  const envSession = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
+  if (envSession && !payloadIdentity.token) keys.push(`host:${envSession}`)
+
+  const payloadAlias = sanitizeRuntimeSegment(sanitizeSessionToken(payload?._helloagentsSessionAlias), '')
+  if (payloadAlias) keys.push(`alias:${payloadAlias}`)
+
+  const envAlias = sanitizeRuntimeSegment(resolveEnvSessionAliasToken(env), '')
+  if (envAlias && envSession && envAlias === envSession) {
+    return [...new Set(keys.filter(Boolean))]
+  }
+  if (envAlias) keys.push(`alias:${envAlias}`)
+
+  return [...new Set(keys.filter(Boolean))]
+}
+
 function getActiveSessionPath(activationDir) {
   return join(activationDir, PROJECT_SESSIONS_DIR_NAME, ACTIVE_SESSION_FILE_NAME)
 }
 
-function resolveActiveAliasSession({ activationDir, projectRoot, workspace, alias, now = Date.now() } = {}) {
-  if (!alias) return ''
+function readActiveProjectSession({ activationDir, projectRoot, workspace, now = Date.now() } = {}) {
   const active = readJsonFile(getActiveSessionPath(activationDir), null)
   if (!active || typeof active !== 'object') return ''
   if (active.cwd && !samePath(active.cwd, projectRoot)) return ''
@@ -374,20 +424,43 @@ function resolveActiveAliasSession({ activationDir, projectRoot, workspace, alia
   const updatedAt = Date.parse(active.updatedAt || '')
   if (!Number.isFinite(updatedAt) || now - updatedAt > USER_RUNTIME_MAX_AGE_MS) return ''
 
+  return active
+}
+
+function resolveActiveAliasSession({ activationDir, projectRoot, workspace, alias, now = Date.now() } = {}) {
+  if (!alias) return ''
+  const active = readActiveProjectSession({
+    activationDir,
+    projectRoot,
+    workspace,
+    now,
+  })
+  if (!active || typeof active !== 'object') return ''
+
   const aliases = active.aliases && typeof active.aliases === 'object' ? active.aliases : {}
   return sanitizeRuntimeSegment(aliases[alias], '')
 }
 
-export function writeActiveProjectSession(scope, { host = '', source = '', env = process.env } = {}) {
+function choosePreferredProjectSession(activeSession = '', candidates = []) {
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    if (activeSession && candidate === activeSession) return candidate
+  }
+  return candidates.find(Boolean) || ''
+}
+
+export function writeActiveProjectSession(scope, { host = '', source = '', payload = {}, env = process.env } = {}) {
   if (!scope?.active || !scope.activationDir || !scope.workspace) return ''
 
   const activePath = getActiveSessionPath(scope.activationDir)
   const current = readJsonFile(activePath, null) || {}
-  const aliases = current.aliases && typeof current.aliases === 'object' ? current.aliases : {}
-  const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
-  if (envToken && envToken !== scope.session) aliases[envToken] = scope.session
-  const aliasToken = sanitizeRuntimeSegment(resolveEnvSessionAliasToken(env), '')
-  if (aliasToken && aliasToken !== scope.session) aliases[aliasToken] = scope.session
+  const aliases = current.aliases && typeof current.aliases === 'object' ? { ...current.aliases } : {}
+  const aliasKeys = buildSessionAliasKeys({ payload, env })
+  for (const aliasKey of aliasKeys) {
+    aliases[aliasKey] = scope.session
+    const [, aliasValue = ''] = String(aliasKey).split(':')
+    if (aliasValue) aliases[aliasValue] = scope.session
+  }
   writeJsonFileAtomic(activePath, {
     version: 1,
     cwd: scope.cwd,
@@ -404,38 +477,65 @@ export function writeActiveProjectSession(scope, { host = '', source = '', env =
 }
 
 function chooseProjectSession({ payload, env, activationDir, projectRoot, workspace }) {
-  const payloadToken = sanitizeRuntimeSegment(resolvePayloadSessionToken(payload), '')
-  const payloadAlias = sanitizeRuntimeSegment(payload?._helloagentsSessionAlias, '')
+  const active = readActiveProjectSession({
+    activationDir,
+    projectRoot,
+    workspace,
+  })
+  const activeSession = sanitizeRuntimeSegment(active?.session || '', '')
+  const payloadIdentity = readPayloadSessionIdentity(payload)
+  const payloadToken = payloadIdentity.token
+  const payloadAlias = sanitizeRuntimeSegment(sanitizeSessionToken(payload?._helloagentsSessionAlias), '')
+  const payloadAliases = [
+    payloadIdentity.token ? `${payloadIdentity.kind}:${payloadIdentity.token}` : '',
+    payloadAlias ? `alias:${payloadAlias}` : '',
+  ].filter(Boolean)
+  const payloadMappedSession = choosePreferredProjectSession(
+    activeSession,
+    payloadAliases.map((alias) => resolveActiveAliasSession({
+      activationDir,
+      projectRoot,
+      workspace,
+      alias,
+    })),
+  )
+  if (payloadMappedSession) {
+    return { session: payloadMappedSession, sessionMode: 'active-session' }
+  }
+
+  const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
+  const envAliasToken = sanitizeRuntimeSegment(resolveEnvSessionAliasToken(env), '')
+  const envMappedSession = choosePreferredProjectSession(
+    activeSession,
+    [
+      envToken ? resolveActiveAliasSession({
+        activationDir,
+        projectRoot,
+        workspace,
+        alias: `host:${envToken}`,
+      }) : '',
+      envAliasToken ? resolveActiveAliasSession({
+        activationDir,
+        projectRoot,
+        workspace,
+        alias: `alias:${envAliasToken}`,
+      }) : '',
+    ],
+  )
+  if (envMappedSession) return { session: envMappedSession, sessionMode: 'active-session' }
+
   if (payloadToken) {
     return {
       session: buildScopedSessionToken('host', payloadToken),
       sessionMode: 'host-session',
     }
   }
-
-  const payloadAliasToken = resolveActiveAliasSession({
-    activationDir,
-    projectRoot,
-    workspace,
-    alias: payloadAlias,
-  })
-  if (payloadAliasToken) return { session: payloadAliasToken, sessionMode: 'active-session' }
   if (payloadAlias) {
     return {
       session: buildScopedSessionToken('alias', payloadAlias),
       sessionMode: 'alias-session',
     }
   }
-
-  const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
-  const envAliasToken = sanitizeRuntimeSegment(resolveEnvSessionAliasToken(env), '')
-  const aliasToken = resolveActiveAliasSession({
-    activationDir,
-    projectRoot,
-    workspace,
-    alias: envToken,
-  })
-  if (aliasToken) return { session: aliasToken, sessionMode: 'active-session' }
 
   if (envToken) {
     return {
@@ -445,16 +545,17 @@ function chooseProjectSession({ payload, env, activationDir, projectRoot, worksp
   }
 
   if (envAliasToken) {
-    const activeAliasToken = resolveActiveAliasSession({
-      activationDir,
-      projectRoot,
-      workspace,
-      alias: envAliasToken,
-    })
-    if (activeAliasToken) return { session: activeAliasToken, sessionMode: 'active-session' }
     return {
       session: buildScopedSessionToken('alias', envAliasToken),
       sessionMode: 'alias-session',
+    }
+  }
+
+  const source = String(payload?.source || '').trim().toLowerCase()
+  if ((source === 'resume' || source === 'compact') && activeSession) {
+    return {
+      session: activeSession,
+      sessionMode: 'active-session',
     }
   }
 

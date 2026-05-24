@@ -53,7 +53,7 @@ function normalizeOptions(options = {}) {
 }
 
 function getEventSessionAlias(eventPayload = {}) {
-  return eventPayload.sessionId || eventPayload.session_id || eventPayload['session-id'] || ''
+  return eventPayload.sessionAlias || eventPayload.session_alias || eventPayload['session-alias'] || eventPayload._helloagentsSessionAlias || ''
 }
 
 function getScope(cwd, options = {}) {
@@ -183,6 +183,7 @@ export function writeSessionCapsule(cwd, capsule, options = {}) {
     })
   }
   writeActiveProjectSession(scope, {
+    payload: normalizedOptions.payload,
     env: normalizedOptions.env,
   })
   return nextCapsule
@@ -242,6 +243,7 @@ export function appendSessionEvent(cwd, eventPayload, options = {}) {
   writeActiveProjectSession(scope, {
     host: eventPayload.host || '',
     source: eventPayload.source || eventName,
+    payload: scopedOptions.payload,
     env: scopedOptions.env,
   })
   if (!shouldRecordSessionEvents(scopedOptions)) return ''
