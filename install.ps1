@@ -124,7 +124,9 @@ switch ($Action) {
                 Invoke-Npm -NpmArgs @("install", "-g", "helloagents")
             }
         }
-        Sync-Hosts
+        if ($HasExplicitTarget) {
+            Sync-Hosts
+        }
     }
     "cleanup" {
         Cleanup-Hosts

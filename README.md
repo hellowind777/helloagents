@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.37-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.38-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -184,12 +184,12 @@ Long tasks need a small recovery snapshot, but one shared state file is not safe
 
 HelloAGENTS now resolves the current state file from `state_path`:
 
-- with a stable session id: `.helloagents/sessions/<workspace>/<session>/STATE.md`
-- without a stable session id: `.helloagents/sessions/<workspace>/default/STATE.md`
+- with a stable or reusable session id: `.helloagents/sessions/<workspace>/<session>/STATE.md`
+- before a reusable session id is available: `.helloagents/sessions/<workspace>/default/STATE.md`
 
-`<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `.helloagents/sessions/active.json` only records the active session index.
+`<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `<session>` is the current project-local session token. `.helloagents/sessions/active.json` only keeps the latest active workspace/session mapping plus alias bridges, so the same CLI session stays in one directory and `/resume` can reuse it.
 
-For project-local sessions, HelloAGENTS now only uses stable host identifiers such as `sessionId`, `conversationId`, `threadId`, or `HELLOAGENTS_NOTIFY_SESSION_ID`. It no longer uses terminal/window ids such as `WT_SESSION`, `TERM_SESSION_ID`, or `WINDOWID` to create extra project session directories.
+For project-local sessions, HelloAGENTS first uses stable host identifiers such as `sessionId`, `conversationId`, `threadId`, or `HELLOAGENTS_NOTIFY_SESSION_ID`. If the host only exposes a window or terminal id such as `WT_SESSION`, `TERM_SESSION_ID`, or `WINDOWID`, HelloAGENTS uses it only as a lightweight alias bridge and reuses the mapped session first instead of fanning out duplicate directories.
 
 `STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation. Codex `/goal` does not replace `state_path`, `turn-state`, or local evidence files; it only handles long-running continuation on the Codex side.
 
@@ -200,14 +200,16 @@ HelloAGENTS does not treat “tests passed” and “task complete” as the sam
 Runtime state now stays intentionally small:
 
 - `.helloagents/sessions/<workspace>/<session>/STATE.md`
+- `.helloagents/sessions/<workspace>/<session>/runtime.json`
 - `.helloagents/sessions/active.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/qa-review.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/advisor.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/visual.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/closeout.json`
+- optional `.helloagents/sessions/<workspace>/<session>/events.jsonl`
 - `~/.codex/.helloagents/notify-state.json` for Codex-native closeout de-duplication only
 
-`turn-state`, route context, and the artifact index are stored inside `STATE.md` metadata instead of a separate `capsule.json`. `events.jsonl` is opt-in trace output, not a default runtime file.
+`STATE.md` only keeps the human-readable recovery snapshot. `runtime.json` is machine-only and keeps the minimal runtime state. `artifacts/*.json` stays limited to structured receipts. `events.jsonl` remains opt-in trace output and stays off by default.
 Project-local `STATE.md` is now materialized more lazily, and legacy root-level `.helloagents/artifacts/*.log` files are cleaned up automatically instead of growing as a second history system.
 
 Standard runtime evidence and transient runtime state now expire after 72 hours. Long-running Codex goal flows still keep their 720-hour upper bound where the workflow explicitly needs it.
@@ -507,6 +509,7 @@ Runtime state and evidence remain local to the working project:
 
 - `state_path`
 - `.helloagents/sessions/active.json`
+- `.helloagents/sessions/<workspace>/<session>/runtime.json`
 - `.helloagents/sessions/<workspace>/<session>/artifacts/*.json`
 
 ### Temporary sessions outside project-local storage
@@ -517,9 +520,9 @@ For read-only work with no local output, if neither the current directory nor it
 ~/.helloagents/runtime/<scope-key>/
 ```
 
-This only stores short-lived `STATE.md` and `artifacts/`. Optional `events.jsonl` trace files are only written when trace mode is enabled. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
+This only stores short-lived `STATE.md`, `runtime.json`, and `artifacts/`. Optional `events.jsonl` trace files are only written when trace mode is enabled. It is not project knowledge. Expired transient sessions are removed by TTL cleanup.
 
-Once the task creates or modifies local files, or otherwise leaves local output in the current project, HelloAGENTS creates the project-local `.helloagents/sessions/.../STATE.md` automatically instead of keeping that task only in the user-level transient runtime.
+Once the task creates or modifies local files, or otherwise leaves local output in the current project, HelloAGENTS creates the project-local `.helloagents/sessions/<workspace>/<session>/STATE.md` automatically instead of keeping that task only in the user-level transient runtime.
 
 ### Knowledge creation rules
 
@@ -682,7 +685,7 @@ The current suite covers:
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
-- session-scoped `state_path`, runtime signals, and evidence
+- workspace-session scoped `state_path`, runtime signals, and evidence
 - runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, sub-agent wrapper and notification suppression, and successful-mode tracking after native install failures
 - README and skill contract alignment
 
