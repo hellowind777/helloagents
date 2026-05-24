@@ -4,10 +4,15 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, 
 import { dirname, join, normalize, resolve } from 'node:path'
 import { homedir } from 'node:os'
 
-import { resolveProjectSessionToken, resolveSessionToken } from './session-token.mjs'
+import {
+  resolveProjectSessionAliasToken,
+  resolveProjectSessionToken,
+  resolveSessionToken,
+} from './session-token.mjs'
 import { USER_RUNTIME_MAX_AGE_MS } from './runtime-ttl.mjs'
 import { cleanupUserRuntimeRoot, getUserRuntimeRoot } from './runtime-user-cleanup.mjs'
 import { FULL_CARRIER_PROFILE_MARKER } from './cli-utils.mjs'
+import { readStateDocument, writeStateDocument } from './state-document.mjs'
 
 export const PROJECT_DIR_NAME = '.helloagents'
 export const PROJECT_SESSIONS_DIR_NAME = 'sessions'
@@ -16,6 +21,7 @@ export const EVENTS_FILE_NAME = 'events.jsonl'
 export const ACTIVE_SESSION_FILE_NAME = 'active.json'
 export const PROJECT_RUNTIME_FILE_NAME = 'runtime.json'
 export const DEFAULT_STATE_SESSION_TOKEN = 'default'
+export const LEGACY_SESSION_POINTERS_FILE_NAME = 'session-pointers.json'
 export const USER_RUNTIME_DIR_NAME = 'runtime'
 export { cleanupUserRuntimeRoot, getUserRuntimeRoot, USER_RUNTIME_MAX_AGE_MS }
 
@@ -261,6 +267,38 @@ function buildInitialStateSnapshot({
   ].join('\n')
 }
 
+function normalizeProjectSessionState(scope) {
+  if (!scope?.statePath) return
+
+  const currentDocument = readStateDocument(scope.statePath)
+  if (currentDocument.hasMetadata) {
+    if (currentDocument.metadata && typeof currentDocument.metadata === 'object' && !existsSync(scope.runtimePath)) {
+      writeJsonFileAtomic(scope.runtimePath, currentDocument.metadata)
+    }
+    writeStateDocument(scope.statePath, {
+      body: currentDocument.body,
+    })
+  }
+
+  const workspaceStatePath = scope.workspaceDir ? join(scope.workspaceDir, 'STATE.md') : ''
+  if (!workspaceStatePath || samePath(workspaceStatePath, scope.statePath) || !existsSync(workspaceStatePath)) return
+
+  const legacyDocument = readStateDocument(workspaceStatePath)
+  if (!existsSync(scope.statePath) && legacyDocument.body.trim()) {
+    writeStateDocument(scope.statePath, {
+      body: legacyDocument.body,
+    })
+  }
+  if (legacyDocument.metadata && typeof legacyDocument.metadata === 'object' && !existsSync(scope.runtimePath)) {
+    writeJsonFileAtomic(scope.runtimePath, legacyDocument.metadata)
+  }
+  if (legacyDocument.hasMetadata) {
+    writeStateDocument(workspaceStatePath, {
+      body: legacyDocument.body,
+    })
+  }
+}
+
 export function ensureProjectLocalRuntime(cwd, options = {}) {
   const normalizedCwd = normalizePath(cwd || process.cwd())
   const localDir = getProjectLocalDir(normalizedCwd)
@@ -272,6 +310,7 @@ export function ensureProjectLocalRuntime(cwd, options = {}) {
   if (!existsSync(scope.statePath)) {
     writeFileSync(scope.statePath, `${buildInitialStateSnapshot(options.stateSeed || {})}\n`, 'utf-8')
   }
+  normalizeProjectSessionState(scope)
 
   return scope
 }
@@ -334,6 +373,10 @@ function resolveEnvSessionToken(env = process.env) {
   return resolveProjectSessionToken({ payload: {}, env })
 }
 
+function resolveEnvSessionAliasToken(env = process.env) {
+  return resolveProjectSessionAliasToken({ env })
+}
+
 function resolveTransientSessionToken({ payload = {}, env = process.env, ppid = process.ppid } = {}) {
   return resolveSessionToken({
     payload,
@@ -343,8 +386,22 @@ function resolveTransientSessionToken({ payload = {}, env = process.env, ppid = 
   })
 }
 
+function buildScopedSessionToken(kind = '', raw = '') {
+  const normalizedKind = sanitizeRuntimeSegment(kind, 'session')
+  const value = sanitizeRuntimeSegment(String(raw || '').trim(), '')
+  if (!value) return ''
+  return `${normalizedKind}-${value}`
+}
+
 function getActiveSessionPath(activationDir) {
   return join(activationDir, PROJECT_SESSIONS_DIR_NAME, ACTIVE_SESSION_FILE_NAME)
+}
+
+function removeLegacySessionPointersFile(activationDir) {
+  if (!activationDir) return
+  try {
+    rmSync(join(activationDir, PROJECT_SESSIONS_DIR_NAME, LEGACY_SESSION_POINTERS_FILE_NAME), { force: true })
+  } catch {}
 }
 
 function resolveActiveSessionToken({ activationDir, projectRoot, workspace, now = Date.now() } = {}) {
@@ -385,6 +442,8 @@ export function writeActiveProjectSession(scope, { host = '', source = '', env =
   const aliases = current.aliases && typeof current.aliases === 'object' ? current.aliases : {}
   const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
   if (envToken && envToken !== scope.session) aliases[envToken] = scope.session
+  const aliasToken = sanitizeRuntimeSegment(resolveEnvSessionAliasToken(env), '')
+  if (aliasToken && aliasToken !== scope.session) aliases[aliasToken] = scope.session
   writeJsonFileAtomic(activePath, {
     version: 1,
     cwd: scope.cwd,
@@ -402,9 +461,14 @@ export function writeActiveProjectSession(scope, { host = '', source = '', env =
 
 function chooseProjectSession({ payload, env, activationDir, projectRoot, workspace }) {
   const payloadToken = sanitizeRuntimeSegment(resolvePayloadSessionToken(payload), '')
-  if (payloadToken) return { session: payloadToken, sessionMode: 'host-session' }
-
   const payloadAlias = sanitizeRuntimeSegment(payload?._helloagentsSessionAlias, '')
+  if (payloadToken) {
+    return {
+      session: buildScopedSessionToken('host', payloadToken),
+      sessionMode: 'host-session',
+    }
+  }
+
   const payloadAliasToken = resolveActiveAliasSession({
     activationDir,
     projectRoot,
@@ -412,8 +476,15 @@ function chooseProjectSession({ payload, env, activationDir, projectRoot, worksp
     alias: payloadAlias,
   })
   if (payloadAliasToken) return { session: payloadAliasToken, sessionMode: 'active-session' }
+  if (payloadAlias) {
+    return {
+      session: buildScopedSessionToken('alias', payloadAlias),
+      sessionMode: 'alias-session',
+    }
+  }
 
   const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
+  const envAliasToken = sanitizeRuntimeSegment(resolveEnvSessionAliasToken(env), '')
   const aliasToken = resolveActiveAliasSession({
     activationDir,
     projectRoot,
@@ -422,12 +493,28 @@ function chooseProjectSession({ payload, env, activationDir, projectRoot, worksp
   })
   if (aliasToken) return { session: aliasToken, sessionMode: 'active-session' }
 
-  if (envToken) return { session: envToken, sessionMode: 'host-session' }
+  if (envToken) {
+    return {
+      session: buildScopedSessionToken('host', envToken),
+      sessionMode: 'host-session',
+    }
+  }
 
-  const activeToken = resolveActiveSessionToken({ activationDir, projectRoot, workspace })
-  if (activeToken) return { session: activeToken, sessionMode: 'active-session' }
+  if (envAliasToken) {
+    const activeAliasToken = resolveActiveAliasSession({
+      activationDir,
+      projectRoot,
+      workspace,
+      alias: envAliasToken,
+    })
+    if (activeAliasToken) return { session: activeAliasToken, sessionMode: 'active-session' }
+    return {
+      session: buildScopedSessionToken('alias', envAliasToken),
+      sessionMode: 'alias-session',
+    }
+  }
 
-  return { session: DEFAULT_STATE_SESSION_TOKEN, sessionMode: 'default' }
+  return { session: '', sessionMode: 'unidentified' }
 }
 
 function removeLegacyProjectArtifacts(activationDir) {
@@ -445,6 +532,7 @@ export function getProjectSessionScope(cwd, options = {}) {
   const { payload = {}, env = process.env } = normalizeRuntimeOptions(options)
   const activationDir = getProjectActivationDir(projectRoot)
   removeLegacyProjectArtifacts(activationDir)
+  removeLegacySessionPointersFile(activationDir)
   const workspace = resolveWorkspaceName(projectRoot)
   const { session, sessionMode } = chooseProjectSession({
     payload,
@@ -453,7 +541,8 @@ export function getProjectSessionScope(cwd, options = {}) {
     projectRoot,
     workspace,
   })
-  const sessionDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME, workspace)
+  const workspaceDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME, workspace)
+  const sessionDir = session ? join(workspaceDir, session) : join(workspaceDir, DEFAULT_STATE_SESSION_TOKEN)
 
   return {
     cwd: projectRoot,
@@ -464,11 +553,12 @@ export function getProjectSessionScope(cwd, options = {}) {
     sessionMode,
     activationDir,
     sessionDir,
+    workspaceDir,
     statePath: join(sessionDir, 'STATE.md'),
     eventsPath: join(sessionDir, EVENTS_FILE_NAME),
     artifactsDir: join(sessionDir, PROJECT_ARTIFACTS_DIR_NAME),
     runtimePath: join(sessionDir, PROJECT_RUNTIME_FILE_NAME),
-    key: `${projectRoot}::${workspace}`,
+    key: `${projectRoot}::${workspace}::${session || DEFAULT_STATE_SESSION_TOKEN}`,
   }
 }
 

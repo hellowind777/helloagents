@@ -8,12 +8,12 @@ export function parseStdoutJson(result) {
   return result.stdout ? JSON.parse(result.stdout) : null
 }
 
-export function getSessionStatePath(project, { workspace = 'workspace' } = {}) {
-  return join(project, '.helloagents', 'sessions', workspace, 'STATE.md')
+export function getSessionStatePath(project, { workspace = 'workspace', session = 'default' } = {}) {
+  return join(project, '.helloagents', 'sessions', workspace, session, 'STATE.md')
 }
 
-export function getSessionEvidencePath(project, fileName, { workspace = 'workspace' } = {}) {
-  return join(project, '.helloagents', 'sessions', workspace, 'artifacts', fileName)
+export function getSessionEvidencePath(project, fileName, { workspace = 'workspace', session = 'default' } = {}) {
+  return join(project, '.helloagents', 'sessions', workspace, session, 'artifacts', fileName)
 }
 
 export function getCodexNotifyStatePath(home) {
