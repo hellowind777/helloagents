@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
 import {
@@ -28,6 +28,79 @@ function buildEmptyCapsule(scope) {
     turn: null,
     route: null,
     artifacts: {},
+  }
+}
+
+function readRuntimeDocument(filePath) {
+  const payload = readJsonFile(filePath, null)
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return null
+  }
+  return payload
+}
+
+function writeRuntimeDocument(filePath, payload) {
+  writeJsonFileAtomic(filePath, payload)
+}
+
+function isSamePath(left = '', right = '') {
+  if (process.platform === 'win32') {
+    return left.toLowerCase() === right.toLowerCase()
+  }
+  return left === right
+}
+
+function isSeedOnlyState(body = '') {
+  return String(body || '').includes('由运行时自动创建；后续按实际任务重写')
+}
+
+function looksLikeLegacyFlattenedSessionDir(entryName = '') {
+  return /^[a-z0-9]{8}$/i.test(String(entryName || '').trim())
+}
+
+function migrateLegacyProjectScope(scope) {
+  if (scope.scope !== 'project-session') return
+  const workspaceDir = scope.workspaceDir || join(scope.activationDir, 'sessions', scope.workspace || scope.branch)
+  const legacyStatePath = join(workspaceDir, 'STATE.md')
+  const legacyRuntimePath = join(workspaceDir, 'runtime.json')
+  if (isSamePath(workspaceDir, scope.sessionDir)) return
+
+  const currentDocument = readStateDocument(scope.statePath)
+  const currentCapsule = currentDocument.metadata && typeof currentDocument.metadata === 'object'
+    ? currentDocument.metadata
+    : null
+  const legacyDocument = readStateDocument(legacyStatePath)
+  const legacyCapsule = readRuntimeDocument(legacyRuntimePath)
+  const shouldNormalizeCurrentBody = currentDocument.hasMetadata
+  const shouldWriteBody = (!currentDocument.body.trim() && legacyDocument.body.trim()) || shouldNormalizeCurrentBody
+  const shouldWriteRuntime = (legacyCapsule || currentCapsule) && !readRuntimeDocument(scope.runtimePath)
+
+  if (shouldWriteBody) {
+    writeStateDocument(scope.statePath, {
+      body: currentDocument.body.trim() ? currentDocument.body : legacyDocument.body,
+    })
+  }
+  if (shouldWriteRuntime) {
+    writeRuntimeDocument(scope.runtimePath, legacyCapsule || currentCapsule)
+  }
+
+  if (existsSync(legacyStatePath) && shouldWriteBody) {
+    const legacyCurrent = readStateDocument(legacyStatePath)
+    if (legacyCurrent.hasMetadata) {
+      writeStateDocument(legacyStatePath, {
+        body: legacyCurrent.body,
+      })
+    }
+  }
+  if (existsSync(legacyRuntimePath) && shouldWriteRuntime) {
+    rmSync(legacyRuntimePath, { force: true })
+  }
+  if (existsSync(workspaceDir)) {
+    for (const entry of readdirSync(workspaceDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      if (!looksLikeLegacyFlattenedSessionDir(entry.name)) continue
+      rmSync(join(workspaceDir, entry.name), { recursive: true, force: true })
+    }
   }
 }
 
@@ -84,7 +157,7 @@ function shouldMaterializeSessionState(options = {}) {
 }
 
 export function getSessionCapsulePath(cwd = process.cwd(), options = {}) {
-  return getScope(cwd, options).statePath
+  return getScope(cwd, options).runtimePath
 }
 
 export function getSessionEventsPath(cwd = process.cwd(), options = {}) {
@@ -102,15 +175,15 @@ export function getSessionArtifactPath(cwd, fileName, options = {}) {
 export function getSessionArtifactRelativePath(cwd, fileName, options = {}) {
   const scope = getScope(cwd, options)
   if (scope.scope === 'project-session') {
-    return `.helloagents/sessions/${scope.workspace || scope.branch}/${scope.session}/artifacts/${fileName}`
+    return `.helloagents/sessions/${scope.workspace || scope.branch}/${scope.session || 'default'}/artifacts/${fileName}`
   }
   return `~/.helloagents/runtime/${basename(scope.sessionDir)}/artifacts/${fileName}`
 }
 
 export function readSessionCapsule(cwd = process.cwd(), options = {}) {
   const scope = getScope(cwd, options)
-  const { metadata } = readStateDocument(scope.statePath)
-  const capsule = metadata && typeof metadata === 'object' ? metadata : null
+  migrateLegacyProjectScope(scope)
+  const capsule = readRuntimeDocument(scope.runtimePath)
   if (!capsule || Array.isArray(capsule)) return buildEmptyCapsule(scope)
   return {
     ...buildEmptyCapsule(scope),
@@ -128,6 +201,7 @@ export function readSessionCapsule(cwd = process.cwd(), options = {}) {
 export function writeSessionCapsule(cwd, capsule, options = {}) {
   const normalizedOptions = normalizeOptions(options)
   const scope = getScope(cwd, normalizedOptions)
+  migrateLegacyProjectScope(scope)
   const shouldMaterialize = shouldMaterializeSessionState(normalizedOptions)
   const currentDocument = readStateDocument(scope.statePath)
   const hasBody = Boolean(currentDocument.body && currentDocument.body.trim())
@@ -165,10 +239,12 @@ export function writeSessionCapsule(cwd, capsule, options = {}) {
     sessionMode: scope.sessionMode,
     updatedAt: new Date().toISOString(),
   }
-  writeStateDocument(scope.statePath, {
-    metadata: nextCapsule,
-    body: currentDocument.body,
-  })
+  writeRuntimeDocument(scope.runtimePath, nextCapsule)
+  if (hasBody) {
+    writeStateDocument(scope.statePath, {
+      body: currentDocument.body,
+    })
+  }
   writeActiveProjectSession(scope, {
     env: normalizedOptions.env,
   })
@@ -197,8 +273,8 @@ export function writeCapsuleSection(cwd, section, value, options = {}) {
 }
 
 export function clearCapsuleSection(cwd, section, options = {}) {
-  const statePath = getSessionCapsulePath(cwd, options)
-  if (!existsSync(statePath)) return false
+  const runtimePath = getSessionCapsulePath(cwd, options)
+  if (!existsSync(runtimePath)) return false
 
   const capsule = readSessionCapsule(cwd, options)
   if (!Object.prototype.hasOwnProperty.call(capsule, section)) return false
@@ -289,7 +365,11 @@ export function clearSessionArtifact(cwd, fileName, options = {}) {
 }
 
 export function removeSessionCapsule(cwd, options = {}) {
-  removeRuntimeFile(getSessionCapsulePath(cwd, options))
+  const scope = getScope(cwd, options)
+  removeRuntimeFile(scope.runtimePath)
+  if (scope.scope !== 'project-session') {
+    removeRuntimeFile(scope.statePath)
+  }
 }
 
 function shouldRecordSessionEvents(options = {}) {

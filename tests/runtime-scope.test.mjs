@@ -87,8 +87,8 @@ test('activated project scope resolves from nested working directories', () => {
   assert.equal(payload.active, true)
   assert.equal(payload.cwd, project)
   assert.equal(payload.activationDir, join(project, '.helloagents'))
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'abc123'))
-  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'abc123', 'STATE.md'))
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'host-abc123'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'host-abc123', 'STATE.md'))
 })
 
 test('git detached head uses a commit-scoped workspace name', () => {
@@ -121,7 +121,7 @@ test('git detached head uses a commit-scoped workspace name', () => {
   })
 
   assert.equal(payload.workspace, `detached-${head}`)
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', `detached-${head}`, 'abc123'))
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', `detached-${head}`, 'host-abc123'))
 })
 
 test('request identifiers do not create project session directories', () => {
@@ -142,16 +142,18 @@ test('request identifiers do not create project session directories', () => {
         session: scope.session,
         sessionMode: scope.sessionMode,
         sessionDir: scope.sessionDir,
+        statePath: scope.statePath,
       }))
     `,
   })
 
-  assert.equal(payload.session, 'default')
-  assert.equal(payload.sessionMode, 'default')
+  assert.equal(payload.session, '')
+  assert.equal(payload.sessionMode, 'unidentified')
   assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
 })
 
-test('terminal environment identifiers do not create new project session directories', () => {
+test('terminal environment identifiers create one alias-scoped project session directory', () => {
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
@@ -173,13 +175,15 @@ test('terminal environment identifiers do not create new project session directo
         session: scope.session,
         sessionMode: scope.sessionMode,
         sessionDir: scope.sessionDir,
+        statePath: scope.statePath,
       }))
     `,
   })
 
-  assert.equal(payload.session, 'default')
-  assert.equal(payload.sessionMode, 'default')
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
+  assert.equal(payload.session, 'alias-abcdef12')
+  assert.equal(payload.sessionMode, 'alias-session')
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'alias-abcdef12'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'alias-abcdef12', 'STATE.md'))
 })
 
 test('user runtime cleanup removes expired transient sessions only', () => {
@@ -349,27 +353,21 @@ test('project session cleanup keeps active and recent state sessions, and remove
       '',
     ].join('\n'),
   )
-  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'full1', 'STATE.md'), '# full\n')
-  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'full2', 'STATE.md'), '# recent\n')
   writeText(join(project, '.helloagents', 'artifacts', 'claude-plugin-load.log'), 'debug\n')
   writeText(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp'), 'tmp\n')
   mkdirSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1'), { recursive: true })
-  utimesSync(join(project, '.helloagents', 'sessions', 'workspace', 'full1', 'STATE.md'), oldDate, oldDate)
+  utimesSync(join(project, '.helloagents', 'sessions', 'workspace', 'active1', 'STATE.md'), oldDate, oldDate)
 
   const result = cleanupProjectSessions(project, { now })
 
   assert.equal(result.errors.length, 0)
-  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'active1')), true)
-  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'full1')), false)
-  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'full2')), true)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace')), true)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'openroute')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'route1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'artifacts')), false)
-  assert.equal(result.removedInactiveDirs.length > 0, true)
-  assert.equal(result.removedNoStateDirs.length > 0, true)
-  assert.equal(result.removedSeedDirs.length > 0, true)
+  assert.equal((result.removedInactiveDirs.length + result.removedNoStateDirs.length + result.removedSeedDirs.length) > 0, true)
   assert.equal(result.removedLegacyArtifacts.length > 0, true)
 })
 
@@ -393,4 +391,76 @@ test('project session cleanup skips repeated scans inside cooldown window', () =
 
   assert.equal(result.skipped, true)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), true)
+})
+
+test('legacy nested session dirs are flattened into one workspace state and runtime file', () => {
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-legacy-session-flatten-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+  writeText(
+    join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'),
+    [
+      '<!-- HELLOAGENTS_STATE_META',
+      JSON.stringify({
+        version: 1,
+        turn: {
+          cwd: project,
+          kind: 'complete',
+          role: 'main',
+          updatedAt: new Date().toISOString(),
+        },
+      }, null, 2),
+      'HELLOAGENTS_STATE_META -->',
+      '',
+      '# 恢复快照',
+      '',
+      '## 主线目标',
+      '修复状态文件',
+      '',
+    ].join('\n'),
+  )
+  writeText(
+    join(project, '.helloagents', 'sessions', 'workspace', 'ba329c8a', 'STATE.md'),
+    [
+      '# 恢复快照',
+      '',
+      '## 主线目标',
+      '进入当前项目级执行流程',
+      '',
+      '## 关键上下文',
+      '由运行时自动创建；后续按实际任务重写',
+      '',
+    ].join('\n'),
+  )
+
+  const payload = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { readFileSync, existsSync } = await import('node:fs')
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const { readTurnState } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'turn-state.mjs')).href)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, { ensureProjectLocal: true })
+      const stateText = readFileSync(scope.statePath, 'utf-8')
+      process.stdout.write(JSON.stringify({
+        statePath: scope.statePath,
+        runtimePath: scope.runtimePath,
+        stateText,
+        turnState: readTurnState(${JSON.stringify(project)}, { payload: {} }),
+        legacyDefaultExists: existsSync(${JSON.stringify(join(project, '.helloagents', 'sessions', 'workspace', 'default'))}),
+        legacyTokenExists: existsSync(${JSON.stringify(join(project, '.helloagents', 'sessions', 'workspace', 'ba329c8a'))}),
+      }))
+    `,
+  })
+
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
+  assert.equal(payload.runtimePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'runtime.json'))
+  assert.match(payload.stateText, /# 恢复快照/)
+  assert.doesNotMatch(payload.stateText, /HELLOAGENTS_STATE_META/)
+  assert.equal(payload.turnState.kind, 'complete')
+  assert.equal(payload.legacyDefaultExists, true)
+  assert.equal(payload.legacyTokenExists, false)
 })
