@@ -23,10 +23,6 @@ function removePath(filePath, result, bucket) {
   }
 }
 
-function isDebugLog(entryName = '') {
-  return /\.log$/i.test(entryName)
-}
-
 function isDirectoryEmptyRecursive(dirPath) {
   const entries = readdirSync(dirPath, { withFileTypes: true })
   if (entries.length === 0) return true
@@ -92,32 +88,6 @@ function cleanupTransientSessionTemps(sessionsDir, result) {
   }
 }
 
-function cleanupLegacyProjectArtifacts(activationDir, result) {
-  const artifactsDir = join(activationDir, 'artifacts')
-  if (!existsSync(artifactsDir)) return
-
-  let removableEntries = []
-  try {
-    removableEntries = readdirSync(artifactsDir, { withFileTypes: true })
-  } catch (error) {
-    result.errors.push(`${artifactsDir}: ${error.message}`)
-    return
-  }
-
-  for (const entry of removableEntries) {
-    if (!entry.isFile() || !isDebugLog(entry.name)) continue
-    removePath(join(artifactsDir, entry.name), result, 'removedLegacyArtifacts')
-  }
-
-  try {
-    if (isDirectoryEmptyRecursive(artifactsDir)) {
-      removePath(artifactsDir, result, 'removedLegacyArtifacts')
-    }
-  } catch (error) {
-    result.errors.push(`${artifactsDir}: ${error.message}`)
-  }
-}
-
 export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 0, maxAgeMs = PROJECT_SESSION_MAX_AGE_MS } = {}) {
   const projectRoot = getProjectRoot(cwd)
   const activationDir = getProjectActivationDir(projectRoot)
@@ -131,7 +101,6 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
     removedNoStateDirs: [],
     removedSeedDirs: [],
     removedTempFiles: [],
-    removedLegacyArtifacts: [],
     errors: [],
     skipped: false,
   }
@@ -150,7 +119,6 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
   } catch (error) {
     result.errors.push(`${sessionsDir}: ${error.message}`)
   }
-  cleanupLegacyProjectArtifacts(activationDir, result)
 
   for (const workspaceEntry of readdirSync(sessionsDir, { withFileTypes: true })) {
     if (!workspaceEntry.isDirectory()) continue
