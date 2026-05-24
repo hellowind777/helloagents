@@ -152,7 +152,7 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   assert.equal(typeof codex.nativeDoctor?.available, 'boolean')
 })
 
-test('doctor treats latest Codex hooks=false as drift and legacy codex_hooks as a note', () => {
+test('doctor treats latest Codex hooks=false as drift', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
 
@@ -161,7 +161,6 @@ test('doctor treats latest Codex hooks=false as drift and legacy codex_hooks as 
     [
       '[features]',
       'hooks = false',
-      'codex_hooks = true',
       '',
     ].join('\n'),
   )
@@ -175,9 +174,7 @@ test('doctor treats latest Codex hooks=false as drift and legacy codex_hooks as 
 
   assert.equal(codex.status, 'drift')
   assert.equal(codex.checks.codexHooksFeature, false)
-  assert.equal(codex.checks.legacyCodexHooksFeature, true)
   assert.ok(codex.issues.some((issue) => issue.code === 'codex-hooks-feature-disabled'))
-  assert.ok(codex.notes.some((note) => /codex_hooks/.test(note)))
 })
 
 test('doctor flags missing codex hook trust as drift', () => {

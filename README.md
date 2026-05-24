@@ -210,7 +210,7 @@ Runtime state now stays intentionally small:
 - `~/.codex/.helloagents/notify-state.json` for Codex-native closeout de-duplication only
 
 `STATE.md` only keeps the human-readable recovery snapshot. `runtime.json` is machine-only and keeps the minimal runtime state. `artifacts/*.json` stays limited to structured receipts. `events.jsonl` remains opt-in trace output and stays off by default.
-Project-local `STATE.md` is now materialized more lazily, and legacy root-level `.helloagents/artifacts/*.log` files are cleaned up automatically instead of growing as a second history system.
+Project-local `STATE.md` is now materialized more lazily.
 
 Standard runtime evidence and transient runtime state now expire after 72 hours. Long-running Codex goal flows still keep their 720-hour upper bound where the workflow explicitly needs it.
 
@@ -660,7 +660,7 @@ Codex is rules-file driven by default.
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
 - for Codex app/plugin discovery, `global` is the native path; `standby` remains the lighter default for explicit project work
-- cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
+- cleanup removes only the HelloAGENTS-managed hook trust entries, while keeping user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice, and clientless delegated child-completion events stay silent when the managed Stop hook is active
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
@@ -681,7 +681,7 @@ The current suite covers:
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
-- Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
+- Codex cleanup and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
