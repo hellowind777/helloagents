@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
 import {
@@ -41,67 +41,6 @@ function readRuntimeDocument(filePath) {
 
 function writeRuntimeDocument(filePath, payload) {
   writeJsonFileAtomic(filePath, payload)
-}
-
-function isSamePath(left = '', right = '') {
-  if (process.platform === 'win32') {
-    return left.toLowerCase() === right.toLowerCase()
-  }
-  return left === right
-}
-
-function isSeedOnlyState(body = '') {
-  return String(body || '').includes('由运行时自动创建；后续按实际任务重写')
-}
-
-function looksLikeLegacyFlattenedSessionDir(entryName = '') {
-  return /^[a-z0-9]{8}$/i.test(String(entryName || '').trim())
-}
-
-function migrateLegacyProjectScope(scope) {
-  if (scope.scope !== 'project-session') return
-  const workspaceDir = scope.workspaceDir || join(scope.activationDir, 'sessions', scope.workspace || scope.branch)
-  const legacyStatePath = join(workspaceDir, 'STATE.md')
-  const legacyRuntimePath = join(workspaceDir, 'runtime.json')
-  if (isSamePath(workspaceDir, scope.sessionDir)) return
-
-  const currentDocument = readStateDocument(scope.statePath)
-  const currentCapsule = currentDocument.metadata && typeof currentDocument.metadata === 'object'
-    ? currentDocument.metadata
-    : null
-  const legacyDocument = readStateDocument(legacyStatePath)
-  const legacyCapsule = readRuntimeDocument(legacyRuntimePath)
-  const shouldNormalizeCurrentBody = currentDocument.hasMetadata
-  const shouldWriteBody = (!currentDocument.body.trim() && legacyDocument.body.trim()) || shouldNormalizeCurrentBody
-  const shouldWriteRuntime = (legacyCapsule || currentCapsule) && !readRuntimeDocument(scope.runtimePath)
-
-  if (shouldWriteBody) {
-    writeStateDocument(scope.statePath, {
-      body: currentDocument.body.trim() ? currentDocument.body : legacyDocument.body,
-    })
-  }
-  if (shouldWriteRuntime) {
-    writeRuntimeDocument(scope.runtimePath, legacyCapsule || currentCapsule)
-  }
-
-  if (existsSync(legacyStatePath) && shouldWriteBody) {
-    const legacyCurrent = readStateDocument(legacyStatePath)
-    if (legacyCurrent.hasMetadata) {
-      writeStateDocument(legacyStatePath, {
-        body: legacyCurrent.body,
-      })
-    }
-  }
-  if (existsSync(legacyRuntimePath) && shouldWriteRuntime) {
-    rmSync(legacyRuntimePath, { force: true })
-  }
-  if (existsSync(workspaceDir)) {
-    for (const entry of readdirSync(workspaceDir, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue
-      if (!looksLikeLegacyFlattenedSessionDir(entry.name)) continue
-      rmSync(join(workspaceDir, entry.name), { recursive: true, force: true })
-    }
-  }
 }
 
 function normalizeOptions(options = {}) {
@@ -182,7 +121,6 @@ export function getSessionArtifactRelativePath(cwd, fileName, options = {}) {
 
 export function readSessionCapsule(cwd = process.cwd(), options = {}) {
   const scope = getScope(cwd, options)
-  migrateLegacyProjectScope(scope)
   const capsule = readRuntimeDocument(scope.runtimePath)
   if (!capsule || Array.isArray(capsule)) return buildEmptyCapsule(scope)
   return {
@@ -201,7 +139,6 @@ export function readSessionCapsule(cwd = process.cwd(), options = {}) {
 export function writeSessionCapsule(cwd, capsule, options = {}) {
   const normalizedOptions = normalizeOptions(options)
   const scope = getScope(cwd, normalizedOptions)
-  migrateLegacyProjectScope(scope)
   const shouldMaterialize = shouldMaterializeSessionState(normalizedOptions)
   const currentDocument = readStateDocument(scope.statePath)
   const hasBody = Boolean(currentDocument.body && currentDocument.body.trim())

@@ -13,13 +13,8 @@ export const CODEX_MANAGED_TOML_COMMENT = '# helloagents-managed'
 export const CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH = '~/.codex/AGENTS.md'
 export const CODEX_MANAGED_NOTIFY_COMMAND = 'helloagents-js'
 export const CODEX_MANAGED_NOTIFY_VALUE = `["${CODEX_MANAGED_NOTIFY_COMMAND}", "codex-notify"]`
-const CODEX_MANAGED_NOTIFY_LEGACY_VALUES = [
-  `["${CODEX_MANAGED_NOTIFY_COMMAND}.cmd", "codex-notify"]`,
-  `["${CODEX_MANAGED_NOTIFY_COMMAND}.exe", "codex-notify"]`,
-]
 export const CODEX_MANAGED_TUI_NOTIFICATIONS_VALUE = '["plan-mode-prompt"]'
 export const CODEX_HOOKS_FEATURE_KEY = 'hooks'
-export const CODEX_LEGACY_HOOKS_FEATURE_KEY = 'codex_hooks'
 export const CODEX_GOALS_FEATURE_KEY = 'goals'
 export const CODEX_MANAGED_GOALS_FEATURE_LINE = `${CODEX_GOALS_FEATURE_KEY} = true ${CODEX_MANAGED_TOML_COMMENT}`
 export const CODEX_MANAGED_GOALS_DISABLED_LINE = `${CODEX_GOALS_FEATURE_KEY} = false ${CODEX_MANAGED_TOML_COMMENT}`
@@ -105,10 +100,6 @@ export function readCodexHooksFeatureLine(text) {
   return readCodexFeatureLine(text, CODEX_HOOKS_FEATURE_KEY)
 }
 
-export function readLegacyCodexHooksFeatureLine(text) {
-  return readCodexFeatureLine(text, CODEX_LEGACY_HOOKS_FEATURE_KEY)
-}
-
 export function readCodexGoalsFeatureLine(text) {
   return readCodexFeatureLine(text, CODEX_GOALS_FEATURE_KEY)
 }
@@ -146,15 +137,6 @@ export function removeCodexGoalsFeatureConfig(text) {
   )
 }
 
-export function removeLegacyManagedCodexHooksFeatureConfig(text) {
-  return removeTomlSectionLine(
-    text,
-    CODEX_FEATURES_HEADER,
-    CODEX_LEGACY_HOOKS_FEATURE_KEY,
-    isManagedLegacyCodexHooksFeature,
-  )
-}
-
 export function restoreCodexGoalsFeatureConfig(text, { codexGoalsLine = '' } = {}) {
   if (!codexGoalsLine) return normalizeToml(text)
   return upsertTomlSectionLine(
@@ -173,10 +155,7 @@ export function isManagedCodexModelInstruction(line = '') {
 export function isManagedCodexNotify(line = '') {
   const value = String(line || '').replace(/\\/g, '/')
   return value.includes(CODEX_MANAGED_TOML_COMMENT)
-    && (
-      value.includes(CODEX_MANAGED_NOTIFY_VALUE)
-      || CODEX_MANAGED_NOTIFY_LEGACY_VALUES.some((entry) => value.includes(entry))
-    )
+    && value.includes(CODEX_MANAGED_NOTIFY_VALUE)
 }
 
 export function isManagedCodexTuiNotifications(line = '') {
@@ -191,10 +170,6 @@ function isManagedFeatureLine(line = '', key = '') {
 
 export function isManagedCodexHooksFeature(line = '') {
   return isManagedFeatureLine(line, CODEX_HOOKS_FEATURE_KEY)
-}
-
-export function isManagedLegacyCodexHooksFeature(line = '') {
-  return isManagedFeatureLine(line, CODEX_LEGACY_HOOKS_FEATURE_KEY)
 }
 
 export function isManagedCodexGoalsFeature(line = '') {

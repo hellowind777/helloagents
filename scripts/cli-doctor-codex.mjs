@@ -9,7 +9,6 @@ import {
   CODEX_MANAGED_NOTIFY_VALUE,
   readCodexGoalsFeatureLine,
   readCodexHooksFeatureLine,
-  readLegacyCodexHooksFeatureLine,
 } from './cli-codex-config.mjs'
 import {
   buildManagedCodexHookTrustEntries,
@@ -301,8 +300,6 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
   )
   const hooksFeatureLine = readCodexHooksFeatureLine(codexConfig)
   const goalsFeatureLine = readCodexGoalsFeatureLine(codexConfig)
-  const legacyHooksFeatureLine = readLegacyCodexHooksFeatureLine(codexConfig)
-
   return {
     checks: {
       carrierMarker: (safeRead(join(codexDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
@@ -319,10 +316,8 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
       modelInstructionsPathMatch: !!modelInstructionsLine && normalizePath(modelInstructionsLine).includes(`"${CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH}"`),
       codexNotify: codexConfig.includes('codex-notify'),
       notifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
-      codexHooksFeature: !/^\s*hooks\s*=\s*false\b/.test(hooksFeatureLine)
-        && !/^\s*codex_hooks\s*=\s*false\b/.test(legacyHooksFeatureLine),
+      codexHooksFeature: !/^\s*hooks\s*=\s*false\b/.test(hooksFeatureLine),
       codexGoalsFeature: /^\s*goals\s*=\s*true\b/.test(goalsFeatureLine),
-      legacyCodexHooksFeature: Boolean(legacyHooksFeatureLine),
       standaloneHooks: JSON.stringify(codexHooks.hooks || {}).includes('helloagents'),
       standaloneHooksMatch: managedHooksMatch(codexHooks.hooks || {}, expectedHooks),
       managedHookTrust: expectedHookTrust.every((entry) => managedHookTrust.has(entry.key)),
@@ -369,7 +364,6 @@ export function inspectCodexDoctor(runtime, settings) {
   if (!checks.pluginVersionMatch && !pluginVersion && detectedMode === 'global') notes.push(runtime.msg('未读到 global 插件根目录版本信息', 'Global plugin root version was not readable'))
   if (!checks.pluginCacheVersionMatch && !cacheVersion && detectedMode === 'global') notes.push(runtime.msg('未读到 global 插件缓存版本信息', 'Global plugin cache version was not readable'))
   if (detectedMode !== 'none' && !checks.codexGoalsFeature) notes.push(runtime.msg('Codex /goal 未启用；如需长程执行，可运行 `helloagents codex goals enable`。', 'Codex /goal is not enabled; run `helloagents codex goals enable` if you need long-running goals.'))
-  if (detectedMode !== 'none' && checks.legacyCodexHooksFeature) notes.push(runtime.msg('检测到旧版 `codex_hooks`；HelloAGENTS 只兼容 Codex 最新版，请移除旧 key。', 'Legacy `codex_hooks` was detected; HelloAGENTS targets latest Codex only, so remove the old key.'))
   if (!nativeDoctor.available) notes.push(runtime.msg('未检测到原生 `codex doctor`；当前仅检查 HelloAGENTS 受管覆盖层。', 'Native `codex doctor` was not available; only the HelloAGENTS managed overlay was checked.'))
 
   const status = summarizeDoctorStatus(issues, { trackedMode, detectedMode })
