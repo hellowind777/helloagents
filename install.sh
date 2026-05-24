@@ -144,7 +144,9 @@ case "$ACTION" in
     else
       npm update -g helloagents || npm install -g helloagents
     fi
-    sync_hosts
+    if [ "$HAS_EXPLICIT_TARGET" -eq 1 ]; then
+      sync_hosts
+    fi
     ;;
   cleanup)
     cleanup_hosts
