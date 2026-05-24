@@ -186,6 +186,132 @@ test('terminal environment identifiers create one alias-scoped project session d
   assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'alias-abcdef12', 'STATE.md'))
 })
 
+test('later payload conversation and thread identifiers reuse the same project session directory', () => {
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const project = createTempDir('helloagents-session-identity-reuse-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  const first = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+        ensureProjectLocal: true,
+      })
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'plan' } }, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+        ensureProjectLocal: true,
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  const second = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { conversationId: 'conversation-12345678' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  const third = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { threadId: 'thread-87654321' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  assert.equal(first.session, 'host-abcdef12')
+  assert.equal(second.session, 'host-abcdef12')
+  assert.equal(third.session, 'host-abcdef12')
+  assert.equal(second.sessionMode, 'active-session')
+  assert.equal(third.sessionMode, 'active-session')
+  assert.equal(second.sessionDir, first.sessionDir)
+  assert.equal(third.sessionDir, first.sessionDir)
+})
+
+test('resume reuses the current active project session directory when identifiers are absent', () => {
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const project = createTempDir('helloagents-session-resume-reuse-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  const initial = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'plan' } }, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+        ensureProjectLocal: true,
+      })
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  const resumed = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { source: 'resume' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  assert.equal(resumed.session, initial.session)
+  assert.equal(resumed.sessionMode, 'active-session')
+  assert.equal(resumed.sessionDir, initial.sessionDir)
+})
+
 test('user runtime cleanup removes expired transient sessions only', () => {
   const home = createHomeFixture()
   const runtimeRoot = getUserRuntimeRoot(home)
