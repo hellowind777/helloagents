@@ -185,6 +185,7 @@ export function writeSessionCapsule(cwd, capsule, options = {}) {
   writeActiveProjectSession(scope, {
     payload: normalizedOptions.payload,
     env: normalizedOptions.env,
+    ppid: normalizedOptions.ppid,
   })
   return nextCapsule
 }
@@ -245,6 +246,7 @@ export function appendSessionEvent(cwd, eventPayload, options = {}) {
     source: eventPayload.source || eventName,
     payload: scopedOptions.payload,
     env: scopedOptions.env,
+    ppid: scopedOptions.ppid,
   })
   if (!shouldRecordSessionEvents(scopedOptions)) return ''
 

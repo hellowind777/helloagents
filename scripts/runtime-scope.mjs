@@ -371,6 +371,17 @@ function resolveEnvSessionAliasToken(env = process.env) {
   return resolveProjectSessionAliasToken({ env })
 }
 
+function resolveProjectSessionHostHint({ env = process.env, ppid = process.ppid } = {}) {
+  const envToken = sanitizeRuntimeSegment(resolveEnvSessionToken(env), '')
+  if (envToken) return `host:${envToken}`
+
+  const envAliasToken = sanitizeRuntimeSegment(resolveEnvSessionAliasToken(env), '')
+  if (envAliasToken) return `alias:${envAliasToken}`
+
+  const parentToken = sanitizeRuntimeSegment(String(ppid || '').trim(), '')
+  return parentToken ? `ppid:${parentToken}` : ''
+}
+
 function resolveTransientSessionToken({ payload = {}, env = process.env, ppid = process.ppid } = {}) {
   return resolveSessionToken({
     payload,
@@ -438,7 +449,15 @@ function resolveActiveAliasSession({ activationDir, projectRoot, workspace, alia
   if (!active || typeof active !== 'object') return ''
 
   const aliases = active.aliases && typeof active.aliases === 'object' ? active.aliases : {}
-  return sanitizeRuntimeSegment(aliases[alias], '')
+  const mapped = sanitizeRuntimeSegment(aliases[alias], '')
+  if (mapped) return mapped
+  if (
+    Object.prototype.hasOwnProperty.call(aliases, alias)
+    && resolveActiveSessionToken(active, join(activationDir, PROJECT_SESSIONS_DIR_NAME, workspace)) === DEFAULT_STATE_SESSION_TOKEN
+  ) {
+    return DEFAULT_STATE_SESSION_TOKEN
+  }
+  return ''
 }
 
 function choosePreferredProjectSession(activeSession = '', candidates = []) {
@@ -449,26 +468,44 @@ function choosePreferredProjectSession(activeSession = '', candidates = []) {
   return candidates.find(Boolean) || ''
 }
 
-export function writeActiveProjectSession(scope, { host = '', source = '', payload = {}, env = process.env } = {}) {
+function resolveActiveSessionToken(active = {}, workspaceDir = '') {
+  const session = sanitizeRuntimeSegment(active?.session || '', '')
+  if (session) return session
+
+  const defaultStatePath = workspaceDir
+    ? join(workspaceDir, DEFAULT_STATE_SESSION_TOKEN, 'STATE.md')
+    : ''
+  return defaultStatePath && existsSync(defaultStatePath)
+    ? DEFAULT_STATE_SESSION_TOKEN
+    : ''
+}
+
+export function writeActiveProjectSession(scope, { host = '', source = '', payload = {}, env = process.env, ppid = process.ppid } = {}) {
   if (!scope?.active || !scope.activationDir || !scope.workspace) return ''
 
   const activePath = getActiveSessionPath(scope.activationDir)
   const current = readJsonFile(activePath, null) || {}
   const aliases = current.aliases && typeof current.aliases === 'object' ? { ...current.aliases } : {}
+  const session = scope.session || DEFAULT_STATE_SESSION_TOKEN
+  const sessionMode = scope.session
+    ? scope.sessionMode
+    : 'default'
+  const hostHint = resolveProjectSessionHostHint({ env, ppid }) || current.hostHint || ''
   const aliasKeys = buildSessionAliasKeys({ payload, env })
   for (const aliasKey of aliasKeys) {
-    aliases[aliasKey] = scope.session
+    aliases[aliasKey] = session
     const [, aliasValue = ''] = String(aliasKey).split(':')
-    if (aliasValue) aliases[aliasValue] = scope.session
+    if (aliasValue) aliases[aliasValue] = session
   }
   writeJsonFileAtomic(activePath, {
     version: 1,
     cwd: scope.cwd,
     workspace: scope.workspace || scope.branch,
-    session: scope.session,
-    sessionMode: scope.sessionMode,
+    session,
+    sessionMode,
     host,
     source,
+    ...(hostHint ? { hostHint } : {}),
     aliases,
     ...(current.cleanupCheckedAt ? { cleanupCheckedAt: current.cleanupCheckedAt } : {}),
     updatedAt: new Date().toISOString(),
@@ -476,13 +513,14 @@ export function writeActiveProjectSession(scope, { host = '', source = '', paylo
   return activePath
 }
 
-function chooseProjectSession({ payload, env, activationDir, projectRoot, workspace }) {
+function chooseProjectSession({ payload, env, ppid, activationDir, projectRoot, workspace }) {
+  const workspaceDir = join(activationDir, PROJECT_SESSIONS_DIR_NAME, workspace)
   const active = readActiveProjectSession({
     activationDir,
     projectRoot,
     workspace,
   })
-  const activeSession = sanitizeRuntimeSegment(active?.session || '', '')
+  const activeSession = resolveActiveSessionToken(active, workspaceDir)
   const payloadIdentity = readPayloadSessionIdentity(payload)
   const payloadToken = payloadIdentity.token
   const payloadAlias = sanitizeRuntimeSegment(sanitizeSessionToken(payload?._helloagentsSessionAlias), '')
@@ -523,6 +561,18 @@ function chooseProjectSession({ payload, env, activationDir, projectRoot, worksp
     ],
   )
   if (envMappedSession) return { session: envMappedSession, sessionMode: 'active-session' }
+
+  if (
+    activeSession === DEFAULT_STATE_SESSION_TOKEN
+    && active?.hostHint
+    && active.hostHint === resolveProjectSessionHostHint({ env, ppid })
+    && (payloadToken || payloadAlias || envToken || envAliasToken)
+  ) {
+    return {
+      session: activeSession,
+      sessionMode: 'active-session',
+    }
+  }
 
   if (payloadToken) {
     return {
@@ -565,12 +615,13 @@ function chooseProjectSession({ payload, env, activationDir, projectRoot, worksp
 export function getProjectSessionScope(cwd, options = {}) {
   const normalizedCwd = normalizePath(cwd || process.cwd())
   const projectRoot = getProjectRoot(normalizedCwd)
-  const { payload = {}, env = process.env } = normalizeRuntimeOptions(options)
+  const { payload = {}, env = process.env, ppid = process.ppid } = normalizeRuntimeOptions(options)
   const activationDir = getProjectActivationDir(projectRoot)
   const workspace = resolveWorkspaceName(projectRoot)
   const { session, sessionMode } = chooseProjectSession({
     payload,
     env,
+    ppid,
     activationDir,
     projectRoot,
     workspace,
