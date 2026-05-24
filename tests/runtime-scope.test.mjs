@@ -186,6 +186,199 @@ test('terminal environment identifiers create one alias-scoped project session d
   assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'alias-abcdef12', 'STATE.md'))
 })
 
+test('later payload conversation and thread identifiers reuse the same project session directory', () => {
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const project = createTempDir('helloagents-session-identity-reuse-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  const first = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+        ensureProjectLocal: true,
+      })
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'plan' } }, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+        ensureProjectLocal: true,
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  const second = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { conversationId: 'conversation-12345678' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  const third = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { threadId: 'thread-87654321' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  assert.equal(first.session, 'host-abcdef12')
+  assert.equal(second.session, 'host-abcdef12')
+  assert.equal(third.session, 'host-abcdef12')
+  assert.equal(second.sessionMode, 'active-session')
+  assert.equal(third.sessionMode, 'active-session')
+  assert.equal(second.sessionDir, first.sessionDir)
+  assert.equal(third.sessionDir, first.sessionDir)
+})
+
+test('later host session identifier reuses the active default project session directory', () => {
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-session-default-reuse-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  const first = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'build' } }, {
+        payload: { prompt: '~build finish the task' },
+        ensureProjectLocal: true,
+      })
+      const { getRuntimeScope, readJsonFile } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { prompt: '~build finish the task' },
+      })
+      const active = readJsonFile(${JSON.stringify(join(project, '.helloagents', 'sessions', 'active.json'))}, null)
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+        active,
+      }))
+    `,
+  })
+
+  const second = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'build' } }, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+      })
+      const { getRuntimeScope, readJsonFile } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+      })
+      const active = readJsonFile(${JSON.stringify(join(project, '.helloagents', 'sessions', 'active.json'))}, null)
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+        active,
+      }))
+    `,
+  })
+
+  assert.equal(first.session, '')
+  assert.equal(first.sessionMode, 'unidentified')
+  assert.equal(first.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
+  assert.equal(first.active.session, 'default')
+  assert.equal(first.active.sessionMode, 'default')
+  assert.equal(first.active.hostHint.startsWith('ppid:'), true)
+  assert.equal(second.session, 'default')
+  assert.equal(second.sessionMode, 'active-session')
+  assert.equal(second.sessionDir, first.sessionDir)
+  assert.equal(second.active.session, 'default')
+  assert.equal(second.active.aliases['session:abcdef12'], 'default')
+  assert.equal(second.active.hostHint, first.active.hostHint)
+})
+
+test('resume reuses the current active project session directory when identifiers are absent', () => {
+  const home = createHomeFixture()
+  const env = {
+    ...buildHomeEnv(home),
+    WT_SESSION: 'terminal-session-xyz999',
+  }
+  const project = createTempDir('helloagents-session-resume-reuse-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  const initial = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'plan' } }, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+        ensureProjectLocal: true,
+      })
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  const resumed = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { source: 'resume' },
+      })
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+      }))
+    `,
+  })
+
+  assert.equal(resumed.session, initial.session)
+  assert.equal(resumed.sessionMode, 'active-session')
+  assert.equal(resumed.sessionDir, initial.sessionDir)
+})
+
 test('user runtime cleanup removes expired transient sessions only', () => {
   const home = createHomeFixture()
   const runtimeRoot = getUserRuntimeRoot(home)
@@ -366,9 +559,7 @@ test('project session cleanup keeps active and recent state sessions, and remove
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'route1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp')), false)
-  assert.equal(existsSync(join(project, '.helloagents', 'artifacts')), false)
   assert.equal((result.removedInactiveDirs.length + result.removedNoStateDirs.length + result.removedSeedDirs.length) > 0, true)
-  assert.equal(result.removedLegacyArtifacts.length > 0, true)
 })
 
 test('project session cleanup skips repeated scans inside cooldown window', () => {
@@ -391,76 +582,4 @@ test('project session cleanup skips repeated scans inside cooldown window', () =
 
   assert.equal(result.skipped, true)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), true)
-})
-
-test('legacy nested session dirs are flattened into one workspace state and runtime file', () => {
-  const home = createHomeFixture()
-  const env = buildHomeEnv(home)
-  const project = createTempDir('helloagents-legacy-session-flatten-')
-
-  writeSettings(home)
-  writeText(join(project, '.helloagents', '.keep'), '')
-  writeText(
-    join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'),
-    [
-      '<!-- HELLOAGENTS_STATE_META',
-      JSON.stringify({
-        version: 1,
-        turn: {
-          cwd: project,
-          kind: 'complete',
-          role: 'main',
-          updatedAt: new Date().toISOString(),
-        },
-      }, null, 2),
-      'HELLOAGENTS_STATE_META -->',
-      '',
-      '# 恢复快照',
-      '',
-      '## 主线目标',
-      '修复状态文件',
-      '',
-    ].join('\n'),
-  )
-  writeText(
-    join(project, '.helloagents', 'sessions', 'workspace', 'ba329c8a', 'STATE.md'),
-    [
-      '# 恢复快照',
-      '',
-      '## 主线目标',
-      '进入当前项目级执行流程',
-      '',
-      '## 关键上下文',
-      '由运行时自动创建；后续按实际任务重写',
-      '',
-    ].join('\n'),
-  )
-
-  const payload = runModuleEval({
-    cwd: project,
-    env,
-    source: `
-      const { readFileSync, existsSync } = await import('node:fs')
-      const { getRuntimeScope } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
-      const { readTurnState } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'turn-state.mjs')).href)})
-      const scope = getRuntimeScope(${JSON.stringify(project)}, { ensureProjectLocal: true })
-      const stateText = readFileSync(scope.statePath, 'utf-8')
-      process.stdout.write(JSON.stringify({
-        statePath: scope.statePath,
-        runtimePath: scope.runtimePath,
-        stateText,
-        turnState: readTurnState(${JSON.stringify(project)}, { payload: {} }),
-        legacyDefaultExists: existsSync(${JSON.stringify(join(project, '.helloagents', 'sessions', 'workspace', 'default'))}),
-        legacyTokenExists: existsSync(${JSON.stringify(join(project, '.helloagents', 'sessions', 'workspace', 'ba329c8a'))}),
-      }))
-    `,
-  })
-
-  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
-  assert.equal(payload.runtimePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'runtime.json'))
-  assert.match(payload.stateText, /# 恢复快照/)
-  assert.doesNotMatch(payload.stateText, /HELLOAGENTS_STATE_META/)
-  assert.equal(payload.turnState.kind, 'complete')
-  assert.equal(payload.legacyDefaultExists, true)
-  assert.equal(payload.legacyTokenExists, false)
 })

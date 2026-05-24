@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.38-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.39-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -189,7 +189,7 @@ HelloAGENTS now resolves the current state file from `state_path`:
 
 `<workspace>` is the current Git branch, `detached-<sha>` for a detached HEAD, or `workspace` for non-Git projects. `<session>` is the current project-local session token. `.helloagents/sessions/active.json` only keeps the latest active workspace/session mapping plus alias bridges, so the same CLI session stays in one directory and `/resume` can reuse it.
 
-For project-local sessions, HelloAGENTS first uses stable host identifiers such as `sessionId`, `conversationId`, `threadId`, or `HELLOAGENTS_NOTIFY_SESSION_ID`. If the host only exposes a window or terminal id such as `WT_SESSION`, `TERM_SESSION_ID`, or `WINDOWID`, HelloAGENTS uses it only as a lightweight alias bridge and reuses the mapped session first instead of fanning out duplicate directories.
+For project-local sessions, HelloAGENTS first uses stable host identifiers such as `sessionId`, `conversationId`, `threadId`, or `HELLOAGENTS_NOTIFY_SESSION_ID`. If the host only exposes a window or terminal id such as `WT_SESSION`, `TERM_SESSION_ID`, or `WINDOWID`, HelloAGENTS uses it only as a lightweight alias bridge and reuses the mapped session first instead of fanning out duplicate directories. If a session starts before a stable host identifier is available, HelloAGENTS can begin in `default` and keep reusing that same active directory after the same CLI session later exposes a stable identifier, instead of splitting into a second session directory.
 
 `STATE.md` records where the current workflow stopped. It is not a universal memory file for every conversation. Codex `/goal` does not replace `state_path`, `turn-state`, or local evidence files; it only handles long-running continuation on the Codex side.
 
@@ -210,7 +210,7 @@ Runtime state now stays intentionally small:
 - `~/.codex/.helloagents/notify-state.json` for Codex-native closeout de-duplication only
 
 `STATE.md` only keeps the human-readable recovery snapshot. `runtime.json` is machine-only and keeps the minimal runtime state. `artifacts/*.json` stays limited to structured receipts. `events.jsonl` remains opt-in trace output and stays off by default.
-Project-local `STATE.md` is now materialized more lazily, and legacy root-level `.helloagents/artifacts/*.log` files are cleaned up automatically instead of growing as a second history system.
+Project-local `STATE.md` is now materialized more lazily.
 
 Standard runtime evidence and transient runtime state now expire after 72 hours. Long-running Codex goal flows still keep their 720-hour upper bound where the workflow explicitly needs it.
 
@@ -660,7 +660,7 @@ Codex is rules-file driven by default.
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
 - for Codex app/plugin discovery, `global` is the native path; `standby` remains the lighter default for explicit project work
-- cleanup removes only the HelloAGENTS-managed hook trust entries and legacy managed notify residues, while keeping user-owned hook state untouched
+- cleanup removes only the HelloAGENTS-managed hook trust entries, while keeping user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
 - Codex closeout de-duplicates Stop hooks and native `codex-notify`, so one turn does not notify twice, and clientless delegated child-completion events stay silent when the managed Stop hook is active
 - `/goal` remains Codex-native. Enable it explicitly with `helloagents codex goals enable` when long-running plan execution is needed
@@ -681,7 +681,7 @@ The current suite covers:
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
-- Codex cleanup of legacy managed notify variants on Windows and canonical managed notify restoration rules
+- Codex cleanup and canonical managed notify restoration rules
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior
