@@ -260,6 +260,73 @@ test('later payload conversation and thread identifiers reuse the same project s
   assert.equal(third.sessionDir, first.sessionDir)
 })
 
+test('later host session identifier reuses the active default project session directory', () => {
+  const home = createHomeFixture()
+  const env = buildHomeEnv(home)
+  const project = createTempDir('helloagents-session-default-reuse-')
+
+  writeSettings(home)
+  writeText(join(project, '.helloagents', '.keep'), '')
+
+  const first = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'build' } }, {
+        payload: { prompt: '~build finish the task' },
+        ensureProjectLocal: true,
+      })
+      const { getRuntimeScope, readJsonFile } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { prompt: '~build finish the task' },
+      })
+      const active = readJsonFile(${JSON.stringify(join(project, '.helloagents', 'sessions', 'active.json'))}, null)
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+        active,
+      }))
+    `,
+  })
+
+  const second = runModuleEval({
+    cwd: project,
+    env,
+    source: `
+      const { writeSessionCapsule } = await import(${JSON.stringify(pathToFileURL(join(REPO_ROOT, 'scripts', 'session-capsule.mjs')).href)})
+      writeSessionCapsule(${JSON.stringify(project)}, { route: { skillName: 'build' } }, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+      })
+      const { getRuntimeScope, readJsonFile } = await import(${JSON.stringify(RUNTIME_SCOPE_MODULE_URL)})
+      const scope = getRuntimeScope(${JSON.stringify(project)}, {
+        payload: { sessionId: 'main-session-abcdef123456' },
+      })
+      const active = readJsonFile(${JSON.stringify(join(project, '.helloagents', 'sessions', 'active.json'))}, null)
+      process.stdout.write(JSON.stringify({
+        session: scope.session,
+        sessionMode: scope.sessionMode,
+        sessionDir: scope.sessionDir,
+        active,
+      }))
+    `,
+  })
+
+  assert.equal(first.session, '')
+  assert.equal(first.sessionMode, 'unidentified')
+  assert.equal(first.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
+  assert.equal(first.active.session, 'default')
+  assert.equal(first.active.sessionMode, 'default')
+  assert.equal(first.active.hostHint.startsWith('ppid:'), true)
+  assert.equal(second.session, 'default')
+  assert.equal(second.sessionMode, 'active-session')
+  assert.equal(second.sessionDir, first.sessionDir)
+  assert.equal(second.active.session, 'default')
+  assert.equal(second.active.aliases['session:abcdef12'], 'default')
+  assert.equal(second.active.hostHint, first.active.hostHint)
+})
+
 test('resume reuses the current active project session directory when identifiers are absent', () => {
   const home = createHomeFixture()
   const env = {
