@@ -36,9 +36,10 @@ function isDirectoryEmptyRecursive(dirPath) {
   })
 }
 
-function shouldKeepSession(active, workspace) {
+function shouldKeepNestedSession(active, workspace, sessionName) {
   const activeWorkspace = active.workspace || active.branch || ''
-  return activeWorkspace === workspace
+  const activeSession = active.session || ''
+  return activeWorkspace === workspace && activeSession === sessionName
 }
 
 function readCleanupCheckedAt(active) {
@@ -157,25 +158,22 @@ export function cleanupProjectSessions(cwd, { now = Date.now(), minIntervalMs = 
     try {
       const nestedEntries = readdirSync(workspaceDir, { withFileTypes: true }).filter((entry) => entry.isDirectory())
       for (const nestedEntry of nestedEntries) {
-        removePath(join(workspaceDir, nestedEntry.name), result, 'removedInactiveDirs')
-      }
-
-      if (!shouldKeepSession(active, workspaceEntry.name)) {
-        if (isDirectoryEmptyRecursive(workspaceDir)) {
-          removePath(workspaceDir, result, 'removedEmptyDirs')
+        const sessionDir = join(workspaceDir, nestedEntry.name)
+        if (shouldKeepNestedSession(active, workspaceEntry.name, nestedEntry.name)) continue
+        if (isDirectoryEmptyRecursive(sessionDir)) {
+          removePath(sessionDir, result, 'removedEmptyDirs')
           continue
         }
-        if (!hasStateSnapshot(workspaceDir)) {
-          removePath(workspaceDir, result, 'removedNoStateDirs')
+        if (!hasStateSnapshot(sessionDir)) {
+          removePath(sessionDir, result, 'removedNoStateDirs')
           continue
         }
-        if (isAutoCreatedSeedSession(workspaceDir)) {
-          removePath(workspaceDir, result, 'removedSeedDirs')
+        if (isAutoCreatedSeedSession(sessionDir)) {
+          removePath(sessionDir, result, 'removedSeedDirs')
           continue
         }
-        if (isStaleStateSession(workspaceDir, now, maxAgeMs)) {
-          removePath(workspaceDir, result, 'removedInactiveDirs')
-          continue
+        if (isStaleStateSession(sessionDir, now, maxAgeMs)) {
+          removePath(sessionDir, result, 'removedInactiveDirs')
         }
       }
 

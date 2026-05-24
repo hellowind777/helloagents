@@ -45,6 +45,17 @@ const PROJECT_ENV_SESSION_KEYS = [
   'HELLOAGENTS_NOTIFY_SESSION_ID',
 ]
 
+const PROJECT_ALIAS_ENV_SESSION_KEYS = [
+  'HELLOAGENTS_NOTIFY_SESSION_ID',
+  'WT_SESSION',
+  'TERM_SESSION_ID',
+  'KITTY_WINDOW_ID',
+  'ALACRITTY_WINDOW_ID',
+  'WINDOWID',
+  'WEZTERM_PANE',
+  'TAB_ID',
+]
+
 function readStringCandidate(input, key) {
   if (!input || typeof input !== 'object') return ''
   const value = input[key]
@@ -99,9 +110,16 @@ export function resolveProjectSessionToken({
   return resolveTokenFromKeys(env, PROJECT_ENV_SESSION_KEYS)
 }
 
+export function resolveProjectSessionAliasToken({
+  env = process.env,
+} = {}) {
+  return resolveTokenFromKeys(env, PROJECT_ALIAS_ENV_SESSION_KEYS)
+}
+
 export {
   ENV_SESSION_KEYS,
   PAYLOAD_SESSION_KEYS,
+  PROJECT_ALIAS_ENV_SESSION_KEYS,
   PROJECT_ENV_SESSION_KEYS,
   PROJECT_PAYLOAD_SESSION_KEYS,
 }

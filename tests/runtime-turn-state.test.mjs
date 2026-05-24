@@ -462,9 +462,9 @@ test('turn-state writes pure cwd into the session state file', () => {
     }),
   })
   let payload = parseStdoutJson(result)
-  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]STATE\.md$/)
+  assert.match(payload.path, /[\\/]\.helloagents[\\/]sessions[\\/]workspace[\\/]default[\\/]STATE\.md$/)
   assert.equal(payload.payload.cwd, project)
-  assert.equal(payload.payload.key.endsWith('::workspace'), true)
+  assert.equal(payload.payload.key.endsWith('::workspace::default'), true)
 
   result = runNode(turnStateScript, ['read'], {
     cwd: project,
@@ -473,7 +473,7 @@ test('turn-state writes pure cwd into the session state file', () => {
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.state.cwd, project)
-  assert.equal(payload.state.key.endsWith('::workspace'), true)
+  assert.equal(payload.state.key.endsWith('::workspace::default'), true)
 })
 
 test('stable turn-state command entry writes state', () => {

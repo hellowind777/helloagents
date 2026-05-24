@@ -114,8 +114,8 @@ export function getProjectSessionStateScope(cwd, options = {}) {
   const scope = getProjectSessionScope(cwd, normalizeRuntimeOptions(options))
 
   return {
-    stateScope: 'workspace',
-    stateSessionToken: '',
+    stateScope: 'workspace-session',
+    stateSessionToken: scope.session || '',
     stateSessionMode: scope.sessionMode,
     stateWorkspace: scope.workspace || scope.branch,
     sessionDir: scope.sessionDir,

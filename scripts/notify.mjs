@@ -349,6 +349,10 @@ function attachTurnSession(payload = {}, cwd = payload.cwd || process.cwd()) {
     allowPpidFallback: !isProjectRuntimeActive(cwd),
   });
   if (!sessionId || payload.sessionId) return payload;
+  const aliasSource = String(process.env.HELLOAGENTS_NOTIFY_SESSION_ID || process.env.WT_SESSION || process.env.TERM_SESSION_ID || process.env.WINDOWID || '').trim();
+  if (aliasSource) {
+    return { ...payload, sessionId, _helloagentsSessionAlias: aliasSource };
+  }
   return { ...payload, sessionId };
 }
 

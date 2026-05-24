@@ -87,8 +87,8 @@ test('activated project scope resolves from nested working directories', () => {
   assert.equal(payload.active, true)
   assert.equal(payload.cwd, project)
   assert.equal(payload.activationDir, join(project, '.helloagents'))
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace'))
-  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'STATE.md'))
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'host-abc123'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'host-abc123', 'STATE.md'))
 })
 
 test('git detached head uses a commit-scoped workspace name', () => {
@@ -121,7 +121,7 @@ test('git detached head uses a commit-scoped workspace name', () => {
   })
 
   assert.equal(payload.workspace, `detached-${head}`)
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', `detached-${head}`))
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', `detached-${head}`, 'host-abc123'))
 })
 
 test('request identifiers do not create project session directories', () => {
@@ -142,16 +142,18 @@ test('request identifiers do not create project session directories', () => {
         session: scope.session,
         sessionMode: scope.sessionMode,
         sessionDir: scope.sessionDir,
+        statePath: scope.statePath,
       }))
     `,
   })
 
-  assert.equal(payload.session, 'default')
-  assert.equal(payload.sessionMode, 'default')
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace'))
+  assert.equal(payload.session, '')
+  assert.equal(payload.sessionMode, 'unidentified')
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
 })
 
-test('terminal environment identifiers do not create new project session directories', () => {
+test('terminal environment identifiers create one alias-scoped project session directory', () => {
   const home = createHomeFixture()
   const env = {
     ...buildHomeEnv(home),
@@ -173,13 +175,15 @@ test('terminal environment identifiers do not create new project session directo
         session: scope.session,
         sessionMode: scope.sessionMode,
         sessionDir: scope.sessionDir,
+        statePath: scope.statePath,
       }))
     `,
   })
 
-  assert.equal(payload.session, 'default')
-  assert.equal(payload.sessionMode, 'default')
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace'))
+  assert.equal(payload.session, 'alias-abcdef12')
+  assert.equal(payload.sessionMode, 'alias-session')
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'alias-abcdef12'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'alias-abcdef12', 'STATE.md'))
 })
 
 test('user runtime cleanup removes expired transient sessions only', () => {
@@ -260,7 +264,7 @@ test('ensured project-local runtime creates session state even without an existi
 
   assert.equal(payload.scope, 'project-session')
   assert.equal(payload.active, true)
-  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'STATE.md'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
   assert.equal(existsSync(payload.statePath), true)
 })
 
@@ -301,8 +305,8 @@ test('ensured project-local runtime reuses the full-carrier project root from ne
   })
 
   assert.equal(payload.cwd, project)
-  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'STATE.md'))
-  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
+  assert.equal(payload.sessionDir, join(project, '.helloagents', 'sessions', 'workspace', 'default'))
   assert.equal(existsSync(payload.statePath), true)
   assert.equal(existsSync(join(nested, '.helloagents')), false)
 })
@@ -318,7 +322,7 @@ test('project session cleanup keeps active and recent state sessions, and remove
     session: 'active1',
     updatedAt: new Date().toISOString(),
   }))
-  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'STATE.md'), '# active\n')
+  writeText(join(project, '.helloagents', 'sessions', 'workspace', 'active1', 'STATE.md'), '# active\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'route.txt'), 'route\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'events.jsonl'), '{}\n')
   writeText(join(project, '.helloagents', 'sessions', 'workspace', 'route1', 'artifacts', 'codex-native-stop.json'), '{}\n')
@@ -352,7 +356,7 @@ test('project session cleanup keeps active and recent state sessions, and remove
   writeText(join(project, '.helloagents', 'artifacts', 'claude-plugin-load.log'), 'debug\n')
   writeText(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp'), 'tmp\n')
   mkdirSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1'), { recursive: true })
-  utimesSync(join(project, '.helloagents', 'sessions', 'workspace', 'STATE.md'), oldDate, oldDate)
+  utimesSync(join(project, '.helloagents', 'sessions', 'workspace', 'active1', 'STATE.md'), oldDate, oldDate)
 
   const result = cleanupProjectSessions(project, { now })
 
@@ -363,7 +367,7 @@ test('project session cleanup keeps active and recent state sessions, and remove
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'empty1')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', '.1778250288817-e87c4ac5-a4aa-4120-bc2e-6caea4029dde.tmp')), false)
   assert.equal(existsSync(join(project, '.helloagents', 'artifacts')), false)
-  assert.equal(result.removedInactiveDirs.length > 0, true)
+  assert.equal((result.removedInactiveDirs.length + result.removedNoStateDirs.length + result.removedSeedDirs.length) > 0, true)
   assert.equal(result.removedLegacyArtifacts.length > 0, true)
 })
 
@@ -452,11 +456,11 @@ test('legacy nested session dirs are flattened into one workspace state and runt
     `,
   })
 
-  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'STATE.md'))
-  assert.equal(payload.runtimePath, join(project, '.helloagents', 'sessions', 'workspace', 'runtime.json'))
+  assert.equal(payload.statePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md'))
+  assert.equal(payload.runtimePath, join(project, '.helloagents', 'sessions', 'workspace', 'default', 'runtime.json'))
   assert.match(payload.stateText, /# 恢复快照/)
   assert.doesNotMatch(payload.stateText, /HELLOAGENTS_STATE_META/)
   assert.equal(payload.turnState.kind, 'complete')
-  assert.equal(payload.legacyDefaultExists, false)
+  assert.equal(payload.legacyDefaultExists, true)
   assert.equal(payload.legacyTokenExists, false)
 })

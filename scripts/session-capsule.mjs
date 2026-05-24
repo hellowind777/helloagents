@@ -43,23 +43,6 @@ function writeRuntimeDocument(filePath, payload) {
   writeJsonFileAtomic(filePath, payload)
 }
 
-function getLegacySessionRoot(scope) {
-  if (scope.scope !== 'project-session') return ''
-  return join(scope.activationDir, 'sessions', scope.workspace || scope.branch)
-}
-
-function isLegacyNestedSessionDirName(entryName = '') {
-  return entryName !== 'artifacts'
-}
-
-function listLegacySessionDirs(scope) {
-  const root = getLegacySessionRoot(scope)
-  if (!root || !existsSync(root)) return []
-  return readdirSync(root, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && isLegacyNestedSessionDirName(entry.name))
-    .map((entry) => join(root, entry.name))
-}
-
 function isSamePath(left = '', right = '') {
   if (process.platform === 'win32') {
     return left.toLowerCase() === right.toLowerCase()
@@ -71,62 +54,53 @@ function isSeedOnlyState(body = '') {
   return String(body || '').includes('由运行时自动创建；后续按实际任务重写')
 }
 
-function readLegacyNestedState(scope) {
-  const legacyDirs = listLegacySessionDirs(scope)
-    .filter((dirPath) => !isSamePath(dirPath, scope.sessionDir))
-  let best = null
-
-  for (const dirPath of legacyDirs) {
-    const statePath = join(dirPath, 'STATE.md')
-    if (!existsSync(statePath)) continue
-    const document = readStateDocument(statePath)
-    const metadata = document.metadata && typeof document.metadata === 'object' ? document.metadata : null
-    const body = document.body || ''
-    const hasBody = Boolean(body.trim())
-    const score = metadata
-      ? 4
-      : hasBody && !isSeedOnlyState(body)
-        ? 3
-        : hasBody
-          ? 2
-          : 1
-    if (!best || score > best.score) {
-      best = {
-        score,
-        dirPath,
-        statePath,
-        document,
-        metadata,
-        body,
-      }
-    }
-  }
-
-  return best
+function looksLikeLegacyFlattenedSessionDir(entryName = '') {
+  return /^[a-z0-9]{8}$/i.test(String(entryName || '').trim())
 }
 
 function migrateLegacyProjectScope(scope) {
   if (scope.scope !== 'project-session') return
-  const legacy = readLegacyNestedState(scope)
-  if (!legacy) return
+  const workspaceDir = scope.workspaceDir || join(scope.activationDir, 'sessions', scope.workspace || scope.branch)
+  const legacyStatePath = join(workspaceDir, 'STATE.md')
+  const legacyRuntimePath = join(workspaceDir, 'runtime.json')
+  if (isSamePath(workspaceDir, scope.sessionDir)) return
 
   const currentDocument = readStateDocument(scope.statePath)
-  const shouldWriteBody = !currentDocument.body.trim() && legacy.body.trim()
-  const legacyCapsule = legacy.metadata && typeof legacy.metadata === 'object' ? legacy.metadata : null
-  const shouldWriteRuntime = legacyCapsule && !readRuntimeDocument(scope.runtimePath)
+  const currentCapsule = currentDocument.metadata && typeof currentDocument.metadata === 'object'
+    ? currentDocument.metadata
+    : null
+  const legacyDocument = readStateDocument(legacyStatePath)
+  const legacyCapsule = readRuntimeDocument(legacyRuntimePath)
+  const shouldNormalizeCurrentBody = currentDocument.hasMetadata
+  const shouldWriteBody = (!currentDocument.body.trim() && legacyDocument.body.trim()) || shouldNormalizeCurrentBody
+  const shouldWriteRuntime = (legacyCapsule || currentCapsule) && !readRuntimeDocument(scope.runtimePath)
 
   if (shouldWriteBody) {
     writeStateDocument(scope.statePath, {
-      body: legacy.body,
+      body: currentDocument.body.trim() ? currentDocument.body : legacyDocument.body,
     })
   }
   if (shouldWriteRuntime) {
-    writeRuntimeDocument(scope.runtimePath, legacyCapsule)
+    writeRuntimeDocument(scope.runtimePath, legacyCapsule || currentCapsule)
   }
 
-  for (const dirPath of listLegacySessionDirs(scope)) {
-    if (isSamePath(dirPath, scope.sessionDir)) continue
-    rmSync(dirPath, { recursive: true, force: true })
+  if (existsSync(legacyStatePath) && shouldWriteBody) {
+    const legacyCurrent = readStateDocument(legacyStatePath)
+    if (legacyCurrent.hasMetadata) {
+      writeStateDocument(legacyStatePath, {
+        body: legacyCurrent.body,
+      })
+    }
+  }
+  if (existsSync(legacyRuntimePath) && shouldWriteRuntime) {
+    rmSync(legacyRuntimePath, { force: true })
+  }
+  if (existsSync(workspaceDir)) {
+    for (const entry of readdirSync(workspaceDir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      if (!looksLikeLegacyFlattenedSessionDir(entry.name)) continue
+      rmSync(join(workspaceDir, entry.name), { recursive: true, force: true })
+    }
   }
 }
 
@@ -201,7 +175,7 @@ export function getSessionArtifactPath(cwd, fileName, options = {}) {
 export function getSessionArtifactRelativePath(cwd, fileName, options = {}) {
   const scope = getScope(cwd, options)
   if (scope.scope === 'project-session') {
-    return `.helloagents/sessions/${scope.workspace || scope.branch}/artifacts/${fileName}`
+    return `.helloagents/sessions/${scope.workspace || scope.branch}/${scope.session || 'default'}/artifacts/${fileName}`
   }
   return `~/.helloagents/runtime/${basename(scope.sessionDir)}/artifacts/${fileName}`
 }
