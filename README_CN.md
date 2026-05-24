@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.38-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.39-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -189,7 +189,7 @@ HelloAGENTS 现在只从 `state_path` 解析当前状态文件：
 
 `<workspace>` 是当前 Git 分支、detached HEAD 的 `detached-<sha>`，或非 Git 项目的 `workspace`。`<session>` 是当前项目本地会话标识。`.helloagents/sessions/active.json` 只保留最近一次活跃的工作区/会话映射和 alias 桥接，这样同一个 CLI 会话会稳定落在同一个目录里，`/resume` 也能复用它。
 
-对于项目本地会话目录，HelloAGENTS 会优先使用稳定宿主标识，如 `sessionId`、`conversationId`、`threadId` 或 `HELLOAGENTS_NOTIFY_SESSION_ID`。如果宿主只能提供 `WT_SESSION`、`TERM_SESSION_ID`、`WINDOWID` 这类窗口或终端标识，HelloAGENTS 只把它们当作轻量 alias 桥接，并优先复用已映射的会话目录，而不是继续分裂出重复目录。
+对于项目本地会话目录，HelloAGENTS 会优先使用稳定宿主标识，如 `sessionId`、`conversationId`、`threadId` 或 `HELLOAGENTS_NOTIFY_SESSION_ID`。如果宿主只能提供 `WT_SESSION`、`TERM_SESSION_ID`、`WINDOWID` 这类窗口或终端标识，HelloAGENTS 只把它们当作轻量 alias 桥接，并优先复用已映射的会话目录，而不是继续分裂出重复目录。如果一个会话启动时还拿不到稳定宿主标识，HelloAGENTS 可以先落到 `default`，等同一个 CLI 会话后续拿到稳定标识时，仍继续复用这个活动目录，而不是再拆出第二个会话目录。
 
 `STATE.md` 只记录当前工作流做到哪里，不承担所有对话的统一记忆。Codex `/goal` 也不替代 `state_path`、`turn-state` 或本地证据文件；它只负责 Codex 侧的长程续跑。
 
