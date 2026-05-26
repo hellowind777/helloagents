@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.0.39-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.0-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -225,8 +225,9 @@ The CLI manages host files explicitly:
 - `update` refreshes the selected target or all targets
 - `cleanup` removes managed injections and links
 - `uninstall` performs scoped cleanup before package removal
-- `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, and versions; for Codex, it also surfaces native `codex doctor` output when available
+- `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, versions, and real Claude/Gemini global install artifacts; for Codex, it also surfaces native `codex doctor` output when available
 - per-host mode tracking is written only after host setup succeeds, and failed native global cleanup keeps the host tracked as `global` instead of silently layering standby on top
+- Windows `.cmd` / `.bat` lifecycle calls now run through an explicit command wrapper, so host installs, branch switching, and doctor flows do not emit Node `DEP0190` shell deprecation warnings
 
 ## Quick Start
 
@@ -449,7 +450,7 @@ npm uninstall -g helloagents
 | Gemini CLI | native extension install | `~/.helloagents/host-projections/gemini`, `~/.gemini/extensions/helloagents` |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-In global mode, HelloAGENTS now attempts the host-native install commands automatically. Claude Code uses the local marketplace projection and Gemini uses the local extension projection, so branch switches and updates stay aligned with the current stable runtime copy. If a host command is unavailable, run the same commands manually:
+In global mode, HelloAGENTS now attempts the host-native install commands automatically. Claude Code uses the local marketplace projection, Gemini uses the local extension projection, and Codex keeps linking back to the same stable runtime root, so install, update, branch switching, mode switching, cleanup, and uninstall all refresh against one consistent runtime copy. If a host command is unavailable, run the same commands manually:
 
 ```text
 /plugin marketplace add "~/.helloagents/host-projections/claude-marketplace"
@@ -678,6 +679,7 @@ npm test
 The current suite covers:
 
 - install, update, cleanup, uninstall, branch switching, and mode switching
+- Windows `.cmd` / `.bat` lifecycle dispatch without Node `DEP0190` warnings
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
