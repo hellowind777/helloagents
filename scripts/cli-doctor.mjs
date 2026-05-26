@@ -1,11 +1,15 @@
-import { realpathSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { DEFAULTS } from './cli-config.mjs'
 import { inspectCodexDoctor as inspectCodexDoctorImpl } from './cli-doctor-codex.mjs'
 import { printDoctorText } from './cli-doctor-render.mjs'
 import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
+import { getClaudeMarketplaceRoot, getGeminiExtensionRoot } from './cli-runtime-root.mjs'
 import { loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
+
+const CLAUDE_PLUGIN = 'helloagents@helloagents'
+const GEMINI_EXTENSION = 'helloagents'
 
 const runtime = {
   home: '',
@@ -93,6 +97,16 @@ function normalizeDoctorMode(mode = '') {
   return mode || 'none'
 }
 
+function hasEnabledPlugin(enabledPlugins, pluginName) {
+  if (Array.isArray(enabledPlugins)) {
+    return enabledPlugins.includes(pluginName)
+  }
+  if (enabledPlugins && typeof enabledPlugins === 'object') {
+    return Boolean(enabledPlugins[pluginName])
+  }
+  return false
+}
+
 function summarizeDoctorStatus(issues, { host, trackedMode, detectedMode } = {}) {
   if (issues.length > 0) return 'drift'
   if (detectedMode !== 'none') return 'ok'
@@ -106,8 +120,8 @@ function suggestDoctorFix(host, status, trackedMode) {
     return `helloagents update ${host}${trackedMode && trackedMode !== 'none' ? ` --${trackedMode}` : ''}`
   }
   if (status === 'manual-plugin') {
-    if (host === 'claude') return '/plugin marketplace add https://github.com/hellowind777/helloagents.git; /plugin install helloagents@helloagents'
-    if (host === 'gemini') return 'helloagents install gemini --global'
+    if (host === 'claude') return `/plugin marketplace add "${getClaudeMarketplaceRoot(runtime.home)}"; /plugin install helloagents@helloagents`
+    if (host === 'gemini') return `gemini extensions link "${getGeminiExtensionRoot(runtime.home)}"`
   }
   if (status === 'not-installed') {
     return `helloagents install ${host} --standby`
@@ -125,12 +139,18 @@ function inspectClaudeDoctor(settings) {
   const detectedMode = normalizeDoctorMode(runtime.detectHostMode(host))
   const claudeDir = join(runtime.home, '.claude')
   const claudeSettings = safeJson(join(claudeDir, 'settings.json')) || {}
+  const claudePlugins = safeJson(join(claudeDir, 'plugins', 'installed_plugins.json')) || {}
   const expectedHooks = readExpectedHooks('hooks-claude.json', '${CLAUDE_PLUGIN_ROOT}')
+  const marketplaceRoot = getClaudeMarketplaceRoot(runtime.home)
+  const globalPluginInstalled = Boolean(claudePlugins.plugins?.[CLAUDE_PLUGIN]?.length)
+    || hasEnabledPlugin(claudeSettings.enabledPlugins, CLAUDE_PLUGIN)
   const checks = {
     carrierMarker: (safeRead(join(claudeDir, 'CLAUDE.md')) || '').includes('HELLOAGENTS_START'),
     carrierContentMatch: extractManagedCarrierContent(join(claudeDir, 'CLAUDE.md'))
       === readExpectedCarrierContent('bootstrap-lite.md', settings),
     homeLink: safeRealTarget(join(claudeDir, 'helloagents')) === runtime.pkgRoot,
+    globalMarketplaceRoot: existsSync(marketplaceRoot),
+    globalPluginInstalled,
     settingsHooks: JSON.stringify(claudeSettings.hooks || {}).includes('helloagents'),
     settingsHooksMatch: managedHooksMatch(claudeSettings.hooks || {}, expectedHooks),
     settingsPermission: Array.isArray(claudeSettings.permissions?.allow)
@@ -150,14 +170,17 @@ function inspectClaudeDoctor(settings) {
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
     if (!checks.settingsPermission) issues.push(buildDoctorIssue('standby-permission-missing', 'standby Claude 权限注入缺失', 'Standby Claude permission injection is missing'))
   }
-  if (trackedMode === 'global') {
-    notes.push(runtime.msg(
-      'Claude Code 的 global 模式由宿主插件系统管理；doctor 只检查 standby 残留，不直接探测插件状态。',
-      'Claude Code global mode is managed by the host plugin system; doctor only checks for standby residue and does not inspect plugin state directly.',
-    ))
+  if (detectedMode === 'global') {
+    if (!checks.globalMarketplaceRoot) issues.push(buildDoctorIssue('global-marketplace-root-missing', 'global marketplace 投影缺失', 'Global marketplace projection is missing'))
+    if (!checks.globalPluginInstalled) issues.push(buildDoctorIssue('global-plugin-missing', 'global Claude 插件未安装', 'Global Claude plugin is not installed'))
     if (checks.carrierMarker || checks.homeLink || checks.settingsHooks || checks.settingsPermission) {
-      issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is tracked as global'))
+      issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is detected as global'))
     }
+  } else if (trackedMode === 'global') {
+    notes.push(runtime.msg(
+      'Claude Code 的 global 模式由宿主插件系统管理；doctor 会检查本地 marketplace 投影、已安装插件记录与 standby 残留。',
+      'Claude Code global mode is managed by the host plugin system; doctor checks the local marketplace projection, installed-plugin records, and standby residue.',
+    ))
   }
   if (trackedMode === 'none' && detectedMode !== 'none') {
     issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
@@ -177,11 +200,17 @@ function inspectGeminiDoctor(settings) {
   const geminiDir = join(runtime.home, '.gemini')
   const geminiSettings = safeJson(join(geminiDir, 'settings.json')) || {}
   const expectedHooks = readExpectedHooks('hooks-gemini.json', '${extensionPath}')
+  const extensionRoot = getGeminiExtensionRoot(runtime.home)
+  const extensionInstallRoot = join(geminiDir, 'extensions', GEMINI_EXTENSION)
+  const expectedExtensionTarget = safeRealTarget(extensionRoot) || normalizePath(extensionRoot)
   const checks = {
     carrierMarker: (safeRead(join(geminiDir, 'GEMINI.md')) || '').includes('HELLOAGENTS_START'),
     carrierContentMatch: extractManagedCarrierContent(join(geminiDir, 'GEMINI.md'))
       === readExpectedCarrierContent('bootstrap-lite.md', settings),
     homeLink: safeRealTarget(join(geminiDir, 'helloagents')) === runtime.pkgRoot,
+    globalExtensionRoot: existsSync(extensionRoot),
+    globalExtensionLink: safeRealTarget(extensionInstallRoot) === expectedExtensionTarget,
+    globalExtensionInstall: existsSync(extensionInstallRoot),
     settingsHooks: JSON.stringify(geminiSettings.hooks || {}).includes('helloagents'),
     settingsHooksMatch: managedHooksMatch(geminiSettings.hooks || {}, expectedHooks),
   }
@@ -198,14 +227,18 @@ function inspectGeminiDoctor(settings) {
     if (!checks.settingsHooks) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby settings hooks 缺失', 'Standby settings hooks are missing'))
     if (checks.settingsHooks && !checks.settingsHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby settings hooks 与当前 hooks 配置不一致', 'Standby settings hooks differ from the current hook configuration'))
   }
-  if (trackedMode === 'global') {
-    notes.push(runtime.msg(
-      'Gemini CLI 的 global 模式由宿主扩展系统管理；doctor 只检查 standby 残留，不直接探测扩展状态。',
-      'Gemini CLI global mode is managed by the host extension system; doctor only checks for standby residue and does not inspect extension state directly.',
-    ))
+  if (detectedMode === 'global') {
+    if (!checks.globalExtensionRoot) issues.push(buildDoctorIssue('global-extension-root-missing', 'global extension 投影缺失', 'Global extension projection is missing'))
+    if (!checks.globalExtensionInstall) issues.push(buildDoctorIssue('global-extension-missing', 'global Gemini 扩展未安装', 'Global Gemini extension is not installed'))
+    if (!checks.globalExtensionLink) issues.push(buildDoctorIssue('global-extension-link-missing', 'global Gemini 扩展链接未指向投影目录', 'Global Gemini extension link does not point to the projection root'))
     if (checks.carrierMarker || checks.homeLink || checks.settingsHooks) {
-      issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is tracked as global'))
+      issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is detected as global'))
     }
+  } else if (trackedMode === 'global') {
+    notes.push(runtime.msg(
+      'Gemini CLI 的 global 模式由宿主扩展系统管理；doctor 会检查本地扩展投影、已安装链接与 standby 残留。',
+      'Gemini CLI global mode is managed by the host extension system; doctor checks the local extension projection, installed link, and standby residue.',
+    ))
   }
   if (trackedMode === 'none' && detectedMode !== 'none') {
     issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
