@@ -51,6 +51,7 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   let result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   let report = JSON.parse(result.stdout)
   let codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -80,6 +81,7 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   rmSync(join(home, '.codex', 'helloagents'), { recursive: true, force: true })
 
   result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   report = JSON.parse(result.stdout)
   codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -95,6 +97,7 @@ test('doctor detects standby carrier and hook drift for gemini content mismatche
   runCli(pkgRoot, home, ['install', 'gemini', '--standby'])
 
   let result = runCli(pkgRoot, home, ['doctor', 'gemini', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   let report = JSON.parse(result.stdout)
   let gemini = report.hosts.find((entry) => entry.host === 'gemini')
 
@@ -124,6 +127,7 @@ test('doctor detects standby carrier and hook drift for gemini content mismatche
   )
 
   result = runCli(pkgRoot, home, ['doctor', 'gemini', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   report = JSON.parse(result.stdout)
   gemini = report.hosts.find((entry) => entry.host === 'gemini')
 
@@ -168,6 +172,7 @@ test('doctor reports Claude global health from installed-plugin metadata and loc
   })
 
   const result = runCli(pkgRoot, home, ['doctor', 'claude', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const claude = report.hosts.find((entry) => entry.host === 'claude')
 
@@ -197,6 +202,7 @@ test('doctor reports Gemini global health from extension link projection', () =>
   assert.equal(createLink(extensionRoot, join(home, '.gemini', 'extensions', 'helloagents')), true)
 
   const result = runCli(pkgRoot, home, ['doctor', 'gemini', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const gemini = report.hosts.find((entry) => entry.host === 'gemini')
 
@@ -226,6 +232,7 @@ test('doctor ignores a stale Claude marketplace record when no plugin or standby
   })
 
   const result = runCli(pkgRoot, home, ['doctor', 'claude', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const claude = report.hosts.find((entry) => entry.host === 'claude')
 
@@ -244,6 +251,7 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   runCli(pkgRoot, home, ['install', 'codex', '--global'])
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -287,6 +295,7 @@ test('doctor treats latest Codex hooks=false as drift', () => {
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -313,6 +322,7 @@ test('doctor flags missing codex hook trust as drift', () => {
   )
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -332,6 +342,7 @@ test('doctor reports native Codex doctor when codex.cmd is available on Windows'
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 

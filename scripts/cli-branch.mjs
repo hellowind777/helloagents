@@ -1,15 +1,12 @@
-import { spawnSync } from 'node:child_process'
-
 import { normalizeHost } from './cli-lifecycle.mjs'
+import { spawnCommandSync } from './cli-process.mjs'
 
 const DEFAULT_REPO_ARCHIVE_BASE = 'https://github.com/hellowind777/helloagents/archive/refs/heads'
 
 function runCommand(command, args) {
-  const needsShell = process.platform === 'win32' && /\.cmd$/i.test(command)
-  const result = spawnSync(command, args, {
+  const result = spawnCommandSync(command, args, {
     encoding: 'utf-8',
     errors: 'replace',
-    shell: needsShell,
     stdio: 'inherit',
     windowsHide: true,
   })

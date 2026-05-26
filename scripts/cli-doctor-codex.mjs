@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { existsSync, realpathSync } from 'node:fs'
 import { platform } from 'node:os'
 import { join } from 'node:path'
@@ -17,6 +16,7 @@ import {
 import { getStableRuntimeRoot } from './cli-runtime-root.mjs'
 import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
 import { readTopLevelTomlLine } from './cli-toml.mjs'
+import { spawnCommandSync } from './cli-process.mjs'
 import { loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
 
 function safeRealTarget(linkPath) {
@@ -149,7 +149,7 @@ function summarizeNativeCodexDoctorOutput(payload = {}) {
 function inspectNativeCodexDoctor(runtime) {
   const command = platform() === 'win32' ? 'codex.cmd' : 'codex'
   try {
-    const result = spawnSync(command, ['doctor', '--json'], {
+    const result = spawnCommandSync(command, ['doctor', '--json'], {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -159,7 +159,6 @@ function inspectNativeCodexDoctor(runtime) {
       },
       encoding: 'utf-8',
       timeout: 20_000,
-      shell: platform() === 'win32',
       windowsHide: true,
     })
 
