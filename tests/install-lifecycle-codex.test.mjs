@@ -169,6 +169,9 @@ test('Codex global also installs standalone hooks outside config.toml', () => {
   const config = readText(join(home, '.codex', 'config.toml'))
   assert.doesNotMatch(config, /^\s*hooks\s*=/m)
   assert.doesNotMatch(config, /UserPromptSubmit/)
+  assert.ok(!existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
+  assert.ok(!existsSync(join(home, 'plugins', 'helloagents', 'hooks', 'hooks.json')))
+  assert.ok(!existsSync(join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local', 'hooks', 'hooks.json')))
 
   const installedHooks = JSON.parse(readText(join(home, '.codex', 'hooks.json')))
   assert.match(JSON.stringify(installedHooks), /helloagents-js notify route --codex --silent/)

@@ -28,6 +28,11 @@ export function getStableRuntimeRoot(home) {
   return join(home, '.helloagents', 'helloagents')
 }
 
+/** Return the Gemini extension projection root derived from the shared runtime copy. */
+export function getGeminiExtensionRoot(home) {
+  return join(home, '.helloagents', 'host-projections', 'gemini')
+}
+
 function normalizePath(path) {
   const resolved = resolve(path)
   try {
@@ -63,17 +68,9 @@ function retryTransientFs(operation) {
   throw lastError
 }
 
-function materializeGeminiHooks(root) {
-  const source = join(root, 'hooks', 'hooks-gemini.json')
-  const target = join(root, 'hooks', 'hooks.json')
-  if (!existsSync(source)) return
-  copyFileSync(source, target)
-}
-
-/** Sync package runtime files into the stable root without copying repo-only files. */
-export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
+function syncRuntimeTree(sourceRoot, targetRoot, { materializeGeminiHooks = false } = {}) {
   const source = resolve(sourceRoot)
-  const target = resolve(runtimeRoot)
+  const target = resolve(targetRoot)
   if (samePath(source, target)) {
     return { synced: false, root: target }
   }
@@ -84,7 +81,13 @@ export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
 
   try {
     copyEntries(source, staging, RUNTIME_ROOT_ENTRIES)
-    materializeGeminiHooks(staging)
+    if (materializeGeminiHooks) {
+      const sourceHooks = join(staging, 'hooks', 'hooks-gemini.json')
+      const targetHooks = join(staging, 'hooks', 'hooks.json')
+      if (existsSync(sourceHooks)) {
+        copyFileSync(sourceHooks, targetHooks)
+      }
+    }
     retryTransientFs(() => {
       removeIfExists(target)
       renameSync(staging, target)
@@ -96,7 +99,22 @@ export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
   }
 }
 
+/** Sync package runtime files into the stable root without copying repo-only files. */
+export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
+  return syncRuntimeTree(sourceRoot, runtimeRoot)
+}
+
+/** Sync a host-specific extension root derived from the stable runtime copy. */
+export function syncGeminiExtensionRoot(sourceRoot, extensionRoot) {
+  return syncRuntimeTree(sourceRoot, extensionRoot, { materializeGeminiHooks: true })
+}
+
 /** Remove the stable runtime copy while leaving user settings under ~/.helloagents intact. */
 export function removeRuntimeRoot(runtimeRoot) {
   removeIfExists(runtimeRoot)
+}
+
+/** Remove the Gemini extension projection root. */
+export function removeGeminiExtensionRoot(home) {
+  removeIfExists(getGeminiExtensionRoot(home))
 }
