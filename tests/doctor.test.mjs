@@ -1,14 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { rmSync } from 'node:fs'
-import { join } from 'node:path'
+import { chmodSync, rmSync } from 'node:fs'
+import { delimiter, join } from 'node:path'
 
+import { getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
+import { createLink } from '../scripts/cli-utils.mjs'
 import {
   buildHomeEnv,
   createHomeFixture,
   createPackageFixture,
+  createTempDir,
   readText,
   runNode,
+  writeJson,
   writeText,
 } from './helpers/test-env.mjs'
 
@@ -25,6 +29,18 @@ function runCli(pkgRoot, home, args, env = {}) {
   return result
 }
 
+function writeFakeCommand(binDir, name, logPath) {
+  if (process.platform === 'win32') {
+    const commandPath = join(binDir, `${name}.cmd`)
+    writeText(commandPath, `@echo off\r\necho %*>>"${logPath}"\r\nexit /b 0\r\n`)
+    return commandPath
+  }
+  const commandPath = join(binDir, name)
+  writeText(commandPath, `#!/bin/sh\necho "$@" >> "${logPath}"\nexit 0\n`)
+  chmodSync(commandPath, 0o755)
+  return commandPath
+}
+
 test('doctor reports codex standby health and detects drift in JSON mode', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
@@ -35,6 +51,7 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   let result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   let report = JSON.parse(result.stdout)
   let codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -64,6 +81,7 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   rmSync(join(home, '.codex', 'helloagents'), { recursive: true, force: true })
 
   result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   report = JSON.parse(result.stdout)
   codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -79,6 +97,7 @@ test('doctor detects standby carrier and hook drift for gemini content mismatche
   runCli(pkgRoot, home, ['install', 'gemini', '--standby'])
 
   let result = runCli(pkgRoot, home, ['doctor', 'gemini', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   let report = JSON.parse(result.stdout)
   let gemini = report.hosts.find((entry) => entry.host === 'gemini')
 
@@ -108,12 +127,118 @@ test('doctor detects standby carrier and hook drift for gemini content mismatche
   )
 
   result = runCli(pkgRoot, home, ['doctor', 'gemini', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   report = JSON.parse(result.stdout)
   gemini = report.hosts.find((entry) => entry.host === 'gemini')
 
   assert.equal(gemini.status, 'drift')
   assert.ok(gemini.issues.some((issue) => issue.code === 'standby-carrier-drift'))
   assert.ok(gemini.issues.some((issue) => issue.code === 'standby-hooks-drift'))
+})
+
+test('doctor reports Claude global health from installed-plugin metadata and local marketplace projection', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const fakeBin = createTempDir('helloagents-claude-doctor-bin-')
+  const claudeLog = join(home, 'claude-doctor.log')
+  const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'claude', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_CLAUDE_CMD: claudeCommand,
+  })
+
+  writeJson(join(home, '.claude', 'settings.json'), {
+    enabledPlugins: {
+      'helloagents@helloagents': true,
+    },
+  })
+  writeJson(join(home, '.claude', 'plugins', 'installed_plugins.json'), {
+    version: 2,
+    plugins: {
+      'helloagents@helloagents': [
+        {
+          scope: 'user',
+          installPath: 'C:\\helloagents-test\\installed',
+          version: '1.0.0',
+          installedAt: '2026-01-01T00:00:00.000Z',
+          lastUpdated: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+    },
+  })
+
+  const result = runCli(pkgRoot, home, ['doctor', 'claude', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
+  const report = JSON.parse(result.stdout)
+  const claude = report.hosts.find((entry) => entry.host === 'claude')
+
+  assert.equal(claude.status, 'ok')
+  assert.equal(claude.detectedMode, 'global')
+  assert.equal(claude.trackedMode, 'global')
+  assert.equal(claude.checks.globalMarketplaceRoot, true)
+  assert.equal(claude.checks.globalPluginInstalled, true)
+  assert.equal(claude.issues.length, 0)
+})
+
+test('doctor reports Gemini global health from extension link projection', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const fakeBin = createTempDir('helloagents-gemini-doctor-bin-')
+  const geminiLog = join(home, 'gemini-doctor.log')
+  const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  const extensionRoot = getGeminiExtensionRoot(home)
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'gemini', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GEMINI_CMD: geminiCommand,
+  })
+  assert.equal(createLink(extensionRoot, join(home, '.gemini', 'extensions', 'helloagents')), true)
+
+  const result = runCli(pkgRoot, home, ['doctor', 'gemini', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
+  const report = JSON.parse(result.stdout)
+  const gemini = report.hosts.find((entry) => entry.host === 'gemini')
+
+  assert.equal(gemini.status, 'ok')
+  assert.equal(gemini.detectedMode, 'global')
+  assert.equal(gemini.trackedMode, 'global')
+  assert.equal(gemini.checks.globalExtensionRoot, true)
+  assert.equal(gemini.checks.globalExtensionInstall, true)
+  assert.equal(gemini.checks.globalExtensionLink, true)
+  assert.equal(gemini.issues.length, 0)
+})
+
+test('doctor ignores a stale Claude marketplace record when no plugin or standby artifacts are active', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  runCli(pkgRoot, home, ['postinstall'])
+  writeJson(join(home, '.claude', 'settings.json'), {
+    extraKnownMarketplaces: {
+      helloagents: {
+        source: {
+          source: 'local',
+          path: 'C:\\stale\\helloagents',
+        },
+      },
+    },
+  })
+
+  const result = runCli(pkgRoot, home, ['doctor', 'claude', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
+  const report = JSON.parse(result.stdout)
+  const claude = report.hosts.find((entry) => entry.host === 'claude')
+
+  assert.equal(claude.detectedMode, 'none')
+  assert.equal(claude.status, 'not-installed')
+  assert.equal(claude.issues.length, 0)
 })
 
 test('doctor reports codex global health with a home carrier baseline', () => {
@@ -126,6 +251,7 @@ test('doctor reports codex global health with a home carrier baseline', () => {
   runCli(pkgRoot, home, ['install', 'codex', '--global'])
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -169,6 +295,7 @@ test('doctor treats latest Codex hooks=false as drift', () => {
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -195,6 +322,7 @@ test('doctor flags missing codex hook trust as drift', () => {
   )
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 
@@ -214,6 +342,7 @@ test('doctor reports native Codex doctor when codex.cmd is available on Windows'
   runCli(pkgRoot, home, ['install', 'codex', '--standby'])
 
   const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
   const report = JSON.parse(result.stdout)
   const codex = report.hosts.find((entry) => entry.host === 'codex')
 

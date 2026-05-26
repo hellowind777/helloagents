@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdtempSync, realpathSync, renameSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
-import { copyEntries, ensureDir, removeIfExists } from './cli-utils.mjs'
+import { copyEntries, createLink, ensureDir, removeIfExists } from './cli-utils.mjs'
 
 export const RUNTIME_ROOT_ENTRIES = [
   '.claude-plugin',
@@ -26,6 +26,16 @@ export const RUNTIME_ROOT_ENTRIES = [
 /** Return the stable per-user runtime copy used by host integrations. */
 export function getStableRuntimeRoot(home) {
   return join(home, '.helloagents', 'helloagents')
+}
+
+/** Return the Claude local marketplace projection root derived from the shared runtime copy. */
+export function getClaudeMarketplaceRoot(home) {
+  return join(home, '.helloagents', 'host-projections', 'claude-marketplace')
+}
+
+/** Return the Gemini extension projection root derived from the shared runtime copy. */
+export function getGeminiExtensionRoot(home) {
+  return join(home, '.helloagents', 'host-projections', 'gemini')
 }
 
 function normalizePath(path) {
@@ -63,17 +73,9 @@ function retryTransientFs(operation) {
   throw lastError
 }
 
-function materializeGeminiHooks(root) {
-  const source = join(root, 'hooks', 'hooks-gemini.json')
-  const target = join(root, 'hooks', 'hooks.json')
-  if (!existsSync(source)) return
-  copyFileSync(source, target)
-}
-
-/** Sync package runtime files into the stable root without copying repo-only files. */
-export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
+function syncRuntimeTree(sourceRoot, targetRoot, { materializeGeminiHooks = false } = {}) {
   const source = resolve(sourceRoot)
-  const target = resolve(runtimeRoot)
+  const target = resolve(targetRoot)
   if (samePath(source, target)) {
     return { synced: false, root: target }
   }
@@ -84,7 +86,13 @@ export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
 
   try {
     copyEntries(source, staging, RUNTIME_ROOT_ENTRIES)
-    materializeGeminiHooks(staging)
+    if (materializeGeminiHooks) {
+      const sourceHooks = join(staging, 'hooks', 'hooks-gemini.json')
+      const targetHooks = join(staging, 'hooks', 'hooks.json')
+      if (existsSync(sourceHooks)) {
+        copyFileSync(sourceHooks, targetHooks)
+      }
+    }
     retryTransientFs(() => {
       removeIfExists(target)
       renameSync(staging, target)
@@ -96,7 +104,42 @@ export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
   }
 }
 
+/** Sync package runtime files into the stable root without copying repo-only files. */
+export function syncRuntimeRoot(sourceRoot, runtimeRoot) {
+  return syncRuntimeTree(sourceRoot, runtimeRoot)
+}
+
+/** Sync a Claude local marketplace root that resolves to the stable runtime copy. */
+export function syncClaudeMarketplaceRoot(sourceRoot, marketplaceRoot) {
+  const source = resolve(sourceRoot)
+  const target = resolve(marketplaceRoot)
+  if (samePath(source, target)) {
+    return { synced: false, root: target }
+  }
+
+  removeIfExists(target)
+  if (createLink(source, target)) {
+    return { synced: true, root: target }
+  }
+  return syncRuntimeTree(source, target)
+}
+
+/** Sync a host-specific extension root derived from the stable runtime copy. */
+export function syncGeminiExtensionRoot(sourceRoot, extensionRoot) {
+  return syncRuntimeTree(sourceRoot, extensionRoot, { materializeGeminiHooks: true })
+}
+
 /** Remove the stable runtime copy while leaving user settings under ~/.helloagents intact. */
 export function removeRuntimeRoot(runtimeRoot) {
   removeIfExists(runtimeRoot)
+}
+
+/** Remove the Claude marketplace projection root. */
+export function removeClaudeMarketplaceRoot(home) {
+  removeIfExists(getClaudeMarketplaceRoot(home))
+}
+
+/** Remove the Gemini extension projection root. */
+export function removeGeminiExtensionRoot(home) {
+  removeIfExists(getGeminiExtensionRoot(home))
 }
