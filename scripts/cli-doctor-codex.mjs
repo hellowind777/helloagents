@@ -259,6 +259,8 @@ function appendCodexGlobalIssues(runtime, issues, checks, pluginVersion, cacheVe
   if (!checks.pluginCache) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-missing', 'global 插件缓存目录缺失', 'Global plugin cache directory is missing'))
   if (checks.pluginRoot && !checks.pluginRootLink) issues.push(buildDoctorIssue(runtime, 'global-plugin-root-link-drift', 'global 插件根目录未链接到稳定运行根目录', 'Global plugin root does not link to the stable runtime root'))
   if (checks.pluginCache && !checks.pluginCacheLink) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-link-drift', 'global 插件缓存未链接到稳定运行根目录', 'Global plugin cache does not link to the stable runtime root'))
+  if (checks.pluginGenericHooks) issues.push(buildDoctorIssue(runtime, 'global-plugin-generic-hooks-present', 'global 插件根目录中意外存在通用 `hooks/hooks.json`，可能污染 Codex 本地插件 hook 加载', 'Global plugin root unexpectedly contains a generic `hooks/hooks.json`, which can pollute Codex local-plugin hook loading'))
+  if (checks.pluginCacheGenericHooks) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-generic-hooks-present', 'global 插件缓存中意外存在通用 `hooks/hooks.json`，可能污染 Codex 本地插件 hook 加载', 'Global plugin cache unexpectedly contains a generic `hooks/hooks.json`, which can pollute Codex local-plugin hook loading'))
   if (checks.pluginRoot && !checks.pluginCarrierMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-carrier-drift', 'global 插件根目录中的 AGENTS.md 与当前全局模式规则不一致', 'Global plugin AGENTS.md differs from the current global rules'))
   if (checks.pluginCache && !checks.pluginCacheCarrierMatch) issues.push(buildDoctorIssue(runtime, 'global-plugin-cache-carrier-drift', 'global 插件缓存中的 AGENTS.md 与当前全局模式规则不一致', 'Global plugin cache AGENTS.md differs from the current global rules'))
   if (!checks.marketplaceEntry) issues.push(buildDoctorIssue(runtime, 'global-marketplace-missing', 'global marketplace 条目缺失', 'Global marketplace entry is missing'))
@@ -285,6 +287,8 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
   const homeLinkTarget = safeRealTarget(join(codexDir, 'helloagents'))
   const pluginRootTarget = safeRealTarget(pluginRoot)
   const pluginCacheTarget = safeRealTarget(pluginCacheRoot)
+  const pluginGenericHooks = !!safeRead(join(pluginRoot, 'hooks', 'hooks.json'))
+  const pluginCacheGenericHooks = !!safeRead(join(pluginCacheRoot, 'hooks', 'hooks.json'))
   const expectedHomeCarrier = (detectedMode === 'global' || (detectedMode === 'none' && trackedMode === 'global'))
     ? 'bootstrap.md'
     : 'bootstrap-lite.md'
@@ -326,6 +330,8 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
       pluginCache: existsSync(pluginCacheRoot),
       pluginRootLink: pluginRootTarget === runtimeRoot,
       pluginCacheLink: pluginCacheTarget === runtimeRoot,
+      pluginGenericHooks,
+      pluginCacheGenericHooks,
       pluginCarrierMatch: normalizeText(safeRead(join(pluginRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings, { profile: 'full' }),
       pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings, { profile: 'full' }),
       marketplaceEntry: Array.isArray(marketplace.plugins) && marketplace.plugins.some((plugin) => plugin?.name === CODEX_PLUGIN_NAME),

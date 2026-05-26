@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { chmodSync, existsSync, realpathSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
+import { getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
 import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, writeJson, writeText } from './helpers/test-env.mjs'
 import { runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
@@ -50,6 +51,8 @@ test('single-host update reuses tracked codex mode and cleanup leaves other CLIs
   runCli(pkgRoot, home, ['install', 'codex', '--global'])
   assert.ok(existsSync(pluginRoot))
   assert.equal(realpathSync(pluginRoot), realpathSync(join(home, '.helloagents', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
+  assert.ok(!existsSync(join(pluginRoot, 'hooks', 'hooks.json')))
   assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_START/)
   assert.match(readText(join(home, '.codex', 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
@@ -200,6 +203,7 @@ test('global install attempts Claude and Gemini native installers when commands 
   const fakeBin = createTempDir('helloagents-fake-bin-')
   const claudeLog = join(home, 'claude.log')
   const geminiLog = join(home, 'gemini.log')
+  const geminiExtensionRoot = getGeminiExtensionRoot(home)
 
   const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
   const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
@@ -213,8 +217,9 @@ test('global install attempts Claude and Gemini native installers when commands 
 
   assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
-  assert.match(readText(geminiLog), /extensions link .*\.helloagents[\\/]+helloagents/)
-  assert.ok(existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
+  assert.match(readText(geminiLog), /extensions link .*host-projections[\\/]+gemini/)
+  assert.ok(existsSync(join(geminiExtensionRoot, 'hooks', 'hooks.json')))
+  assert.ok(!existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'global')
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.gemini, 'global')
 })
@@ -272,6 +277,7 @@ test('uninstall gemini reuses tracked global mode and runs native removal', () =
   })
 
   assert.match(readText(geminiLog), /extensions uninstall helloagents/)
+  assert.ok(!existsSync(getGeminiExtensionRoot(home)))
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.gemini, undefined)
   assert.equal(settings.host_install_modes.claude, 'standby')
@@ -371,5 +377,5 @@ test('failed Gemini global cleanup keeps the tracked global mode', () => {
 
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.gemini, 'global')
-  assert.match(readText(geminiLog), /extensions link .*\.helloagents[\\/]+helloagents/)
+  assert.match(readText(geminiLog), /extensions link .*host-projections[\\/]+gemini/)
 })

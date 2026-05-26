@@ -15,6 +15,11 @@ import {
   uninstallCodexStandby,
 } from './cli-codex.mjs'
 import { getHostLabel } from './cli-host-detect.mjs'
+import {
+  getGeminiExtensionRoot,
+  removeGeminiExtensionRoot,
+  syncGeminiExtensionRoot,
+} from './cli-runtime-root.mjs'
 
 const CLAUDE_COMMAND = process.env.HELLOAGENTS_CLAUDE_CMD || 'claude'
 const GEMINI_COMMAND = process.env.HELLOAGENTS_GEMINI_CMD || 'gemini'
@@ -184,13 +189,17 @@ function installHostGlobal(runtime, host) {
   }
   if (host === 'gemini') {
     uninstallGeminiStandby(runtime.home)
-    return buildNativeResult(
-      installGeminiGlobalExtension(runtime.pkgRoot),
+    const extensionRoot = getGeminiExtensionRoot(runtime.home)
+    syncGeminiExtensionRoot(runtime.pkgRoot, extensionRoot)
+    const result = buildNativeResult(
+      installGeminiGlobalExtension(extensionRoot),
       '已自动安装 Gemini CLI 扩展；重启 Gemini CLI 后生效',
       'Gemini CLI extension installed automatically; restart Gemini CLI to apply',
-      `Gemini CLI 扩展自动安装失败，请手动执行: gemini extensions link ${runtime.pkgRoot}`,
-      `Gemini CLI extension auto-install failed. Run manually: gemini extensions link ${runtime.pkgRoot}`,
+      `Gemini CLI 扩展自动安装失败，请手动执行: gemini extensions link ${extensionRoot}`,
+      `Gemini CLI extension auto-install failed. Run manually: gemini extensions link ${extensionRoot}`,
     )
+    if (result.ok === false) removeGeminiExtensionRoot(runtime.home)
+    return result
   }
   uninstallCodexStandby(runtime.home)
   return installCodexGlobal(runtime.home, runtime.pkgRoot) ? {} : { skipped: true }
@@ -220,7 +229,7 @@ function cleanupHostGlobal(runtime, host) {
   }
   if (host === 'gemini') {
     uninstallGeminiStandby(runtime.home)
-    return preserveTrackedModeOnFailure(
+    const result = preserveTrackedModeOnFailure(
       buildNativeResult(
         removeGeminiGlobalExtension(),
         '已自动移除 Gemini CLI 扩展',
@@ -230,6 +239,8 @@ function cleanupHostGlobal(runtime, host) {
       ),
       'global',
     )
+    if (result.ok) removeGeminiExtensionRoot(runtime.home)
+    return result
   }
   return { skipped: !uninstallCodexGlobal(runtime.home) }
 }
