@@ -4,6 +4,7 @@ import { chmodSync, existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
 import { CODEX_MANAGED_NOTIFY_VALUE } from '../scripts/cli-codex-config.mjs'
+import { getClaudeMarketplaceRoot, getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
 import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, realTarget, writeJson, writeText } from './helpers/test-env.mjs'
 import { hasTimestampedBackup, runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
@@ -91,11 +92,14 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   const pluginRoot = join(home, 'plugins', 'helloagents')
   const pluginCacheRoot = join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local')
+  const geminiExtensionRoot = getGeminiExtensionRoot(home)
   assert.ok(existsSync(pluginRoot))
   assert.ok(existsSync(pluginCacheRoot))
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
   assert.equal(realTarget(pluginRoot), runtimeRoot)
   assert.equal(realTarget(pluginCacheRoot), runtimeRoot)
+  assert.ok(!existsSync(join(runtimeRoot, 'hooks', 'hooks.json')))
+  assert.ok(existsSync(join(geminiExtensionRoot, 'hooks', 'hooks.json')))
   assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
@@ -254,6 +258,8 @@ test('all-host mode switch from global to standby removes native Claude and Gemi
   const fakeBin = createTempDir('helloagents-mode-switch-bin-')
   const claudeLog = join(home, 'claude-mode-switch.log')
   const geminiLog = join(home, 'gemini-mode-switch.log')
+  const claudeMarketplaceRoot = getClaudeMarketplaceRoot(home)
+  const geminiExtensionRoot = getGeminiExtensionRoot(home)
   const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
   const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
   const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
@@ -280,10 +286,12 @@ test('all-host mode switch from global to standby removes native Claude and Gemi
   assert.equal(settings.host_install_modes.codex, 'standby')
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
-  assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
+  assert.match(readText(claudeLog), /plugin marketplace add .*host-projections[\\/]+claude-marketplace/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
   assert.match(readText(claudeLog), /plugin remove helloagents/)
-  assert.match(readText(geminiLog), /extensions link .*\.helloagents[\\/]+helloagents/)
+  assert.match(readText(geminiLog), /extensions link .*host-projections[\\/]+gemini/)
   assert.match(readText(geminiLog), /extensions uninstall helloagents/)
-  assert.ok(existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
+  assert.ok(!existsSync(claudeMarketplaceRoot))
+  assert.ok(!existsSync(geminiExtensionRoot))
+  assert.ok(!existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
 })

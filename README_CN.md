@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.0.39-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.0-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -225,8 +225,9 @@ CLI 显式管理宿主文件：
 - `update` 刷新指定目标或全部目标
 - `cleanup` 删除受管注入和链接
 - `uninstall` 在移除包前执行对应清理
-- `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本和版本漂移；对 Codex 还会在可用时附带原生 `codex doctor` 结果
+- `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本、版本漂移，以及 Claude / Gemini 是否真的装上了全局插件或扩展；对 Codex 还会在可用时附带原生 `codex doctor` 结果
 - 单 CLI 模式记录只会在宿主安装成功后写入；如果原生全局清理失败，也会继续保留 `global` 记录，而不是悄悄叠加 standby
+- Windows 下的 `.cmd` / `.bat` 生命周期调用现在统一走显式命令包装，不再出现 Node `DEP0190` shell 弃用警告
 
 ## 快速开始
 
@@ -313,7 +314,7 @@ helloagents codex goals enable
 
 当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。如果未提供 `HELLOAGENTS`，一键安装脚本现在会保持“只装包/只升级包”的默认语义，不会自动部署任何宿主 CLI。若要安装自定义 tarball 或包规格，用 `HELLOAGENTS_PACKAGE`，不要写 `HELLOAGENTS_BRANCH`。对于已经装好的包，如需确保宿主一定刷新，优先在包命令后显式执行一次 `npm explore -g helloagents -- npm run sync-hosts -- ...`。
 
-宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。
+宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。Claude Code 的 global 安装现在使用独立本地 marketplace 投影 `~/.helloagents/host-projections/claude-marketplace`，Gemini 的 global 扩展使用 `~/.helloagents/host-projections/gemini`，宿主专用打包链路不再污染共享运行根。
 
 #### npm 命令
 
@@ -445,16 +446,16 @@ npm uninstall -g helloagents
 
 | CLI | 安装方式 | 涉及文件 |
 |-----|----------|----------|
-| Claude Code | 原生插件安装 | 由 Claude Code 插件系统管理 |
-| Gemini CLI | 原生扩展安装 | 由 Gemini 扩展系统管理 |
+| Claude Code | 原生插件安装 | `~/.helloagents/host-projections/claude-marketplace`，以及由 Claude Code 宿主管理的插件元数据 / 缓存 |
+| Gemini CLI | 原生扩展安装 | `~/.helloagents/host-projections/gemini`、`~/.gemini/extensions/helloagents` |
 | Codex CLI | 原生本地插件流程 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/ -> ~/.helloagents/helloagents`、`~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-全局模式下，HelloAGENTS 会自动尝试宿主原生命令。对 Claude Code，marketplace 应使用 Git URL 添加，这样插件安装阶段会继续走 HTTPS，不会落回 SSH-only clone。若宿主命令不可用，再手动执行：
+全局模式下，HelloAGENTS 会自动尝试宿主原生命令。Claude Code 走本地 marketplace 投影，Gemini 走本地 extension 投影，Codex 继续回链同一个稳定运行根，因此安装、更新、切分支、切模式、清理和卸载都会围绕同一份运行时副本刷新。若宿主命令不可用，再手动执行：
 
 ```text
-/plugin marketplace add https://github.com/hellowind777/helloagents.git
+/plugin marketplace add "~/.helloagents/host-projections/claude-marketplace"
 /plugin install helloagents@helloagents
-helloagents install gemini --global
+gemini extensions link "~/.helloagents/host-projections/gemini"
 ```
 
 Claude Code 会自动尝试等价的 `claude plugin marketplace add ...` 和 `claude plugin install ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。全局安装后需要重启宿主 CLI。
@@ -682,6 +683,7 @@ npm test
 当前测试覆盖：
 
 - 安装、更新、清理、卸载、分支切换和模式切换
+- Windows `.cmd` / `.bat` 生命周期分发链路，且不再出现 Node `DEP0190` 警告
 - shell 与 PowerShell 一键脚本分发链路，以及包装脚本在安装、更新、清理、卸载和分支切换中的环境清理与模式传递规则
 - Claude、Gemini、Codex 的宿主集成行为，包括全局切回标准模式的清理和原生清理失败时的模式保留
 - Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、hook trust 状态、本地插件、marketplace 和缓存行为
