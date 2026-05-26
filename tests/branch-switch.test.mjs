@@ -53,7 +53,8 @@ test('switch-branch defaults to npm.cmd on Windows when no override is provided'
     Path: `${binDir};${process.env.PATH || process.env.Path || ''}`,
   }
 
-  runCli(pkgRoot, home, ['switch-branch', 'beta', 'codex', '--standby'], env)
+  const result = runCli(pkgRoot, home, ['switch-branch', 'beta', 'codex', '--standby'], env)
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
 
   assert.equal(npmCmdPath.endsWith('npm.cmd'), true)
   assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
@@ -63,7 +64,8 @@ test('switch-branch defaults to npm.cmd on Windows when no override is provided'
 test('switch-branch installs a GitHub branch and refreshes a scoped global host through npm', () => {
   const { pkgRoot, home, env, npmLog } = createBranchSwitchFixture()
 
-  runCli(pkgRoot, home, ['switch-branch', 'beta', 'claude', '--global'], env)
+  const result = runCli(pkgRoot, home, ['switch-branch', 'beta', 'claude', '--global'], env)
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
 
   assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- claude --global/)
@@ -72,12 +74,13 @@ test('switch-branch installs a GitHub branch and refreshes a scoped global host 
 test('branch accepts a full npm spec and refreshes all hosts through npm', () => {
   const { pkgRoot, home, env, npmLog } = createBranchSwitchFixture()
 
-  runCli(pkgRoot, home, [
+  const result = runCli(pkgRoot, home, [
     'branch',
     'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
     '--all',
     '--standby',
   ], env)
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
 
   assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- --all --standby/)

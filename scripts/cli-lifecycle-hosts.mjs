@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { platform } from 'node:os'
 
 import {
@@ -14,6 +13,7 @@ import {
   uninstallCodexGlobal,
   uninstallCodexStandby,
 } from './cli-codex.mjs'
+import { spawnCommandSync } from './cli-process.mjs'
 import {
   detectHostMode as detectRuntimeHostMode,
   getHostLabel,
@@ -54,11 +54,9 @@ function runHostCommand(command, args) {
   let lastResult = null
 
   for (const candidate of attempts) {
-    const needsShell = process.platform === 'win32' && /\.(cmd|bat)$/i.test(candidate)
-    const result = spawnSync(candidate, args, {
+    const result = spawnCommandSync(candidate, args, {
       encoding: 'utf-8',
       errors: 'replace',
-      shell: needsShell,
       windowsHide: true,
     })
     lastResult = result

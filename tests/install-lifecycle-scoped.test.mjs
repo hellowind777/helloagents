@@ -209,12 +209,13 @@ test('global install attempts Claude and Gemini native installers when commands 
   const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
   const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
   const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
-  runCli(pkgRoot, home, ['install', '--all', '--global'], {
+  const result = runCli(pkgRoot, home, ['install', '--all', '--global'], {
     PATH: testPath,
     Path: testPath,
     HELLOAGENTS_CLAUDE_CMD: claudeCommand,
     HELLOAGENTS_GEMINI_CMD: geminiCommand,
   })
+  assert.doesNotMatch(result.stderr || '', /DEP0190/)
 
   assert.match(readText(claudeLog), /plugin marketplace add .*host-projections[\\/]+claude-marketplace/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
@@ -310,17 +311,19 @@ test('single-host standby install removes the tracked Claude global plugin befor
   const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
   seedHostConfigs(home)
 
-  runCli(pkgRoot, home, ['install', 'claude', '--global'], {
+  const globalResult = runCli(pkgRoot, home, ['install', 'claude', '--global'], {
     PATH: testPath,
     Path: testPath,
     HELLOAGENTS_CLAUDE_CMD: claudeCommand,
   })
+  assert.doesNotMatch(globalResult.stderr || '', /DEP0190/)
 
-  runCli(pkgRoot, home, ['install', 'claude', '--standby'], {
+  const standbyResult = runCli(pkgRoot, home, ['install', 'claude', '--standby'], {
     PATH: testPath,
     Path: testPath,
     HELLOAGENTS_CLAUDE_CMD: claudeCommand,
   })
+  assert.doesNotMatch(standbyResult.stderr || '', /DEP0190/)
 
   assert.match(readText(claudeLog), /plugin marketplace add .*host-projections[\\/]+claude-marketplace/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
