@@ -313,7 +313,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
-Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root. Gemini global extension packaging now uses a dedicated projection under `~/.helloagents/host-projections/gemini`, so Gemini-only `hooks/hooks.json` no longer pollutes the shared runtime root or Codex local-plugin startup.
+Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root. Claude Code global installs now use a dedicated local marketplace projection under `~/.helloagents/host-projections/claude-marketplace`, and Gemini global extension packaging uses `~/.helloagents/host-projections/gemini`, so host-specific packaging stays isolated from the shared runtime root.
 
 #### npm commands
 
@@ -445,16 +445,16 @@ npm uninstall -g helloagents
 
 | CLI | Install method | Files involved |
 |-----|----------------|----------------|
-| Claude Code | native plugin install | managed by Claude Code plugin system |
-| Gemini CLI | native extension install | managed by Gemini extension system |
+| Claude Code | native plugin install | `~/.helloagents/host-projections/claude-marketplace`, Claude Code plugin metadata/cache managed by the host |
+| Gemini CLI | native extension install | `~/.helloagents/host-projections/gemini`, `~/.gemini/extensions/helloagents` |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-In global mode, HelloAGENTS now attempts the host-native install commands automatically. For Claude Code, the marketplace should be added from the Git URL so the plugin source stays on HTTPS and avoids an SSH-only clone during installation. If a host command is unavailable, run the same commands manually:
+In global mode, HelloAGENTS now attempts the host-native install commands automatically. Claude Code uses the local marketplace projection and Gemini uses the local extension projection, so branch switches and updates stay aligned with the current stable runtime copy. If a host command is unavailable, run the same commands manually:
 
 ```text
-/plugin marketplace add https://github.com/hellowind777/helloagents.git
+/plugin marketplace add "~/.helloagents/host-projections/claude-marketplace"
 /plugin install helloagents@helloagents
-helloagents install gemini --global
+gemini extensions link "~/.helloagents/host-projections/gemini"
 ```
 
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.

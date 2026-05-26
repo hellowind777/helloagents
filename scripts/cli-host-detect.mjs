@@ -6,8 +6,11 @@ import {
   CODEX_PLUGIN_KEY,
   CODEX_PLUGIN_NAME,
 } from './cli-codex.mjs'
-import { getStableRuntimeRoot } from './cli-runtime-root.mjs'
+import { getGeminiExtensionRoot, getStableRuntimeRoot } from './cli-runtime-root.mjs'
 import { safeJson, safeRead } from './cli-utils.mjs'
+
+const CLAUDE_PLUGIN = 'helloagents@helloagents'
+const GEMINI_EXTENSION = 'helloagents'
 
 const HOST_ALIASES = new Map([
   ['all', 'all'],
@@ -24,8 +27,14 @@ function hasHelloagentsMarker(filePath) {
   return (safeRead(filePath) || '').includes('HELLOAGENTS_START')
 }
 
-function hasHelloagentsSettings(filePath) {
-  return JSON.stringify(safeJson(filePath) || {}).includes('helloagents')
+function hasHelloagentsSettings(filePath, host = '') {
+  const settings = safeJson(filePath) || {}
+  const hooksText = JSON.stringify(settings.hooks || {})
+  if (hooksText.includes('helloagents')) return true
+  if (host === 'claude') {
+    return JSON.stringify(settings.permissions?.allow || []).includes('~/.helloagents/helloagents')
+  }
+  return false
 }
 
 function normalizePath(value = '') {
@@ -40,12 +49,27 @@ function safeRealTarget(linkPath) {
   }
 }
 
+function hasEnabledPlugin(enabledPlugins, pluginName) {
+  if (Array.isArray(enabledPlugins)) {
+    return enabledPlugins.includes(pluginName)
+  }
+  if (enabledPlugins && typeof enabledPlugins === 'object') {
+    return Boolean(enabledPlugins[pluginName])
+  }
+  return false
+}
+
 function detectClaudeMode(home) {
   const claudeDir = join(home, '.claude')
+  const settings = safeJson(join(claudeDir, 'settings.json')) || {}
+  const installedPlugins = safeJson(join(claudeDir, 'plugins', 'installed_plugins.json')) || {}
+  if (hasEnabledPlugin(settings.enabledPlugins, CLAUDE_PLUGIN) || installedPlugins.plugins?.[CLAUDE_PLUGIN]?.length) {
+    return 'global'
+  }
   if (
     existsSync(join(claudeDir, 'helloagents'))
     || hasHelloagentsMarker(join(claudeDir, 'CLAUDE.md'))
-    || hasHelloagentsSettings(join(claudeDir, 'settings.json'))
+    || hasHelloagentsSettings(join(claudeDir, 'settings.json'), 'claude')
   ) {
     return 'standby'
   }
@@ -54,10 +78,19 @@ function detectClaudeMode(home) {
 
 function detectGeminiMode(home) {
   const geminiDir = join(home, '.gemini')
+  const extensionRoot = safeRealTarget(getGeminiExtensionRoot(home)) || normalizePath(getGeminiExtensionRoot(home))
+  const installedExtensionRoot = join(geminiDir, 'extensions', GEMINI_EXTENSION)
+  const installedExtension = safeJson(join(installedExtensionRoot, 'gemini-extension.json')) || {}
+  if (
+    existsSync(installedExtensionRoot)
+    && (safeRealTarget(installedExtensionRoot) === extensionRoot || installedExtension.name === GEMINI_EXTENSION)
+  ) {
+    return 'global'
+  }
   if (
     existsSync(join(geminiDir, 'helloagents'))
     || hasHelloagentsMarker(join(geminiDir, 'GEMINI.md'))
-    || hasHelloagentsSettings(join(geminiDir, 'settings.json'))
+    || hasHelloagentsSettings(join(geminiDir, 'settings.json'), 'gemini')
   ) {
     return 'standby'
   }

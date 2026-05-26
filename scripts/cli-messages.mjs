@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { getClaudeMarketplaceRoot, getGeminiExtensionRoot } from './cli-runtime-root.mjs'
 
 export function createMessageHelpers(isCN) {
   const msg = (cn, en) => (isCN ? cn : en)
@@ -19,11 +20,11 @@ function codexGlobalStatus({ home, msg }) {
     : msg('安装 Codex CLI 后重新运行 npm install -g helloagents', 'Install Codex CLI then re-run npm install -g helloagents')
 }
 
-function pluginCommands() {
+function pluginCommands(home) {
   return [
-    '    Claude Code:  /plugin marketplace add https://github.com/hellowind777/helloagents.git',
+    `    Claude Code:  /plugin marketplace add "${getClaudeMarketplaceRoot(home)}"`,
     '                  /plugin install helloagents@helloagents',
-    '    Gemini CLI:   helloagents install gemini --global',
+    `    Gemini CLI:   gemini extensions link "${getGeminiExtensionRoot(home)}"`,
   ].join('\n')
 }
 
@@ -42,24 +43,24 @@ function restartHint(msg) {
 }
 
 function renderInstallMessage(context, mode, state) {
-  const { msg } = context
+  const { home, msg } = context
   const install = state === 'install'
   const refresh = state === 'refresh'
 
   if (mode === 'global') {
     if (install) {
       return msg(
-        `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n    Claude Code / Gemini CLI: 已自动尝试宿主原生插件/扩展安装\n    Codex:        ${codexGlobalStatus(context)}（~/.agents/plugins/marketplace.json + ~/plugins/helloagents）\n\n  ${restartHint(msg)}\n\n  若宿主命令不可用，请手动执行：\n${pluginCommands()}\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
-        `\n  ✅ HelloAGENTS installed (global mode)!\n\n    Claude Code / Gemini CLI: native plugin/extension install attempted automatically\n    Codex:        ${codexGlobalStatus(context)} (~/.agents/plugins/marketplace.json + ~/plugins/helloagents)\n\n  ${restartHint(msg)}\n\n  If a host command is unavailable, run manually:\n${pluginCommands()}\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`,
+        `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n    Claude Code / Gemini CLI: 已自动尝试宿主原生插件/扩展安装\n    Codex:        ${codexGlobalStatus(context)}（~/.agents/plugins/marketplace.json + ~/plugins/helloagents）\n\n  ${restartHint(msg)}\n\n  若宿主命令不可用，请手动执行：\n${pluginCommands(home)}\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
+        `\n  ✅ HelloAGENTS installed (global mode)!\n\n    Claude Code / Gemini CLI: native plugin/extension install attempted automatically\n    Codex:        ${codexGlobalStatus(context)} (~/.agents/plugins/marketplace.json + ~/plugins/helloagents)\n\n  ${restartHint(msg)}\n\n  If a host command is unavailable, run manually:\n${pluginCommands(home)}\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`,
       )
     }
     return msg(
       refresh
         ? `  global 模式已刷新。\n  Claude Code / Gemini 已自动尝试刷新宿主插件/扩展；Codex 原生本地插件已重装并同步最新文件。\n  ${restartHint(msg)}`
-        : `  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 已自动尝试安装宿主插件/扩展；Codex 已自动安装原生本地插件。\n  ${restartHint(msg)}\n\n若宿主命令不可用，请手动执行：\n${pluginCommands()}`,
+        : `  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 已自动尝试安装宿主插件/扩展；Codex 已自动安装原生本地插件。\n  ${restartHint(msg)}\n\n若宿主命令不可用，请手动执行：\n${pluginCommands(home)}`,
       refresh
         ? `  Global mode refreshed.\n  Claude Code / Gemini native plugin/extension refresh was attempted automatically; Codex native local-plugin files were reinstalled and synced.\n  ${restartHint(msg)}`
-        : `  All projects will use full HelloAGENTS rules.\n  Claude Code / Gemini native plugin/extension install was attempted automatically; Codex now uses the native local-plugin path automatically.\n  ${restartHint(msg)}\n\nIf a host command is unavailable, run manually:\n${pluginCommands()}`,
+        : `  All projects will use full HelloAGENTS rules.\n  Claude Code / Gemini native plugin/extension install was attempted automatically; Codex now uses the native local-plugin path automatically.\n  ${restartHint(msg)}\n\nIf a host command is unavailable, run manually:\n${pluginCommands(home)}`,
     )
   }
 

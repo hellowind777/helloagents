@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { chmodSync, existsSync, realpathSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
-import { getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
+import { getClaudeMarketplaceRoot, getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
 import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, writeJson, writeText } from './helpers/test-env.mjs'
 import { runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
@@ -203,6 +203,7 @@ test('global install attempts Claude and Gemini native installers when commands 
   const fakeBin = createTempDir('helloagents-fake-bin-')
   const claudeLog = join(home, 'claude.log')
   const geminiLog = join(home, 'gemini.log')
+  const claudeMarketplaceRoot = getClaudeMarketplaceRoot(home)
   const geminiExtensionRoot = getGeminiExtensionRoot(home)
 
   const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
@@ -215,9 +216,10 @@ test('global install attempts Claude and Gemini native installers when commands 
     HELLOAGENTS_GEMINI_CMD: geminiCommand,
   })
 
-  assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
+  assert.match(readText(claudeLog), /plugin marketplace add .*host-projections[\\/]+claude-marketplace/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
   assert.match(readText(geminiLog), /extensions link .*host-projections[\\/]+gemini/)
+  assert.ok(existsSync(claudeMarketplaceRoot))
   assert.ok(existsSync(join(geminiExtensionRoot, 'hooks', 'hooks.json')))
   assert.ok(!existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'global')
@@ -295,6 +297,7 @@ test('single-host global install does not record a mode when the native host com
 
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.claude, undefined)
+  assert.ok(existsSync(getClaudeMarketplaceRoot(home)))
 })
 
 test('single-host standby install removes the tracked Claude global plugin before writing standby files', () => {
@@ -319,9 +322,10 @@ test('single-host standby install removes the tracked Claude global plugin befor
     HELLOAGENTS_CLAUDE_CMD: claudeCommand,
   })
 
-  assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
+  assert.match(readText(claudeLog), /plugin marketplace add .*host-projections[\\/]+claude-marketplace/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
   assert.match(readText(claudeLog), /plugin remove helloagents/)
+  assert.ok(!existsSync(getClaudeMarketplaceRoot(home)))
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
   assert.match(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/)
   assert.equal(readJson(configFile).host_install_modes.claude, 'standby')
@@ -351,8 +355,9 @@ test('failed Claude global cleanup keeps the tracked global mode and skips stand
   assert.equal(settings.host_install_modes.claude, 'global')
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
   assert.doesNotMatch(readText(join(home, '.claude', 'CLAUDE.md')), /HELLOAGENTS_START/)
-  assert.match(readText(claudeLog), /plugin marketplace add https:\/\/github\.com\/hellowind777\/helloagents\.git/)
+  assert.match(readText(claudeLog), /plugin marketplace add .*host-projections[\\/]+claude-marketplace/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
+  assert.ok(existsSync(getClaudeMarketplaceRoot(home)))
 })
 
 test('failed Gemini global cleanup keeps the tracked global mode', () => {
