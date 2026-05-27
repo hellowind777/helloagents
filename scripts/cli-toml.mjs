@@ -117,6 +117,10 @@ export function removeTopLevelTomlBlock(text, key) {
   return normalizeToml(`${normalized.slice(0, existing.start)}${normalized.slice(existing.end)}`);
 }
 
+export function hasTopLevelTomlBlock(text, key) {
+  return Boolean(findTopLevelTomlBlock(text, key));
+}
+
 export function prependTopLevelTomlBlocks(text, blocks) {
   const normalizedBlocks = blocks
     .map((block) => String(block || '').trim())

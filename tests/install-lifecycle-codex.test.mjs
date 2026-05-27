@@ -4,6 +4,7 @@ import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 import {
+  analyzeCodexNotifyBlock,
   CODEX_MANAGED_GOALS_FEATURE_LINE,
   CODEX_MANAGED_NOTIFY_VALUE,
   CODEX_MANAGED_TUI_NOTIFICATIONS_LINE,
@@ -34,6 +35,34 @@ test('Codex managed notify uses a single cross-platform entrypoint', () => {
   assert.equal(isManagedCodexNotify('notify = ["helloagents-js.cmd", "codex-notify"]'), false)
   assert.equal(isManagedCodexNotify('notify = ["helloagents-js.cmd", "codex-notify"] # helloagents-managed'), false)
   assert.equal(isManagedCodexNotify(`${MANAGED_NOTIFY_LINE}`), true)
+  assert.deepEqual(analyzeCodexNotifyBlock(`${MANAGED_NOTIFY_LINE}`), {
+    exists: true,
+    managed: true,
+    containsCodexNotify: true,
+    shape: 'direct',
+    entrypoint: ['helloagents-js', 'codex-notify'],
+    wrapper: '',
+    rawCommand: ['helloagents-js', 'codex-notify'],
+    rawBlock: MANAGED_NOTIFY_LINE,
+  })
+})
+
+test('Codex notify analyzer accepts wrapper previous-notify chains', () => {
+  const block = [
+    'notify = [',
+    '  "/Users/test/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient",',
+    '  "turn-ended",',
+    '  "--previous-notify",',
+    '  "[\\"helloagents-js\\",\\"codex-notify\\"]"',
+    ']',
+  ].join('\n')
+
+  const analysis = analyzeCodexNotifyBlock(block)
+  assert.equal(analysis.exists, true)
+  assert.equal(analysis.managed, true)
+  assert.equal(analysis.containsCodexNotify, true)
+  assert.equal(analysis.shape, 'chained')
+  assert.deepEqual(analysis.entrypoint, ['helloagents-js', 'codex-notify'])
 })
 
 test('Codex global cleanup still removes marketplace and plugin roots when .codex is gone', () => {
@@ -423,6 +452,49 @@ test('Codex cleanup restores user-owned notify even when it uses codex-notify', 
 
   const cleaned = readText(join(home, '.codex', 'config.toml'))
   assert.match(cleaned, /notify = \["node", "C:\/tools\/custom-notify\.mjs", "codex-notify"\]/)
+  assert.doesNotMatch(cleaned, /helloagents-managed/)
+})
+
+test('Codex cleanup restores user-owned notify when managed notify was wrapped by previous-notify', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'notify = ["node", "C:/tools/custom-notify.mjs", "custom-notify"]',
+      '',
+      '[features]',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    [
+      'model_instructions_file = "~/.codex/AGENTS.md" # helloagents-managed',
+      'notify = [',
+      '  "/Users/test/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient",',
+      '  "turn-ended",',
+      '  "--previous-notify",',
+      '  "[\\"helloagents-js\\",\\"codex-notify\\"]"',
+      ']',
+      '',
+      '[features]',
+      'experimental = true',
+      '',
+    ].join('\n'),
+  )
+
+  runCli(pkgRoot, home, ['cleanup', 'codex'])
+
+  const cleaned = readText(join(home, '.codex', 'config.toml'))
+  assert.match(cleaned, /notify = \["node", "C:\/tools\/custom-notify\.mjs", "custom-notify"\]/)
+  assert.doesNotMatch(cleaned, /SkyComputerUseClient/)
   assert.doesNotMatch(cleaned, /helloagents-managed/)
 })
 
