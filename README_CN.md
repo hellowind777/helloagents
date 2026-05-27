@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.1.0-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.1-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -226,6 +226,7 @@ CLI 显式管理宿主文件：
 - `cleanup` 删除受管注入和链接
 - `uninstall` 在移除包前执行对应清理
 - `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本、版本漂移，以及 Claude / Gemini 是否真的装上了全局插件或扩展；对 Codex 还会在可用时附带原生 `codex doctor` 结果
+- Codex 受管 `notify = ["helloagents-js", "codex-notify"]` 会继续保持可移植；`doctor`、`cleanup` 和 `uninstall` 也能识别 Codex App / Computer Use 使用的 `--previous-notify` 包装链
 - 单 CLI 模式记录只会在宿主安装成功后写入；如果原生全局清理失败，也会继续保留 `global` 记录，而不是悄悄叠加 standby
 - Windows 下的 `.cmd` / `.bat` 生命周期调用现在统一走显式命令包装，不再出现 Node `DEP0190` shell 弃用警告
 
@@ -657,13 +658,14 @@ Codex 默认走规则文件驱动。
 
 - 标准模式写入 `~/.codex/AGENTS.md`
 - 标准模式写入可移植的受管 `model_instructions_file = "~/.codex/AGENTS.md"`
-- 标准模式写入受管 `notify = ["helloagents-js", "codex-notify"]` 命令用于收尾通知
+- 标准模式写入受管且可移植的 `notify = ["helloagents-js", "codex-notify"]` 命令用于收尾通知，因此重装、更新或换电脑时都不需要改写绝对路径
 - 标准模式把静默 Codex hooks 写入 `~/.codex/hooks.json`
 - Codex 的 `SessionStart` 保持静默，并在运行时读取当前 `~/.helloagents/helloagents.json`，不会把配置快照固化进 `config.toml`，因此首次对话和上下文压缩后的设置都能保持最新
 - 安装和更新还会把 HelloAGENTS 受管的 Codex hook trust 状态同步到 `~/.codex/config.toml`，因此 Codex 0.129.0+ 不会再对这些受管 hooks 反复提示确认
 - 这些 hook trust 状态是基于当前机器 `~/.codex/hooks.json` 真实绝对路径生成的本机状态；它不同于 `model_instructions_file = "~/.codex/AGENTS.md"` 这类可移植配置，应在每台机器上重新生成
 - 标准模式创建 `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - 全局模式安装原生本地插件流程，但仍把 `~/.helloagents/helloagents` 作为唯一受管运行时源；插件根目录、插件缓存和 `~/.codex/helloagents` 都会回链到它
+- `doctor`、`cleanup` 和 `uninstall` 也能识别 `--previous-notify ["helloagents-js", "codex-notify"]` 这类包装后的 notify 链，因此 Codex App / Computer Use 不会再触发误报或破坏 notify 恢复
 - 如果你主要看重 Codex app / 插件发现链路，优先使用 `global`；如果你主要看重更轻量、更显式的项目工作流，保留 `standby`
 - 清理时只删除 HelloAGENTS 自己写入的 hook trust 条目，不影响用户已有的 hook 状态
 - Codex hooks 只做静默运行态同步和 Stop 门禁，不通过 hook 注入 HelloAGENTS 规则或路由说明
@@ -687,7 +689,7 @@ npm test
 - shell 与 PowerShell 一键脚本分发链路，以及包装脚本在安装、更新、清理、卸载和分支切换中的环境清理与模式传递规则
 - Claude、Gemini、Codex 的宿主集成行为，包括全局切回标准模式的清理和原生清理失败时的模式保留
 - Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、hook trust 状态、本地插件、marketplace 和缓存行为
-- Codex 清理链路，以及受管 notify 恢复规则
+- Codex 清理链路，以及包括 wrapped `--previous-notify` 在内的受管 notify 恢复规则
 - Codex `/goal` 功能开关、长程路由上下文和 goal 感知命令契约
 - `helloagents doctor`
 - 项目存储和 `repo-shared`
