@@ -89,6 +89,43 @@ test('doctor reports codex standby health and detects drift in JSON mode', () =>
   assert.ok(codex.issues.some((issue) => issue.code === 'standby-link-missing'))
 })
 
+test('doctor accepts Codex Computer Use wrapped notify without reporting drift', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(join(home, '.codex', 'config.toml'), '[features]\nunified_exec = true\n')
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'codex', '--standby'])
+
+  const installedConfig = readText(join(home, '.codex', 'config.toml'))
+  writeText(
+    join(home, '.codex', 'config.toml'),
+    installedConfig.replace(
+      /notify = \["helloagents-js", "codex-notify"\] # helloagents-managed/,
+      [
+        'notify = [',
+        '  "/Users/test/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient",',
+        '  "turn-ended",',
+        '  "--previous-notify",',
+        '  "[\\"helloagents-js\\",\\"codex-notify\\"]"',
+        ']',
+      ].join('\n'),
+    ),
+  )
+
+  const result = runCli(pkgRoot, home, ['doctor', 'codex', '--json'])
+  const report = JSON.parse(result.stdout)
+  const codex = report.hosts.find((entry) => entry.host === 'codex')
+
+  assert.equal(codex.status, 'ok')
+  assert.equal(codex.checks.codexNotify, true)
+  assert.equal(codex.checks.notifyPathMatch, true)
+  assert.equal(codex.checks.notifyShape, 'chained')
+  assert.ok(codex.notes.some((note) => /chained/i.test(note)))
+  assert.ok(!codex.issues.some((issue) => issue.code === 'standby-notify-drift'))
+})
+
 test('doctor detects standby carrier and hook drift for gemini content mismatches', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

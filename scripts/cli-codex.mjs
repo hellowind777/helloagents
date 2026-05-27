@@ -8,6 +8,7 @@ import {
 } from './cli-utils.mjs';
 import { ensureTimestampedBackup, readCodexBackup, removeCodexBackup } from './cli-codex-backup.mjs';
 import {
+  analyzeCodexNotifyBlock,
   CODEX_MANAGED_TOML_COMMENT,
   CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
   CODEX_PLUGIN_CONFIG_HEADER,
@@ -30,8 +31,10 @@ import {
   syncManagedCodexHookTrust,
 } from './cli-codex-hooks-state.mjs';
 import {
+  hasTopLevelTomlBlock,
   readTopLevelTomlLine,
   readTopLevelTomlBlock,
+  removeTopLevelTomlBlock,
   removeTopLevelTomlLines,
 } from './cli-toml.mjs';
 import { buildRuntimeCarrier, readCarrierSettings } from './cli-runtime-carrier.mjs';
@@ -153,9 +156,10 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
   const currentModelInstructions = readTopLevelTomlLine(toml, 'model_instructions_file');
   const currentNotify = readTopLevelTomlBlock(toml, 'notify');
   const currentCodexGoalsFeature = readCodexGoalsFeatureLine(toml);
+  const currentNotifyAnalysis = analyzeCodexNotifyBlock(currentNotify);
 
   const shouldRestoreModelInstructions = isManagedCodexModelInstruction(currentModelInstructions);
-  const shouldRestoreNotify = isManagedCodexNotify(currentNotify);
+  const shouldRestoreNotify = currentNotifyAnalysis.managed || isManagedCodexNotify(currentNotify);
   const shouldRestoreCodexGoalsFeature = isManagedCodexGoalsFeature(currentCodexGoalsFeature);
 
   if (removePluginConfig) {
@@ -170,8 +174,10 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
       line.startsWith('model_instructions_file =') && isManagedCodexModelInstruction(line)).text;
   }
   if (shouldRestoreNotify) {
-    toml = removeTopLevelTomlLines(toml, (line) =>
-      line.startsWith('notify =') && isManagedCodexNotify(line)).text;
+    toml = hasTopLevelTomlBlock(toml, 'notify')
+      ? removeTopLevelTomlBlock(toml, 'notify')
+      : removeTopLevelTomlLines(toml, (line) =>
+        line.startsWith('notify =')).text;
   }
 
   const backupModelInstructions = readTopLevelTomlLine(backupToml, 'model_instructions_file');
@@ -182,7 +188,7 @@ function cleanupCodexManagedConfig(configPath, { removePluginConfig = false } = 
     modelInstructionsLine: shouldRestoreModelInstructions && !isManagedCodexBackupInstruction(backupModelInstructions)
       ? backupModelInstructions
       : '',
-    notifyLine: shouldRestoreNotify && !isManagedCodexNotify(backupNotify)
+    notifyLine: shouldRestoreNotify && !analyzeCodexNotifyBlock(backupNotify).managed
       ? backupNotify
       : '',
   });
