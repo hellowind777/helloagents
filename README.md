@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.1.0-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.1-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -226,6 +226,7 @@ The CLI manages host files explicitly:
 - `cleanup` removes managed injections and links
 - `uninstall` performs scoped cleanup before package removal
 - `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, versions, and real Claude/Gemini global install artifacts; for Codex, it also surfaces native `codex doctor` output when available
+- Codex managed `notify = ["helloagents-js", "codex-notify"]` stays portable, and `doctor`, `cleanup`, and `uninstall` also recognize wrapped `--previous-notify` chains used by Codex App / Computer Use
 - per-host mode tracking is written only after host setup succeeds, and failed native global cleanup keeps the host tracked as `global` instead of silently layering standby on top
 - Windows `.cmd` / `.bat` lifecycle calls now run through an explicit command wrapper, so host installs, branch switching, and doctor flows do not emit Node `DEP0190` shell deprecation warnings
 
@@ -653,13 +654,14 @@ Codex is rules-file driven by default.
 
 - standby writes `~/.codex/AGENTS.md`
 - standby writes a portable managed `model_instructions_file = "~/.codex/AGENTS.md"`
-- standby writes a managed `notify = ["helloagents-js", "codex-notify"]` command for closeout notification
+- standby writes a managed and portable `notify = ["helloagents-js", "codex-notify"]` command for closeout notification, so reinstalling, updating, or moving to another machine does not require rewriting an absolute path
 - standby writes silent Codex hooks to `~/.codex/hooks.json`
 - Codex `SessionStart` stays silent and reads the current `~/.helloagents/helloagents.json` at runtime instead of baking a config snapshot into `config.toml`, so first-turn and post-compaction settings stay current
 - install and update also sync HelloAGENTS-managed Codex hook trust state in `~/.codex/config.toml`, so Codex 0.129.0+ does not re-prompt for the managed hooks
 - that hook trust state is machine-local generated metadata derived from the current absolute `~/.codex/hooks.json` path; unlike `model_instructions_file = "~/.codex/AGENTS.md"`, it is not portable config and should be regenerated on each machine
 - standby creates `~/.codex/helloagents -> ~/.helloagents/helloagents`
 - global mode installs the native local-plugin chain, but keeps `~/.helloagents/helloagents` as the single managed runtime source by linking plugin roots, plugin cache, and `~/.codex/helloagents` back to it
+- `doctor`, `cleanup`, and `uninstall` also recognize wrapped notify chains such as `--previous-notify ["helloagents-js", "codex-notify"]`, so Codex App / Computer Use wrappers do not cause false drift reports or break notify restoration
 - for Codex app/plugin discovery, `global` is the native path; `standby` remains the lighter default for explicit project work
 - cleanup removes only the HelloAGENTS-managed hook trust entries, while keeping user-owned hook state untouched
 - Codex hooks only synchronize runtime state and enforce Stop gates; they do not inject HelloAGENTS rules or route text through hook output
@@ -683,7 +685,7 @@ The current suite covers:
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
-- Codex cleanup and canonical managed notify restoration rules
+- Codex cleanup and canonical managed notify restoration rules, including wrapped `--previous-notify` chains
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
 - `helloagents doctor`
 - project storage and `repo-shared` behavior

@@ -4,8 +4,8 @@ import { join } from 'node:path'
 
 import { CODEX_MARKETPLACE_NAME, CODEX_PLUGIN_CONFIG_HEADER, CODEX_PLUGIN_NAME } from './cli-codex.mjs'
 import {
+  analyzeCodexNotifyBlock,
   CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH,
-  CODEX_MANAGED_NOTIFY_VALUE,
   readCodexGoalsFeatureLine,
   readCodexHooksFeatureLine,
 } from './cli-codex-config.mjs'
@@ -15,7 +15,7 @@ import {
 } from './cli-codex-hooks-state.mjs'
 import { getStableRuntimeRoot } from './cli-runtime-root.mjs'
 import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
-import { readTopLevelTomlLine } from './cli-toml.mjs'
+import { readTopLevelTomlBlock, readTopLevelTomlLine } from './cli-toml.mjs'
 import { spawnCommandSync } from './cli-process.mjs'
 import { loadHooksWithCliEntry, safeJson, safeRead } from './cli-utils.mjs'
 
@@ -294,6 +294,8 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
   const codexHooks = safeJson(join(codexDir, 'hooks.json')) || {}
   const marketplace = safeJson(join(runtime.home, '.agents', 'plugins', 'marketplace.json')) || {}
   const modelInstructionsLine = readTopLevelTomlLine(codexConfig, 'model_instructions_file')
+  const notifyBlock = readTopLevelTomlBlock(codexConfig, 'notify')
+  const notifyAnalysis = analyzeCodexNotifyBlock(notifyBlock)
   const expectedHooks = readExpectedHooks(runtime, 'hooks-codex.json', '${PLUGIN_ROOT}')
   const expectedHookTrust = buildManagedCodexHookTrustEntries(join(codexDir, 'hooks.json'), codexHooks)
   const managedHookTrust = new Map(
@@ -317,8 +319,9 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
       globalHomeLink: homeLinkTarget === runtimeRoot,
       modelInstructionsFile: !!modelInstructionsLine,
       modelInstructionsPathMatch: !!modelInstructionsLine && normalizePath(modelInstructionsLine).includes(`"${CODEX_MANAGED_MODEL_INSTRUCTIONS_PATH}"`),
-      codexNotify: codexConfig.includes('codex-notify'),
-      notifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
+      codexNotify: notifyAnalysis.containsCodexNotify,
+      notifyPathMatch: notifyAnalysis.managed,
+      notifyShape: notifyAnalysis.shape,
       codexHooksFeature: !/^\s*hooks\s*=\s*false\b/.test(hooksFeatureLine),
       codexGoalsFeature: /^\s*goals\s*=\s*true\b/.test(goalsFeatureLine),
       standaloneHooks: JSON.stringify(codexHooks.hooks || {}).includes('helloagents'),
@@ -335,7 +338,7 @@ function buildCodexChecks(runtime, settings, trackedMode, detectedMode) {
       pluginCacheCarrierMatch: normalizeText(safeRead(join(pluginCacheRoot, 'AGENTS.md')) || '') === readExpectedCarrierContent(runtime, 'bootstrap.md', settings, { profile: 'full' }),
       marketplaceEntry: Array.isArray(marketplace.plugins) && marketplace.plugins.some((plugin) => plugin?.name === CODEX_PLUGIN_NAME),
       pluginEnabled: codexConfig.includes(CODEX_PLUGIN_CONFIG_HEADER) && codexConfig.includes('enabled = true'),
-      globalNotifyPathMatch: codexConfig.includes(CODEX_MANAGED_NOTIFY_VALUE),
+      globalNotifyPathMatch: notifyAnalysis.managed,
       pluginVersionMatch: false,
       pluginCacheVersionMatch: false,
     },
@@ -369,6 +372,7 @@ export function inspectCodexDoctor(runtime, settings) {
   if (!checks.pluginVersionMatch && !pluginVersion && detectedMode === 'global') notes.push(runtime.msg('未读到 global 插件根目录版本信息', 'Global plugin root version was not readable'))
   if (!checks.pluginCacheVersionMatch && !cacheVersion && detectedMode === 'global') notes.push(runtime.msg('未读到 global 插件缓存版本信息', 'Global plugin cache version was not readable'))
   if (detectedMode !== 'none' && !checks.codexGoalsFeature) notes.push(runtime.msg('Codex /goal 未启用；如需长程执行，可运行 `helloagents codex goals enable`。', 'Codex /goal is not enabled; run `helloagents codex goals enable` if you need long-running goals.'))
+  if (checks.notifyShape === 'chained') notes.push(runtime.msg('HelloAGENTS notify 当前通过 Codex Computer Use / wrapper 链式转发，仍视为有效。', 'HelloAGENTS notify is currently chained through Codex Computer Use / a wrapper and is still treated as valid.'))
   if (!nativeDoctor.available) notes.push(runtime.msg('未检测到原生 `codex doctor`；当前仅检查 HelloAGENTS 受管覆盖层。', 'Native `codex doctor` was not available; only the HelloAGENTS managed overlay was checked.'))
 
   const status = summarizeDoctorStatus(issues, { trackedMode, detectedMode })
