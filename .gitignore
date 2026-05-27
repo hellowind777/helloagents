@@ -20,5 +20,5 @@ Thumbs.db
 # Project
 /.helloagents
 docs/
-COMMIT_MESSAGE.md
+RELEASE_NOTES.md
 .claude/settings.local.json
