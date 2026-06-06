@@ -1,12 +1,12 @@
 ---
 name: ~auto
-description: 自动执行命令 — 自动选择并依次执行 ~idea / ~plan / ~build / ~qa / ~prd，默认持续推进直到交付完成（~auto 命令）
+description: 自动执行命令 — 自动选择并依次执行 ~idea / ~office / ~plan / ~build / ~qa / ~prd，默认持续推进直到交付完成（~auto 命令）
 policy:
   allow_implicit_invocation: false
 ---
 Trigger: ~auto <任务描述>
 
-`~auto` 是自动执行命令。它根据任务类型、复杂度、风险等级与项目状态，在 `~idea`、`~plan`、`~build`、`~qa`、`~prd` 之间选择合适主路径，并连续推进。
+`~auto` 是自动执行命令。它根据任务类型、复杂度、风险等级与项目状态，在 `~idea`、`~office`、`~plan`、`~build`、`~qa`、`~prd` 之间选择合适主路径，并连续推进。
 `~auto` 不止做一次选路；主路径一旦确定，就按需要继续执行后续阶段，默认持续推进直到完成交付，只有命中 HelloAGENTS 阻塞判定时才停下。
 
 ## 铁律
@@ -36,6 +36,7 @@ Trigger: ~auto <任务描述>
 - 若当前上下文没有足够的注入约束，再结合以下信号补足判断：影响范围、风险等级、是否需要结构化产物、是否已有活跃方案包、用户是否只想先比较方向
 - 选路优先级：
   - 纯探索 / 点子 / 方向比较 → `~idea`
+  - 值得做与否 / 范围收缩 / 先做多大仍不清楚 → `~office`
   - 明确要求质量审查 / 验真 / 跑检查 / 收尾 → `~qa`
   - 0 到 1 / 产品级 / 多维规格 → `~prd`
   - 多文件功能 / 架构变更 / 新项目规划 → `~plan`
@@ -43,7 +44,7 @@ Trigger: ~auto <任务描述>
 
 ### 2. 按 Tier 校正
 
-- `T0` → 保持在 `~idea`，不创建项目文件
+- `T0` → 在 `~idea` / `~office` 之间选择，不创建项目文件
 - `T1` → 在 `~build` / `~qa` 间选择最短可交付路径
 - `T2` → 需要结构化产物或范围未完全明确时优先 `~plan`
 - `T3` → 纯质量审查/验真走 `~qa`；其余默认 `~plan` 或 `~prd`，待方案与风险边界明确后再进入实现
@@ -51,6 +52,7 @@ Trigger: ~auto <任务描述>
 ### 3. 读取对应命令并执行主路径
 
 - 选中 `idea` → 读取 `skills/commands/idea/SKILL.md`
+- 选中 `office` → 读取 `skills/commands/office/SKILL.md`
 - 选中 `plan` → 读取 `skills/commands/plan/SKILL.md`
 - 选中 `build` → 读取 `skills/commands/build/SKILL.md`
 - 选中 `qa` → 读取 `skills/commands/qa/SKILL.md`
@@ -65,6 +67,7 @@ Trigger: ~auto <任务描述>
 - 若主路径是 `~prd` → PRD / 任务 / 契约写入后，若当前任务来自 `~auto` 且未命中阻塞判定，按当前结果继续进入 `~build`，必要时先补一轮轻量 `~plan`
 - 若主路径是 `~qa` → 完成质量闭环 / 收尾后结束
 - 若主路径是 `~idea`，且用户本意就是探索/比较，则在探索输出后结束；若探索后已有明确方向且当前任务仍要求写文件或改代码，则继续进入 `~plan` 或 `~build`
+- 若主路径是 `~office`，且用户本意就是先做价值/范围判断，则在评估输出后结束；若评估结论已经明确需要结构化方案或直接实现，则继续进入 `~plan` / `~build`
 - 若 Codex active goal 的目标已满足 → 仍先完成 `~qa` 与 HelloAGENTS 收尾，再标记 goal complete；未满足时继续下一项可执行 AFK 任务
 
 ### 5. 何时允许停下
