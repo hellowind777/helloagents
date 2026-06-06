@@ -78,13 +78,13 @@ export function clearRouteContext(options = {}) {
 }
 
 export function writeRouteContext({ cwd, skillName, sourceSkillName = skillName, payload = {}, env, ppid }) {
-  const shouldEnsureProjectLocal = skillName !== 'idea' && skillName !== 'help'
+  const shouldEnsureProjectLocal = skillName !== 'idea' && skillName !== 'office' && skillName !== 'help'
   const scope = getRuntimeScope(cwd, { payload, env, ppid, ensureProjectLocal: shouldEnsureProjectLocal })
   const context = {
     cwd: normalizePath(cwd),
     skillName,
     sourceSkillName,
-    zeroSideEffect: skillName === 'idea',
+    zeroSideEffect: skillName === 'idea' || skillName === 'office',
     identity: extractPayloadIdentity(payload),
     source: routeSource(payload),
     promptHash: hashPrompt(payload.prompt),

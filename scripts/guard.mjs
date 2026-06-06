@@ -88,7 +88,7 @@ function buildHighRiskGate(matches, cwd, payload = {}) {
 }
 
 function buildIdeaBoundaryReason(kind) {
-  return `[HelloAGENTS Guard] 已阻止 ~idea 中的${kind}。\n当前路由：~idea 是只读探索；先停留在比较方案。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
+  return `[HelloAGENTS Guard] 已阻止只读探索命令中的${kind}。\n当前路由：~idea / ~office 都是只读探索；先停留在比较或范围判断。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
 }
 
 function detectIdeaBoundaryContext(data) {
@@ -116,7 +116,7 @@ function emitIdeaBoundaryBlock(data, kind, target) {
     {
       command: kind === '有副作用命令' ? target.replace(/^命令：\s*/, '') : '',
       target: kind === '写入操作' ? target.replace(/^目标：\s*/, '') : '',
-      guardType: kind === '写入操作' ? 'idea-write-boundary' : 'idea-command-boundary',
+      guardType: kind === '写入操作' ? 'readonly-write-boundary' : 'readonly-command-boundary',
     },
     data,
   )
@@ -133,7 +133,7 @@ function buildPostWriteWarnings(data) {
   const filePath = data.tool_input?.file_path || ''
   return [
     ...(detectIdeaBoundaryContext(data)?.zeroSideEffect
-      ? ['~idea 当前任务要求只读探索；检测到写入文件的工具调用，请回到探索输出，或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
+      ? ['~idea / ~office 当前任务要求只读探索；检测到写入文件的工具调用，请回到探索输出，或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
       : []),
     ...scanUnrequestedFiles(filePath, data.tool_name),
     ...(content ? [...scanForSecrets(content), ...scanDangerousPackages(content, filePath)] : []),
