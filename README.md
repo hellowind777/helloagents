@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.1.1-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.2-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -110,6 +110,7 @@ Commands run inside the AI CLI chat with a `~` prefix. The command skill is read
 | Command | Purpose |
 |---------|---------|
 | `~idea` | Lightweight exploration and option comparison; does not write files |
+| `~office` | Worth/scope review before planning; decides whether to do it, how big, and what the smallest wedge is |
 | `~auto` | Chooses the main path and keeps going until delivery or a real blocker |
 | `~plan` | Requirements, solution design, task breakdown, and plan package |
 | `~build` | Implementation from the current request or an existing plan |
@@ -127,6 +128,8 @@ Compatibility aliases:
 - `~do` → `~build`
 - `~design` → `~plan`
 - `~review` → `~qa`
+
+Use `~idea` when you want to compare approaches. Use `~office` when you first need to decide whether the work is worth doing at all, how big it should be, and what the smallest wedge is.
 
 ### 3) Project knowledge base
 
@@ -472,6 +475,7 @@ Codex global mode is installed by HelloAGENTS automatically through the local-pl
 | Goal | Use |
 |------|-----|
 | Compare ideas before writing files | `~idea "compare two API designs"` |
+| Decide whether something is worth doing and how small to start | `~office "should this become a full platform or just a thin wedge?"` |
 | Let HelloAGENTS choose the path and continue | `~auto "add JWT login"` |
 | Review a plan before implementation | `~plan "refactor payment module"` |
 | Implement from a clear request or active plan | `~build "finish task 2 in the plan"` |

@@ -9,6 +9,7 @@ test('workflow runtime contract stays aligned with the unified qa-review archite
   const notifyContext = readText(join(REPO_ROOT, 'scripts', 'notify-context.mjs'))
   assert.match(notifyContext, /请根据用户请求的真实意图选路/)
   assert.match(notifyContext, /不依赖关键词表/)
+  assert.match(notifyContext, /~office=只读价值\/范围评估/)
   assert.match(notifyContext, /~qa=统一质量审查\/验证\/修复\/收尾/)
   assert.match(notifyContext, /当前活跃 plan \/ PRD/)
   assert.match(notifyContext, /helloagents-turn-state write --kind complete --role main/)
@@ -32,7 +33,7 @@ test('workflow runtime contract stays aligned with the unified qa-review archite
   assert.match(guard, /高风险操作提醒/)
   assert.match(guard, /当前工作流尚未进入 QA \/ CONSOLIDATE/)
   assert.match(guard, /高风险 schema 变更前仍需先完成 ~plan/)
-  assert.match(guard, /当前路由：~idea 是只读探索/)
+  assert.match(guard, /当前路由：~idea \/ ~office 都是只读探索/)
 
   const deliveryGate = readText(join(REPO_ROOT, 'scripts', 'delivery-gate.mjs'))
   const deliveryGateMessages = readText(join(REPO_ROOT, 'scripts', 'delivery-gate-messages.mjs'))
