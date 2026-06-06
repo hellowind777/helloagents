@@ -560,10 +560,26 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
+    input: JSON.stringify({ cwd: project, prompt: '先判断这个需求值不值得做，别一上来做太大' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /~office=只读价值\/范围评估/)
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
     input: JSON.stringify({ cwd: project, prompt: '~idea compare a few directions first' }),
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]idea[\\/]SKILL\.md/)
+
+  result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '~office decide whether this should stay a thin wedge' }),
+  })
+  payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]office[\\/]SKILL\.md/)
 
   result = runNode(guardScript, ['pre-write'], {
     cwd: project,
@@ -579,7 +595,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~idea 是只读探索/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~idea \/ ~office 都是只读探索/)
 
   result = runNode(guardScript, [], {
     cwd: project,
@@ -680,6 +696,25 @@ test('non-readonly command route creates project-local state in non-full standby
   const payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]build[\\/]SKILL\.md/)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md')), true)
+})
+
+test('readonly office route does not create project-local state in non-full standby project', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const project = createTempDir('helloagents-route-office-readonly-')
+  const env = buildHomeEnv(home)
+  const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
+
+  writeSettings(home, { install_mode: 'standby' })
+
+  const result = runNode(notifyScript, ['route'], {
+    cwd: project,
+    env,
+    input: JSON.stringify({ cwd: project, prompt: '~office decide whether this needs to become a platform' }),
+  })
+  const payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]office[\\/]SKILL\.md/)
+  assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md')), false)
 })
 
 test('notify route keeps command skills on the runtime root even if project-level skill dirs exist', () => {
