@@ -122,6 +122,7 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.match(readme, /`~init`/)
   assert.match(readme, /artifacts\/qa-review\.json/)
   assert.match(readme, /ROUTE \/ TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE/)
+  assert.match(readme, /always-on core-rule layer in `bootstrap.md` \/ `bootstrap-lite.md`/)
   assert.match(readme, /`~review` → `~qa`/)
   assert.doesNotMatch(readme, /`~wiki`/)
   assert.doesNotMatch(readme, /`~global`/)
@@ -136,12 +137,30 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.match(readmeCn, /`~init`/)
   assert.match(readmeCn, /artifacts\/qa-review\.json/)
   assert.match(readmeCn, /ROUTE \/ TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE/)
+  assert.match(readmeCn, /`bootstrap\.md` \/ `bootstrap-lite\.md` 这层默认启用一组常驻核心规则/)
   assert.match(readmeCn, /`~review` → `~qa`/)
   assert.doesNotMatch(readmeCn, /`~wiki`/)
   assert.doesNotMatch(readmeCn, /`~global`/)
   assert.doesNotMatch(readmeCn, /hello-review/)
   assert.doesNotMatch(readmeCn, /hello-verify/)
   assert.doesNotMatch(readmeCn, /~verify/)
+
+  const bootstrap = readText(join(REPO_ROOT, 'bootstrap.md'))
+  assert.match(bootstrap, /只使用当前回复语言表达所有用户可见文本/)
+  assert.match(bootstrap, /首次说明后固定一个称呼/)
+  assert.match(bootstrap, /先判定约束真假：公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
+  assert.match(bootstrap, /保留、合并、延后、删除、替换或先证明/)
+
+  const bootstrapLite = readText(join(REPO_ROOT, 'bootstrap-lite.md'))
+  assert.match(bootstrapLite, /只使用当前回复语言表达所有用户可见文本/)
+  assert.match(bootstrapLite, /先判定约束真假：公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
+
+  const help = readText(join(REPO_ROOT, 'skills', 'commands', 'help', 'SKILL.md'))
+  assert.match(help, /核心规则默认生效：HelloAGENTS 会通过 `bootstrap\.md` \/ `bootstrap-lite\.md` 在运行时持续执行方案纠偏与语言纪律/)
+
+  const arch = readText(join(REPO_ROOT, 'skills', 'hello-arch', 'SKILL.md'))
+  assert.match(arch, /区分真实外部契约与内部实现惯性：公开 API、持久化数据、已文档化集成、用户承诺等真实契约要评估兼容与迁移/)
+  assert.doesNotMatch(arch, /保持向后兼容，除非明确要求破坏性变更/)
 })
 
 test('runtime rule files avoid maintainer-facing prose', () => {

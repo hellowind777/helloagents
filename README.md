@@ -558,6 +558,9 @@ ROUTE / TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE
 | `QA` | review, run commands, check contract and evidence |
 | `CONSOLIDATE` | update state, knowledge, and closeout evidence |
 
+HelloAGENTS also keeps an always-on core-rule layer in `bootstrap.md` / `bootstrap-lite.md`.
+That layer corrects proposal bias, distinguishes real external contracts from internal inertia, asks for a clean target before defaulting to legacy preservation, requires a first proof point plus a stop rule for bold directions, and keeps user-visible wording in one language unless code identifiers, commands, paths, config keys, or necessary proper names must stay unchanged.
+
 ### Delivery tiers
 
 | Tier | Typical use |
