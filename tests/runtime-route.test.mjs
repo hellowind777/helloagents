@@ -405,7 +405,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /当前对话 HelloAGENTS 读取根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /turnStateCommand/)
   assert.match(payload.hookSpecificOutput.additionalContext, /helloagents-turn-state write/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /## 工作流与完成判定/)
   assert.equal(existsSync(join(project, '.helloagents')), false)
 
   result = runNode(notifyScript, ['inject'], {
