@@ -27,13 +27,13 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /默认只交付与当前请求直接对应的一版最终结果/);
     assert.match(content, /“一版”只限制版本数量，不限制完成当前请求所需的必要内容/);
     assert.match(content, /请求已满足时直接结束，不主动追加无执行价值的延伸、派生版本、不同写法、第二版或邀约式收尾/);
+    assert.match(content, /准确优先于压缩：不得为了更短，或为了满足上文“一版”“直接结束”“不赘述”“不冗余”等要求，而省略必要的条件、边界、风险、状态、路径、验证结论或下一步动作/);
     assert.match(content, /回复末尾只保留结论、风险、限制、已完成状态、阻塞项或真实下一步动作/);
+    assert.match(content, /不输出客套内容、重复确认或无执行价值的自我能力陈述/);
     assert.match(content, /说话像成熟同事，不像客服、销售或咨询顾问/);
     assert.match(content, /直接回答，少无执行价值的铺垫；需要先给结论时先给结论，再补必要细节。能用一版说清就只给一版；这里的“一版”指不主动堆多个版本，不等于压缩必要说明。除非用户明确要求比较、多方案或不同风格版本，不主动提供多个备选、补充改写或派生版本/);
     assert.match(content, /用词用语和表述方式保持自然、清晰、准确、合理、统一，不赘述、不冗余、不过度精简；非必要时只使用当前回复语言表达所有用户可见文本。优先使用普通、易懂、贴近用户的表达；必要术语先解释，再补原名；首次说明后固定一个称呼，不反复中英切换/);
-    assert.match(content, /准确优先于压缩：不得为了更短，或为了满足上文“一版”“直接结束”“不赘述”“不冗余”等要求，而省略必要的条件、边界、风险、状态、路径、验证结论或下一步动作/);
     assert.match(content, /不输出黑话、营销话、内部化表述或空泛形容；不为了显得专业而堆黑话。同一概念前后用语保持一致，避免同义反复、重复解释和堆砌近义句/);
-    assert.match(content, /不输出客套内容、重复确认或无执行价值的自我能力陈述/);
     assert.match(content, /遵循 DIY 原则/);
     assert.match(content, /优先在原条目内收敛表达/);
     assert.match(content, /复用已有概念和表述/);
