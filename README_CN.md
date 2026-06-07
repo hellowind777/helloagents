@@ -177,7 +177,7 @@ HelloAGENTS 可以在 `.helloagents/` 下创建和维护项目知识库。
 - `prd/11-legal-privacy.md`
 - `prd/12-timeline.md`
 
-`contract.json` 会影响验证范围、reviewer/tester 关注点、可选 advisor 检查和可选视觉验收。
+`contract.json` 会影响 `qaMode`、`qaFocus`、可选 advisor 检查和可选视觉验收。
 
 `tasks.md` 还会保留 Codex `/goal` 执行入口。长程 Codex 任务应使用这个已拆分入口，不要把原始产品文档直接交给 `/goal`。默认链路是 `/goal -> ~auto -> ~qa`：`/goal` 负责长程续跑，`~auto` 负责执行 AFK 任务，`~qa` 负责最终质量闭环与收尾前验收。
 
