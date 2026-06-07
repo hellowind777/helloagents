@@ -16,6 +16,9 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /### 产出质量/);
     assert.ok(content.indexOf('### 执行纪律') < content.indexOf('### 表达与语气'));
     assert.match(content, /### 表达与语气/);
+    assert.match(content, /#### 交付方式/);
+    assert.match(content, /#### 用语与术语/);
+    assert.match(content, /#### 收敛与修改原则/);
     assert.match(content, /都必须同时遵守本节全部规则/);
     assert.match(content, /普通问答、解释、分析、改写、邮件回复和其他一次性交付/);
     assert.match(content, /默认只交付与当前请求直接对应的一版最终结果/);
@@ -29,6 +32,7 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /准确优先于压缩：不得为了更短，或为了满足上文“一版”“直接结束”“不赘述”“不冗余”等要求，而省略必要的条件、边界、风险、状态、路径、验证结论或下一步动作/);
     assert.match(content, /不输出黑话、营销话、内部化表述或空泛形容；不为了显得专业而堆黑话/);
     assert.match(content, /不输出客套内容、重复确认或无执行价值的自我能力陈述/);
+    assert.match(content, /同一概念前后用语保持一致，避免同义反复、重复解释和堆砌近义句/);
     assert.match(content, /遵循 DIY 原则/);
     assert.match(content, /优先在原条目内收敛表达/);
     assert.match(content, /复用已有概念和表述/);
