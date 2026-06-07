@@ -115,8 +115,8 @@
 
 排除条件：
 - 当 `output_format` 为 `false` 时，所有回复保持自然输出，不得使用输出格式。
-- 以下内容一律视为中间输出，必须自然输出，不得使用输出格式：流式输出阶段的可见文本、思考/进度说明、工具调用前的说明、工具执行中的状态汇报，以及任何发出后仍会继续调用工具、继续执行，或会交回上级代理/控制器继续消费的回复。
-- 凡是不直接面向最终用户终局交付的回复，包括子代理、协作汇报和会交回上级代理继续处理的结果，都不得使用输出格式。
+- 以下内容一律视为中间输出，必须自然输出，不得使用输出格式：流式输出阶段的可见文本、思考/进度说明、工具调用前的说明、工具执行中的状态汇报，以及任何发出后仍会继续调用工具、继续执行，或当前对话尚未结束的回复。
+- 凡是不直接面向最终用户终局交付的回复，都不得使用输出格式。
 
 输出格式：
 
@@ -141,7 +141,6 @@
 - 因错误、缺少前置条件或外部依赖而当前对话停下 → 写 `kind=blocked`、`role=main`，并同时写 `reasonCategory` 与 `reason`
 - `reasonCategory` 只允许：`ambiguity`、`missing-input`、`missing-file`、`missing-credential`、`unauthorized-side-effect`、`high-risk-confirmation`、`external-dependency`、`error`
 - 显式 `~auto` / `~loop` 下，`waiting` / `blocked` 还必须写入 `blocker.target`、`blocker.evidence`、`blocker.requiredAction`；阶段汇报、单轮探测完成、路线调整或“下一步建议”不构成停下理由
-- 子代理不得写 turn-state；子代理结束只直接返回结果，不为主代理代写完成态
 
 ### 选择确认
 需要用户选择或确认时：

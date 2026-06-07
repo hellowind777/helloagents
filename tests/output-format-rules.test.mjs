@@ -59,7 +59,9 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /以下内容一律视为中间输出/);
     assert.match(content, /不得使用输出格式/);
     assert.match(content, /凡是不直接面向最终用户终局交付的回复/);
-    assert.match(content, /会交回上级代理\/控制器继续消费的回复/);
+    assert.match(content, /当前对话尚未结束的回复/);
+    assert.doesNotMatch(content, /包括子代理、协作汇报和会交回上级代理继续处理的结果/);
+    assert.doesNotMatch(content, /子代理不得写 turn-state/);
     assert.match(content, /首行必须保留 `【HelloAGENTS】` 和连字符 `-`，不得省略/);
     assert.match(content, /状态图标与收尾内容必须一致/);
   assert.match(content, /仅在当前对话执行已完成且不存在待确认动作时，才能使用 `✅完成`/);
@@ -84,7 +86,8 @@ test('skill and help docs describe output_format as final-summary only', () => {
   assert.match(helloagentsSkill, /通用输出格式/);
   assert.match(helloagentsSkill, /流式内容、进度或状态汇报、中间文本/);
   assert.match(helloagentsSkill, /直接面向最终用户/);
-  assert.match(helloagentsSkill, /会交回上级代理/);
+  assert.match(helloagentsSkill, /当前对话尚未结束的文本/);
+  assert.doesNotMatch(helloagentsSkill, /子代理不得写 turn-state/);
   assert.match(helloagentsSkill, /最终回复中的 `🔄 下一步` 写真实动作/);
   assert.match(helloagentsSkill, /已获授权且可继续执行时不得收尾/);
   assert.match(helloagentsSkill, /同一条最终回复只包装一次/);
