@@ -49,7 +49,7 @@ export function buildWorkflowRouteHint(cwd, options = {}) {
 
   const suffix = [stateRoleHint, stateSyncHint, orchestrationHint, uiContractHint].filter(Boolean).join(' ')
   if (recommendation.stage === 'consolidate') {
-    return `${recommendation.summary} 当前应直接进入 CONSOLIDATE。执行路径：${recommendation.nextPath}。${recommendation.guidance}${suffix ? ` ${suffix}` : ''}`
+    return `${recommendation.summary} 当前应直接进入收尾与归档。执行路径：${recommendation.nextPath}。${recommendation.guidance}${suffix ? ` ${suffix}` : ''}`
   }
   return `${recommendation.summary} 当前应执行 ~${recommendation.nextCommand}。执行路径：${recommendation.nextPath}。${recommendation.guidance}${suffix ? ` ${suffix}` : ''}`
 }
@@ -65,7 +65,7 @@ function buildCommandRouteMessage(skillName, recommendation, qaFocusHint) {
   }
   if (skillName === 'plan') {
     if (recommendation.stage === 'consolidate') {
-      return `当前工作流约束：${recommendation.summary} 当前不该重开 ~plan；除非用户明确要求重规划、改方向或新增范围，否则直接进入 CONSOLIDATE。`
+      return `当前工作流约束：${recommendation.summary} 当前不该重开 ~plan；除非用户明确要求重规划、改方向或新增范围，否则直接进入收尾与归档。`
     }
     return recommendation.nextCommand === 'plan'
       ? `当前工作流约束：${recommendation.summary} 当前应执行 ~plan。${recommendation.guidance}`
@@ -73,7 +73,7 @@ function buildCommandRouteMessage(skillName, recommendation, qaFocusHint) {
   }
   if (skillName === 'build') {
     if (recommendation.stage === 'consolidate') {
-      return `当前工作流约束：${recommendation.summary} 当前不该继续 ~build；除非用户明确提出新增实现范围，否则直接进入 CONSOLIDATE。`
+      return `当前工作流约束：${recommendation.summary} 当前不该继续 ~build；除非用户明确提出新增实现范围，否则直接进入收尾与归档。`
     }
     return recommendation.nextCommand === 'build'
       ? `当前工作流约束：${recommendation.summary} 当前应执行 ~build。${recommendation.guidance}`
@@ -81,7 +81,7 @@ function buildCommandRouteMessage(skillName, recommendation, qaFocusHint) {
   }
   if (skillName === 'qa') {
     if (recommendation.stage === 'consolidate') {
-      return `当前工作流约束：${recommendation.summary} 当前应直接进入 CONSOLIDATE。${recommendation.guidance}`
+      return `当前工作流约束：${recommendation.summary} 当前应直接进入收尾与归档。${recommendation.guidance}`
     }
     return recommendation.nextCommand === 'qa'
       ? `当前工作流约束：${recommendation.summary} 当前应执行 ~qa。${recommendation.guidance}`

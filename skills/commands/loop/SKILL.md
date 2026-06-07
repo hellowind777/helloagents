@@ -71,5 +71,5 @@ Trigger: ~loop <目标描述>
 
 ## 完成判定
 
-- 只有当长任务链路已经走到 `~qa`，并且质量闭环通过、收尾证据完整、HelloAGENTS 允许进入 CONSOLIDATE 时，`~loop` 才算完成
+- 只有当长任务链路已经走到 `~qa`，并且质量闭环通过、收尾证据完整、HelloAGENTS 允许进入收尾与归档时，`~loop` 才算完成
 - 若当前任务来自 Codex active goal，还要满足：当前 goal 的可执行 `AFK` 任务已全部完成，才允许标记 goal complete

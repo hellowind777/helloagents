@@ -22,7 +22,8 @@ function listSkillFiles(dirPath) {
 
 test('workflow skills stay aligned with the new qa-review architecture', () => {
   const helloagents = readText(join(REPO_ROOT, 'skills', 'helloagents', 'SKILL.md'))
-  assert.match(helloagents, /ROUTE\/TIER→SPEC→PLAN→BUILD→QA→CONSOLIDATE/)
+  assert.match(helloagents, /选路与分层→目标澄清→规划→实现→质量闭环→收尾与归档/)
+  assert.doesNotMatch(helloagents, /ROUTE\/TIER→SPEC→PLAN→BUILD→QA→CONSOLIDATE/)
   assert.match(helloagents, /qa-review 的质量铁律/)
   assert.match(helloagents, /`~qa`/)
   assert.match(helloagents, /`~office`/)
@@ -61,6 +62,7 @@ test('workflow skills stay aligned with the new qa-review architecture', () => {
   assert.match(auto, /纯质量审查、验真或收尾请求才可先进入 `~qa`/)
   assert.match(auto, /主路径一旦确定/)
   assert.match(auto, /先完成 `~qa` 与 HelloAGENTS 收尾，再标记 goal complete/)
+  assert.doesNotMatch(auto, /ROUTE \/ TIER/)
   assert.doesNotMatch(auto, /~verify/)
 
   const office = readText(join(REPO_ROOT, 'skills', 'commands', 'office', 'SKILL.md'))
@@ -81,12 +83,14 @@ test('workflow skills stay aligned with the new qa-review architecture', () => {
   assert.match(prd, /`qaMode`、`qaFocus`/)
   assert.match(prd, /端到端垂直切片/)
   assert.match(prd, /AFK \/ HITL/)
+  assert.doesNotMatch(prd, /QA \/ CONSOLIDATE/)
   assert.doesNotMatch(prd, /verifyMode/)
 
   const build = readText(join(REPO_ROOT, 'skills', 'commands', 'build', 'SKILL.md'))
   assert.match(build, /进入 `~qa`/)
   assert.match(build, /`qaMode`、`qaFocus`/)
   assert.match(build, /局部验证与修复循环/)
+  assert.doesNotMatch(build, /QA \/ CONSOLIDATE/)
   assert.doesNotMatch(build, /hello-verify/)
   assert.doesNotMatch(build, /hello-review/)
 
@@ -96,6 +100,11 @@ test('workflow skills stay aligned with the new qa-review architecture', () => {
   assert.match(qa, /`contract\.json` 中声明的 `qaMode` \/ `qaFocus`/)
   assert.match(qa, /`artifacts\/qa-review\.json`/)
   assert.match(qa, /`scripts\/closeout-state\.mjs write`/)
+  assert.doesNotMatch(qa, /CONSOLIDATE/)
+
+  const commit = readText(join(REPO_ROOT, 'skills', 'commands', 'commit', 'SKILL.md'))
+  assert.match(commit, /规范化 Git 提交 \+ 知识库同步/)
+  assert.doesNotMatch(commit, /CONSOLIDATE/)
 
   const help = readText(join(REPO_ROOT, 'skills', 'commands', 'help', 'SKILL.md'))
   assert.match(help, /\| ~init \| 初始化项目工作流并同步知识库 \|/)
@@ -111,7 +120,10 @@ test('workflow skills stay aligned with the new qa-review architecture', () => {
   assert.match(loop, /\/goal -> ~auto -> ~qa/)
   assert.match(loop, /不再维护独立的指标实验循环/)
   assert.match(loop, /最终质量闭环交给 `~qa`/)
+  assert.doesNotMatch(loop, /CONSOLIDATE/)
   assert.doesNotMatch(loop, /hello-verify/)
+
+  assert.doesNotMatch(init, /full carrier/)
 })
 
 test('README and bootstrap docs expose qa-review instead of the old split review+verify path', () => {
@@ -136,7 +148,8 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.match(readmeCn, /`~office`/)
   assert.match(readmeCn, /`~init`/)
   assert.match(readmeCn, /artifacts\/qa-review\.json/)
-  assert.match(readmeCn, /ROUTE \/ TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE/)
+  assert.match(readmeCn, /选路与分层 → 目标澄清 → 规划 → 实现 → 质量闭环 → 收尾与归档/)
+  assert.doesNotMatch(readmeCn, /ROUTE \/ TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE/)
   assert.match(readmeCn, /`bootstrap\.md` \/ `bootstrap-lite\.md` 这层默认启用一组常驻核心规则/)
   assert.match(readmeCn, /`~review` → `~qa`/)
   assert.doesNotMatch(readmeCn, /`~wiki`/)
@@ -150,10 +163,14 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.match(bootstrap, /首次说明后固定一个称呼/)
   assert.match(bootstrap, /先判定约束真假：公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
   assert.match(bootstrap, /保留、合并、延后、删除、替换或先证明/)
+  assert.match(bootstrap, /#### 6\. 收尾与归档/)
+  assert.doesNotMatch(bootstrap, /CONSOLIDATE/)
+  assert.doesNotMatch(bootstrap, /Delivery Tier/)
 
   const bootstrapLite = readText(join(REPO_ROOT, 'bootstrap-lite.md'))
   assert.match(bootstrapLite, /只使用当前回复语言表达所有用户可见文本/)
   assert.match(bootstrapLite, /先判定约束真假：公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
+  assert.doesNotMatch(bootstrapLite, /Delivery Tier/)
 
   const help = readText(join(REPO_ROOT, 'skills', 'commands', 'help', 'SKILL.md'))
   assert.match(help, /核心规则默认生效：HelloAGENTS 会通过 `bootstrap\.md` \/ `bootstrap-lite\.md` 在运行时持续执行方案纠偏与语言纪律/)

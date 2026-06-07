@@ -502,7 +502,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
   assert.match(payload.hookSpecificOutput.additionalContext, /不依赖关键词表/)
   assert.match(payload.hookSpecificOutput.additionalContext, /若当前任务由上级代理、控制器或宿主协作\/委派机制创建/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /Delivery Tier: T0=探索\/比较/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /任务分层：T0=探索\/比较/)
   assert.match(payload.hookSpecificOutput.additionalContext, /默认先走 ~plan \/ ~prd/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前活跃 plan \/ PRD/)
   assert.match(payload.hookSpecificOutput.additionalContext, /状态文件只用于找回上次停在哪/)

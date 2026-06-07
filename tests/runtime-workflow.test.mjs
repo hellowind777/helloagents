@@ -203,8 +203,8 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前不该继续 ~build/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /直接进入 CONSOLIDATE/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前已进入 CONSOLIDATE/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /直接进入收尾与归档/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前已进入收尾与归档/)
   assert.match(payload.hookSpecificOutput.additionalContext, /artifacts\/closeout\.json/)
   assert.match(payload.hookSpecificOutput.additionalContext, /UI 约束提示/)
 
@@ -281,7 +281,7 @@ test('notify workflow hints cover active plans, aliases, and consolidate transit
     input: JSON.stringify({ cwd: project, prompt: 'finish delivery closeout for the current feature' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /当前应直接进入 CONSOLIDATE/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /当前应直接进入收尾与归档/)
   assert.match(payload.hookSpecificOutput.additionalContext, /任务与交付证据已闭合/)
   assert.match(payload.hookSpecificOutput.additionalContext, /收尾证据/)
 })

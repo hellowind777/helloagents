@@ -194,7 +194,7 @@
 用户说"重置"或"reset" → 忽略之前的上下文，从头开始
 
 ## 工作流与完成判定
-### 任务分层（Delivery Tier）
+### 任务分层
 - `T0` — 只读分析、创意探索、方案比较、范围评估 → 自然响应或 `~idea` / `~office`
 - `T1` — 低风险小改动、明确实现、显式质量闭环、单文件或局部改动 → 直接执行或 `~build` / `~qa`
 - `T2` — 新项目、从零构建、3+ 文件新功能、架构级变更或需要结构化产物 → `~plan` 或 `~auto`
@@ -202,7 +202,7 @@
 
 ### 统一执行流程
 
-#### 1. ROUTE / TIER — 路由与分层
+#### 1. 选路与分层
 先判断任务类型、风险等级、是否需要结构化产物，再决定进入哪条路径：
 - 创意探索 / 方案比较 → `~idea`
 - 值得做与否 / 范围收缩 / 先做多大 → `~office`
@@ -215,7 +215,7 @@
 
 当前项目只要已初始化（当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`，通常由 `~init` 建立），就按项目级完整流程执行。
 
-#### 2. SPEC — 澄清目标与验收
+#### 2. 澄清目标与验收
 根据任务需要，按需读取项目上下文（知识库文件和项目文件），明确：
 - 目标：要解决什么问题
 - 约束：平台、技术、风险、时间、现有架构
@@ -223,7 +223,7 @@
 
 `~idea` / `~office` / `~plan` / `~prd` 在此阶段展开探索或需求澄清；`~build` 在需求明确时快速通过。
 
-#### 3. PLAN — 规划与上下文准备
+#### 3. 规划与上下文准备
 根据 skills/ 目录下各 hello-* 技能的 SKILL.md frontmatter（name + description），标记本次任务可能需要的技能（不读取文件内容，仅记录名称）。
 路径定义：`{HELLOAGENTS_READ_ROOT}` = 当前对话已确定的 HelloAGENTS 读取根目录，统一用于读取 `skills/` 与 `templates/`
 先确定当前技能根目录：
@@ -245,8 +245,8 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - `~idea` 在输出比较与推荐后结束，不进入实现，也不创建 `.helloagents/`、状态文件或方案包
 - `~office` 在输出价值/范围判断后结束，不进入实现，也不创建 `.helloagents/`、状态文件或方案包
 
-#### 4. BUILD — 实现
-进入实现时，读取 PLAN 阶段标记的技能 SKILL.md（按上方 hello-* 技能查找路径读取 `skills/{技能名}/SKILL.md`），按其规范执行。
+#### 4. 实现
+进入实现时，读取上一阶段标记的技能 SKILL.md（按上方 hello-* 技能查找路径读取 `skills/{技能名}/SKILL.md`），按其规范执行。
 逐步执行，每步后即时验证。
 
 编码任务：
@@ -265,7 +265,7 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 非编码任务（文档 / 方案 / 审查等）：
 - 收集已激活技能的交付检查清单，逐项确认通过
 
-#### 6. CONSOLIDATE — 状态、资料与归档
+#### 6. 收尾与归档
 所有任务：
 - 有方案包且准备报告完成 → 优先调用 `scripts/closeout-state.mjs write` 写当前会话 `artifacts/closeout.json`，记录“需求覆盖”和“交付清单”；每项写明 `PASS` / `BLOCKED` 与简要摘要，再进入最终交付
 - 状态文件维护：按下文“流程状态”执行；任务完成时把“正在做什么”更新为已完成，并清空已无意义的关键上下文 / 下一步 / 阻塞项
@@ -280,15 +280,15 @@ hello-* 技能读取路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.m
 - 本地版本检查点：非只读任务完成验证且产生工作区变更时，若 `auto_commit_enabled=true`，最终回复前自动执行本地提交；若 `auto_commit_enabled=false`，跳过这一步。先检查 `git status --short`；若不是 git 仓库或无变更则跳过。若发现 `.env`、密钥、凭据、明显不应提交的大文件或二进制产物，停止提交并说明风险；否则执行 `git add -A`，使用当前回复语言生成简洁 conventional commit message 后执行 `git commit`。显式 `~commit` 不受这个开关影响。不自动远程 `git push`，除非用户明确要求
 
 ### 完成判定
-- 未进入 QA / CONSOLIDATE 的路径，声称完成前必须完成与任务类型匹配的必要检查；无法执行的检查必须明确说明，不得直接宣称完成
-- 已激活 `hello-*` 技能或存在方案包 / `contract.json` / 证据文件时，以对应 skill、方案包契约与 QA / CONSOLIDATE 为准，不得降级为本节
+- 未进入质量闭环 / 收尾与归档的路径，声称完成前必须完成与任务类型匹配的必要检查；无法执行的检查必须明确说明，不得直接宣称完成
+- 已激活 `hello-*` 技能或存在方案包 / `contract.json` / 证据文件时，以对应 skill、方案包契约与质量闭环 / 收尾与归档为准，不得降级为本节
 - 只读分析、创意探索、方案比较、中间进度和阻塞汇报不适用本节
 - Codex `/goal` 只作为外层长程续跑与预算控制；HelloAGENTS 仍负责方案、执行、验证和收尾。若 active goal 的目标已全部完成，先完成 HelloAGENTS 验证、收尾检查与本地版本检查点，再调用 `update_goal` 标记 complete；不得因预算接近耗尽、单轮结束或准备停下而标记 complete
 
 ### 命令路由
-- 默认按上文“统一执行流程中的 ROUTE / TIER”选路；除显式 `~command` 外，不另起独立路由规则
+- 默认按上文“统一执行流程中的选路与分层”选路；除显式 `~command` 外，不另起独立路由规则
 - `~do` 是 `~build` 的兼容别名；`~design` 是 `~plan` 的兼容别名；`~review` 是 `~qa` 的兼容别名
-- `~command` 路由：用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。若当前上下文已解析出具体命令技能文件路径，直接使用它；否则按上文 PLAN 阶段已确定的技能根目录规则读取 `skills/commands/{name}/SKILL.md`。不要额外探测项目目录里的 HelloAGENTS skills 路径，也不要扫描整个目录或对同一命令重复探测多个路径。
+- `~command` 路由：用户输入 `~xxx` 时，立即读取对应的 SKILL.md 并按其流程执行，不要自行探索或猜测。若当前上下文已解析出具体命令技能文件路径，直接使用它；否则按上文“规划与上下文准备”阶段已确定的技能根目录规则读取 `skills/commands/{name}/SKILL.md`。不要额外探测项目目录里的 HelloAGENTS skills 路径，也不要扫描整个目录或对同一命令重复探测多个路径。
 
 ## 项目存储与上下文
 ### .helloagents/ 目录
@@ -335,7 +335,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本会
 - modules/*.md — 模块文档和经验
 
 ### 临时文件（`~clean` 时清理）
-- artifacts/loop-breaker.json — 当前会话的 QA gate 断路器状态，仅在收尾 QA gate 连续失败时写入
+- artifacts/loop-breaker.json — 当前会话的 QA 门禁断路器状态，仅在收尾 QA 门禁连续失败时写入
 - artifacts/qa-review.json — 当前会话最近一次成功 qa-review 的证据快照
 - artifacts/closeout.json — 当前会话最近一次成功收尾的交付证据快照
 
