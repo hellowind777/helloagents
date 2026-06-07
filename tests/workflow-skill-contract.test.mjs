@@ -162,7 +162,7 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.match(bootstrap, /只使用当前回复语言表达所有用户可见文本/)
   assert.match(bootstrap, /首次说明后固定一个称呼/)
   assert.match(bootstrap, /文件名、目录名、路径、标记名、配置键/)
-  assert.match(bootstrap, /先判定约束真假，再说干净目标和迁移路径：公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
+  assert.match(bootstrap, /凡是涉及目标判断、约束判断、方案选择、实现路径、兼容取舍、是否保留旧行为、重构范围或推进方向时，默认先判定约束真假，再说干净目标和迁移路径；公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
   assert.match(bootstrap, /保留、合并、延后、删除、替换或先证明/)
   assert.match(bootstrap, /#### 6\. 收尾与归档/)
   assert.doesNotMatch(bootstrap, /CONSOLIDATE/)
@@ -171,7 +171,7 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   const bootstrapLite = readText(join(REPO_ROOT, 'bootstrap-lite.md'))
   assert.match(bootstrapLite, /只使用当前回复语言表达所有用户可见文本/)
   assert.match(bootstrapLite, /文件名、目录名、路径、标记名、配置键/)
-  assert.match(bootstrapLite, /先判定约束真假，再说干净目标和迁移路径：公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
+  assert.match(bootstrapLite, /凡是涉及目标判断、约束判断、方案选择、实现路径、兼容取舍、是否保留旧行为、重构范围或推进方向时，默认先判定约束真假，再说干净目标和迁移路径；公开 API、持久化数据、已文档化集成、用户承诺、部署与合规要求等才算真实约束/)
   assert.doesNotMatch(bootstrapLite, /Delivery Tier/)
 
   const help = readText(join(REPO_ROOT, 'skills', 'commands', 'help', 'SKILL.md'))
