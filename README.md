@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.1.2-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.3-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -231,6 +231,7 @@ The CLI manages host files explicitly:
 - `doctor` reports drift in carriers, links, hooks, config entries, plugin roots, cache copies, versions, and real Claude/Gemini global install artifacts; for Codex, it also surfaces native `codex doctor` output when available
 - Codex managed `notify = ["helloagents-js", "codex-notify"]` stays portable, and `doctor`, `cleanup`, and `uninstall` also recognize wrapped `--previous-notify` chains used by Codex App / Computer Use
 - per-host mode tracking is written only after host setup succeeds, and failed native global cleanup keeps the host tracked as `global` instead of silently layering standby on top
+- direct `switch-branch` clears stale `HELLOAGENTS*` lifecycle env before its internal npm install/sync steps, and package `preuninstall` falls back to `--all` when no explicit host args are provided, so stale shell env does not shrink branch-switch or uninstall cleanup scope
 - Windows `.cmd` / `.bat` lifecycle calls now run through an explicit command wrapper, so host installs, branch switching, and doctor flows do not emit Node `DEP0190` shell deprecation warnings
 
 ## Quick Start
@@ -428,6 +429,8 @@ helloagents switch-branch beta
 helloagents switch-branch beta claude --global
 helloagents branch beta --all --standby
 ```
+
+The direct `helloagents switch-branch ...` command also clears stale `HELLOAGENTS*` lifecycle env before its internal npm install and host-sync steps.
 
 Use normal npm commands when you only want to change the package and not sync host CLIs immediately:
 
@@ -688,6 +691,7 @@ npm test
 The current suite covers:
 
 - install, update, cleanup, uninstall, branch switching, and mode switching
+- stale lifecycle-env protection for direct `switch-branch` and package `preuninstall`
 - Windows `.cmd` / `.bat` lifecycle dispatch without Node `DEP0190` warnings
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
 - Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
