@@ -132,7 +132,7 @@ test('delivery gate blocks completion when plan packages stay open or malformed'
   payload = parseStdoutJson(result)
   assert.equal(payload.decision, 'block')
   assert.match(payload.reason, /缺少最新 qa-review 证据/)
-  assert.match(payload.reason, /处理路径：~qa -> CONSOLIDATE/)
+  assert.match(payload.reason, /处理路径：~qa -> 收尾与归档/)
 
   writeJson(getSessionEvidencePath(project, 'qa-review.json'), {
     updatedAt: new Date(Date.now() - 721 * 60 * 60 * 1000).toISOString(),

@@ -2,12 +2,29 @@ import { normalizeHost } from './cli-lifecycle.mjs'
 import { spawnCommandSync } from './cli-process.mjs'
 
 const DEFAULT_REPO_ARCHIVE_BASE = 'https://github.com/hellowind777/helloagents/archive/refs/heads'
+const BRANCH_CHILD_ENV_KEYS = [
+  'HELLOAGENTS',
+  'HELLOAGENTS_ACTION',
+  'HELLOAGENTS_TARGET',
+  'HELLOAGENTS_HOST',
+  'HELLOAGENTS_MODE',
+  'HELLOAGENTS_BRANCH',
+  'HELLOAGENTS_PACKAGE',
+  'HELLOAGENTS_DEPLOY',
+]
 
-function runCommand(command, args) {
+function buildBranchChildEnv(baseEnv = process.env) {
+  const env = { ...baseEnv }
+  for (const key of BRANCH_CHILD_ENV_KEYS) delete env[key]
+  return env
+}
+
+function runCommand(command, args, options = {}) {
   const result = spawnCommandSync(command, args, {
     encoding: 'utf-8',
     errors: 'replace',
     stdio: 'inherit',
+    env: options.env,
     windowsHide: true,
   })
   if (result.error) throw result.error
@@ -78,8 +95,9 @@ function buildSyncArgs({ host, mode }) {
 export function runBranchSwitch(args, options = {}) {
   const parsed = parseBranchArgs(args)
   const npmCommand = options.npmCommand || process.env.HELLOAGENTS_NPM_CMD || getDefaultNpmCommand()
+  const childEnv = buildBranchChildEnv(options.env || process.env)
 
   const packageSpec = buildPackageSpec(parsed.branch)
-  runCommand(npmCommand, ['install', '-g', packageSpec])
-  runCommand(npmCommand, buildSyncArgs(parsed))
+  runCommand(npmCommand, ['install', '-g', packageSpec], { env: childEnv })
+  runCommand(npmCommand, buildSyncArgs(parsed), { env: childEnv })
 }

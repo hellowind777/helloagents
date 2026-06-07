@@ -26,6 +26,34 @@ function writeFakeCommand(binDir, name, logPath) {
   return commandPath
 }
 
+function writeFakeCommandWithEnv(binDir, name, logPath, envNames) {
+  if (process.platform === 'win32') {
+    const commandPath = join(binDir, `${name}.cmd`)
+    const lines = [
+      '@echo off',
+      'setlocal EnableDelayedExpansion',
+      `echo ARGS:%*>>"${logPath}"`,
+      ...envNames.map((envName) => `echo ${envName}=!${envName}!>>"${logPath}"`),
+      'exit /b 0',
+      '',
+    ]
+    writeText(commandPath, lines.join('\r\n'))
+    return commandPath
+  }
+
+  const commandPath = join(binDir, name)
+  const lines = [
+    '#!/bin/sh',
+    `echo "ARGS:$@" >> "${logPath}"`,
+    ...envNames.map((envName) => `echo "${envName}=\${${envName}-}" >> "${logPath}"`),
+    'exit 0',
+    '',
+  ]
+  writeText(commandPath, lines.join('\n'))
+  chmodSync(commandPath, 0o755)
+  return commandPath
+}
+
 function createBranchSwitchFixture() {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
@@ -84,6 +112,41 @@ test('branch accepts a full npm spec and refreshes all hosts through npm', () =>
 
   assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- --all --standby/)
+})
+
+test('switch-branch clears stale lifecycle env before npm install and sync-hosts', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const binDir = createTempDir('helloagents-branch-env-bin-')
+  const npmLog = join(home, 'npm-env.log')
+  const envNames = [
+    'HELLOAGENTS',
+    'HELLOAGENTS_ACTION',
+    'HELLOAGENTS_TARGET',
+    'HELLOAGENTS_MODE',
+    'HELLOAGENTS_BRANCH',
+    'HELLOAGENTS_PACKAGE',
+    'HELLOAGENTS_DEPLOY',
+  ]
+  const npmCommand = writeFakeCommandWithEnv(binDir, 'npm', npmLog, envNames)
+
+  runCli(pkgRoot, home, ['switch-branch', 'beta', 'codex', '--standby'], {
+    HELLOAGENTS_NPM_CMD: npmCommand,
+    HELLOAGENTS: 'gemini:global',
+    HELLOAGENTS_ACTION: 'update',
+    HELLOAGENTS_TARGET: 'gemini',
+    HELLOAGENTS_MODE: 'global',
+    HELLOAGENTS_BRANCH: 'main',
+    HELLOAGENTS_PACKAGE: 'helloagents',
+    HELLOAGENTS_DEPLOY: '1',
+  })
+
+  const log = readText(npmLog)
+  assert.match(log, /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
+  assert.match(log, /explore -g helloagents -- npm run sync-hosts -- codex --standby/)
+  for (const envName of envNames) {
+    assert.doesNotMatch(log, new RegExp(`${envName}=(?!$).+`))
+  }
 })
 
 test('package exposes npm-script and one-shot script entry points', () => {

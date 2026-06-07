@@ -183,6 +183,32 @@ test('postinstall can deploy from compact HELLOAGENTS spec', () => {
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.codex, 'global')
 })
 
+test('preuninstall ignores stale lifecycle env and still cleans all hosts plus runtime root', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const runtimeRoot = join(home, '.helloagents', 'helloagents')
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', '--all', '--standby'])
+
+  runCli(pkgRoot, home, ['preuninstall'], {
+    HELLOAGENTS: 'codex:global',
+    HELLOAGENTS_ACTION: 'uninstall',
+    HELLOAGENTS_TARGET: 'codex',
+    HELLOAGENTS_MODE: 'global',
+  })
+
+  assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
+  assert.ok(!existsSync(runtimeRoot))
+  assert.equal(readJson(configFile).host_install_modes.claude, undefined)
+  assert.equal(readJson(configFile).host_install_modes.gemini, undefined)
+  assert.equal(readJson(configFile).host_install_modes.codex, undefined)
+})
+
 test('postinstall and later lifecycle commands preserve existing auto_commit_enabled', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

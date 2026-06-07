@@ -8,7 +8,7 @@ Trigger: ~init
 
 `~init` 是用户显式命令，用来初始化或刷新当前项目的完整工作流。
 它不受 `kb_create_mode` 限制。
-执行 `~init` 时，按当前规则模板创建或更新项目本地 `.helloagents/`，同步知识库，并为支持的宿主写入项目级 full carrier 标记：`<!-- HELLOAGENTS_PROFILE: full -->`。
+执行 `~init` 时，按当前规则模板创建或更新项目本地 `.helloagents/`，同步知识库，并为支持的宿主写入项目级完整规则标记：`<!-- HELLOAGENTS_PROFILE: full -->`。
 `.helloagents/` 在本 skill 中统一按项目级存储路径理解：项目本地 `.helloagents/` 继续承担项目本地存储目录；状态文件只使用 `state_path`；若 `project_store_mode=repo-shared`，知识库、`DESIGN.md` 与方案包按当前上下文中已注入的项目知识/方案目录写入。
 
 ## 流程

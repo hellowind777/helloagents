@@ -76,7 +76,7 @@ function buildHighRiskGate(matches, cwd, payload = {}) {
   if (!recommendation) return null
   if (matches.some((match) => match.gate === 'post-verify')) {
     return {
-      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：当前工作流尚未进入 QA / CONSOLIDATE。\n当前工作流：${recommendation.summary}\n处理路径：${recommendation.nextPath}\n${recommendation.guidance}`,
+      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：当前工作流尚未进入质量闭环 / 收尾与归档。\n当前工作流：${recommendation.summary}\n处理路径：${recommendation.nextPath}\n${recommendation.guidance}`,
     }
   }
   if (matches.some((match) => match.gate === 'plan-first') && recommendation.nextCommand === 'plan') {

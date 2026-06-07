@@ -30,6 +30,8 @@ Trigger: ~help
 - `~design` → 等同 `~plan`
 - `~review` → 等同 `~qa`
 
+核心规则默认生效：HelloAGENTS 会通过 `bootstrap.md` / `bootstrap-lite.md` 在运行时持续执行方案纠偏与语言纪律；这不是新增命令，也不是新增技能计数。
+
 ### 自动激活技能
 以下技能仅在宿主全局模式或已初始化项目时自动激活（例如当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`，通常由 `~init` 建立）。
 纯标准模式、且项目未初始化时不会自动触发这些技能；但涉及 UI 的任务仍受 UI 质量基线约束。
@@ -46,7 +48,7 @@ Trigger: ~help
 | output_language | "" | 空=跟随用户语言/填写则指定（如 zh-CN、en） | Claude Code + Gemini CLI + Codex CLI |
 | output_format | true | true=主代理最终回复必须使用 HelloAGENTS 格式，流式/中间输出及子代理输出保持自然；false=自然输出 | Claude Code + Gemini CLI + Codex CLI |
 | notify_level | 0 | 0=关闭/1=桌面通知/2=声音/3=两者 | Claude Code + Gemini CLI + Codex CLI |
-| ralph_loop_enabled | true | 收尾 QA gate（显式 ~qa / ~loop 或收尾要求时触发审查、lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
+| ralph_loop_enabled | true | 收尾 QA 门禁（显式 ~qa / ~loop 或收尾要求时触发审查、lint/test/build） | Claude Code + Gemini CLI + Codex CLI |
 | guard_enabled | true | 阻断危险命令与写入后的安全扫描 | Claude Code + Gemini CLI + Codex CLI |
 | kb_create_mode | 1 | 0=关闭/1=知识库已存在时自动同步/2=编码任务在知识库已存在或当前项目已初始化时自动创建或同步 | Claude Code + Gemini CLI + Codex CLI |
 | project_store_mode | "local" | "local"=知识库/方案包保留在项目本地 `.helloagents/`；"repo-shared"=本地 `.helloagents/` 仅保留项目本地状态/运行态，知识库与方案包改写到 `~/.helloagents/projects/<repo-key>/` | Claude Code + Gemini CLI + Codex CLI |

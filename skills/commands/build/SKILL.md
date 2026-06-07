@@ -64,5 +64,5 @@ Trigger: ~build [description]
 - 有方案包时，只同步本次实现直接影响的任务状态；未完成项保持打开
 - 当前实现已闭合、且需要进入交付或收尾时，转入 `~qa`
 - 若 Codex active goal 仍有未完成 AFK 任务，继续下一项可执行任务；若目标已满足，先转入 `~qa` 与 HelloAGENTS 收尾，再标记 goal complete
-- 状态文件、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载的 HelloAGENTS 规则进入 QA / CONSOLIDATE
+- 状态文件、知识库、`CHANGELOG.md`、modules 文档与归档边界，按当前已加载的 HelloAGENTS 规则进入质量闭环 / 收尾与归档
 - 不在 `~build` 内把仍未闭合的方案包整体报告为已完成

@@ -81,7 +81,7 @@ function buildQaAction(plan, qaMode) {
   if (visualRequirement.required) {
     extraChecks.push('完成视觉验收并写入当前会话 `artifacts/visual.json`')
   }
-  const gateSuffix = extraChecks.length > 0 ? ` ${extraChecks.join('，')}，再进入 CONSOLIDATE。` : ''
+  const gateSuffix = extraChecks.length > 0 ? ` ${extraChecks.join('，')}，再进入收尾与归档。` : ''
 
   if (qaMode.mode === 'metadata-first') {
     return {
@@ -89,8 +89,8 @@ function buildQaAction(plan, qaMode) {
       mode: qaMode.mode,
       routeHint: qaMode.guidance,
       gateHint: plan.contractIssues.length > 0
-        ? '交付把关：当前还不能进入 CONSOLIDATE；先补齐 `contract.json` 中的 `qaMode` 与 `qaFocus`，再进入 ~qa。'
-        : '交付把关：当前还不能进入 CONSOLIDATE；先补齐 tasks.md 中每个任务的“涉及文件”“完成标准”和“验证方式”，再进入 ~qa。',
+        ? '交付把关：当前还不能进入收尾与归档；先补齐 `contract.json` 中的 `qaMode` 与 `qaFocus`，再进入 ~qa。'
+        : '交付把关：当前还不能进入收尾与归档；先补齐 tasks.md 中每个任务的“涉及文件”“完成标准”和“验证方式”，再进入 ~qa。',
     }
   }
 
@@ -98,7 +98,7 @@ function buildQaAction(plan, qaMode) {
     phase: 'qa',
     mode: qaMode.mode,
     routeHint: qaMode.guidance,
-    gateHint: `交付把关：进入 CONSOLIDATE 前，必须完成 qa-review 全量质量闭环，并留下最新 qa-review 证据。${gateSuffix}`.trim(),
+    gateHint: `交付把关：进入收尾与归档前，必须完成 qa-review 全量质量闭环，并留下最新 qa-review 证据。${gateSuffix}`.trim(),
   }
 }
 
@@ -188,9 +188,9 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
       plan,
       status: 'closed',
       nextCommand: 'qa',
-      nextPath: '~qa -> CONSOLIDATE',
+      nextPath: '~qa -> 收尾与归档',
       summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI 契约仍要求独立 advisor 复查与视觉验收。`,
-      guidance: '先在 ~qa 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `artifacts/advisor.json`；再完成视觉验收并写入当前会话 `artifacts/visual.json`，记录 reason、tooling、screensChecked、statesChecked、status 与 summary；两项都通过后再进入 CONSOLIDATE。',
+      guidance: '先在 ~qa 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `artifacts/advisor.json`；再完成视觉验收并写入当前会话 `artifacts/visual.json`，记录 reason、tooling、screensChecked、statesChecked、status 与 summary；两项都通过后再进入收尾与归档。',
     }
   }
 
@@ -200,9 +200,9 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
       plan,
       status: 'closed',
       nextCommand: 'qa',
-      nextPath: '~qa -> CONSOLIDATE',
+      nextPath: '~qa -> 收尾与归档',
       summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前契约仍要求独立 advisor 复查。`,
-      guidance: '先在 ~qa 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `artifacts/advisor.json` 记录复查原因、focus、来源与结论；advisor 通过后再进入 CONSOLIDATE。',
+      guidance: '先在 ~qa 阶段完成独立 advisor / style advisor 复查，并写入当前会话 `artifacts/advisor.json` 记录复查原因、focus、来源与结论；advisor 通过后再进入收尾与归档。',
     }
   }
 
@@ -212,9 +212,9 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
       plan,
       status: 'closed',
       nextCommand: 'qa',
-      nextPath: '~qa -> CONSOLIDATE',
+      nextPath: '~qa -> 收尾与归档',
       summary: `${scopeLabel} "${plan.planName}" 的任务已闭合，但当前 UI 契约仍要求视觉验收。`,
-      guidance: '先在 ~qa 阶段完成视觉验收，并写入当前会话 `artifacts/visual.json` 记录 reason、tooling、screensChecked、statesChecked、status 与 summary；视觉验收通过后再进入 CONSOLIDATE。',
+      guidance: '先在 ~qa 阶段完成视觉验收，并写入当前会话 `artifacts/visual.json` 记录 reason、tooling、screensChecked、statesChecked、status 与 summary；视觉验收通过后再进入收尾与归档。',
     }
   }
 
@@ -226,13 +226,13 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
       stage: 'consolidate',
       mode: closedPlanEvidence.closeoutReady ? 'ready' : 'closeout-pending',
       nextCommand: 'qa',
-      nextPath: 'CONSOLIDATE',
+      nextPath: '收尾与归档',
       summary: closedPlanEvidence.closeoutReady
         ? `${scopeLabel} "${plan.planName}" 的任务与交付证据已闭合。`
         : `${scopeLabel} "${plan.planName}" 的任务与 qa-review 已闭合。`,
       guidance: closedPlanEvidence.closeoutReady
-        ? '当前进入 CONSOLIDATE：更新 `state_path`、知识文件并归档方案后即可交付；不要无故重开新的方案包或重新跑一遍无关验证。'
-        : '当前进入 CONSOLIDATE：先写当前会话 `artifacts/closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后交付。',
+        ? '当前进入收尾与归档：更新 `state_path`、知识文件并归档方案后即可交付；不要无故重开新的方案包或重新跑一遍无关验证。'
+        : '当前进入收尾与归档：先写当前会话 `artifacts/closeout.json` 记录需求覆盖与交付清单，再更新 `state_path` 并归档后交付。',
     }
   }
 
@@ -241,9 +241,9 @@ function buildClosedRecommendation(scopeLabel, plan, cwd, options = {}) {
     plan,
     status: 'closed',
     nextCommand: 'qa',
-    nextPath: '~qa -> CONSOLIDATE',
+    nextPath: '~qa -> 收尾与归档',
     summary: `${scopeLabel} "${plan.planName}" 的任务已全部闭合。`,
-    guidance: '若用户是在做收尾、验真、复查或准备交付，优先走 ~qa 或 CONSOLIDATE；不要无故重开新的方案包。',
+    guidance: '若用户是在做收尾、验真、复查或准备交付，优先走 ~qa 或收尾与归档；不要无故重开新的方案包。',
   }
 }
 
@@ -320,7 +320,7 @@ export function buildOrchestrationHintFromSnapshot(snapshot, cwd, recommendation
   if (recommendation.stage === 'consolidate') {
     const action = buildDeliveryActionFromSnapshot(snapshot, cwd, recommendation)
     if (action?.phase === 'consolidate') {
-      return `编排提示：当前已进入 CONSOLIDATE；${[action.routeHint, action.gateHint].filter(Boolean).join(' ')}`
+      return `编排提示：当前已进入收尾与归档；${[action.routeHint, action.gateHint].filter(Boolean).join(' ')}`
     }
   }
   return ''
