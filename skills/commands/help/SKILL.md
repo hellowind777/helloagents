@@ -30,6 +30,8 @@ Trigger: ~help
 - `~design` → 等同 `~plan`
 - `~review` → 等同 `~qa`
 
+核心规则默认生效：HelloAGENTS 会通过 `bootstrap.md` / `bootstrap-lite.md` 在运行时持续执行方案纠偏与语言纪律；这不是新增命令，也不是新增技能计数。
+
 ### 自动激活技能
 以下技能仅在宿主全局模式或已初始化项目时自动激活（例如当前项目级规则文件已包含 `<!-- HELLOAGENTS_PROFILE: full -->`，通常由 `~init` 建立）。
 纯标准模式、且项目未初始化时不会自动触发这些技能；但涉及 UI 的任务仍受 UI 质量基线约束。
