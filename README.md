@@ -177,7 +177,7 @@ For `~prd`, HelloAGENTS also creates PRD files such as:
 - `prd/11-legal-privacy.md`
 - `prd/12-timeline.md`
 
-`contract.json` is used by the workflow to decide verification scope, reviewer/tester focus, optional advisor checks, and optional visual validation.
+`contract.json` is used by the workflow to decide `qaMode`, `qaFocus`, optional advisor checks, and optional visual validation.
 
 `tasks.md` also includes a Codex `/goal` entry. For long-running Codex work, use that prepared entry instead of giving `/goal` a raw product document. The default chain is `/goal -> ~auto -> ~qa`: Codex keeps the long-running continuation, `~auto` executes the AFK work, and `~qa` remains the final quality gate before closeout.
 
@@ -546,17 +546,17 @@ Once the task creates or modifies local files, or otherwise leaves local output 
 HelloAGENTS uses this stage model for structured work:
 
 ```text
-ROUTE / TIER → SPEC → PLAN → BUILD → QA → CONSOLIDATE
+Routing and tiering → Goal clarification → Planning → Implementation → Quality loop → Closeout and archive
 ```
 
 | Stage | Purpose |
 |-------|---------|
-| `ROUTE / TIER` | decide whether the task is idea, plan, build, verify, PRD, or automatic flow |
-| `SPEC` | clarify goal, constraints, and success criteria |
-| `PLAN` | prepare plan files and choose needed skills |
-| `BUILD` | implement and run local checks |
-| `QA` | review, run commands, check contract and evidence |
-| `CONSOLIDATE` | update state, knowledge, and closeout evidence |
+| `Routing and tiering` | decide whether the task should go through `~idea`, `~office`, `~plan`, `~build`, `~qa`, `~prd`, or automatic flow |
+| `Goal clarification` | clarify goal, constraints, and success criteria |
+| `Planning` | prepare plan files and choose needed skills |
+| `Implementation` | implement and run local checks |
+| `Quality loop` | review, run commands, and check contract and evidence |
+| `Closeout and archive` | update state, knowledge, and closeout evidence |
 
 HelloAGENTS also keeps an always-on core-rule layer in `bootstrap.md` / `bootstrap-lite.md`.
 That layer corrects proposal bias, distinguishes real external contracts from internal inertia, asks for a clean target before defaulting to legacy preservation, requires a first proof point plus a stop rule for bold directions, and keeps user-visible wording in one language unless code identifiers, commands, paths, config keys, or necessary proper names must stay unchanged.
