@@ -185,7 +185,7 @@ if (cmd === 'codex-notify') {
   }
 } else if (cmd === 'preuninstall') {
   runSafely(() => {
-    const cleanupArgs = argv.length > 1 ? argv.slice(1) : lifecycleArgsFromEnv('all')
+    const cleanupArgs = argv.length > 1 ? argv.slice(1) : ['--all']
     runScopedLifecycle('cleanup', cleanupArgs)
     if (cleanupArgs.includes('--all')) removeRuntimeRoot(RUNTIME_ROOT)
   })
