@@ -130,7 +130,7 @@ test('guard blocks dangerous commands and warns on risky writes', () => {
   })
   payload = parseStdoutJson(result)
   assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /QA \/ CONSOLIDATE/)
+  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /质量闭环 \/ 收尾与归档/)
   assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~build -> ~qa/)
 
   writeText(join(planFirstProject, '.helloagents', 'plans', '202604050301_schema', 'requirements.md'), '# schema requirements\n')

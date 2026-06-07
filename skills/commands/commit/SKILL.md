@@ -6,7 +6,7 @@ policy:
 ---
 Trigger: ~commit [message]
 
-执行 `~commit` 时，知识库同步与状态文件更新范围按当前已加载的 HelloAGENTS CONSOLIDATE / 流程状态要求执行；本命令只负责生成提交信息、读取提交归属配置并完成提交动作。
+执行 `~commit` 时，知识库同步与状态文件更新范围按当前已加载的 HelloAGENTS“收尾与归档”/ 流程状态要求执行；本命令只负责生成提交信息、读取提交归属配置并完成提交动作。
 `auto_commit_enabled=false` 只关闭收尾阶段的自动提交，不影响显式 `~commit`。
 
 ## 流程
@@ -28,4 +28,4 @@ Trigger: ~commit [message]
 - 0 = 跳过
 - 1 = 知识库已存在时自动同步（默认）
 - 2 = 编码任务在知识库已存在或当前项目已初始化时自动创建或同步
-同步范围与更新格式按当前已加载的 HelloAGENTS CONSOLIDATE 阶段执行。
+同步范围与更新格式按当前已加载的 HelloAGENTS“收尾与归档”阶段执行。

@@ -194,7 +194,7 @@
 用户说"重置"或"reset" → 忽略之前的上下文，从头开始
 
 ## 工作流与完成判定
-### 任务分层（Delivery Tier）
+### 任务分层
 - `T0` — 只读分析、创意探索、方案比较、范围评估 → 自然响应或 `~idea` / `~office`
 - `T1` — 低风险小改动、明确实现、显式质量闭环、单文件或局部改动 → 直接执行或 `~build` / `~qa`
 - `T2` — 新项目、从零构建、3+ 文件新功能、架构级变更或需要结构化产物 → `~plan` 或 `~auto`
@@ -264,7 +264,7 @@ templates/ 查找路径（按优先级；首次确定模板根目录后，本会
 - modules/*.md — 模块文档和经验
 
 ### 临时文件（`~clean` 时清理）
-- artifacts/loop-breaker.json — 当前会话的 QA gate 断路器状态，仅在收尾 QA gate 连续失败时写入
+- artifacts/loop-breaker.json — 当前会话的 QA 门禁断路器状态，仅在收尾 QA 门禁连续失败时写入
 - artifacts/qa-review.json — 当前会话最近一次成功 qa-review 的证据快照
 - artifacts/closeout.json — 当前会话最近一次成功收尾的交付证据快照
 

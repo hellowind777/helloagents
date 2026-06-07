@@ -31,7 +31,7 @@ test('workflow runtime contract stays aligned with the unified qa-review archite
 
   const guard = readText(join(REPO_ROOT, 'scripts', 'guard.mjs'))
   assert.match(guard, /高风险操作提醒/)
-  assert.match(guard, /当前工作流尚未进入 QA \/ CONSOLIDATE/)
+  assert.match(guard, /当前工作流尚未进入质量闭环 \/ 收尾与归档/)
   assert.match(guard, /高风险 schema 变更前仍需先完成 ~plan/)
   assert.match(guard, /当前路由：~idea \/ ~office 都是只读探索/)
 
@@ -103,12 +103,12 @@ test('workflow runtime contract stays aligned with the unified qa-review archite
   const workflowState = readText(join(REPO_ROOT, 'scripts', 'workflow-state.mjs'))
   assert.match(workflowState, /当前应执行 ~\$\{recommendation\.nextCommand\}/)
   assert.match(workflowState, /当前不该把 ~qa 当成越级入口/)
-  assert.match(workflowState, /当前应直接进入 CONSOLIDATE/)
+  assert.match(workflowState, /当前应直接进入收尾与归档/)
   assert.match(workflowState, /用户已显式使用 ~loop/)
   assert.match(workflowState, /\/goal -> ~auto -> ~qa/)
 
   const workflowRecommendation = readText(join(REPO_ROOT, 'scripts', 'workflow-recommendation.mjs'))
-  assert.match(workflowRecommendation, /~qa -> CONSOLIDATE/)
+  assert.match(workflowRecommendation, /~qa -> 收尾与归档/)
   assert.match(workflowRecommendation, /qa-review 全量质量闭环/)
   assert.match(workflowRecommendation, /留下最新 qa-review 证据/)
   assert.match(workflowRecommendation, /artifacts\/advisor\.json/)
@@ -157,7 +157,7 @@ test('workflow templates and bootstrap stay aligned with qa-review artifacts', (
     assert.match(content, /## 安全与可靠性/)
     assert.match(content, /## 交互、停顿与收尾/)
     assert.match(content, /## 工作流与完成判定/)
-    assert.match(content, /Delivery Tier/)
+    assert.match(content, /### 任务分层/)
     assert.match(content, /`T0`/)
     assert.match(content, /`T3`/)
     assert.match(content, /`~do` 是 `~build` 的兼容别名/)
