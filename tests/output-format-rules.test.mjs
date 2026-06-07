@@ -21,6 +21,9 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.doesNotMatch(content, /#### 收敛与修改原则/);
     assert.match(content, /都必须同时遵守本节全部规则/);
     assert.match(content, /普通问答、解释、分析、改写、邮件回复和其他一次性交付/);
+    assert.match(content, /一次做完，直接推进：用户需求明确且已获得执行授权，或已明确同意方案、修改方向或继续执行时，必须持续执行到完成/);
+    assert.match(content, /不得把可执行动作改写为建议、可选项、等待确认，也不用“下一步建议”代替实际执行/);
+    assert.match(content, /做方案、范围或架构判断时，先判定约束真假，再说干净目标和迁移路径/);
     assert.match(content, /默认只交付与当前请求直接对应的一版最终结果/);
     assert.match(content, /“一版”只限制版本数量，不限制完成当前请求所需的必要内容/);
     assert.match(content, /请求已满足时直接结束，不主动追加无执行价值的延伸、派生版本、不同写法、第二版或邀约式收尾/);
