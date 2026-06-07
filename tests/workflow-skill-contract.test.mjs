@@ -22,6 +22,8 @@ function listSkillFiles(dirPath) {
 
 test('workflow skills stay aligned with the new qa-review architecture', () => {
   const helloagents = readText(join(REPO_ROOT, 'skills', 'helloagents', 'SKILL.md'))
+  assert.match(helloagents, /【子代理短路】/)
+  assert.match(helloagents, /立即跳过本 skill 后续仅面向主代理的规则/)
   assert.match(helloagents, /选路与分层→目标澄清→规划→实现→质量闭环→收尾与归档/)
   assert.doesNotMatch(helloagents, /ROUTE\/TIER→SPEC→PLAN→BUILD→QA→CONSOLIDATE/)
   assert.match(helloagents, /qa-review 的质量铁律/)
@@ -159,6 +161,8 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.doesNotMatch(readmeCn, /~verify/)
 
   const bootstrap = readText(join(REPO_ROOT, 'bootstrap.md'))
+  assert.match(bootstrap, /【子代理短路】/)
+  assert.match(bootstrap, /立即跳过本文件后续仅面向主代理的规则/)
   assert.match(bootstrap, /只使用当前回复语言表达所有用户可见文本/)
   assert.match(bootstrap, /首次说明后固定一个称呼/)
   assert.match(bootstrap, /文件名、目录名、路径、标记名、配置键/)
@@ -171,6 +175,8 @@ test('README and bootstrap docs expose qa-review instead of the old split review
   assert.doesNotMatch(bootstrap, /Delivery Tier/)
 
   const bootstrapLite = readText(join(REPO_ROOT, 'bootstrap-lite.md'))
+  assert.match(bootstrapLite, /【子代理短路】/)
+  assert.match(bootstrapLite, /立即跳过本文件后续仅面向主代理的规则/)
   assert.match(bootstrapLite, /只使用当前回复语言表达所有用户可见文本/)
   assert.match(bootstrapLite, /文件名、目录名、路径、标记名、配置键/)
   assert.match(bootstrapLite, /涉及判断与取舍时，先判断约束是否真实，再给干净目标，最后再谈迁移路径。/)

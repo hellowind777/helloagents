@@ -12,6 +12,9 @@ function read(relativePath) {
 test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-out replies only', () => {
   for (const file of ['bootstrap.md', 'bootstrap-lite.md']) {
     const content = read(file);
+    assert.ok(content.indexOf('【子代理短路】') < content.indexOf('# HelloAGENTS'));
+    assert.match(content, /立即跳过本文件后续仅面向主代理的规则/);
+    assert.match(content, /安全、质量、验证和失败处理规则仍持续生效/);
     assert.match(content, /## 通用交付规则（强制）/);
     assert.match(content, /### 产出质量/);
     assert.ok(content.indexOf('### 执行纪律') < content.indexOf('### 表达与语气'));
@@ -74,6 +77,8 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
 
 test('skill and help docs describe output_format as final-summary only', () => {
   const helloagentsSkill = read('skills/helloagents/SKILL.md');
+  assert.ok(helloagentsSkill.indexOf('【子代理短路】') < helloagentsSkill.indexOf('# HelloAGENTS'));
+  assert.match(helloagentsSkill, /立即跳过本 skill 后续仅面向主代理的规则/);
   assert.match(helloagentsSkill, /不得包装 HelloAGENTS 外层输出格式/);
   assert.match(helloagentsSkill, /直接面向最终用户、且当前对话已经结束的终局交付/);
   assert.match(helloagentsSkill, /通用输出格式/);

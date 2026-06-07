@@ -9,6 +9,7 @@ test('workflow runtime contract stays aligned with the unified qa-review archite
   const notifyContext = readText(join(REPO_ROOT, 'scripts', 'notify-context.mjs'))
   assert.match(notifyContext, /请根据用户请求的真实意图选路/)
   assert.match(notifyContext, /不依赖关键词表/)
+  assert.match(notifyContext, /请先触发子代理短路/)
   assert.match(notifyContext, /~office=只读价值\/范围评估/)
   assert.match(notifyContext, /~qa=统一质量审查\/验证\/修复\/收尾/)
   assert.match(notifyContext, /当前活跃 plan \/ PRD/)
