@@ -399,12 +399,13 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, source: 'startup' }),
   })
   let payload = parseStdoutJson(result)
+  assert.match(payload.hookSpecificOutput.additionalContext, /【子代理短路】/)
   assert.match(payload.hookSpecificOutput.additionalContext, /# HelloAGENTS\b/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前 HelloAGENTS 运行根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前对话 HelloAGENTS 读取根目录/)
   assert.match(payload.hookSpecificOutput.additionalContext, /turnStateCommand/)
   assert.match(payload.hookSpecificOutput.additionalContext, /helloagents-turn-state write/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /统一执行流程/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /## 工作流与完成判定/)
   assert.equal(existsSync(join(project, '.helloagents')), false)
 
   result = runNode(notifyScript, ['inject'], {
@@ -502,7 +503,8 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   assert.match(payload.hookSpecificOutput.additionalContext, /请根据用户请求的真实意图选路/)
   assert.match(payload.hookSpecificOutput.additionalContext, /不依赖关键词表/)
   assert.match(payload.hookSpecificOutput.additionalContext, /若当前任务由上级代理、控制器或宿主协作\/委派机制创建/)
-  assert.match(payload.hookSpecificOutput.additionalContext, /Delivery Tier: T0=探索\/比较/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /请先触发子代理短路/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /任务分层：T0=探索\/比较/)
   assert.match(payload.hookSpecificOutput.additionalContext, /默认先走 ~plan \/ ~prd/)
   assert.match(payload.hookSpecificOutput.additionalContext, /当前活跃 plan \/ PRD/)
   assert.match(payload.hookSpecificOutput.additionalContext, /状态文件只用于找回上次停在哪/)
@@ -514,6 +516,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
   })
   payload = parseStdoutJson(result)
   assert.match(payload.hookSpecificOutput.additionalContext, /若当前任务由上级代理、控制器或宿主协作\/委派机制创建/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /请先触发子代理短路/)
 
   writeText(
     join(project, '.helloagents', 'plans', '202604040101_missing-state', 'requirements.md'),

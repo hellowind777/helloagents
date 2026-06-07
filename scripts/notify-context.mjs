@@ -55,7 +55,7 @@ function buildAliasRouteNote(skillName) {
 }
 
 function buildDelegatedTaskHint() {
-  return '若当前任务由上级代理、控制器或宿主协作/委派机制创建，或本次输出会交回上级代理继续汇总、决策或复述，而不是直接交付给最终用户，则一律按子代理处理：直接完成局部任务并返回结果、证据或阻塞项；禁止输出 HelloAGENTS 外层格式、`🔄 下一步:`、turn-state 或面向最终用户的收尾。'
+  return '若当前任务由上级代理、控制器或宿主协作/委派机制创建，或本次输出会交回上级代理继续汇总、决策或复述，请先触发子代理短路：立即跳过主代理专用的输出格式、交互确认、统一执行流程、命令路由和 turn-state；只返回结果、证据或阻塞项。'
 }
 
 export function buildCompactionContext({ payload, pkgRoot, settings, bootstrapFile, host }) {
@@ -164,7 +164,7 @@ export function buildSemanticRouteInstruction(cwd, payload = {}) {
     '当前消息未使用 ~command。',
     '请根据用户请求的真实意图选路，不依赖关键词表。',
     buildDelegatedTaskHint(),
-    'Delivery Tier: T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆操作。',
+    '任务分层：T0=探索/比较；T1=低风险小改动或显式验证；T2=多文件功能/新项目/需要结构化产物；T3=高风险或不可逆操作。',
     '路由映射：~idea=只读探索与方向比较，不创建文件；~office=只读价值/范围评估，不创建文件；~build=明确实现；~qa=统一质量审查/验证/修复/收尾；~plan=结构化规划；~prd=重型规格；~auto=自动选择并继续执行后续阶段。',
     '若判定为 T3，默认先走 ~plan / ~prd；纯质量审查、验真或收尾请求才优先 ~qa。',
     `涉及 UI 任务时，设计决策优先级：当前活跃 plan / PRD → ${describeProjectStoreFile(cwd, 'DESIGN.md')} → 已读取的 hello-ui 规则；同时所有 UI 任务都必须满足 UI 质量基线。`,

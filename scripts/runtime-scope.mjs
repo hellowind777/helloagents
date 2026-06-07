@@ -33,6 +33,26 @@ const gitShortHeadCache = new Map()
 const workspaceNameCache = new Map()
 let userRuntimeCleanupDone = false
 
+function wait(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+function retryTransientRename(operation) {
+  let lastError
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      return operation()
+    } catch (error) {
+      lastError = error
+      if (!['EPERM', 'EBUSY', 'ENOTEMPTY'].includes(error?.code) || attempt === 5) {
+        throw error
+      }
+      wait(40 * (attempt + 1))
+    }
+  }
+  throw lastError
+}
+
 function normalizePath(filePath = '') {
   return filePath ? normalize(resolve(filePath)) : ''
 }
@@ -724,7 +744,12 @@ export function writeJsonFileAtomic(filePath, value) {
   mkdirSync(dirname(filePath), { recursive: true })
   const tmpPath = join(dirname(filePath), `.${Date.now()}-${randomUUID()}.tmp`)
   writeFileSync(tmpPath, `${JSON.stringify(value, null, 2)}\n`, 'utf-8')
-  renameSync(tmpPath, filePath)
+  try {
+    retryTransientRename(() => renameSync(tmpPath, filePath))
+  } catch (error) {
+    rmSync(tmpPath, { force: true })
+    throw error
+  }
 }
 
 export function removeRuntimeFile(filePath) {
