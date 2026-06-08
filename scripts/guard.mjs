@@ -8,12 +8,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 
-import { buildStateSyncHint, getWorkflowRecommendation } from './workflow-state.mjs'
-import { getApplicableRouteContext } from './runtime-context.mjs'
 import { appendReplayEvent } from './replay-state.mjs'
 import {
   DANGEROUS_PATTERNS,
-  IDEA_SIDE_EFFECT_COMMAND_PATTERNS,
   scanDangerousPackages,
   scanEnvCoverage,
   scanForSecrets,
@@ -63,78 +60,10 @@ function emitGuardEvent(cwd, event, source, reason, details = {}, payload = {}) 
   })
 }
 
-function buildHighRiskGate(matches, cwd, payload = {}) {
-  const workflowOptions = { payload }
-  const stateSyncHint = buildStateSyncHint(cwd, workflowOptions)
-  if (stateSyncHint) {
-    return {
-      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：项目恢复状态尚未同步。\n${stateSyncHint}`,
-    }
-  }
-
-  const recommendation = getWorkflowRecommendation(cwd, workflowOptions)
-  if (!recommendation) return null
-  if (matches.some((match) => match.gate === 'post-verify')) {
-    return {
-      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：当前工作流尚未进入质量闭环 / 收尾与归档。\n当前工作流：${recommendation.summary}\n处理路径：${recommendation.nextPath}\n${recommendation.guidance}`,
-    }
-  }
-  if (matches.some((match) => match.gate === 'plan-first') && recommendation.nextCommand === 'plan') {
-    return {
-      reason: `[HelloAGENTS Guard] 已阻止 T3 命令：高风险 schema 变更前仍需先完成 ~plan。\n当前工作流：${recommendation.summary}\n处理路径：${recommendation.nextPath}\n${recommendation.guidance}`,
-    }
-  }
-  return null
-}
-
-function buildIdeaBoundaryReason(kind) {
-  return `[HelloAGENTS Guard] 已阻止只读探索命令中的${kind}。\n当前路由：~idea / ~office 都是只读探索；先停留在比较或范围判断。若要写文件、改代码、创建知识库或执行有副作用的命令，请先升级到 ~plan / ~build / ~prd / ~auto。`
-}
-
-function detectIdeaBoundaryContext(data) {
-  return getApplicableRouteContext({
-    cwd: data.cwd || process.cwd(),
-    filePath: data.tool_input?.file_path || '',
-    payload: data,
-  })
-}
-
-function emitIdeaBoundaryBlock(data, kind, target) {
-  const reason = `${buildIdeaBoundaryReason(kind)}\n${target}`
-  emitHookPayload({
-    hookSpecificOutput: {
-      hookEventName: HOOK_EVENT,
-      permissionDecision: 'deny',
-      permissionDecisionReason: reason,
-    },
-  })
-  emitGuardEvent(
-    data.cwd || process.cwd(),
-    'guard_blocked',
-    kind === 'write' ? 'pre-write' : 'command',
-    buildIdeaBoundaryReason(kind),
-    {
-      command: kind === '有副作用命令' ? target.replace(/^命令：\s*/, '') : '',
-      target: kind === '写入操作' ? target.replace(/^目标：\s*/, '') : '',
-      guardType: kind === '写入操作' ? 'readonly-write-boundary' : 'readonly-command-boundary',
-    },
-    data,
-  )
-}
-
-function preWriteGuard(data) {
-  if (readSettings().guard_enabled === false) return
-  if (!detectIdeaBoundaryContext(data)?.zeroSideEffect) return
-  emitIdeaBoundaryBlock(data, '写入操作', `目标：${data.tool_input?.file_path || '未知文件'}`)
-}
-
 function buildPostWriteWarnings(data) {
   const content = data.tool_input?.content || data.tool_input?.new_string || ''
   const filePath = data.tool_input?.file_path || ''
   return [
-    ...(detectIdeaBoundaryContext(data)?.zeroSideEffect
-      ? ['~idea / ~office 当前任务要求只读探索；检测到写入文件的工具调用，请回到探索输出，或升级到 ~plan / ~build / ~prd / ~auto 后再修改文件']
-      : []),
     ...scanUnrequestedFiles(filePath, data.tool_name),
     ...(content ? [...scanForSecrets(content), ...scanDangerousPackages(content, filePath)] : []),
     ...scanEnvCoverage(filePath),
@@ -177,39 +106,27 @@ function handleDangerousCommand(data, command) {
   return false
 }
 
-function handleHighRiskCommand(data, command) {
-  const warnings = scanHighRiskCommands(command)
-  if (warnings.length === 0) return []
+function handleShellCommand(data) {
+  const toolName = (data.tool_name || '').toLowerCase()
+  if (!['bash', 'shell', 'terminal', 'command'].some((name) => toolName.includes(name))) return
 
-  const cwd = data.cwd || process.cwd()
-  const gate = buildHighRiskGate(warnings, cwd, data)
-  if (gate) {
-    emitHookPayload({
-      hookSpecificOutput: {
-        hookEventName: HOOK_EVENT,
-        permissionDecision: 'deny',
-        permissionDecisionReason: `${gate.reason}\n命令：${command.slice(0, 200)}`,
-      },
-    })
-    emitGuardEvent(cwd, 'guard_blocked', 'command', gate.reason, {
-      command: command.slice(0, 200),
-      guardType: 'high-risk-gate',
-      matches: warnings.map((warning) => warning.reason),
-    }, data)
-    return null
-  }
-  return warnings.map((warning) => warning.reason)
-}
+  const command = data.tool_input?.command || data.tool_input?.input || ''
+  if (!command) return
 
-function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings) {
+  if (handleDangerousCommand(data, command)) return
+
+  const highRiskWarnings = scanHighRiskCommands(command).map((w) => w.reason)
+  const shellSafetyWarnings = scanShellSafetyWarnings(command)
+
+  if (highRiskWarnings.length === 0 && shellSafetyWarnings.length === 0) return
+
   const sections = []
   if (highRiskWarnings.length > 0) {
-    sections.push(`⚠️ [HelloAGENTS 高风险操作提醒] 检测到高风险命令:\n${highRiskWarnings.map((warning) => `  - ${warning}`).join('\n')}\n请确认已完成相应规划/审查并获得必要授权。`)
+    sections.push(`⚠️ [HelloAGENTS 高风险操作提醒] 检测到高风险命令:\n${highRiskWarnings.map((w) => `  - ${w}`).join('\n')}\n以上为提醒，不中断执行。`)
   }
   if (shellSafetyWarnings.length > 0) {
-    sections.push(`⚠️ [HelloAGENTS Shell 安全提醒] 检测到需要关注的命令写法:\n${shellSafetyWarnings.map((warning) => `  - ${warning}`).join('\n')}\n当前仅提示，不中断执行。`)
+    sections.push(`⚠️ [HelloAGENTS Shell 安全提醒] 检测到需要关注的命令写法:\n${shellSafetyWarnings.map((w) => `  - ${w}`).join('\n')}\n当前仅提示，不中断执行。`)
   }
-  if (sections.length === 0) return
 
   emitHookPayload({
     hookSpecificOutput: {
@@ -235,37 +152,11 @@ function emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings)
   }
 }
 
-function handleShellCommand(data) {
-  const toolName = (data.tool_name || '').toLowerCase()
-  if (!['bash', 'shell', 'terminal', 'command'].some((name) => toolName.includes(name))) return
-
-  const command = data.tool_input?.command || data.tool_input?.input || ''
-  if (!command) return
-
-  if (detectIdeaBoundaryContext(data)?.zeroSideEffect) {
-    for (const pattern of IDEA_SIDE_EFFECT_COMMAND_PATTERNS) {
-      if (!pattern.test(command)) continue
-      emitIdeaBoundaryBlock(data, '有副作用命令', `命令：${command.slice(0, 200)}`)
-      return
-    }
-  }
-
-  if (handleDangerousCommand(data, command)) return
-  const highRiskWarnings = handleHighRiskCommand(data, command)
-  if (highRiskWarnings === null) return
-
-  const shellSafetyWarnings = scanShellSafetyWarnings(command)
-  emitShellWarnings(data, command, highRiskWarnings, shellSafetyWarnings)
-}
-
 async function main() {
   const mode = process.argv[2] || ''
   const data = readHookInput()
 
-  if (mode === 'pre-write') {
-    preWriteGuard(data)
-    return
-  }
+  if (mode === 'pre-write') return
   if (mode === 'post-write') {
     postWriteScan(data)
     return
