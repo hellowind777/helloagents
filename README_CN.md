@@ -8,7 +8,7 @@
 
 **面向 AI 编码 CLI 的工作流层：技能、知识库、交付检查、更安全的配置写入，以及可恢复的执行流程。**
 
-[![Version](https://img.shields.io/badge/version-3.1.3-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.4-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -233,6 +233,7 @@ CLI 显式管理宿主文件：
 - 单 CLI 模式记录只会在宿主安装成功后写入；如果原生全局清理失败，也会继续保留 `global` 记录，而不是悄悄叠加 standby
 - 直接执行 `switch-branch` 时，会先清掉陈旧的 `HELLOAGENTS*` 生命周期环境变量；包级 `preuninstall` 在没有显式宿主参数时固定回退到 `--all`，避免残留 shell 环境把切分支或卸载清理错误缩窄到旧目标
 - Windows 下的 `.cmd` / `.bat` 生命周期调用现在统一走显式命令包装，不再出现 Node `DEP0190` shell 弃用警告
+- Claude Code、Gemini CLI 和 Codex CLI 的配置写入、更新、清理、卸载、模式切换与分支切换，现在按一条完整生命周期链路验证，而不是分散的“尽量覆盖”
 
 ## 快速开始
 
@@ -705,6 +706,7 @@ npm test
 - 项目存储和 `repo-shared`
 - 工作区+会话级 `state_path`、运行态信号和证据
 - 运行时注入、选路、Guard、验证、视觉证据、交付门控、收尾去重、子代理外层格式与通知静默保护，以及原生安装失败后的模式记录
+- Claude Code、Gemini CLI、Codex CLI 的宿主配置写入、更新、清理、卸载、模式切换和分支切换整链路
 - README 与 skill 契约一致性
 
 ## FAQ

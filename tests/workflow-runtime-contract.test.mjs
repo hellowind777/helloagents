@@ -166,6 +166,8 @@ test('workflow templates and bootstrap stay aligned with qa-review artifacts', (
     assert.match(content, /artifacts\/qa-review\.json/)
     assert.match(content, /artifacts\/closeout\.json/)
     assert.match(content, /### UI 质量基线/)
+    assert.match(content, /将产生外部副作用，但当前任务尚未获得对应授权/)
+    assert.match(content, /操作属于高风险或不可逆，按安全规则必须确认/)
     assert.match(content, /helloagents-turn-state write --kind complete --role main/)
     assert.match(content, /reasonCategory/)
     assert.match(content, /auto_commit_enabled=true/)
