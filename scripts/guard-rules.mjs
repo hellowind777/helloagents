@@ -19,20 +19,12 @@ export const DANGEROUS_PATTERNS = [
 ]
 
 export const HIGH_RISK_COMMAND_PATTERNS = [
-  { pattern: /\bnpm\s+publish\b/i, reason: '包发布命令', gate: 'post-verify' },
-  { pattern: /\bgh\s+release\s+create\b/i, reason: '发布 release 命令', gate: 'post-verify' },
-  { pattern: /\bterraform\s+(apply|destroy)\b/i, reason: '基础设施变更命令', gate: 'post-verify' },
-  { pattern: /\b(kubectl|helm)\s+(apply|delete|upgrade|rollback|set|rollout)\b/i, reason: '集群变更命令', gate: 'post-verify' },
-  { pattern: /\b(prisma|drizzle-kit|sequelize-cli|typeorm)\b.*\b(migrate|migration)\b/i, reason: '数据库迁移命令', gate: 'plan-first' },
-  { pattern: /\b(vercel|wrangler|netlify|flyctl|fly)\b.*\b(deploy|publish)\b/i, reason: '部署命令', gate: 'post-verify' },
-]
-
-export const IDEA_SIDE_EFFECT_COMMAND_PATTERNS = [
-  /\b(git\s+(add|commit|merge|rebase|cherry-pick|push|pull|stash|restore|checkout|switch))\b/i,
-  /\b(npm|pnpm|yarn|bun)\s+(install|add|remove|uninstall|update|up|upgrade|publish|version)\b/i,
-  /\b(mkdir|md|touch|cp|copy|mv|move|ren|rename|del|erase|rm|rmdir)\b/i,
-  /\b(new-item|copy-item|move-item|remove-item|rename-item|set-content|add-content|out-file)\b/i,
-  /(^|[^\w])>>?($|[^\w])/,
+  { pattern: /\bnpm\s+publish\b/i, reason: '包发布命令' },
+  { pattern: /\bgh\s+release\s+create\b/i, reason: '发布 release 命令' },
+  { pattern: /\bterraform\s+(apply|destroy)\b/i, reason: '基础设施变更命令' },
+  { pattern: /\b(kubectl|helm)\s+(apply|delete|upgrade|rollback|set|rollout)\b/i, reason: '集群变更命令' },
+  { pattern: /\b(prisma|drizzle-kit|sequelize-cli|typeorm)\b.*\b(migrate|migration)\b/i, reason: '数据库迁移命令' },
+  { pattern: /\b(vercel|wrangler|netlify|flyctl|fly)\b.*\b(deploy|publish)\b/i, reason: '部署命令' },
 ]
 
 const SECRET_PATTERNS = [
