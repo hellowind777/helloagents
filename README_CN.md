@@ -14,6 +14,7 @@
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/hellowind777/helloagents/issues)
+[![LINUX DO](https://img.shields.io/badge/LINUX_DO-%E9%93%BE%E6%8E%A5%E8%AE%A4%E5%8F%AF-0A84FF?logo=linux&logoColor=white)](https://linux.do)
 
 </div>
 
@@ -21,11 +22,12 @@
   <a href="./README.md"><img src="https://img.shields.io/badge/English-blue?style=for-the-badge" alt="English"></a>
   <a href="./README_CN.md"><img src="https://img.shields.io/badge/简体中文-blue?style=for-the-badge" alt="简体中文"></a>
 </p>
-
 ---
 
 > [!IMPORTANT]
 > 如果你在找 `v2.x`，旧的 Python 版本已经迁到 [helloagents-archive](https://github.com/hellowind777/helloagents-archive)。`v3` 是基于 Node.js、Markdown 规则、skills 和轻量运行时脚本的完全重写版本。
+
+> 🏅 此项目已链接认可 [LINUX DO](https://linux.do) 社区。
 
 ## 目录
 
