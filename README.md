@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.1.4-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.5-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -45,9 +45,9 @@
 
 ## What HelloAGENTS Does
 
-AI coding CLIs can move fast, but they can also stop at advice, skip checks, lose project context, or report completion before the work is really done.
+AI coding CLIs can move fast, but they can also stop at advice, skip checks, lose project context, shift responsibility when tasks get hard, or report completion before the work is really done.
 
-HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex CLI. It helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
+HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex CLI. It anchors the agent as a capable executor, blocks responsibility-shifting patterns, helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
 
 <table>
 <tr>
@@ -71,6 +71,7 @@ HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex C
 | Problem | Without HelloAGENTS | With HelloAGENTS |
 |---------|---------------------|------------------|
 | Stops too early | Ends with suggestions | Continues into build, verify, and closeout |
+| Shifts responsibility | Refuses hard tasks, suggests other tools | Exhausts alternative paths, stays on task |
 | Quality is inconsistent | Depends on each prompt | 14 quality skills activate by task type |
 | Context is scattered | Plans live in chat history | Project knowledge and plan files stay on disk |
 | Completion is vague | Natural language says “done” | Delivery checks use state, evidence, and verification |
@@ -563,7 +564,7 @@ Routing and tiering → Goal clarification → Planning → Implementation → Q
 | `Closeout and archive` | update state, knowledge, and closeout evidence |
 
 HelloAGENTS also keeps an always-on core-rule layer in `bootstrap.md` / `bootstrap-lite.md`.
-That layer corrects proposal bias, distinguishes real external contracts from internal inertia, asks for a clean target before defaulting to legacy preservation, requires a first proof point plus a stop rule for bold directions, and keeps user-visible wording in one language unless code identifiers, commands, paths, config keys, or necessary proper names must stay unchanged.
+That layer anchors the agent as a capable executor in a trusted environment, blocks responsibility-shifting to users or other tools, enforces exhausting alternative paths before declaring blockage, corrects proposal bias, distinguishes real external constraints from internal inertia, and keeps user-visible wording in one language unless code identifiers, commands, paths, config keys, or necessary proper names must stay unchanged.
 
 ### Delivery tiers
 
