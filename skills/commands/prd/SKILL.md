@@ -65,28 +65,28 @@ Trigger: ~prd [description]
 全新项目（无 .helloagents/ 目录）：
 - 跳过，直接进入项目定位
 
-### 2. 项目定位（快速，1-2 轮）
+### 2. 项目定位（交互澄清，与 ~ask 一致）
 
-目标：快速锁定项目类型和 PRD 范围。
+目标：通过一问一答锁定项目类型和 PRD 范围。
 
-a. 理解用户的初始描述
-b. 确认项目类型（Web App / Mobile / API / CLI / Library / 桌面 / 游戏 / 混合）
-c. 根据维度激活矩阵，列出本项目的必选/推荐/可选维度
-d. 询问用户：推荐维度是否需要？可选维度是否需要？
-e. 确定最终的维度列表
+- 每次只问一个问题，带推荐选项
+- 先确认项目类型（Web App / Mobile / API / CLI / Library / 桌面 / 游戏 / 混合）
+- 根据维度激活矩阵，逐条确认：必选维度直接纳入，推荐和可选维度逐个询问是否需要
+- 用户说"默认" → 按矩阵推荐纳入；说"跳过" → 不纳入；说"展开" → 深入讨论
 
 ### 3. 维度探索（头脑风暴，核心阶段）
 
-按维度编号顺序，逐个展开讨论。每个维度的交互模式：
+按维度编号顺序，逐个展开讨论。每个维度采用交互澄清：
 
-a. AI 先给出该维度的行业最佳实践参考和推荐方案
-b. 用户确认/修改/补充
-c. AI 总结该维度的决策结果，进入下一个维度
+a. 你根据该维度先提第一个问题，带推荐选项和理由
+b. 用户确认/修改/跳过
+c. 继续该维度内的下一个问题，直到关键决策全部明确
+d. 总结该维度的决策结果，进入下一个维度
 
 交互原则：
 - 每个维度内，每次只问一个问题，偏好选择题
 - 用户说"跳过" → 跳过该维度，不生成对应文件
-- 用户说"默认" → AI 按推荐方案填充，快速过
+- 用户说"默认" → 你按推荐方案快速填充，不逐条询问
 - 用户说"展开" → 深入讨论该维度的子项
 - 维度之间可以回溯：用户说"回到 03" → 重新讨论 UI/UX 设计
 - 涉及项目特有概念时，确认标准术语、避免用语和关键关系；不要把泛化技术词写入领域语言
@@ -102,7 +102,7 @@ c. AI 总结该维度的决策结果，进入下一个维度
 - 按当前已加载的 HelloAGENTS 规则建立 `.helloagents/` 与最小流程状态；这是方案包写入的前置操作，不受 kb_create_mode 开关控制
 - 创建 `.helloagents/plans/YYYYMMDDHHMM_{feature}/prd/`（按当前项目存储模式解析）
 - 按 templates/plans/prd/ 的模板格式，仅写入用户未跳过的维度文件
-- 生成 tasks.md（每个任务默认是端到端垂直切片，标注 AFK / HITL、依赖、具体文件路径、预期变更、完成标准与验证方式；任务独立可验证）
+- 生成 tasks.md（每个任务默认是端到端垂直切片，标注 AFK / HITL、依赖、具体文件路径、预期变更、完成标准与验证方式；任务可独立验证）
 - 在 `tasks.md` 中保留 “Codex /goal 执行入口”，让 Codex 按 `/goal -> ~auto -> ~qa` 执行已拆分任务、验收边界和 `contract.json`；不要把完整 PRD 原文直接当作 `/goal` 目标
 - 生成 decisions.md（贯穿全程的决策日志）
 - 生成 `contract.json`（至少包含 `qaMode`、`qaFocus`；涉及 UI 时补 `ui.required`、`ui.designContract`、`ui.sourcePriority`；仅在确需先明确审美方向时再补 `ui.styleAdvisor.required`、`ui.styleAdvisor.reason`、`ui.styleAdvisor.focus`；仅在确需视觉验收时再补 `ui.visualValidation.required`、`ui.visualValidation.reason`、`ui.visualValidation.screens`、`ui.visualValidation.states`；仅在确需独立 advisor 时，再补 `advisor.required`、`advisor.reason`、`advisor.focus`、`advisor.preferredSources`）

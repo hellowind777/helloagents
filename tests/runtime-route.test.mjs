@@ -558,7 +558,7 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, prompt: '先想想登录页还能有什么方向，比较几个方案' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /~idea=只读探索/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /~ask=一问一答交互澄清/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -566,23 +566,23 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     input: JSON.stringify({ cwd: project, prompt: '先判断这个需求值不值得做，别一上来做太大' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /~office=只读价值\/范围评估/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /~ask=一问一答交互澄清/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~idea compare a few directions first' }),
+    input: JSON.stringify({ cwd: project, prompt: '~ask compare a few directions first' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]idea[\\/]SKILL\.md/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills.commands.ask.SKILL\.md/)
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~office decide whether this should stay a thin wedge' }),
+    input: JSON.stringify({ cwd: project, prompt: '~ask decide whether this should stay a thin wedge' }),
   })
   payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]office[\\/]SKILL\.md/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills.commands.ask.SKILL\.md/)
 
   result = runNode(guardScript, ['pre-write'], {
     cwd: project,
@@ -596,9 +596,8 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
       },
     }),
   })
-  payload = parseStdoutJson(result)
-  assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /~idea \/ ~office 都是只读探索/)
+  // ~ask is zeroSideEffect: guard pre-write is a deliberate no-op.
+  assert.equal(result.stdout.trim(), '')
 
   result = runNode(guardScript, [], {
     cwd: project,
@@ -610,8 +609,8 @@ test('notify inject and semantic route cover standby and recovery hints', () => 
     }),
   })
   payload = parseStdoutJson(result)
-  assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny')
-  assert.match(payload.hookSpecificOutput.permissionDecisionReason, /有副作用命令/)
+  // npm install react is not in DANGEROUS_PATTERNS: guard allows it.
+  assert.equal(result.stdout.trim(), '')
 
   result = runNode(notifyScript, ['route'], {
     cwd: project,
@@ -701,10 +700,10 @@ test('non-readonly command route creates project-local state in non-full standby
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md')), true)
 })
 
-test('readonly office route does not create project-local state in non-full standby project', () => {
+test('readonly ask route does not create project-local state in non-full standby project', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
-  const project = createTempDir('helloagents-route-office-readonly-')
+  const project = createTempDir('helloagents-route-ask-readonly-')
   const env = buildHomeEnv(home)
   const notifyScript = join(pkgRoot, 'scripts', 'notify.mjs')
 
@@ -713,10 +712,10 @@ test('readonly office route does not create project-local state in non-full stan
   const result = runNode(notifyScript, ['route'], {
     cwd: project,
     env,
-    input: JSON.stringify({ cwd: project, prompt: '~office decide whether this needs to become a platform' }),
+    input: JSON.stringify({ cwd: project, prompt: '~ask decide whether this needs to become a platform' }),
   })
   const payload = parseStdoutJson(result)
-  assert.match(payload.hookSpecificOutput.additionalContext, /skills[\\/]commands[\\/]office[\\/]SKILL\.md/)
+  assert.match(payload.hookSpecificOutput.additionalContext, /skills.commands.ask.SKILL\.md/)
   assert.equal(existsSync(join(project, '.helloagents', 'sessions', 'workspace', 'default', 'STATE.md')), false)
 })
 
