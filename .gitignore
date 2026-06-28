@@ -22,3 +22,4 @@ Thumbs.db
 docs/
 COMMIT_MESSAGE.md
 .claude/settings.local.json
+RELEASE_NOTES.md

@@ -159,7 +159,7 @@ function buildInProgressRecommendation(scopeLabel, plan, classification) {
     nextCommand: 'build',
     nextPath: '~build -> ~qa',
     summary: `${scopeLabel} "${plan.planName}" 仍有 ${classification.openCount} 个未完成任务。`,
-    guidance: '若用户是在继续当前功能、落实既有方案、或让你“继续做完”，优先复用现有 requirements.md / plan.md / tasks.md 进入 ~build；完成当前实现后再进入 ~qa。除非用户明确要求重规划或现有方案已失效，不要重新回到 ~idea。',
+    guidance: '若用户是在继续当前功能、落实既有方案、或让你“继续做完”，优先复用现有 requirements.md / plan.md / tasks.md 进入 ~build；完成当前实现后再进入 ~qa。除非用户明确要求重规划或现有方案已失效，不要重新回到 ~ask。',
   }
 }
 
