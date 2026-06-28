@@ -78,13 +78,13 @@ export function clearRouteContext(options = {}) {
 }
 
 export function writeRouteContext({ cwd, skillName, sourceSkillName = skillName, payload = {}, env, ppid }) {
-  const shouldEnsureProjectLocal = skillName !== 'idea' && skillName !== 'office' && skillName !== 'help'
+  const shouldEnsureProjectLocal = skillName !== 'ask' && skillName !== 'help'
   const scope = getRuntimeScope(cwd, { payload, env, ppid, ensureProjectLocal: shouldEnsureProjectLocal })
   const context = {
     cwd: normalizePath(cwd),
     skillName,
     sourceSkillName,
-    zeroSideEffect: skillName === 'idea' || skillName === 'office',
+    zeroSideEffect: skillName === 'ask',  // 写入会话胶囊供未来运行时消费；当前由 SKILL.md 铁律 + guard 设计共同保证边界
     identity: extractPayloadIdentity(payload),
     source: routeSource(payload),
     promptHash: hashPrompt(payload.prompt),
