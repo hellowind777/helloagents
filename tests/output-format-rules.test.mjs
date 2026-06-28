@@ -50,7 +50,7 @@ test('bootstrap rules restrict HelloAGENTS wrapper to final non-streaming close-
     assert.match(content, /使用约束：/);
     assert.match(content, /输出格式只在缺少 `output_format` 已知值时触发读取/);
     assert.match(content, /会话级缓存优先/);
-    assert.match(content, /同一路径的配置文件、模块、SKILL、模板只读一次/);
+    assert.match(content, /同一路径的配置文件、模块、`SKILL`、模板只读一次/);
     assert.match(content, /主代理必须在每轮对话最后一条/);
     assert.match(content, /使用输出格式/);
   assert.match(content, /(某个|任何) skill 在当前对话明确要求输出停顿、确认或总结/);
