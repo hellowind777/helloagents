@@ -5,7 +5,7 @@ import { resolveProjectPlanDir } from './project-storage.mjs'
 
 export const PLAN_CONTRACT_FILE_NAME = 'contract.json'
 const VALID_QA_MODES = new Set(['standard', 'deep'])
-const VALID_ADVISOR_SOURCES = new Set(['claude', 'codex', 'gemini'])
+const VALID_ADVISOR_SOURCES = new Set(['claude', 'codex', 'cursor', 'gemini', 'grok'])
 
 function normalizeStringArray(values) {
   if (!Array.isArray(values)) return []

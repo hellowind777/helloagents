@@ -8,7 +8,7 @@
 
 **A workflow layer for AI coding CLIs: skills, project knowledge, delivery checks, safer config writes, and resumable execution.**
 
-[![Version](https://img.shields.io/badge/version-3.1.6-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.1.9-orange.svg)](./package.json)
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933.svg)](./package.json)
 [![Skills](https://img.shields.io/badge/skills-14-6366f1.svg)](./skills)
@@ -49,7 +49,7 @@
 
 AI coding CLIs can move fast, but they can also stop at advice, skip checks, lose project context, shift responsibility when tasks get hard, or report completion before the work is really done.
 
-HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex CLI. It anchors the agent as a capable executor, blocks responsibility-shifting patterns, helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
+HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, Grok Build, Cursor, and Codex CLI. It anchors the agent as a capable executor, blocks responsibility-shifting patterns, helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
 
 <table>
 <tr>
@@ -236,7 +236,7 @@ The CLI manages host files explicitly:
 - per-host mode tracking is written only after host setup succeeds, and failed native global cleanup keeps the host tracked as `global` instead of silently layering standby on top
 - direct `switch-branch` clears stale `HELLOAGENTS*` lifecycle env before its internal npm install/sync steps, and package `preuninstall` falls back to `--all` when no explicit host args are provided, so stale shell env does not shrink branch-switch or uninstall cleanup scope
 - Windows `.cmd` / `.bat` lifecycle calls now run through an explicit command wrapper, so host installs, branch switching, and doctor flows do not emit Node `DEP0190` shell deprecation warnings
-- Claude Code, Gemini CLI, and Codex CLI config writes, updates, cleanup, uninstall, mode switching, and branch switching are covered as one tested lifecycle chain instead of separate best-effort paths
+- Claude Code, Gemini CLI, Grok Build, Cursor, and Codex CLI config writes, updates, cleanup, uninstall, mode switching, and branch switching are covered as one tested lifecycle chain instead of separate best-effort paths
 
 ## Quick Start
 
@@ -314,6 +314,8 @@ Supported targets:
 
 - `claude`
 - `gemini`
+- `grok`
+- `cursor`
 - `codex`
 - `--all`
 
@@ -321,9 +323,9 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, `grok`, `cursor`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
-Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root. Claude Code global installs now use a dedicated local marketplace projection under `~/.helloagents/host-projections/claude-marketplace`, and Gemini global extension packaging uses `~/.helloagents/host-projections/gemini`, so host-specific packaging stays isolated from the shared runtime root.
+Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root. Claude Code global installs use a dedicated local marketplace projection under `~/.helloagents/host-projections/claude-marketplace`, Gemini global extension packaging uses `~/.helloagents/host-projections/gemini`, Grok Build global installs use the materialized marketplace projection `~/.helloagents/host-projections/helloagents-grok-marketplace`, and Cursor global installs use the curated local-plugin projection `~/.helloagents/host-projections/cursor-local-plugin/helloagents` plus a real copied install directory at `~/.cursor/plugins/local/helloagents`, so host-specific packaging stays isolated from the shared runtime root without relying on symlink-only plugin loading.
 
 #### npm commands
 
@@ -450,7 +452,9 @@ npm uninstall -g helloagents
 | CLI | Files written or updated | Cleanup behavior |
 |-----|--------------------------|------------------|
 | Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks/permissions, and symlink |
+| Cursor | `~/.cursor/hooks.json`, `~/.cursor/helloagents -> ~/.helloagents/helloagents` | removes managed Cursor hooks and the runtime symlink |
 | Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks, and symlink |
+| Grok Build | `~/.grok/AGENTS.md`, `~/.grok/hooks/helloagents.json`, `~/.grok/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, managed Grok hooks file, and symlink |
 | Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents`, managed backups | removes managed marker block, managed config keys, managed hooks, symlink, and the latest managed backup |
 
 ### Global mode files
@@ -458,16 +462,22 @@ npm uninstall -g helloagents
 | CLI | Install method | Files involved |
 |-----|----------------|----------------|
 | Claude Code | native plugin install | `~/.helloagents/host-projections/claude-marketplace`, Claude Code plugin metadata/cache managed by the host |
+| Cursor | native local plugin install | `~/.helloagents/host-projections/cursor-local-plugin/helloagents`, materialized into `~/.cursor/plugins/local/helloagents` |
 | Gemini CLI | native extension install | `~/.helloagents/host-projections/gemini`, `~/.gemini/extensions/helloagents` |
+| Grok Build | native marketplace + plugin install | `~/.helloagents/host-projections/helloagents-grok-marketplace`, `~/.grok/config.toml`, `~/.grok/installed-plugins/registry.json`, Grok plugin cache managed by the host |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-In global mode, HelloAGENTS now attempts the host-native install commands automatically. Claude Code uses the local marketplace projection, Gemini uses the local extension projection, and Codex keeps linking back to the same stable runtime root, so install, update, branch switching, mode switching, cleanup, and uninstall all refresh against one consistent runtime copy. If a host command is unavailable, run the same commands manually:
+In global mode, HelloAGENTS now attempts the host-native install commands automatically. Claude Code uses the local marketplace projection, Gemini uses the local extension projection, Grok Build uses the materialized local marketplace projection, Cursor refreshes a real local-plugin copy under `~/.cursor/plugins/local/helloagents`, and Codex keeps linking back to the same stable runtime root, so install, update, branch switching, mode switching, cleanup, and uninstall all refresh against one consistent runtime copy. If a host command is unavailable, run the same commands manually:
 
 ```text
 /plugin marketplace add "~/.helloagents/host-projections/claude-marketplace"
 /plugin install helloagents@helloagents
 gemini extensions link "~/.helloagents/host-projections/gemini"
+grok plugin marketplace add "~/.helloagents/host-projections/helloagents-grok-marketplace"
+grok plugin install "~/.helloagents/host-projections/helloagents-grok-marketplace/plugins/helloagents" --trust
 ```
+
+For Cursor, copy the contents of `~/.helloagents/host-projections/cursor-local-plugin/helloagents` into `~/.cursor/plugins/local/helloagents`. On Windows, do not rely on a symlink or junction that points outside `~/.cursor`.
 
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.
 
@@ -661,6 +671,24 @@ Default shape:
 - global mode uses Gemini's extension system
 - switching from global back to standby removes the native extension first; if that cleanup fails, HelloAGENTS keeps Gemini tracked as `global`
 
+### Grok Build
+
+- standby writes `~/.grok/AGENTS.md`
+- standby writes a managed global hooks file at `~/.grok/hooks/helloagents.json`
+- standby creates `~/.grok/helloagents -> ~/.helloagents/helloagents`
+- global mode uses Grok Build's native marketplace plus plugin install path
+- global packaging is materialized under `~/.helloagents/host-projections/helloagents-grok-marketplace`
+- switching from global back to standby removes the native plugin and marketplace source first; if that cleanup fails, HelloAGENTS keeps Grok tracked as `global`
+
+### Cursor
+
+- standby updates `~/.cursor/hooks.json`
+- standby creates `~/.cursor/helloagents -> ~/.helloagents/helloagents`
+- global mode uses Cursor's native local-plugin path
+- global packaging is materialized under `~/.helloagents/host-projections/cursor-local-plugin/helloagents`
+- the installed local plugin is copied into `~/.cursor/plugins/local/helloagents`, so Cursor does not depend on an external symlink target
+- switching from global back to standby removes the local plugin copy first; if that cleanup fails, HelloAGENTS skips standby injection
+
 ### Codex CLI
 
 Codex is rules-file driven by default.
@@ -697,7 +725,7 @@ The current suite covers:
 - stale lifecycle-env protection for direct `switch-branch` and package `preuninstall`
 - Windows `.cmd` / `.bat` lifecycle dispatch without Node `DEP0190` warnings
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
-- Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
+- Claude, Gemini, Grok, Cursor, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup and canonical managed notify restoration rules, including wrapped `--previous-notify` chains
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
@@ -705,7 +733,7 @@ The current suite covers:
 - project storage and `repo-shared` behavior
 - workspace-session scoped `state_path`, runtime signals, and evidence
 - runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, sub-agent wrapper and notification suppression, and successful-mode tracking after native install failures
-- end-to-end host config write, update, cleanup, uninstall, mode-switch, and branch-switch flows across Claude Code, Gemini CLI, and Codex CLI
+- end-to-end host config write, update, cleanup, uninstall, mode-switch, and branch-switch flows across Claude Code, Gemini CLI, Grok Build, Cursor, and Codex CLI
 - README and skill contract alignment
 
 ## FAQ
@@ -733,7 +761,7 @@ Use `helloagents --global` when you want host-wide deployment across supported C
 
 `standby` is lighter and explicit. It deploys rules to selected CLIs while leaving each repo uninitialized until you run `~init`.
 
-`global` applies full rules broadly at the host level. Claude and Gemini use native plugin/extension installs. Codex uses the local-plugin path.
+`global` applies full rules broadly at the host level. Claude, Gemini, and Grok use native plugin, extension, or marketplace installs. Cursor and Codex use native local-plugin paths; Cursor specifically materializes a real plugin copy under `~/.cursor/plugins/local/helloagents`.
 If you mainly want Codex app/plugin discoverability, use `global`. If you mainly want a lighter, explicit project workflow, keep `standby`.
 
 ### Do Codex hooks show injected content?

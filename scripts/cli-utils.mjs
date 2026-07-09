@@ -140,6 +140,42 @@ export function cleanSettingsHooks(settingsPath, cleanPermissions = false) {
   }
 }
 
+/** Merge helloagents hooks into a standalone hooks.json file, preserving non-managed entries. */
+export function mergeHooksConfig(hooksPath, hooksData) {
+  const config = safeJson(hooksPath) || {};
+  if (!config.version) config.version = 1;
+  if (!config.hooks || typeof config.hooks !== 'object' || Array.isArray(config.hooks)) {
+    config.hooks = {};
+  }
+
+  for (const [event, entries] of Object.entries(hooksData?.hooks || {})) {
+    if (!Array.isArray(config.hooks[event])) config.hooks[event] = [];
+    config.hooks[event] = config.hooks[event].filter((entry) => !JSON.stringify(entry).includes('helloagents'));
+    config.hooks[event].push(...entries);
+  }
+
+  safeWrite(hooksPath, JSON.stringify(config, null, 2) + '\n');
+}
+
+/** Remove helloagents hooks from a standalone hooks.json file. */
+export function cleanHooksConfig(hooksPath) {
+  const config = safeJson(hooksPath);
+  if (!config || !config.hooks || typeof config.hooks !== 'object') return;
+
+  for (const [event, entries] of Object.entries(config.hooks)) {
+    if (!Array.isArray(entries)) continue;
+    config.hooks[event] = entries.filter((entry) => !JSON.stringify(entry).includes('helloagents'));
+    if (!config.hooks[event].length) delete config.hooks[event];
+  }
+
+  if (!Object.keys(config.hooks).length) delete config.hooks;
+  if (Object.keys(config).length) {
+    safeWrite(hooksPath, JSON.stringify(config, null, 2) + '\n');
+  } else {
+    removeIfExists(hooksPath);
+  }
+}
+
 function rewriteHookCommandToCli(command = '', pathVar = '') {
   const replacements = new Map([
     [`node "${pathVar}/scripts/notify.mjs"`, 'helloagents-js notify'],

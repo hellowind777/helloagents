@@ -5,7 +5,9 @@ import { resolveSessionToken } from './session-token.mjs'
 const HOST_LABELS = {
   codex: 'Codex',
   claude: 'Claude Code',
+  cursor: 'Cursor',
   gemini: 'Gemini',
+  grok: 'Grok Build',
 }
 
 function normalizePath(filePath = '') {

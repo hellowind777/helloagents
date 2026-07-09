@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { chmodSync, rmSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
-import { getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
+import { getGeminiExtensionRoot, getGrokMarketplaceRoot } from '../scripts/cli-runtime-root.mjs'
 import { createLink } from '../scripts/cli-utils.mjs'
 import {
   buildHomeEnv,
@@ -22,6 +22,9 @@ function runCli(pkgRoot, home, args, env = {}) {
     env: {
       ...buildHomeEnv(home),
       LANG: 'en_US.UTF-8',
+      HELLOAGENTS_CLAUDE_CMD: join(home, 'missing-claude'),
+      HELLOAGENTS_GEMINI_CMD: join(home, 'missing-gemini'),
+      HELLOAGENTS_GROK_CMD: join(home, 'missing-grok'),
       ...env,
     },
   })
@@ -250,6 +253,162 @@ test('doctor reports Gemini global health from extension link projection', () =>
   assert.equal(gemini.checks.globalExtensionInstall, true)
   assert.equal(gemini.checks.globalExtensionLink, true)
   assert.equal(gemini.issues.length, 0)
+})
+
+test('doctor reports Cursor standby health and detects hook drift', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'cursor', '--standby'])
+
+  let result = runCli(pkgRoot, home, ['doctor', 'cursor', '--json'])
+  let report = JSON.parse(result.stdout)
+  let cursor = report.hosts.find((entry) => entry.host === 'cursor')
+
+  assert.equal(cursor.status, 'ok')
+  assert.equal(cursor.detectedMode, 'standby')
+  assert.equal(cursor.trackedMode, 'standby')
+  assert.equal(cursor.checks.homeLink, true)
+  assert.equal(cursor.checks.standbyHooksMatch, true)
+
+  writeJson(join(home, '.cursor', 'hooks.json'), {
+    version: 1,
+    hooks: {
+      sessionStart: [
+        {
+          command: 'helloagents-js cursor-hook stop',
+          timeout: 10,
+        },
+      ],
+    },
+  })
+
+  result = runCli(pkgRoot, home, ['doctor', 'cursor', '--json'])
+  report = JSON.parse(result.stdout)
+  cursor = report.hosts.find((entry) => entry.host === 'cursor')
+
+  assert.equal(cursor.status, 'drift')
+  assert.ok(cursor.issues.some((issue) => issue.code === 'standby-hooks-drift'))
+})
+
+test('doctor reports Cursor global health from local plugin projection and copied install directory', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'cursor', '--global'])
+
+  const result = runCli(pkgRoot, home, ['doctor', 'cursor', '--json'])
+  const report = JSON.parse(result.stdout)
+  const cursor = report.hosts.find((entry) => entry.host === 'cursor')
+
+  assert.equal(cursor.status, 'ok')
+  assert.equal(cursor.detectedMode, 'global')
+  assert.equal(cursor.trackedMode, 'global')
+  assert.equal(cursor.checks.globalPluginRoot, true)
+  assert.equal(cursor.checks.globalPluginManifest, true)
+  assert.equal(cursor.checks.globalPluginHooks, true)
+  assert.equal(cursor.checks.globalPluginInstall, true)
+  assert.equal(cursor.checks.globalPluginInstallManifest, true)
+  assert.equal(cursor.checks.globalPluginInstallHooks, true)
+  assert.equal(cursor.checks.globalPluginInstalled, true)
+  assert.equal(cursor.checks.globalPluginSyncMatch, true)
+  assert.equal(cursor.issues.length, 0)
+})
+
+test('doctor reports Grok standby health and detects hook drift', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'grok', '--standby'])
+
+  let result = runCli(pkgRoot, home, ['doctor', 'grok', '--json'])
+  let report = JSON.parse(result.stdout)
+  let grok = report.hosts.find((entry) => entry.host === 'grok')
+
+  assert.equal(grok.status, 'ok')
+  assert.equal(grok.detectedMode, 'standby')
+  assert.equal(grok.trackedMode, 'standby')
+  assert.equal(grok.checks.carrierContentMatch, true)
+  assert.equal(grok.checks.standbyHooksMatch, true)
+
+  writeText(join(home, '.grok', 'hooks', 'helloagents.json'), JSON.stringify({
+    hooks: {
+      SessionStart: [
+        {
+          hooks: [{ type: 'command', command: 'helloagents-js notify inject --claude', timeout: 10 }],
+        },
+      ],
+    },
+  }, null, 2) + '\n')
+
+  result = runCli(pkgRoot, home, ['doctor', 'grok', '--json'])
+  report = JSON.parse(result.stdout)
+  grok = report.hosts.find((entry) => entry.host === 'grok')
+
+  assert.equal(grok.status, 'drift')
+  assert.ok(grok.issues.some((issue) => issue.code === 'standby-hooks-drift'))
+})
+
+test('doctor reports Grok global health from registry metadata and marketplace projection', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const fakeBin = createTempDir('helloagents-grok-doctor-bin-')
+  const grokLog = join(home, 'grok-doctor.log')
+  const grokCommand = writeFakeCommand(fakeBin, 'grok', grokLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  const marketplaceRoot = getGrokMarketplaceRoot(home)
+  const marketplacePluginRoot = join(marketplaceRoot, 'plugins', 'helloagents')
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'grok', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GROK_CMD: grokCommand,
+  })
+
+  writeText(join(home, '.grok', 'config.toml'), [
+    '[plugins]',
+    'enabled = ["helloagents"]',
+    '',
+    '[[marketplace.sources]]',
+    'name = "helloagents-grok-marketplace"',
+    `path = '${marketplaceRoot}'`,
+    '',
+  ].join('\n'))
+  writeJson(join(home, '.grok', 'installed-plugins', 'registry.json'), {
+    version: 1,
+    repos: {
+      helloagents: {
+        kind: {
+          type: 'Local',
+          source_path: marketplacePluginRoot,
+        },
+        path: join(home, '.grok', 'installed-plugins', 'helloagents'),
+        plugins: {
+          helloagents: {
+            version: '3.1.9',
+          },
+        },
+      },
+    },
+  })
+
+  const result = runCli(pkgRoot, home, ['doctor', 'grok', '--json'])
+  const report = JSON.parse(result.stdout)
+  const grok = report.hosts.find((entry) => entry.host === 'grok')
+
+  assert.equal(grok.status, 'ok')
+  assert.equal(grok.detectedMode, 'global')
+  assert.equal(grok.trackedMode, 'global')
+  assert.equal(grok.checks.globalMarketplaceRoot, true)
+  assert.equal(grok.checks.globalMarketplaceCatalog, true)
+  assert.equal(grok.checks.globalMarketplaceIndex, true)
+  assert.equal(grok.checks.globalPluginInstalled, true)
+  assert.equal(grok.checks.globalPluginEnabled, true)
+  assert.equal(grok.issues.length, 0)
 })
 
 test('doctor ignores a stale Claude marketplace record when no plugin or standby artifacts are active', () => {

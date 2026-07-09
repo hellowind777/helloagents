@@ -10,7 +10,13 @@ export function hasTimestampedBackup(home, baseName) {
 export function runCli(pkgRoot, home, args, env = {}) {
   const result = runNode(join(pkgRoot, 'cli.mjs'), args, {
     cwd: pkgRoot,
-    env: { ...buildHomeEnv(home), ...env },
+    env: {
+      ...buildHomeEnv(home),
+      HELLOAGENTS_CLAUDE_CMD: join(home, 'missing-claude'),
+      HELLOAGENTS_GEMINI_CMD: join(home, 'missing-gemini'),
+      HELLOAGENTS_GROK_CMD: join(home, 'missing-grok'),
+      ...env,
+    },
   })
   assert.equal(result.status, 0, result.stderr || result.stdout)
   return result
@@ -57,6 +63,37 @@ export function seedHostConfigs(home) {
       '',
     ].join('\n'),
   )
+
+  writeText(join(home, '.grok', 'AGENTS.md'), '# Grok custom\n')
+  writeJson(join(home, '.grok', 'hooks', 'keep.json'), {
+    hooks: {
+      SessionStart: [
+        {
+          hooks: [{ type: 'command', command: 'node "other-grok.mjs"', timeout: 1 }],
+        },
+      ],
+    },
+  })
+  writeText(
+    join(home, '.grok', 'config.toml'),
+    [
+      '[plugins]',
+      'enabled = ["other-plugin"]',
+      '',
+    ].join('\n'),
+  )
+
+  writeJson(join(home, '.cursor', 'hooks.json'), {
+    version: 1,
+    hooks: {
+      sessionStart: [
+        {
+          command: 'node "other-cursor.mjs"',
+          timeout: 1,
+        },
+      ],
+    },
+  })
 }
 
 export function readCodexConfig(home) {

@@ -6,11 +6,19 @@ import {
   CODEX_PLUGIN_KEY,
   CODEX_PLUGIN_NAME,
 } from './cli-codex.mjs'
-import { getGeminiExtensionRoot, getStableRuntimeRoot } from './cli-runtime-root.mjs'
+import {
+  getCursorInstallRoot,
+  getCursorPluginRoot,
+  GROK_PLUGIN_NAME,
+  getGeminiExtensionRoot,
+  getGrokMarketplaceRoot,
+  getStableRuntimeRoot,
+} from './cli-runtime-root.mjs'
 import { safeJson, safeRead } from './cli-utils.mjs'
 
 const CLAUDE_PLUGIN = 'helloagents@helloagents'
 const GEMINI_EXTENSION = 'helloagents'
+const GROK_STANDBY_HOOK_FILE = 'helloagents.json'
 
 const HOST_ALIASES = new Map([
   ['all', 'all'],
@@ -19,6 +27,10 @@ const HOST_ALIASES = new Map([
   ['claude-code', 'claude'],
   ['gemini', 'gemini'],
   ['gemini-cli', 'gemini'],
+  ['grok', 'grok'],
+  ['grok-build', 'grok'],
+  ['cursor', 'cursor'],
+  ['cursor-cli', 'cursor'],
   ['codex', 'codex'],
   ['codex-cli', 'codex'],
 ])
@@ -57,6 +69,19 @@ function hasEnabledPlugin(enabledPlugins, pluginName) {
     return Boolean(enabledPlugins[pluginName])
   }
   return false
+}
+
+function hasHelloagentsHookFile(filePath) {
+  return JSON.stringify(safeJson(filePath) || {}).includes('helloagents')
+}
+
+function grokRegistryHasManagedPlugin(registry = {}, expectedSource = '') {
+  const normalizedExpectedSource = normalizePath(expectedSource)
+  return Object.values(registry?.repos || {}).some((repo) => {
+    if (!repo?.plugins?.[GROK_PLUGIN_NAME]) return false
+    if (!normalizedExpectedSource) return true
+    return normalizePath(repo?.kind?.source_path || '') === normalizedExpectedSource
+  })
 }
 
 function detectClaudeMode(home) {
@@ -123,6 +148,43 @@ function detectCodexMode(home) {
   return ''
 }
 
+function detectCursorMode(home) {
+  const cursorDir = join(home, '.cursor')
+  const projectionRoot = safeRealTarget(getCursorPluginRoot(home)) || normalizePath(getCursorPluginRoot(home))
+  const installRoot = getCursorInstallRoot(home)
+  const installedPlugin = safeJson(join(installRoot, '.cursor-plugin', 'plugin.json')) || {}
+  if (
+    existsSync(installRoot)
+    && (safeRealTarget(installRoot) === projectionRoot || installedPlugin.name === 'helloagents')
+  ) {
+    return 'global'
+  }
+  if (
+    existsSync(join(cursorDir, 'helloagents'))
+    || hasHelloagentsHookFile(join(cursorDir, 'hooks.json'))
+  ) {
+    return 'standby'
+  }
+  return ''
+}
+
+function detectGrokMode(home) {
+  const grokDir = join(home, '.grok')
+  const registry = safeJson(join(grokDir, 'installed-plugins', 'registry.json')) || {}
+  const marketplacePluginRoot = join(getGrokMarketplaceRoot(home), 'plugins', GROK_PLUGIN_NAME)
+  if (grokRegistryHasManagedPlugin(registry, marketplacePluginRoot)) {
+    return 'global'
+  }
+  if (
+    existsSync(join(grokDir, 'helloagents'))
+    || hasHelloagentsMarker(join(grokDir, 'AGENTS.md'))
+    || hasHelloagentsHookFile(join(grokDir, 'hooks', GROK_STANDBY_HOOK_FILE))
+  ) {
+    return 'standby'
+  }
+  return ''
+}
+
 export function normalizeHost(value = '') {
   return HOST_ALIASES.get(String(value || '').toLowerCase()) || ''
 }
@@ -130,6 +192,8 @@ export function normalizeHost(value = '') {
 export function getHostLabel(host) {
   if (host === 'claude') return 'Claude Code'
   if (host === 'gemini') return 'Gemini CLI'
+  if (host === 'grok') return 'Grok Build'
+  if (host === 'cursor') return 'Cursor'
   if (host === 'codex') return 'Codex CLI'
   return 'All CLIs'
 }
@@ -137,6 +201,8 @@ export function getHostLabel(host) {
 export function detectHostMode(host, runtime) {
   if (host === 'claude') return detectClaudeMode(runtime.home)
   if (host === 'gemini') return detectGeminiMode(runtime.home)
+  if (host === 'grok') return detectGrokMode(runtime.home)
+  if (host === 'cursor') return detectCursorMode(runtime.home)
   if (host === 'codex') return detectCodexMode(runtime.home)
   return ''
 }

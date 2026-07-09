@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { chmodSync, existsSync, realpathSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
-import { getClaudeMarketplaceRoot, getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
+import { getClaudeMarketplaceRoot, getCursorInstallRoot, getCursorPluginRoot, getGeminiExtensionRoot, getGrokMarketplaceRoot } from '../scripts/cli-runtime-root.mjs'
 import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, writeJson, writeText } from './helpers/test-env.mjs'
 import { runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
@@ -141,9 +141,11 @@ test('all-host install without a mode falls back to standby for untracked CLIs',
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.claude, 'standby')
   assert.equal(settings.host_install_modes.gemini, 'standby')
+  assert.equal(settings.host_install_modes.cursor, 'standby')
   assert.equal(settings.host_install_modes.codex, 'standby')
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(!existsSync(join(home, 'plugins', 'helloagents')))
 })
 
@@ -161,6 +163,7 @@ test('all-host global install records only successful host setup', () => {
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.claude, undefined)
   assert.equal(settings.host_install_modes.gemini, undefined)
+  assert.equal(settings.host_install_modes.cursor, 'global')
   assert.equal(settings.host_install_modes.codex, 'global')
 })
 
@@ -225,6 +228,149 @@ test('global install attempts Claude and Gemini native installers when commands 
   assert.ok(!existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.claude, 'global')
   assert.equal(readJson(join(home, '.helloagents', 'helloagents.json')).host_install_modes.gemini, 'global')
+})
+
+test('single-host Grok standby install writes native AGENTS carrier, runtime link, and global hooks file', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'grok', '--standby'])
+
+  assert.match(readText(join(home, '.grok', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.ok(existsSync(join(home, '.grok', 'helloagents')))
+  assert.match(readText(join(home, '.grok', 'hooks', 'helloagents.json')), /helloagents-js notify inject --grok/)
+  assert.match(readText(join(home, '.grok', 'hooks', 'helloagents.json')), /helloagents-js guard --grok/)
+  assert.equal(readJson(configFile).host_install_modes.grok, 'standby')
+
+  runCli(pkgRoot, home, ['cleanup', 'grok'])
+
+  assert.doesNotMatch(readText(join(home, '.grok', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.ok(!existsSync(join(home, '.grok', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.grok', 'hooks', 'helloagents.json')))
+  assert.match(readText(join(home, '.grok', 'hooks', 'keep.json')), /other-grok\.mjs/)
+  assert.equal(readJson(configFile).host_install_modes.grok, undefined)
+})
+
+test('single-host Cursor standby install writes runtime link and managed hooks into ~/.cursor/hooks.json', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'cursor', '--standby'])
+
+  assert.ok(existsSync(join(home, '.cursor', 'helloagents')))
+  const cursorHooks = JSON.stringify(readJson(join(home, '.cursor', 'hooks.json')))
+  assert.match(cursorHooks, /helloagents-js cursor-hook session-start/)
+  assert.match(cursorHooks, /helloagents-js cursor-hook stop/)
+  assert.match(cursorHooks, /other-cursor\.mjs/)
+  assert.equal(readJson(configFile).host_install_modes.cursor, 'standby')
+
+  runCli(pkgRoot, home, ['cleanup', 'cursor'])
+
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
+  const cleanedHooks = JSON.stringify(readJson(join(home, '.cursor', 'hooks.json')))
+  assert.doesNotMatch(cleanedHooks, /helloagents-js cursor-hook/)
+  assert.match(cleanedHooks, /other-cursor\.mjs/)
+  assert.equal(readJson(configFile).host_install_modes.cursor, undefined)
+})
+
+test('single-host Cursor global install materializes a local-plugin projection and copies it into ~/.cursor/plugins/local', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const projectionRoot = getCursorPluginRoot(home)
+  const installRoot = getCursorInstallRoot(home)
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'cursor', '--global'])
+
+  assert.ok(existsSync(join(projectionRoot, '.cursor-plugin', 'plugin.json')))
+  assert.ok(existsSync(join(projectionRoot, 'hooks', 'hooks-cursor.json')))
+  assert.ok(existsSync(installRoot))
+  assert.ok(existsSync(join(installRoot, '.cursor-plugin', 'plugin.json')))
+  assert.ok(existsSync(join(installRoot, 'hooks', 'hooks-cursor.json')))
+  assert.notEqual(realpathSync(installRoot), realpathSync(projectionRoot))
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
+  assert.equal(readJson(configFile).host_install_modes.cursor, 'global')
+})
+
+test('single-host Cursor standby install removes the tracked Cursor local plugin before writing standby files', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'cursor', '--global'])
+  runCli(pkgRoot, home, ['install', 'cursor', '--standby'])
+
+  assert.ok(!existsSync(getCursorInstallRoot(home)))
+  assert.ok(!existsSync(getCursorPluginRoot(home)))
+  assert.ok(existsSync(join(home, '.cursor', 'helloagents')))
+  assert.match(JSON.stringify(readJson(join(home, '.cursor', 'hooks.json'))), /helloagents-js cursor-hook session-start/)
+  assert.equal(readJson(configFile).host_install_modes.cursor, 'standby')
+})
+
+test('single-host Grok global install materializes a marketplace projection and runs native grok commands', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const fakeBin = createTempDir('helloagents-grok-bin-')
+  const grokLog = join(home, 'grok.log')
+  const grokCommand = writeFakeCommand(fakeBin, 'grok', grokLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  const marketplaceRoot = getGrokMarketplaceRoot(home)
+
+  seedHostConfigs(home)
+  runCli(pkgRoot, home, ['install', 'grok', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GROK_CMD: grokCommand,
+  })
+
+  assert.match(readText(grokLog), /plugin uninstall helloagents --confirm/)
+  assert.match(readText(grokLog), /plugin marketplace remove .*helloagents-grok-marketplace/)
+  assert.match(readText(grokLog), /plugin marketplace add .*helloagents-grok-marketplace/)
+  assert.match(readText(grokLog), /plugin install .*plugins[\\/]+helloagents --trust/)
+  assert.ok(existsSync(join(marketplaceRoot, '.grok-plugin', 'marketplace.json')))
+  assert.ok(existsSync(join(marketplaceRoot, '.grok-plugin', 'plugin-index.json')))
+  assert.ok(existsSync(join(marketplaceRoot, '.claude-plugin', 'marketplace.json')))
+  assert.ok(existsSync(join(marketplaceRoot, 'plugins', 'helloagents', 'hooks', 'hooks.json')))
+  assert.ok(!existsSync(join(home, '.grok', 'helloagents')))
+  assert.equal(readJson(configFile).host_install_modes.grok, 'global')
+})
+
+test('single-host Grok standby install removes the tracked Grok global plugin before writing standby files', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const fakeBin = createTempDir('helloagents-grok-standby-bin-')
+  const grokLog = join(home, 'grok-standby.log')
+  const grokCommand = writeFakeCommand(fakeBin, 'grok', grokLog)
+  const testPath = `${fakeBin}${delimiter}${process.env.PATH || process.env.Path || ''}`
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'grok', '--global'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GROK_CMD: grokCommand,
+  })
+
+  runCli(pkgRoot, home, ['install', 'grok', '--standby'], {
+    PATH: testPath,
+    Path: testPath,
+    HELLOAGENTS_GROK_CMD: grokCommand,
+  })
+
+  assert.match(readText(grokLog), /plugin install .*plugins[\\/]+helloagents --trust/)
+  assert.match(readText(grokLog), /plugin uninstall helloagents --confirm/)
+  assert.match(readText(grokLog), /plugin marketplace remove .*helloagents-grok-marketplace/)
+  assert.ok(!existsSync(getGrokMarketplaceRoot(home)))
+  assert.ok(existsSync(join(home, '.grok', 'helloagents')))
+  assert.match(readText(join(home, '.grok', 'AGENTS.md')), /HELLOAGENTS_START/)
+  assert.equal(readJson(configFile).host_install_modes.grok, 'standby')
 })
 
 test('cleanup claude --global runs native removal and clears only Claude tracked mode', () => {

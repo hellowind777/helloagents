@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "3.1.7",
+  "version": "3.1.9",
   "type": "module",
   "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, unified QA gates, safety guards, and notifications.",
   "author": "HelloWind",
@@ -43,14 +43,17 @@
     "install.sh",
     "install.ps1",
     "gemini-extension.json",
+    ".cursor-plugin/",
     ".claude-plugin/",
-    ".codex-plugin/"
+    ".codex-plugin/",
+    ".grok-plugin/"
   ],
   "keywords": [
     "ai",
     "agent",
     "claude",
     "codex",
+    "cursor",
     "cli",
     "orchestration",
     "subagent",

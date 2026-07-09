@@ -39,7 +39,7 @@ export function ensureConfig(helloagentsHome, configFile, safeJson, ensureDir) {
   } else {
     reconciled.host_install_modes = Object.fromEntries(
       Object.entries(reconciled.host_install_modes)
-        .filter(([host, mode]) => ['claude', 'gemini', 'codex'].includes(host) && typeof mode === 'string' && mode),
+        .filter(([host, mode]) => ['claude', 'gemini', 'grok', 'cursor', 'codex'].includes(host) && typeof mode === 'string' && mode),
     );
   }
   if (JSON.stringify(reconciled) !== JSON.stringify(existing)) {
