@@ -22,12 +22,13 @@ import {
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json')
 const IS_GEMINI = process.argv.includes('--gemini')
 const IS_GROK = process.argv.includes('--grok')
-const HOST = IS_GEMINI ? 'gemini' : (IS_GROK ? 'grok' : 'claude')
+const IS_CURSOR = process.argv.includes('--cursor')
+const HOST = IS_GEMINI ? 'gemini' : (IS_GROK ? 'grok' : (IS_CURSOR ? 'cursor' : 'claude'))
 const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
   || (
     process.argv.includes('post-write')
-      ? (IS_GEMINI ? 'AfterModel' : 'PostToolUse')
-      : (IS_GEMINI ? 'BeforeTool' : 'PreToolUse')
+      ? (IS_GEMINI ? 'AfterModel' : (IS_CURSOR ? 'postToolUse' : 'PostToolUse'))
+      : (IS_GEMINI ? 'BeforeTool' : (IS_CURSOR ? 'preToolUse' : 'PreToolUse'))
   )
 
 function readSettings() {

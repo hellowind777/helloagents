@@ -255,6 +255,66 @@ test('doctor reports Gemini global health from extension link projection', () =>
   assert.equal(gemini.issues.length, 0)
 })
 
+test('doctor reports Cursor standby health and detects hook drift', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'cursor', '--standby'])
+
+  let result = runCli(pkgRoot, home, ['doctor', 'cursor', '--json'])
+  let report = JSON.parse(result.stdout)
+  let cursor = report.hosts.find((entry) => entry.host === 'cursor')
+
+  assert.equal(cursor.status, 'ok')
+  assert.equal(cursor.detectedMode, 'standby')
+  assert.equal(cursor.trackedMode, 'standby')
+  assert.equal(cursor.checks.homeLink, true)
+  assert.equal(cursor.checks.standbyHooksMatch, true)
+
+  writeJson(join(home, '.cursor', 'hooks.json'), {
+    version: 1,
+    hooks: {
+      sessionStart: [
+        {
+          command: 'helloagents-js cursor-hook stop',
+          timeout: 10,
+        },
+      ],
+    },
+  })
+
+  result = runCli(pkgRoot, home, ['doctor', 'cursor', '--json'])
+  report = JSON.parse(result.stdout)
+  cursor = report.hosts.find((entry) => entry.host === 'cursor')
+
+  assert.equal(cursor.status, 'drift')
+  assert.ok(cursor.issues.some((issue) => issue.code === 'standby-hooks-drift'))
+})
+
+test('doctor reports Cursor global health from local plugin projection and install link', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  runCli(pkgRoot, home, ['postinstall'])
+  runCli(pkgRoot, home, ['install', 'cursor', '--global'])
+
+  const result = runCli(pkgRoot, home, ['doctor', 'cursor', '--json'])
+  const report = JSON.parse(result.stdout)
+  const cursor = report.hosts.find((entry) => entry.host === 'cursor')
+
+  assert.equal(cursor.status, 'ok')
+  assert.equal(cursor.detectedMode, 'global')
+  assert.equal(cursor.trackedMode, 'global')
+  assert.equal(cursor.checks.globalPluginRoot, true)
+  assert.equal(cursor.checks.globalPluginManifest, true)
+  assert.equal(cursor.checks.globalPluginHooks, true)
+  assert.equal(cursor.checks.globalPluginInstall, true)
+  assert.equal(cursor.checks.globalPluginInstalled, true)
+  assert.equal(cursor.checks.globalPluginLink, true)
+  assert.equal(cursor.issues.length, 0)
+})
+
 test('doctor reports Grok standby health and detects hook drift', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

@@ -33,6 +33,10 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.equal(Array.isArray(codexPlugin.interface?.defaultPrompt), true);
   assert.equal(codexPlugin.interface.defaultPrompt.length <= 3, true);
 
+  const cursorPlugin = JSON.parse(read('.cursor-plugin/plugin.json'));
+  assert.equal(cursorPlugin.name, 'helloagents');
+  assert.equal(cursorPlugin.hooks, './hooks/hooks-cursor.json');
+
   const grokPlugin = JSON.parse(read('.grok-plugin/plugin.json'));
   assert.equal(grokPlugin.name, 'helloagents');
   assert.equal(grokPlugin.author?.name, 'HelloWind');
@@ -64,6 +68,14 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.match(codexHooks, /--codex --silent/);
   assert.match(codexHooks, /\$\{PLUGIN_ROOT\}/);
   assert.doesNotMatch(codexHooks, /statusMessage/);
+
+  const cursorHooks = read('hooks/hooks-cursor.json');
+  assert.match(cursorHooks, /sessionStart/);
+  assert.match(cursorHooks, /preToolUse/);
+  assert.match(cursorHooks, /postToolUse/);
+  assert.match(cursorHooks, /helloagents-js cursor-hook session-start/);
+  assert.match(cursorHooks, /helloagents-js cursor-hook stop/);
+  assert.doesNotMatch(cursorHooks, /\$\{[A-Z_]+\}/);
 
   const grokHooks = read('hooks/hooks-grok.json');
   assert.match(grokHooks, /UserPromptSubmit/);

@@ -12,6 +12,7 @@ import {
   loadHooksWithCliEntry,
 } from './cli-utils.mjs';
 import { buildRuntimeCarrier, readCarrierSettings } from './cli-runtime-carrier.mjs';
+import { installCursorStandby, uninstallCursorStandby } from './cli-cursor.mjs';
 import { installGrokStandby, uninstallGrokStandby } from './cli-grok.mjs';
 
 export function installClaudeStandby(home, pkgRoot) {
@@ -84,3 +85,4 @@ export function uninstallGeminiStandby(home) {
 }
 
 export { installGrokStandby, uninstallGrokStandby };
+export { installCursorStandby, uninstallCursorStandby };

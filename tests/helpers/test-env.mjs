@@ -10,6 +10,7 @@ const CREATED_TEMP_DIRS = new Set();
 
 const PACKAGE_FIXTURE_ENTRIES = [
   '.claude-plugin',
+  '.cursor-plugin',
   '.codex-plugin',
   '.grok-plugin',
   'assets',
@@ -53,7 +54,7 @@ export function createPackageFixture() {
 
 export function createHomeFixture() {
   const home = createTempDir('helloagents-home-');
-  for (const dir of ['.claude', '.codex', '.gemini', '.grok']) {
+  for (const dir of ['.claude', '.codex', '.cursor', '.gemini', '.grok']) {
     mkdirSync(join(home, dir), { recursive: true });
   }
   return home;

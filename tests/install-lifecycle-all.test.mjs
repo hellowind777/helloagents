@@ -4,7 +4,7 @@ import { chmodSync, existsSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
 import { CODEX_MANAGED_NOTIFY_VALUE } from '../scripts/cli-codex-config.mjs'
-import { getClaudeMarketplaceRoot, getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
+import { getClaudeMarketplaceRoot, getCursorInstallRoot, getCursorPluginRoot, getGeminiExtensionRoot } from '../scripts/cli-runtime-root.mjs'
 import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, realTarget, writeJson, writeText } from './helpers/test-env.mjs'
 import { hasTimestampedBackup, runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
@@ -34,6 +34,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.equal(readJson(configFile).install_mode, 'standby')
   assert.equal(readJson(configFile).auto_commit_enabled, true)
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
 
@@ -55,6 +56,11 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.match(grokMd, /HELLOAGENTS_START/)
   assert.doesNotMatch(grokMd, /## 当前用户设置/)
   assert.match(grokMd, /# Grok custom/)
+
+  const cursorHooks = JSON.stringify(readJson(join(home, '.cursor', 'hooks.json')))
+  assert.match(cursorHooks, /helloagents-js cursor-hook session-start/)
+  assert.match(cursorHooks, /helloagents-js cursor-hook stop/)
+  assert.match(cursorHooks, /other-cursor\.mjs/)
 
   const claudeSettingsText = JSON.stringify(readJson(join(home, '.claude', 'settings.json')))
   const geminiSettingsText = JSON.stringify(readJson(join(home, '.gemini', 'settings.json')))
@@ -86,6 +92,7 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   ].join('\n')), codexConfig)
   assert.ok(hasTimestampedBackup(home, 'config.toml'))
   assert.equal(realTarget(join(home, '.claude', 'helloagents')), runtimeRoot)
+  assert.equal(realTarget(join(home, '.cursor', 'helloagents')), runtimeRoot)
   assert.equal(realTarget(join(home, '.gemini', 'helloagents')), runtimeRoot)
   assert.equal(realTarget(join(home, '.grok', 'helloagents')), runtimeRoot)
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
@@ -97,19 +104,26 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
 
   assert.equal(readJson(configFile).install_mode, 'global')
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.grok', 'helloagents')))
 
   const pluginRoot = join(home, 'plugins', 'helloagents')
   const pluginCacheRoot = join(home, '.codex', 'plugins', 'cache', 'local-plugins', 'helloagents', 'local')
+  const cursorPluginRoot = getCursorPluginRoot(home)
+  const cursorInstallRoot = getCursorInstallRoot(home)
   const geminiExtensionRoot = getGeminiExtensionRoot(home)
   assert.ok(existsSync(pluginRoot))
   assert.ok(existsSync(pluginCacheRoot))
+  assert.ok(existsSync(cursorPluginRoot))
+  assert.ok(existsSync(cursorInstallRoot))
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
+  assert.equal(realTarget(cursorInstallRoot), cursorPluginRoot)
   assert.equal(realTarget(pluginRoot), runtimeRoot)
   assert.equal(realTarget(pluginCacheRoot), runtimeRoot)
   assert.ok(!existsSync(join(runtimeRoot, 'hooks', 'hooks.json')))
   assert.ok(existsSync(join(geminiExtensionRoot, 'hooks', 'hooks.json')))
+  assert.ok(existsSync(join(cursorPluginRoot, '.cursor-plugin', 'plugin.json')))
   assert.ok(existsSync(join(pluginRoot, 'AGENTS.md')))
   assert.ok(existsSync(join(pluginCacheRoot, 'AGENTS.md')))
   assert.match(readText(join(pluginRoot, 'AGENTS.md')), /HELLOAGENTS_PROFILE: full/)
@@ -141,11 +155,14 @@ test('CLI lifecycle covers standby, global, update, cleanup, and config preserva
   assert.equal(readJson(configFile).install_mode, 'standby')
   assert.ok(!existsSync(pluginRoot))
   assert.ok(!existsSync(pluginCacheRoot))
+  assert.ok(!existsSync(cursorPluginRoot))
+  assert.ok(!existsSync(cursorInstallRoot))
   assert.ok(!existsSync(join(home, '.agents', 'plugins', 'marketplace.json')))
   assert.equal(realTarget(join(home, '.codex', 'helloagents')), runtimeRoot)
 
   runCli(pkgRoot, home, ['preuninstall'])
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.grok', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
@@ -171,6 +188,7 @@ test('postinstall can deploy a selected host from npm environment variables', ()
 
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
   assert.equal(realTarget(join(home, '.claude', 'helloagents')), runtimeRoot)
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.grok', 'helloagents')))
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
@@ -188,6 +206,7 @@ test('postinstall can deploy from compact HELLOAGENTS spec', () => {
 
   const pluginRoot = join(home, 'plugins', 'helloagents')
   assert.ok(!existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(!existsSync(join(home, '.gemini', 'helloagents')))
   assert.ok(!existsSync(join(home, '.grok', 'helloagents')))
   assert.ok(existsSync(pluginRoot))
@@ -219,6 +238,7 @@ test('preuninstall ignores stale lifecycle env and still cleans all hosts plus r
   assert.ok(!existsSync(join(home, '.codex', 'helloagents')))
   assert.ok(!existsSync(runtimeRoot))
   assert.equal(readJson(configFile).host_install_modes.claude, undefined)
+  assert.equal(readJson(configFile).host_install_modes.cursor, undefined)
   assert.equal(readJson(configFile).host_install_modes.gemini, undefined)
   assert.equal(readJson(configFile).host_install_modes.grok, undefined)
   assert.equal(readJson(configFile).host_install_modes.codex, undefined)
@@ -288,6 +308,7 @@ test('global mode switch records only successful host setup', () => {
   const settings = readJson(configFile)
   assert.equal(settings.install_mode, 'global')
   assert.equal(settings.host_install_modes.claude, undefined)
+  assert.equal(settings.host_install_modes.cursor, 'global')
   assert.equal(settings.host_install_modes.gemini, undefined)
   assert.equal(settings.host_install_modes.grok, undefined)
   assert.equal(settings.host_install_modes.codex, 'global')
@@ -301,6 +322,8 @@ test('all-host mode switch from global to standby removes native Claude and Gemi
   const claudeLog = join(home, 'claude-mode-switch.log')
   const geminiLog = join(home, 'gemini-mode-switch.log')
   const claudeMarketplaceRoot = getClaudeMarketplaceRoot(home)
+  const cursorPluginRoot = getCursorPluginRoot(home)
+  const cursorInstallRoot = getCursorInstallRoot(home)
   const geminiExtensionRoot = getGeminiExtensionRoot(home)
   const claudeCommand = writeFakeCommand(fakeBin, 'claude', claudeLog)
   const geminiCommand = writeFakeCommand(fakeBin, 'gemini', geminiLog)
@@ -324,9 +347,11 @@ test('all-host mode switch from global to standby removes native Claude and Gemi
   const settings = readJson(configFile)
   assert.equal(settings.install_mode, 'standby')
   assert.equal(settings.host_install_modes.claude, 'standby')
+  assert.equal(settings.host_install_modes.cursor, 'standby')
   assert.equal(settings.host_install_modes.gemini, 'standby')
   assert.equal(settings.host_install_modes.codex, 'standby')
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
+  assert.ok(existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
   assert.match(readText(claudeLog), /plugin marketplace add .*host-projections[\\/]+claude-marketplace/)
   assert.match(readText(claudeLog), /plugin install helloagents@helloagents --scope user/)
@@ -334,6 +359,8 @@ test('all-host mode switch from global to standby removes native Claude and Gemi
   assert.match(readText(geminiLog), /extensions link .*host-projections[\\/]+gemini/)
   assert.match(readText(geminiLog), /extensions uninstall helloagents/)
   assert.ok(!existsSync(claudeMarketplaceRoot))
+  assert.ok(!existsSync(cursorPluginRoot))
+  assert.ok(!existsSync(cursorInstallRoot))
   assert.ok(!existsSync(geminiExtensionRoot))
   assert.ok(!existsSync(join(home, '.helloagents', 'helloagents', 'hooks', 'hooks.json')))
 })

@@ -82,6 +82,18 @@ export function seedHostConfigs(home) {
       '',
     ].join('\n'),
   )
+
+  writeJson(join(home, '.cursor', 'hooks.json'), {
+    version: 1,
+    hooks: {
+      sessionStart: [
+        {
+          command: 'node "other-cursor.mjs"',
+          timeout: 1,
+        },
+      ],
+    },
+  })
 }
 
 export function readCodexConfig(home) {

@@ -8,6 +8,8 @@ import { buildRuntimeCarrier } from './cli-runtime-carrier.mjs'
 import {
   GROK_PLUGIN_NAME,
   getClaudeMarketplaceRoot,
+  getCursorInstallRoot,
+  getCursorPluginRoot,
   getGeminiExtensionRoot,
   getGrokMarketplaceRoot,
 } from './cli-runtime-root.mjs'
@@ -214,6 +216,67 @@ function inspectClaudeDoctor(settings) {
   return { host, label: runtime.getHostLabel(host), trackedMode, detectedMode, status, checks, issues, notes, suggestedFix: suggestDoctorFix(host, status, trackedMode) }
 }
 
+function inspectCursorDoctor(settings) {
+  const host = 'cursor'
+  const trackedMode = normalizeDoctorMode(runtime.getTrackedHostMode(settings, host))
+  const detectedMode = normalizeDoctorMode(runtime.detectHostMode(host))
+  const cursorDir = join(runtime.home, '.cursor')
+  const actualHooks = safeJson(join(cursorDir, 'hooks.json')) || {}
+  const expectedHooks = readExpectedHooks('hooks-cursor.json', '')
+  const projectionRoot = getCursorPluginRoot(runtime.home)
+  const installRoot = getCursorInstallRoot(runtime.home)
+  const installedPlugin = safeJson(join(installRoot, '.cursor-plugin', 'plugin.json')) || {}
+  const checks = {
+    homeLink: safeRealTarget(join(cursorDir, 'helloagents')) === runtime.pkgRoot,
+    standbyHooksFile: JSON.stringify(actualHooks).includes('helloagents'),
+    standbyHooksMatch: managedHooksMatch(actualHooks.hooks || actualHooks, expectedHooks),
+    globalPluginRoot: existsSync(projectionRoot),
+    globalPluginManifest: existsSync(join(projectionRoot, '.cursor-plugin', 'plugin.json')),
+    globalPluginHooks: existsSync(join(projectionRoot, 'hooks', 'hooks-cursor.json')),
+    globalPluginInstall: existsSync(installRoot),
+    globalPluginLink: safeRealTarget(installRoot) === (safeRealTarget(projectionRoot) || projectionRoot),
+    globalPluginInstalled: installedPlugin.name === 'helloagents' || existsSync(join(installRoot, '.cursor-plugin', 'plugin.json')),
+  }
+
+  const issues = []
+  const notes = []
+  if (trackedMode !== 'none' && detectedMode !== 'none' && trackedMode !== detectedMode) {
+    issues.push(buildDoctorIssue('tracked-mode-mismatch', '记录模式与检测模式不一致', 'Tracked mode does not match detected mode'))
+  }
+  if (detectedMode === 'standby') {
+    if (!checks.homeLink) issues.push(buildDoctorIssue('standby-link-missing', 'standby Cursor home 链接缺失或未指向稳定运行根目录', 'Standby Cursor home link is missing or points to a different runtime root'))
+    if (!checks.standbyHooksFile) issues.push(buildDoctorIssue('standby-hooks-missing', 'standby Cursor hooks.json 缺少 HelloAGENTS hooks', 'Standby Cursor hooks.json is missing HelloAGENTS hooks'))
+    if (checks.standbyHooksFile && !checks.standbyHooksMatch) issues.push(buildDoctorIssue('standby-hooks-drift', 'standby Cursor hooks 与当前 hooks 配置不一致', 'Standby Cursor hooks differ from the current hook configuration'))
+  }
+  if (detectedMode === 'global') {
+    if (!checks.globalPluginRoot) issues.push(buildDoctorIssue('global-plugin-root-missing', 'global Cursor 插件投影缺失', 'Global Cursor plugin projection is missing'))
+    if (!checks.globalPluginManifest) issues.push(buildDoctorIssue('global-plugin-manifest-missing', 'global Cursor .cursor-plugin/plugin.json 缺失', 'Global Cursor .cursor-plugin/plugin.json is missing'))
+    if (!checks.globalPluginHooks) issues.push(buildDoctorIssue('global-plugin-hooks-missing', 'global Cursor hooks-cursor.json 缺失', 'Global Cursor hooks-cursor.json is missing'))
+    if (!checks.globalPluginInstall) issues.push(buildDoctorIssue('global-plugin-install-missing', 'global Cursor 本地插件安装目录缺失', 'Global Cursor local plugin install directory is missing'))
+    if (!checks.globalPluginInstalled) issues.push(buildDoctorIssue('global-plugin-missing', 'global Cursor 本地插件未安装', 'Global Cursor local plugin is not installed'))
+    if (checks.globalPluginInstall && !checks.globalPluginLink && !checks.globalPluginInstalled) {
+      issues.push(buildDoctorIssue('global-plugin-link-missing', 'global Cursor 本地插件目录未指向受管投影', 'Global Cursor local plugin directory does not point to the managed projection'))
+    }
+    if (checks.homeLink || checks.standbyHooksFile) {
+      issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is detected as global'))
+    }
+  } else if (trackedMode === 'global') {
+    notes.push(runtime.msg(
+      'Cursor 的 global 模式使用本地插件目录 `~/.cursor/plugins/local/helloagents`；doctor 会检查投影目录、插件清单与 standby 残留。',
+      'Cursor global mode uses the local plugin directory `~/.cursor/plugins/local/helloagents`; doctor checks the projection root, plugin manifest, and standby residue.',
+    ))
+  }
+  if (trackedMode === 'none' && detectedMode !== 'none') {
+    issues.push(buildDoctorIssue('untracked-managed-state', '检测到受管状态，但配置中未记录该 CLI 模式', 'Managed state detected but this CLI mode is not tracked in config'))
+  }
+  if (trackedMode !== 'none' && detectedMode === 'none' && trackedMode !== 'global') {
+    issues.push(buildDoctorIssue('tracked-state-missing', '配置记录该 CLI 已安装，但未检测到对应的受管文件或配置', 'Config says this CLI is installed, but no managed artifacts were detected'))
+  }
+
+  const status = summarizeDoctorStatus(issues, { host, trackedMode, detectedMode })
+  return { host, label: runtime.getHostLabel(host), trackedMode, detectedMode, status, checks, issues, notes, suggestedFix: suggestDoctorFix(host, status, trackedMode) }
+}
+
 function inspectGrokDoctor(settings) {
   const host = 'grok'
   const trackedMode = normalizeDoctorMode(runtime.getTrackedHostMode(settings, host))
@@ -361,6 +424,7 @@ function parseDoctorArgs(args) {
 
 function inspectDoctorHost(host, settings) {
   if (host === 'claude') return inspectClaudeDoctor(settings)
+  if (host === 'cursor') return inspectCursorDoctor(settings)
   if (host === 'gemini') return inspectGeminiDoctor(settings)
   if (host === 'grok') return inspectGrokDoctor(settings)
   return inspectCodexDoctorImpl(runtime, settings)
@@ -368,7 +432,7 @@ function inspectDoctorHost(host, settings) {
 
 function buildDoctorReport(host) {
   const settings = runtime.readSettings(true)
-  const hosts = host === 'all' ? ['claude', 'gemini', 'grok', 'codex'] : [host]
+  const hosts = host === 'all' ? ['claude', 'gemini', 'grok', 'cursor', 'codex'] : [host]
   const reports = hosts.map((target) => inspectDoctorHost(target, settings))
   const summary = reports.reduce((acc, report) => {
     acc[report.status] = (acc[report.status] || 0) + 1

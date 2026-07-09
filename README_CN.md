@@ -324,7 +324,7 @@ helloagents codex goals enable
 
 当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`grok`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。如果未提供 `HELLOAGENTS`，一键安装脚本现在会保持“只装包/只升级包”的默认语义，不会自动部署任何宿主 CLI。若要安装自定义 tarball 或包规格，用 `HELLOAGENTS_PACKAGE`，不要写 `HELLOAGENTS_BRANCH`。对于已经装好的包，如需确保宿主一定刷新，优先在包命令后显式执行一次 `npm explore -g helloagents -- npm run sync-hosts -- ...`。
 
-宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。Claude Code 的 global 安装使用独立本地 marketplace 投影 `~/.helloagents/host-projections/claude-marketplace`，Gemini 的 global 扩展使用 `~/.helloagents/host-projections/gemini`，Grok Build 的 global 安装使用实体化 marketplace 投影 `~/.helloagents/host-projections/helloagents-grok-marketplace`，宿主专用打包链路不再污染共享运行根。
+宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。Claude Code 的 global 安装使用独立本地 marketplace 投影 `~/.helloagents/host-projections/claude-marketplace`，Gemini 的 global 扩展使用 `~/.helloagents/host-projections/gemini`，Grok Build 的 global 安装使用实体化 marketplace 投影 `~/.helloagents/host-projections/helloagents-grok-marketplace`，Cursor 的 global 安装使用精简本地插件投影 `~/.helloagents/host-projections/cursor-local-plugin/helloagents`，宿主专用打包链路不再污染共享运行根。
 
 #### npm 命令
 
@@ -460,6 +460,7 @@ npm uninstall -g helloagents
 | CLI | 安装方式 | 涉及文件 |
 |-----|----------|----------|
 | Claude Code | 原生插件安装 | `~/.helloagents/host-projections/claude-marketplace`，以及由 Claude Code 宿主管理的插件元数据 / 缓存 |
+| Cursor | 原生本地插件安装 | `~/.helloagents/host-projections/cursor-local-plugin/helloagents`、`~/.cursor/plugins/local/helloagents` |
 | Gemini CLI | 原生扩展安装 | `~/.helloagents/host-projections/gemini`、`~/.gemini/extensions/helloagents` |
 | Grok Build | 原生 marketplace + 插件安装 | `~/.helloagents/host-projections/helloagents-grok-marketplace`、`~/.grok/config.toml`、`~/.grok/installed-plugins/registry.json`，以及由 Grok 宿主管理的插件缓存 |
 | Codex CLI | 原生本地插件流程 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/ -> ~/.helloagents/helloagents`、`~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents` |
@@ -469,6 +470,7 @@ npm uninstall -g helloagents
 ```text
 /plugin marketplace add "~/.helloagents/host-projections/claude-marketplace"
 /plugin install helloagents@helloagents
+ln -s "~/.helloagents/host-projections/cursor-local-plugin/helloagents" "~/.cursor/plugins/local/helloagents"
 gemini extensions link "~/.helloagents/host-projections/gemini"
 grok plugin marketplace add "~/.helloagents/host-projections/helloagents-grok-marketplace"
 grok plugin install "~/.helloagents/host-projections/helloagents-grok-marketplace/plugins/helloagents" --trust

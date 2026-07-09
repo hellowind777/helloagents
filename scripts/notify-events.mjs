@@ -9,6 +9,7 @@ export function resolveNotifyHost(argv = []) {
   const command = args[2] || args[0] || '';
   if (args.includes('--gemini')) return 'gemini';
   if (args.includes('--grok')) return 'grok';
+  if (args.includes('--cursor')) return 'cursor';
   if (args.includes('--codex') || command === 'codex-notify') return 'codex';
   return 'claude';
 }

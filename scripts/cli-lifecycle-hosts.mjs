@@ -2,9 +2,11 @@ import { platform } from 'node:os'
 
 import {
   installClaudeStandby,
+  installCursorStandby,
   installGeminiStandby,
   installGrokStandby,
   uninstallClaudeStandby,
+  uninstallCursorStandby,
   uninstallGeminiStandby,
   uninstallGrokStandby,
 } from './cli-hosts.mjs'
@@ -22,15 +24,21 @@ import {
 } from './cli-host-detect.mjs'
 import {
   getClaudeMarketplaceRoot,
+  getCursorInstallRoot,
+  getCursorPluginRoot,
   getGeminiExtensionRoot,
   getGrokMarketplaceRoot,
   removeClaudeMarketplaceRoot,
+  removeCursorInstallRoot,
+  removeCursorPluginRoot,
   removeGeminiExtensionRoot,
   removeGrokMarketplaceRoot,
   syncClaudeMarketplaceRoot,
+  syncCursorPluginRoot,
   syncGeminiExtensionRoot,
   syncGrokMarketplaceRoot,
 } from './cli-runtime-root.mjs'
+import { createLink, removeIfExists } from './cli-utils.mjs'
 
 const CLAUDE_COMMAND = process.env.HELLOAGENTS_CLAUDE_CMD || 'claude'
 const GEMINI_COMMAND = process.env.HELLOAGENTS_GEMINI_CMD || 'gemini'
@@ -132,6 +140,38 @@ function removeClaudeGlobalPlugin() {
 
 function removeGeminiGlobalExtension() {
   return runHostCommand(GEMINI_COMMAND, ['extensions', 'uninstall', 'helloagents'])
+}
+
+function installCursorGlobalPlugin(runtime) {
+  try {
+    const projectionRoot = getCursorPluginRoot(runtime.home)
+    const installRoot = getCursorInstallRoot(runtime.home)
+    syncCursorPluginRoot(runtime.pkgRoot, projectionRoot)
+    removeIfExists(installRoot)
+    if (createLink(projectionRoot, installRoot)) {
+      return { ok: true, output: '' }
+    }
+    syncCursorPluginRoot(projectionRoot, installRoot)
+    return { ok: true, output: '' }
+  } catch (error) {
+    return {
+      ok: false,
+      output: error?.message || String(error),
+    }
+  }
+}
+
+function removeCursorGlobalPlugin(runtime) {
+  try {
+    removeCursorInstallRoot(runtime.home)
+    removeCursorPluginRoot(runtime.home)
+    return { ok: true, output: '' }
+  } catch (error) {
+    return {
+      ok: false,
+      output: error?.message || String(error),
+    }
+  }
 }
 
 function installGrokGlobalPlugin(marketplaceRoot) {
@@ -253,6 +293,18 @@ function installHostStandby(runtime, host, { previousMode = '' } = {}) {
     if (detectRuntimeHostMode('grok', runtime) !== 'global') removeGrokMarketplaceRoot(runtime.home)
     return cleanupResult
   }
+  if (host === 'cursor') {
+    if (previousMode === 'global') {
+      const cleanupResult = removeCursorGlobalPlugin(runtime)
+      if (!cleanupResult.ok) return cleanupResult
+    }
+    installCursorStandby(runtime.home, runtime.pkgRoot)
+    if (detectRuntimeHostMode('cursor', runtime) !== 'global') {
+      removeCursorInstallRoot(runtime.home)
+      removeCursorPluginRoot(runtime.home)
+    }
+    return {}
+  }
   if (!installCodexStandby(runtime.home, runtime.pkgRoot)) return { skipped: true }
   cleanupCodexGlobalResidueForStandby(runtime.home)
   return {}
@@ -297,6 +349,16 @@ function installHostGlobal(runtime, host) {
       `Grok Build native plugin auto-install failed. Run manually: grok plugin marketplace add "${marketplaceRoot}"; grok plugin install "${marketplaceRoot}${platform() === 'win32' ? '\\' : '/'}plugins${platform() === 'win32' ? '\\' : '/'}${GROK_PLUGIN}" --trust`,
     )
   }
+  if (host === 'cursor') {
+    uninstallCursorStandby(runtime.home)
+    return buildNativeResult(
+      installCursorGlobalPlugin(runtime),
+      '已自动安装 Cursor 原生本地插件；重启 Cursor 后生效',
+      'Cursor native local plugin installed automatically; restart Cursor to apply',
+      `Cursor 本地插件自动安装失败，请将 "${getCursorPluginRoot(runtime.home)}" 链接或复制到 "${getCursorInstallRoot(runtime.home)}"`,
+      `Cursor local plugin auto-install failed. Link or copy "${getCursorPluginRoot(runtime.home)}" to "${getCursorInstallRoot(runtime.home)}"`,
+    )
+  }
   uninstallCodexStandby(runtime.home)
   return installCodexGlobal(runtime.home, runtime.pkgRoot) ? {} : { skipped: true }
 }
@@ -315,6 +377,14 @@ function cleanupHostStandby(runtime, host) {
   if (host === 'grok') {
     const skipped = !uninstallGrokStandby(runtime.home)
     if (detectRuntimeHostMode('grok', runtime) !== 'global') removeGrokMarketplaceRoot(runtime.home)
+    return { skipped }
+  }
+  if (host === 'cursor') {
+    const skipped = !uninstallCursorStandby(runtime.home)
+    if (detectRuntimeHostMode('cursor', runtime) !== 'global') {
+      removeCursorInstallRoot(runtime.home)
+      removeCursorPluginRoot(runtime.home)
+    }
     return { skipped }
   }
   const standbyCleaned = uninstallCodexStandby(runtime.home)
@@ -369,6 +439,16 @@ function cleanupHostGlobal(runtime, host) {
     if (result.ok) removeGrokMarketplaceRoot(runtime.home)
     return result
   }
+  if (host === 'cursor') {
+    uninstallCursorStandby(runtime.home)
+    return buildNativeResult(
+      removeCursorGlobalPlugin(runtime),
+      '已自动移除 Cursor 本地插件投影',
+      'Cursor local plugin projection removed automatically',
+      `Cursor 本地插件自动移除失败，请删除 "${getCursorInstallRoot(runtime.home)}" 与 "${getCursorPluginRoot(runtime.home)}"`,
+      `Cursor local plugin auto-remove failed. Delete "${getCursorInstallRoot(runtime.home)}" and "${getCursorPluginRoot(runtime.home)}"`,
+    )
+  }
   return { skipped: !uninstallCodexGlobal(runtime.home) }
 }
 
@@ -383,6 +463,9 @@ function installStandby(runtime, previousModes = {}) {
   const grokResult = installHostStandby(runtime, 'grok', { previousMode: previousModes.grok || '' })
   reportHostAction(runtime, 'install', 'grok', 'standby', grokResult)
   results.grok = grokResult.skipped ? { skipped: true } : grokResult
+  const cursorResult = installHostStandby(runtime, 'cursor', { previousMode: previousModes.cursor || '' })
+  reportHostAction(runtime, 'install', 'cursor', 'standby', cursorResult)
+  results.cursor = cursorResult.skipped ? { skipped: true } : cursorResult
   if (installCodexStandby(runtime.home, runtime.pkgRoot)) {
     cleanupCodexGlobalResidueForStandby(runtime.home)
     runtime.ok(runtime.msg('Codex CLI 已配置（standby 模式）', 'Codex CLI configured (standby mode)'))
@@ -396,7 +479,7 @@ function installStandby(runtime, previousModes = {}) {
 
 function installGlobal(runtime) {
   const results = {}
-  for (const host of ['claude', 'gemini', 'grok', 'codex']) {
+  for (const host of ['claude', 'gemini', 'grok', 'cursor', 'codex']) {
     const result = installHostGlobal(runtime, host)
     reportHostAction(runtime, 'install', host, 'global', result)
     results[host] = result
@@ -413,6 +496,7 @@ export function uninstallAllHosts(runtime) {
   cleanupHostGlobal(runtime, 'claude')
   cleanupHostGlobal(runtime, 'gemini')
   cleanupHostGlobal(runtime, 'grok')
+  cleanupHostGlobal(runtime, 'cursor')
   uninstallCodexStandby(runtime.home)
   uninstallCodexGlobal(runtime.home)
 }

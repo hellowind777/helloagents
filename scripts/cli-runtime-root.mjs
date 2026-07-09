@@ -14,6 +14,7 @@ import { copyEntries, createLink, ensureDir, removeIfExists } from './cli-utils.
 
 export const RUNTIME_ROOT_ENTRIES = [
   '.claude-plugin',
+  '.cursor-plugin',
   '.codex-plugin',
   '.grok-plugin',
   'assets',
@@ -33,8 +34,16 @@ export const RUNTIME_ROOT_ENTRIES = [
   'templates',
 ]
 
+const CURSOR_PLUGIN_ENTRIES = [
+  '.cursor-plugin',
+  'hooks',
+  'LICENSE.md',
+  'README.md',
+]
+
 export const GROK_MARKETPLACE_NAME = 'helloagents-grok-marketplace'
 export const GROK_PLUGIN_NAME = 'helloagents'
+export const CURSOR_PLUGIN_NAME = 'helloagents'
 
 /** Return the stable per-user runtime copy used by host integrations. */
 export function getStableRuntimeRoot(home) {
@@ -44,6 +53,16 @@ export function getStableRuntimeRoot(home) {
 /** Return the Claude local marketplace projection root derived from the shared runtime copy. */
 export function getClaudeMarketplaceRoot(home) {
   return join(home, '.helloagents', 'host-projections', 'claude-marketplace')
+}
+
+/** Return the Cursor local-plugin projection root derived from the shared runtime copy. */
+export function getCursorPluginRoot(home) {
+  return join(home, '.helloagents', 'host-projections', 'cursor-local-plugin', CURSOR_PLUGIN_NAME)
+}
+
+/** Return the Cursor managed local plugin install root. */
+export function getCursorInstallRoot(home) {
+  return join(home, '.cursor', 'plugins', 'local', CURSOR_PLUGIN_NAME)
 }
 
 /** Return the Gemini extension projection root derived from the shared runtime copy. */
@@ -306,6 +325,31 @@ export function syncGeminiExtensionRoot(sourceRoot, extensionRoot) {
   return syncRuntimeTree(sourceRoot, extensionRoot, { materializeGeminiHooks: true })
 }
 
+/** Sync a materialized Cursor local-plugin projection derived from the shared runtime copy. */
+export function syncCursorPluginRoot(sourceRoot, cursorPluginRoot) {
+  const source = resolve(sourceRoot)
+  const target = resolve(cursorPluginRoot)
+  if (samePath(source, target)) {
+    return { synced: false, root: target }
+  }
+
+  const parent = dirname(target)
+  ensureDir(parent)
+  const staging = mkdtempSync(join(parent, '.helloagents-cursor-plugin-'))
+
+  try {
+    copyEntries(source, staging, CURSOR_PLUGIN_ENTRIES)
+    retryTransientFs(() => {
+      removeIfExists(target)
+      renameSync(staging, target)
+    })
+    return { synced: true, root: target }
+  } catch (error) {
+    removeIfExists(staging)
+    throw error
+  }
+}
+
 /** Sync a materialized Grok marketplace projection derived from the shared runtime copy. */
 export function syncGrokMarketplaceRoot(sourceRoot, marketplaceRoot) {
   const source = resolve(sourceRoot)
@@ -352,6 +396,16 @@ export function removeRuntimeRoot(runtimeRoot) {
 /** Remove the Claude marketplace projection root. */
 export function removeClaudeMarketplaceRoot(home) {
   removeIfExists(getClaudeMarketplaceRoot(home))
+}
+
+/** Remove the Cursor local-plugin projection root. */
+export function removeCursorPluginRoot(home) {
+  removeIfExists(getCursorPluginRoot(home))
+}
+
+/** Remove the Cursor managed local plugin install root. */
+export function removeCursorInstallRoot(home) {
+  removeIfExists(getCursorInstallRoot(home))
 }
 
 /** Remove the Gemini extension projection root. */

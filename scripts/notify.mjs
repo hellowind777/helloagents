@@ -34,12 +34,13 @@ const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json');
 const cmd = process.argv[2] || '';
 const HOST = resolveNotifyHost(process.argv);
 const IS_GEMINI = HOST === 'gemini';
+const IS_CURSOR = HOST === 'cursor';
 const IS_CODEX = HOST === 'codex';
 const IS_SILENT = process.argv.includes('--silent');
 const EVENT_NAME = {
   SessionStart: 'SessionStart',
-  UserPromptSubmit: IS_GEMINI ? 'BeforeAgent' : 'UserPromptSubmit',
-  PreCompact: IS_GEMINI ? 'BeforeAgent' : 'PreCompact',
+  UserPromptSubmit: IS_GEMINI ? 'BeforeAgent' : (IS_CURSOR ? 'beforeSubmitPrompt' : 'UserPromptSubmit'),
+  PreCompact: IS_GEMINI ? 'BeforeAgent' : (IS_CURSOR ? 'preCompact' : 'PreCompact'),
 };
 const RALPH_LOOP_ROUTE_COMMANDS = new Set(['qa', 'loop']);
 const CODEX_HOOKS_FILE = join(homedir(), '.codex', 'hooks.json');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { chmodSync, existsSync, realpathSync } from 'node:fs'
 import { delimiter, join } from 'node:path'
 
-import { getClaudeMarketplaceRoot, getGeminiExtensionRoot, getGrokMarketplaceRoot } from '../scripts/cli-runtime-root.mjs'
+import { getClaudeMarketplaceRoot, getCursorInstallRoot, getCursorPluginRoot, getGeminiExtensionRoot, getGrokMarketplaceRoot } from '../scripts/cli-runtime-root.mjs'
 import { createHomeFixture, createPackageFixture, createTempDir, readJson, readText, writeJson, writeText } from './helpers/test-env.mjs'
 import { runCli, seedHostConfigs } from './helpers/cli-test-helpers.mjs'
 
@@ -141,9 +141,11 @@ test('all-host install without a mode falls back to standby for untracked CLIs',
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.claude, 'standby')
   assert.equal(settings.host_install_modes.gemini, 'standby')
+  assert.equal(settings.host_install_modes.cursor, 'standby')
   assert.equal(settings.host_install_modes.codex, 'standby')
   assert.ok(existsSync(join(home, '.claude', 'helloagents')))
   assert.ok(existsSync(join(home, '.gemini', 'helloagents')))
+  assert.ok(existsSync(join(home, '.cursor', 'helloagents')))
   assert.ok(!existsSync(join(home, 'plugins', 'helloagents')))
 })
 
@@ -161,6 +163,7 @@ test('all-host global install records only successful host setup', () => {
   const settings = readJson(configFile)
   assert.equal(settings.host_install_modes.claude, undefined)
   assert.equal(settings.host_install_modes.gemini, undefined)
+  assert.equal(settings.host_install_modes.cursor, 'global')
   assert.equal(settings.host_install_modes.codex, 'global')
 })
 
@@ -248,6 +251,64 @@ test('single-host Grok standby install writes native AGENTS carrier, runtime lin
   assert.ok(!existsSync(join(home, '.grok', 'hooks', 'helloagents.json')))
   assert.match(readText(join(home, '.grok', 'hooks', 'keep.json')), /other-grok\.mjs/)
   assert.equal(readJson(configFile).host_install_modes.grok, undefined)
+})
+
+test('single-host Cursor standby install writes runtime link and managed hooks into ~/.cursor/hooks.json', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'cursor', '--standby'])
+
+  assert.ok(existsSync(join(home, '.cursor', 'helloagents')))
+  const cursorHooks = JSON.stringify(readJson(join(home, '.cursor', 'hooks.json')))
+  assert.match(cursorHooks, /helloagents-js cursor-hook session-start/)
+  assert.match(cursorHooks, /helloagents-js cursor-hook stop/)
+  assert.match(cursorHooks, /other-cursor\.mjs/)
+  assert.equal(readJson(configFile).host_install_modes.cursor, 'standby')
+
+  runCli(pkgRoot, home, ['cleanup', 'cursor'])
+
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
+  const cleanedHooks = JSON.stringify(readJson(join(home, '.cursor', 'hooks.json')))
+  assert.doesNotMatch(cleanedHooks, /helloagents-js cursor-hook/)
+  assert.match(cleanedHooks, /other-cursor\.mjs/)
+  assert.equal(readJson(configFile).host_install_modes.cursor, undefined)
+})
+
+test('single-host Cursor global install materializes a local-plugin projection and links it into ~/.cursor/plugins/local', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  const projectionRoot = getCursorPluginRoot(home)
+  const installRoot = getCursorInstallRoot(home)
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'cursor', '--global'])
+
+  assert.ok(existsSync(join(projectionRoot, '.cursor-plugin', 'plugin.json')))
+  assert.ok(existsSync(join(projectionRoot, 'hooks', 'hooks-cursor.json')))
+  assert.ok(existsSync(installRoot))
+  assert.equal(realpathSync(installRoot), realpathSync(projectionRoot))
+  assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
+  assert.equal(readJson(configFile).host_install_modes.cursor, 'global')
+})
+
+test('single-host Cursor standby install removes the tracked Cursor local plugin before writing standby files', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const configFile = join(home, '.helloagents', 'helloagents.json')
+  seedHostConfigs(home)
+
+  runCli(pkgRoot, home, ['install', 'cursor', '--global'])
+  runCli(pkgRoot, home, ['install', 'cursor', '--standby'])
+
+  assert.ok(!existsSync(getCursorInstallRoot(home)))
+  assert.ok(!existsSync(getCursorPluginRoot(home)))
+  assert.ok(existsSync(join(home, '.cursor', 'helloagents')))
+  assert.match(JSON.stringify(readJson(join(home, '.cursor', 'hooks.json'))), /helloagents-js cursor-hook session-start/)
+  assert.equal(readJson(configFile).host_install_modes.cursor, 'standby')
 })
 
 test('single-host Grok global install materializes a marketplace projection and runs native grok commands', () => {

@@ -43,6 +43,7 @@
     "install.sh",
     "install.ps1",
     "gemini-extension.json",
+    ".cursor-plugin/",
     ".claude-plugin/",
     ".codex-plugin/",
     ".grok-plugin/"
@@ -52,6 +53,7 @@
     "agent",
     "claude",
     "codex",
+    "cursor",
     "cli",
     "orchestration",
     "subagent",

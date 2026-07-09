@@ -1,9 +1,9 @@
 # HelloAGENTS one-shot installer.
 #
 # Environment:
-#   HELLOAGENTS=all|claude|gemini|codex|grok[:standby|global]
+#   HELLOAGENTS=all|claude|gemini|codex|cursor|grok[:standby|global]
 #   HELLOAGENTS_ACTION=install|update|cleanup|uninstall|switch-branch|branch
-#   HELLOAGENTS_TARGET=all|claude|gemini|codex|grok
+#   HELLOAGENTS_TARGET=all|claude|gemini|codex|cursor|grok
 #   HELLOAGENTS_MODE=standby|global
 #   HELLOAGENTS_BRANCH=main|beta|...
 #   HELLOAGENTS_PACKAGE=helloagents|https://github.com/owner/repo/archive/refs/heads/ref.tar.gz|...
@@ -33,7 +33,7 @@ if (-not $Target) { $Target = "all" }
 $Target = $Target.ToLowerInvariant()
 if ($Mode) { $Mode = $Mode.ToLowerInvariant() }
 
-if (@("all", "claude", "gemini", "codex", "grok") -notcontains $Target) {
+if (@("all", "claude", "gemini", "codex", "cursor", "grok") -notcontains $Target) {
     throw "Unsupported HELLOAGENTS target: $Target"
 }
 
