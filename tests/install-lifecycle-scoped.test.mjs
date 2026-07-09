@@ -253,6 +253,25 @@ test('single-host Grok standby install writes native AGENTS carrier, runtime lin
   assert.equal(readJson(configFile).host_install_modes.grok, undefined)
 })
 
+test('cleanup grok removes a leftover reserved helloagents hook file even when no mode is tracked', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  writeText(join(home, '.grok', 'hooks', 'helloagents.json'), JSON.stringify({
+    hooks: {
+      SessionStart: [
+        {
+          hooks: [{ type: 'command', command: 'echo home-grok' }],
+        },
+      ],
+    },
+  }, null, 2) + '\n')
+
+  runCli(pkgRoot, home, ['cleanup', 'grok'])
+
+  assert.ok(!existsSync(join(home, '.grok', 'hooks', 'helloagents.json')))
+})
+
 test('single-host Cursor standby install writes runtime link and managed hooks into ~/.cursor/hooks.json', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()

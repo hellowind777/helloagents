@@ -301,13 +301,14 @@ function inspectGrokDoctor(settings) {
   const expectedHooks = readExpectedHooks('hooks-grok.json', '${GROK_PLUGIN_ROOT}')
   const marketplaceRoot = getGrokMarketplaceRoot(runtime.home)
   const marketplacePluginRoot = join(marketplaceRoot, 'plugins', GROK_PLUGIN_NAME)
-  const actualHooks = safeJson(join(grokDir, 'hooks', GROK_STANDBY_HOOK_FILE)) || {}
+  const standbyHooksPath = join(grokDir, 'hooks', GROK_STANDBY_HOOK_FILE)
+  const actualHooks = safeJson(standbyHooksPath) || {}
   const checks = {
     carrierMarker: (safeRead(join(grokDir, 'AGENTS.md')) || '').includes('HELLOAGENTS_START'),
     carrierContentMatch: extractManagedCarrierContent(join(grokDir, 'AGENTS.md'))
       === readExpectedCarrierContent('bootstrap-lite.md', settings),
     homeLink: safeRealTarget(join(grokDir, 'helloagents')) === runtime.pkgRoot,
-    standbyHooksFile: JSON.stringify(actualHooks).includes('helloagents'),
+    standbyHooksFile: existsSync(standbyHooksPath),
     standbyHooksMatch: managedHooksMatch(actualHooks.hooks || actualHooks, expectedHooks),
     globalMarketplaceRoot: existsSync(marketplaceRoot),
     globalMarketplaceCatalog: existsSync(join(marketplaceRoot, '.grok-plugin', 'marketplace.json')),
