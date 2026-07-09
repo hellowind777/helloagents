@@ -277,7 +277,7 @@ test('single-host Cursor standby install writes runtime link and managed hooks i
   assert.equal(readJson(configFile).host_install_modes.cursor, undefined)
 })
 
-test('single-host Cursor global install materializes a local-plugin projection and links it into ~/.cursor/plugins/local', () => {
+test('single-host Cursor global install materializes a local-plugin projection and copies it into ~/.cursor/plugins/local', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
   const configFile = join(home, '.helloagents', 'helloagents.json')
@@ -290,7 +290,9 @@ test('single-host Cursor global install materializes a local-plugin projection a
   assert.ok(existsSync(join(projectionRoot, '.cursor-plugin', 'plugin.json')))
   assert.ok(existsSync(join(projectionRoot, 'hooks', 'hooks-cursor.json')))
   assert.ok(existsSync(installRoot))
-  assert.equal(realpathSync(installRoot), realpathSync(projectionRoot))
+  assert.ok(existsSync(join(installRoot, '.cursor-plugin', 'plugin.json')))
+  assert.ok(existsSync(join(installRoot, 'hooks', 'hooks-cursor.json')))
+  assert.notEqual(realpathSync(installRoot), realpathSync(projectionRoot))
   assert.ok(!existsSync(join(home, '.cursor', 'helloagents')))
   assert.equal(readJson(configFile).host_install_modes.cursor, 'global')
 })

@@ -34,11 +34,12 @@ import {
   removeGeminiExtensionRoot,
   removeGrokMarketplaceRoot,
   syncClaudeMarketplaceRoot,
+  syncCursorInstallRoot,
   syncCursorPluginRoot,
   syncGeminiExtensionRoot,
   syncGrokMarketplaceRoot,
 } from './cli-runtime-root.mjs'
-import { createLink, removeIfExists } from './cli-utils.mjs'
+import { removeIfExists } from './cli-utils.mjs'
 
 const CLAUDE_COMMAND = process.env.HELLOAGENTS_CLAUDE_CMD || 'claude'
 const GEMINI_COMMAND = process.env.HELLOAGENTS_GEMINI_CMD || 'gemini'
@@ -148,10 +149,7 @@ function installCursorGlobalPlugin(runtime) {
     const installRoot = getCursorInstallRoot(runtime.home)
     syncCursorPluginRoot(runtime.pkgRoot, projectionRoot)
     removeIfExists(installRoot)
-    if (createLink(projectionRoot, installRoot)) {
-      return { ok: true, output: '' }
-    }
-    syncCursorPluginRoot(projectionRoot, installRoot)
+    syncCursorInstallRoot(projectionRoot, installRoot)
     return { ok: true, output: '' }
   } catch (error) {
     return {
@@ -355,8 +353,8 @@ function installHostGlobal(runtime, host) {
       installCursorGlobalPlugin(runtime),
       '已自动安装 Cursor 原生本地插件；重启 Cursor 后生效',
       'Cursor native local plugin installed automatically; restart Cursor to apply',
-      `Cursor 本地插件自动安装失败，请将 "${getCursorPluginRoot(runtime.home)}" 链接或复制到 "${getCursorInstallRoot(runtime.home)}"`,
-      `Cursor local plugin auto-install failed. Link or copy "${getCursorPluginRoot(runtime.home)}" to "${getCursorInstallRoot(runtime.home)}"`,
+      `Cursor 本地插件自动安装失败，请将 "${getCursorPluginRoot(runtime.home)}" 的内容复制到 "${getCursorInstallRoot(runtime.home)}"`,
+      `Cursor local plugin auto-install failed. Copy the contents of "${getCursorPluginRoot(runtime.home)}" into "${getCursorInstallRoot(runtime.home)}"`,
     )
   }
   uninstallCodexStandby(runtime.home)
@@ -443,8 +441,8 @@ function cleanupHostGlobal(runtime, host) {
     uninstallCursorStandby(runtime.home)
     return buildNativeResult(
       removeCursorGlobalPlugin(runtime),
-      '已自动移除 Cursor 本地插件投影',
-      'Cursor local plugin projection removed automatically',
+      '已自动移除 Cursor 本地插件安装目录与投影目录',
+      'Cursor local plugin install directory and projection root removed automatically',
       `Cursor 本地插件自动移除失败，请删除 "${getCursorInstallRoot(runtime.home)}" 与 "${getCursorPluginRoot(runtime.home)}"`,
       `Cursor local plugin auto-remove failed. Delete "${getCursorInstallRoot(runtime.home)}" and "${getCursorPluginRoot(runtime.home)}"`,
     )

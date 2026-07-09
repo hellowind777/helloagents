@@ -225,17 +225,29 @@ function inspectCursorDoctor(settings) {
   const expectedHooks = readExpectedHooks('hooks-cursor.json', '')
   const projectionRoot = getCursorPluginRoot(runtime.home)
   const installRoot = getCursorInstallRoot(runtime.home)
-  const installedPlugin = safeJson(join(installRoot, '.cursor-plugin', 'plugin.json')) || {}
+  const projectionManifestPath = join(projectionRoot, '.cursor-plugin', 'plugin.json')
+  const projectionHooksPath = join(projectionRoot, 'hooks', 'hooks-cursor.json')
+  const installManifestPath = join(installRoot, '.cursor-plugin', 'plugin.json')
+  const installHooksPath = join(installRoot, 'hooks', 'hooks-cursor.json')
+  const installedPlugin = safeJson(installManifestPath) || {}
+  const projectionManifest = normalizeText(safeRead(projectionManifestPath) || '')
+  const projectionHooks = normalizeText(safeRead(projectionHooksPath) || '')
+  const installManifest = normalizeText(safeRead(installManifestPath) || '')
+  const installHooks = normalizeText(safeRead(installHooksPath) || '')
   const checks = {
     homeLink: safeRealTarget(join(cursorDir, 'helloagents')) === runtime.pkgRoot,
     standbyHooksFile: JSON.stringify(actualHooks).includes('helloagents'),
     standbyHooksMatch: managedHooksMatch(actualHooks.hooks || actualHooks, expectedHooks),
     globalPluginRoot: existsSync(projectionRoot),
-    globalPluginManifest: existsSync(join(projectionRoot, '.cursor-plugin', 'plugin.json')),
-    globalPluginHooks: existsSync(join(projectionRoot, 'hooks', 'hooks-cursor.json')),
+    globalPluginManifest: existsSync(projectionManifestPath),
+    globalPluginHooks: existsSync(projectionHooksPath),
     globalPluginInstall: existsSync(installRoot),
-    globalPluginLink: safeRealTarget(installRoot) === (safeRealTarget(projectionRoot) || projectionRoot),
-    globalPluginInstalled: installedPlugin.name === 'helloagents' || existsSync(join(installRoot, '.cursor-plugin', 'plugin.json')),
+    globalPluginInstallManifest: existsSync(installManifestPath),
+    globalPluginInstallHooks: existsSync(installHooksPath),
+    globalPluginInstalled: installedPlugin.name === 'helloagents' || existsSync(installManifestPath),
+    globalPluginSyncMatch: Boolean(projectionManifest && projectionHooks)
+      && projectionManifest === installManifest
+      && projectionHooks === installHooks,
   }
 
   const issues = []
@@ -253,17 +265,19 @@ function inspectCursorDoctor(settings) {
     if (!checks.globalPluginManifest) issues.push(buildDoctorIssue('global-plugin-manifest-missing', 'global Cursor .cursor-plugin/plugin.json 缺失', 'Global Cursor .cursor-plugin/plugin.json is missing'))
     if (!checks.globalPluginHooks) issues.push(buildDoctorIssue('global-plugin-hooks-missing', 'global Cursor hooks-cursor.json 缺失', 'Global Cursor hooks-cursor.json is missing'))
     if (!checks.globalPluginInstall) issues.push(buildDoctorIssue('global-plugin-install-missing', 'global Cursor 本地插件安装目录缺失', 'Global Cursor local plugin install directory is missing'))
+    if (!checks.globalPluginInstallManifest) issues.push(buildDoctorIssue('global-plugin-install-manifest-missing', 'global Cursor 安装目录缺少 .cursor-plugin/plugin.json', 'Global Cursor install directory is missing .cursor-plugin/plugin.json'))
+    if (!checks.globalPluginInstallHooks) issues.push(buildDoctorIssue('global-plugin-install-hooks-missing', 'global Cursor 安装目录缺少 hooks-cursor.json', 'Global Cursor install directory is missing hooks-cursor.json'))
     if (!checks.globalPluginInstalled) issues.push(buildDoctorIssue('global-plugin-missing', 'global Cursor 本地插件未安装', 'Global Cursor local plugin is not installed'))
-    if (checks.globalPluginInstall && !checks.globalPluginLink && !checks.globalPluginInstalled) {
-      issues.push(buildDoctorIssue('global-plugin-link-missing', 'global Cursor 本地插件目录未指向受管投影', 'Global Cursor local plugin directory does not point to the managed projection'))
+    if (checks.globalPluginInstall && checks.globalPluginInstallManifest && checks.globalPluginInstallHooks && !checks.globalPluginSyncMatch) {
+      issues.push(buildDoctorIssue('global-plugin-sync-drift', 'global Cursor 安装目录内容与受管投影不一致', 'Global Cursor install directory content differs from the managed projection'))
     }
     if (checks.homeLink || checks.standbyHooksFile) {
       issues.push(buildDoctorIssue('global-standby-residue', 'global 模式下仍残留 standby 注入/链接', 'Standby injections or links still remain while the host is detected as global'))
     }
   } else if (trackedMode === 'global') {
     notes.push(runtime.msg(
-      'Cursor 的 global 模式使用本地插件目录 `~/.cursor/plugins/local/helloagents`；doctor 会检查投影目录、插件清单与 standby 残留。',
-      'Cursor global mode uses the local plugin directory `~/.cursor/plugins/local/helloagents`; doctor checks the projection root, plugin manifest, and standby residue.',
+      'Cursor 的 global 模式使用本地插件目录 `~/.cursor/plugins/local/helloagents`；doctor 会检查受管投影、安装目录内容同步情况与 standby 残留。',
+      'Cursor global mode uses the local plugin directory `~/.cursor/plugins/local/helloagents`; doctor checks the managed projection, install-directory sync, and standby residue.',
     ))
   }
   if (trackedMode === 'none' && detectedMode !== 'none') {

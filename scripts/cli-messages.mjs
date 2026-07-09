@@ -34,7 +34,7 @@ function pluginCommands(home) {
     `    Gemini CLI:   gemini extensions link "${getGeminiExtensionRoot(home)}"`,
     `    Grok Build:   grok plugin marketplace add "${grokMarketplaceRoot}"`,
     `                  grok plugin install "${join(grokMarketplaceRoot, 'plugins', 'helloagents')}" --trust`,
-    `    Cursor:       link or copy "${getCursorPluginRoot(home)}" -> "${getCursorInstallRoot(home)}"`,
+    `    Cursor:       copy "${getCursorPluginRoot(home)}" -> "${getCursorInstallRoot(home)}"`,
   ].join('\n')
 }
 
@@ -91,7 +91,7 @@ function renderInstallMessage(context, mode, state) {
   )
 }
 
-function renderHelp({ pkgVersion, msg }) {
+function renderHelp({ pkgVersion, msg, home }) {
   return `
 HelloAGENTS v${pkgVersion} — The orchestration kernel for AI CLIs
 

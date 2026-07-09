@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.1.9] - 2026-07-09
+
+### Added
+- Grok Build dual-mode integration: standby carrier + hooks, and native marketplace/plugin global mode
+- Cursor dual-mode integration: standby hooks + runtime link, and native local-plugin global mode
+
+### Changed
+- Cursor global install now materializes a real plugin copy under `~/.cursor/plugins/local/helloagents` instead of relying on an external symlink target
+- Lifecycle, doctor, and verification coverage now treat Cursor and Grok as first-class host flows across install, update, cleanup, uninstall, mode switching, and branch switching
+
+### Fixed
+- `helloagents` / `helloagents help` no longer crash while rendering the Cursor uninstall path
+
 ## [3.1.8] - 2026-07-01
 
 ### Security

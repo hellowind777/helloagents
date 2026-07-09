@@ -292,7 +292,7 @@ test('doctor reports Cursor standby health and detects hook drift', () => {
   assert.ok(cursor.issues.some((issue) => issue.code === 'standby-hooks-drift'))
 })
 
-test('doctor reports Cursor global health from local plugin projection and install link', () => {
+test('doctor reports Cursor global health from local plugin projection and copied install directory', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
 
@@ -310,8 +310,10 @@ test('doctor reports Cursor global health from local plugin projection and insta
   assert.equal(cursor.checks.globalPluginManifest, true)
   assert.equal(cursor.checks.globalPluginHooks, true)
   assert.equal(cursor.checks.globalPluginInstall, true)
+  assert.equal(cursor.checks.globalPluginInstallManifest, true)
+  assert.equal(cursor.checks.globalPluginInstallHooks, true)
   assert.equal(cursor.checks.globalPluginInstalled, true)
-  assert.equal(cursor.checks.globalPluginLink, true)
+  assert.equal(cursor.checks.globalPluginSyncMatch, true)
   assert.equal(cursor.issues.length, 0)
 })
 
@@ -387,7 +389,7 @@ test('doctor reports Grok global health from registry metadata and marketplace p
         path: join(home, '.grok', 'installed-plugins', 'helloagents'),
         plugins: {
           helloagents: {
-            version: '3.1.8',
+            version: '3.1.9',
           },
         },
       },

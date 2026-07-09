@@ -325,10 +325,9 @@ export function syncGeminiExtensionRoot(sourceRoot, extensionRoot) {
   return syncRuntimeTree(sourceRoot, extensionRoot, { materializeGeminiHooks: true })
 }
 
-/** Sync a materialized Cursor local-plugin projection derived from the shared runtime copy. */
-export function syncCursorPluginRoot(sourceRoot, cursorPluginRoot) {
+function syncCursorPluginTree(sourceRoot, targetRoot) {
   const source = resolve(sourceRoot)
-  const target = resolve(cursorPluginRoot)
+  const target = resolve(targetRoot)
   if (samePath(source, target)) {
     return { synced: false, root: target }
   }
@@ -348,6 +347,16 @@ export function syncCursorPluginRoot(sourceRoot, cursorPluginRoot) {
     removeIfExists(staging)
     throw error
   }
+}
+
+/** Sync a materialized Cursor local-plugin projection derived from the shared runtime copy. */
+export function syncCursorPluginRoot(sourceRoot, cursorPluginRoot) {
+  return syncCursorPluginTree(sourceRoot, cursorPluginRoot)
+}
+
+/** Sync the Cursor local-plugin install directory as a real plugin copy. */
+export function syncCursorInstallRoot(sourceRoot, installRoot) {
+  return syncCursorPluginTree(sourceRoot, installRoot)
 }
 
 /** Sync a materialized Grok marketplace projection derived from the shared runtime copy. */
