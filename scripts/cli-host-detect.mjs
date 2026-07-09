@@ -75,6 +75,10 @@ function hasHelloagentsHookFile(filePath) {
   return JSON.stringify(safeJson(filePath) || {}).includes('helloagents')
 }
 
+function hasReservedHookFile(filePath) {
+  return existsSync(filePath)
+}
+
 function grokRegistryHasManagedPlugin(registry = {}, expectedSource = '') {
   const normalizedExpectedSource = normalizePath(expectedSource)
   return Object.values(registry?.repos || {}).some((repo) => {
@@ -178,7 +182,7 @@ function detectGrokMode(home) {
   if (
     existsSync(join(grokDir, 'helloagents'))
     || hasHelloagentsMarker(join(grokDir, 'AGENTS.md'))
-    || hasHelloagentsHookFile(join(grokDir, 'hooks', GROK_STANDBY_HOOK_FILE))
+    || hasReservedHookFile(join(grokDir, 'hooks', GROK_STANDBY_HOOK_FILE))
   ) {
     return 'standby'
   }

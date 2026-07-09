@@ -352,6 +352,34 @@ test('doctor reports Grok standby health and detects hook drift', () => {
   assert.ok(grok.issues.some((issue) => issue.code === 'standby-hooks-drift'))
 })
 
+test('doctor treats a leftover Grok helloagents.json file as standby drift even when the content no longer mentions helloagents', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+
+  runCli(pkgRoot, home, ['postinstall'])
+  writeText(join(home, '.grok', 'hooks', 'helloagents.json'), JSON.stringify({
+    hooks: {
+      SessionStart: [
+        {
+          hooks: [{ type: 'command', command: 'echo home-grok' }],
+        },
+      ],
+    },
+  }, null, 2) + '\n')
+
+  const result = runCli(pkgRoot, home, ['doctor', 'grok', '--json'])
+  const report = JSON.parse(result.stdout)
+  const grok = report.hosts.find((entry) => entry.host === 'grok')
+
+  assert.equal(grok.detectedMode, 'standby')
+  assert.equal(grok.trackedMode, 'none')
+  assert.equal(grok.status, 'drift')
+  assert.equal(grok.checks.standbyHooksFile, true)
+  assert.equal(grok.checks.standbyHooksMatch, false)
+  assert.ok(grok.issues.some((issue) => issue.code === 'standby-hooks-drift'))
+  assert.ok(grok.issues.some((issue) => issue.code === 'untracked-managed-state'))
+})
+
 test('doctor reports Grok global health from registry metadata and marketplace projection', () => {
   const { root: pkgRoot } = createPackageFixture()
   const home = createHomeFixture()
