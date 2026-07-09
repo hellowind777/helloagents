@@ -17,11 +17,33 @@ import { runCli } from './helpers/cli-test-helpers.mjs'
 function writeFakeCommand(binDir, name, logPath) {
   if (process.platform === 'win32') {
     const commandPath = join(binDir, `${name}.cmd`)
-    writeText(commandPath, `@echo off\r\necho %*>>"${logPath}"\r\nexit /b 0\r\n`)
+    writeText(commandPath, [
+      '@echo off',
+      'if "%~1"=="--version" (',
+      '  if not "%FAKE_NPM_VERSION%"=="" (',
+      '    echo %FAKE_NPM_VERSION%',
+      '  ) else (',
+      '    echo 11.16.0',
+      '  )',
+      '  exit /b 0',
+      ')',
+      `echo %*>>"${logPath}"`,
+      'exit /b 0',
+      '',
+    ].join('\r\n'))
     return commandPath
   }
   const commandPath = join(binDir, name)
-  writeText(commandPath, `#!/bin/sh\necho "$@" >> "${logPath}"\nexit 0\n`)
+  writeText(commandPath, [
+    '#!/bin/sh',
+    'if [ "$#" -eq 1 ] && [ "$1" = "--version" ]; then',
+    '  printf "%s\\n" "${FAKE_NPM_VERSION:-11.16.0}"',
+    '  exit 0',
+    'fi',
+    `echo "$@" >> "${logPath}"`,
+    'exit 0',
+    '',
+  ].join('\n'))
   chmodSync(commandPath, 0o755)
   return commandPath
 }
@@ -32,6 +54,14 @@ function writeFakeCommandWithEnv(binDir, name, logPath, envNames) {
     const lines = [
       '@echo off',
       'setlocal EnableDelayedExpansion',
+      'if "%~1"=="--version" (',
+      '  if not "%FAKE_NPM_VERSION%"=="" (',
+      '    echo %FAKE_NPM_VERSION%',
+      '  ) else (',
+      '    echo 11.16.0',
+      '  )',
+      '  exit /b 0',
+      ')',
       `echo ARGS:%*>>"${logPath}"`,
       ...envNames.map((envName) => `echo ${envName}=!${envName}!>>"${logPath}"`),
       'exit /b 0',
@@ -44,6 +74,10 @@ function writeFakeCommandWithEnv(binDir, name, logPath, envNames) {
   const commandPath = join(binDir, name)
   const lines = [
     '#!/bin/sh',
+    'if [ "$#" -eq 1 ] && [ "$1" = "--version" ]; then',
+    '  printf "%s\\n" "${FAKE_NPM_VERSION:-11.16.0}"',
+    '  exit 0',
+    'fi',
     `echo "ARGS:$@" >> "${logPath}"`,
     ...envNames.map((envName) => `echo "${envName}=\${${envName}-}" >> "${logPath}"`),
     'exit 0',
@@ -85,7 +119,7 @@ test('switch-branch defaults to npm.cmd on Windows when no override is provided'
   assert.doesNotMatch(result.stderr || '', /DEP0190/)
 
   assert.equal(npmCmdPath.endsWith('npm.cmd'), true)
-  assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
+  assert.match(readText(npmLog), /install -g --allow-scripts=helloagents https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- codex --standby/)
 })
 
@@ -95,7 +129,7 @@ test('switch-branch installs a GitHub branch and refreshes a scoped global host 
   const result = runCli(pkgRoot, home, ['switch-branch', 'beta', 'claude', '--global'], env)
   assert.doesNotMatch(result.stderr || '', /DEP0190/)
 
-  assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
+  assert.match(readText(npmLog), /install -g --allow-scripts=helloagents https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- claude --global/)
 })
 
@@ -110,7 +144,7 @@ test('branch accepts a full npm spec and refreshes all hosts through npm', () =>
   ], env)
   assert.doesNotMatch(result.stderr || '', /DEP0190/)
 
-  assert.match(readText(npmLog), /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
+  assert.match(readText(npmLog), /install -g --allow-scripts=helloagents https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(readText(npmLog), /explore -g helloagents -- npm run sync-hosts -- --all --standby/)
 })
 
@@ -142,11 +176,28 @@ test('switch-branch clears stale lifecycle env before npm install and sync-hosts
   })
 
   const log = readText(npmLog)
-  assert.match(log, /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
+  assert.match(log, /install -g --allow-scripts=helloagents https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
   assert.match(log, /explore -g helloagents -- npm run sync-hosts -- codex --standby/)
   for (const envName of envNames) {
     assert.doesNotMatch(log, new RegExp(`${envName}=(?!$).+`))
   }
+})
+
+test('switch-branch omits allow-scripts for npm 10 and below', () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const binDir = createTempDir('helloagents-branch-oldnpm-bin-')
+  const npmLog = join(home, 'npm-old.log')
+  const npmCommand = writeFakeCommand(binDir, 'npm', npmLog)
+
+  runCli(pkgRoot, home, ['switch-branch', 'beta', 'codex', '--standby'], {
+    HELLOAGENTS_NPM_CMD: npmCommand,
+    FAKE_NPM_VERSION: '10.9.3',
+  })
+
+  const log = readText(npmLog)
+  assert.match(log, /install -g https:\/\/github\.com\/hellowind777\/helloagents\/archive\/refs\/heads\/beta\.tar\.gz/)
+  assert.doesNotMatch(log, /allow-scripts=helloagents/)
 })
 
 test('package exposes npm-script and one-shot script entry points', () => {

@@ -77,6 +77,33 @@ clear_lifecycle_env() {
 
 clear_lifecycle_env
 
+ALLOW_SCRIPTS_FLAG=""
+
+resolve_allow_scripts_flag() {
+  if [ -n "$ALLOW_SCRIPTS_FLAG" ]; then
+    return
+  fi
+  NPM_VERSION="$(npm --version 2>/dev/null || printf '')"
+  NPM_MAJOR="${NPM_VERSION%%.*}"
+  case "$NPM_MAJOR" in
+    ''|*[!0-9]*) ;;
+    *)
+      if [ "$NPM_MAJOR" -ge 11 ]; then
+        ALLOW_SCRIPTS_FLAG="--allow-scripts=helloagents"
+      fi
+      ;;
+  esac
+}
+
+install_package() {
+  resolve_allow_scripts_flag
+  if [ -n "$ALLOW_SCRIPTS_FLAG" ]; then
+    npm install -g "$ALLOW_SCRIPTS_FLAG" "$1"
+  else
+    npm install -g "$1"
+  fi
+}
+
 sync_hosts() {
   if [ "$TARGET" = "all" ]; then
     if [ -n "$MODE" ]; then
@@ -136,13 +163,13 @@ case "$ACTION" in
     if [ "$HAS_EXPLICIT_TARGET" -eq 1 ]; then
       enable_postinstall_deploy
     fi
-    npm install -g "$PACKAGE"
+    install_package "$PACKAGE"
     ;;
   update)
     if [ -n "$BRANCH" ] || [ "$HAS_EXPLICIT_PACKAGE" -eq 1 ]; then
-      npm install -g "$PACKAGE"
+      install_package "$PACKAGE"
     else
-      npm update -g helloagents || npm install -g helloagents
+      install_package "helloagents@latest"
     fi
     if [ "$HAS_EXPLICIT_TARGET" -eq 1 ]; then
       sync_hosts
@@ -156,7 +183,7 @@ case "$ACTION" in
       echo "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for switch-branch" >&2
       exit 1
     fi
-    npm install -g "$PACKAGE"
+    install_package "$PACKAGE"
     sync_hosts
     ;;
   uninstall)

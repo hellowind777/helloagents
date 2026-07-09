@@ -243,7 +243,7 @@ The CLI manages host files explicitly:
 ### 1) Install the package
 
 ```bash
-npm install -g helloagents
+npm install -g --allow-scripts=helloagents helloagents
 ```
 
 If another executable named `helloagents` already exists in your `PATH`, use the stable managed-entry alias:
@@ -253,6 +253,8 @@ helloagents-js
 ```
 
 By default, `postinstall` installs the package command, initializes `~/.helloagents/helloagents.json`, and syncs runtime files to `~/.helloagents/helloagents`. No host CLI is deployed unless you set `HELLOAGENTS=target[:mode]`, such as `HELLOAGENTS=codex:global`.
+
+For npm 11 and later, keep `--allow-scripts=helloagents` on direct package install or upgrade commands so npm can run the managed `postinstall` without approval warnings. If you are still on npm 10 or earlier, you can omit that flag.
 
 ### 2) Deploy to a CLI
 
@@ -323,7 +325,7 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, `grok`, `cursor`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, `grok`, `cursor`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command. The one-shot shell and PowerShell wrappers auto-detect npm 11+ and append `--allow-scripts=helloagents` only where that flag is supported.
 
 Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root. Claude Code global installs use a dedicated local marketplace projection under `~/.helloagents/host-projections/claude-marketplace`, Gemini global extension packaging uses `~/.helloagents/host-projections/gemini`, Grok Build global installs use the materialized marketplace projection `~/.helloagents/host-projections/helloagents-grok-marketplace`, and Cursor global installs use the curated local-plugin projection `~/.helloagents/host-projections/cursor-local-plugin/helloagents` plus a real copied install directory at `~/.cursor/plugins/local/helloagents`, so host-specific packaging stays isolated from the shared runtime root without relying on symlink-only plugin loading.
 
@@ -333,17 +335,17 @@ macOS / Linux:
 
 ```bash
 # Install to Codex in standby mode
-HELLOAGENTS=codex npm install -g helloagents
+HELLOAGENTS=codex npm install -g --allow-scripts=helloagents helloagents
 
 # Install to Codex in global mode
-HELLOAGENTS=codex:global npm install -g helloagents
+HELLOAGENTS=codex:global npm install -g --allow-scripts=helloagents helloagents
 
 # Update the package, then refresh Claude in standby mode
-npm update -g helloagents
+npm install -g --allow-scripts=helloagents helloagents@latest
 npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
 # Switch to the beta branch, then refresh all CLIs in standby mode
-npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # Clean Gemini integration before package uninstall
@@ -355,17 +357,17 @@ Windows PowerShell:
 
 ```powershell
 # Install to Codex in standby mode
-$env:HELLOAGENTS="codex"; npm install -g helloagents
+$env:HELLOAGENTS="codex"; npm install -g --allow-scripts=helloagents helloagents
 
 # Install to Codex in global mode
-$env:HELLOAGENTS="codex:global"; npm install -g helloagents
+$env:HELLOAGENTS="codex:global"; npm install -g --allow-scripts=helloagents helloagents
 
 # Update the package, then refresh Claude in standby mode
-npm update -g helloagents
+npm install -g --allow-scripts=helloagents helloagents@latest
 npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
 # Switch to the beta branch, then refresh all CLIs in standby mode
-npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # Clean Gemini integration before package uninstall
@@ -441,8 +443,8 @@ The direct `helloagents switch-branch ...` command also clears stale `HELLOAGENT
 Use normal npm commands when you only want to change the package and not sync host CLIs immediately:
 
 ```bash
-npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
-npm update -g helloagents
+npm install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm install -g --allow-scripts=helloagents helloagents@latest
 npm explore -g helloagents -- npm run uninstall -- --all
 npm uninstall -g helloagents
 ```

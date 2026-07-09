@@ -32,6 +32,14 @@ function createFakeNpm(binDir, logPath) {
     loggerScript,
     [
       'param([Parameter(ValueFromRemainingArguments = $true)][string[]]$ArgList)',
+      'if ($ArgList.Count -eq 1 -and $ArgList[0] -eq "--version") {',
+      '  if ($env:FAKE_NPM_VERSION) {',
+      '    Write-Output $env:FAKE_NPM_VERSION',
+      '  } else {',
+      '    Write-Output "11.16.0"',
+      '  }',
+      '  exit 0',
+      '}',
       '$payload = @{',
       '  args = $ArgList',
       '  deploy = $env:HELLOAGENTS_DEPLOY',
@@ -119,7 +127,7 @@ test('install.ps1 install forwards postinstall deploy env for compact host mode 
 
   const entries = readLogEntries(logPath)
   assert.equal(entries.length, 1)
-  assert.deepEqual(entries[0].args, ['install', '-g', 'helloagents'])
+  assert.deepEqual(entries[0].args, ['install', '-g', '--allow-scripts=helloagents', 'helloagents'])
   assert.equal(entries[0].deploy, '1')
   assert.equal(entries[0].target, 'codex')
   assert.equal(entries[0].mode, 'global')
@@ -136,7 +144,7 @@ test('install.ps1 install without an explicit target only installs the package',
 
   const entries = readLogEntries(logPath)
   assert.equal(entries.length, 1)
-  assert.deepEqual(entries[0].args, ['install', '-g', 'helloagents'])
+  assert.deepEqual(entries[0].args, ['install', '-g', '--allow-scripts=helloagents', 'helloagents'])
   assert.ok(!entries[0].deploy && !entries[0].target && !entries[0].mode && !entries[0].compact)
 })
 
@@ -151,7 +159,7 @@ test('install.ps1 update without an explicit target only updates the package', {
 
   const entries = readLogEntries(logPath)
   assert.equal(entries.length, 1)
-  assert.deepEqual(entries[0].args, ['update', '-g', 'helloagents'])
+  assert.deepEqual(entries[0].args, ['install', '-g', '--allow-scripts=helloagents', 'helloagents@latest'])
   assert.ok(!entries[0].deploy && !entries[0].target && !entries[0].mode && !entries[0].compact)
 })
 
@@ -170,7 +178,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
     runInstallPs1(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      ['install', '-g', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
+      ['install', '-g', '--allow-scripts=helloagents', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'codex', '--standby'],
     ])
     assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
@@ -186,7 +194,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
     runInstallPs1(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      ['install', '-g', customPackage],
+      ['install', '-g', '--allow-scripts=helloagents', customPackage],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'codex'],
     ])
     assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
@@ -218,7 +226,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
     runInstallPs1(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      ['install', '-g', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
+      ['install', '-g', '--allow-scripts=helloagents', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'gemini', '--global'],
     ])
     assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
@@ -235,7 +243,7 @@ test('install.ps1 update, cleanup, switch-branch, and uninstall dispatch the exp
     runInstallPs1(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      ['install', '-g', customPackage],
+      ['install', '-g', '--allow-scripts=helloagents', customPackage],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'gemini', '--global'],
     ])
     assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
@@ -289,7 +297,7 @@ test('install.ps1 omits the mode for non-install actions so the CLI can reuse tr
     runInstallPs1(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      ['update', '-g', 'helloagents'],
+      ['install', '-g', '--allow-scripts=helloagents', 'helloagents@latest'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'codex'],
     ])
     assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
@@ -319,9 +327,25 @@ test('install.ps1 omits the mode for non-install actions so the CLI can reuse tr
     runInstallPs1(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      ['install', '-g', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
+      ['install', '-g', '--allow-scripts=helloagents', 'https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz'],
       ['explore', '-g', 'helloagents', '--', 'npm', 'run', 'sync-hosts', '--', 'gemini'],
     ])
     assert.ok(entries.every((entry) => !entry.deploy && !entry.target && !entry.mode && !entry.compact))
   }
+})
+
+test('install.ps1 omits allow-scripts for npm 10 and below', { skip: !PWSH }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const { logPath, env } = createScriptEnv(home, {
+    HELLOAGENTS_ACTION: 'install',
+    HELLOAGENTS: 'codex',
+    FAKE_NPM_VERSION: '10.9.3',
+  })
+
+  runInstallPs1(pkgRoot, home, env)
+
+  const entries = readLogEntries(logPath)
+  assert.equal(entries.length, 1)
+  assert.deepEqual(entries[0].args, ['install', '-g', 'helloagents'])
 })

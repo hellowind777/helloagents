@@ -2,6 +2,7 @@ import { normalizeHost } from './cli-lifecycle.mjs'
 import { spawnCommandSync } from './cli-process.mjs'
 
 const DEFAULT_REPO_ARCHIVE_BASE = 'https://github.com/hellowind777/helloagents/archive/refs/heads'
+const ALLOW_SCRIPTS_FLAG = '--allow-scripts=helloagents'
 const BRANCH_CHILD_ENV_KEYS = [
   'HELLOAGENTS',
   'HELLOAGENTS_ACTION',
@@ -31,6 +32,18 @@ function runCommand(command, args, options = {}) {
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(' ')} 执行失败，退出码 ${result.status}`)
   }
+}
+
+function npmSupportsAllowScripts(command, env) {
+  const result = spawnCommandSync(command, ['--version'], {
+    encoding: 'utf-8',
+    errors: 'replace',
+    env,
+    windowsHide: true,
+  })
+  if (result.error || result.status !== 0) return false
+  const major = Number.parseInt(String(result.stdout || '').trim().split('.')[0], 10)
+  return Number.isInteger(major) && major >= 11
 }
 
 function getDefaultNpmCommand() {
@@ -77,6 +90,10 @@ function buildPackageSpec(ref) {
   return `${DEFAULT_REPO_ARCHIVE_BASE}/${ref}.tar.gz`
 }
 
+function buildInstallArgs(packageSpec, { allowScripts = false } = {}) {
+  return ['install', '-g', ...(allowScripts ? [ALLOW_SCRIPTS_FLAG] : []), packageSpec]
+}
+
 function buildSyncArgs({ host, mode }) {
   return [
     'explore',
@@ -98,6 +115,8 @@ export function runBranchSwitch(args, options = {}) {
   const childEnv = buildBranchChildEnv(options.env || process.env)
 
   const packageSpec = buildPackageSpec(parsed.branch)
-  runCommand(npmCommand, ['install', '-g', packageSpec], { env: childEnv })
+  runCommand(npmCommand, buildInstallArgs(packageSpec, {
+    allowScripts: npmSupportsAllowScripts(npmCommand, childEnv),
+  }), { env: childEnv })
   runCommand(npmCommand, buildSyncArgs(parsed), { env: childEnv })
 }

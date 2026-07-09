@@ -51,6 +51,10 @@ function createFakeNpm(binDir, logPath) {
     loggerScript,
     [
       '#!/bin/sh',
+      'if [ "$#" -eq 1 ] && [ "$1" = "--version" ]; then',
+      '  printf "%s\\n" "${FAKE_NPM_VERSION:-11.16.0}"',
+      '  exit 0',
+      'fi',
       'joined="$*"',
       'printf \'args=%s|deploy=%s|target=%s|mode=%s|branch=%s|package=%s|compact=%s\\n\' "$joined" "${HELLOAGENTS_DEPLOY:-}" "${HELLOAGENTS_TARGET:-}" "${HELLOAGENTS_MODE:-}" "${HELLOAGENTS_BRANCH:-}" "${HELLOAGENTS_PACKAGE:-}" "${HELLOAGENTS:-}" >> "$FAKE_NPM_LOG"',
       'if [ -n "${FAKE_NPM_FAIL_MATCH:-}" ] && [ "$joined" = "$FAKE_NPM_FAIL_MATCH" ]; then',
@@ -119,7 +123,7 @@ test('install.sh install forwards postinstall deploy env for compact host mode s
 
   const entries = readLogEntries(logPath)
   assert.equal(entries.length, 1)
-  assert.equal(entries[0].args, 'install -g helloagents')
+  assert.equal(entries[0].args, 'install -g --allow-scripts=helloagents helloagents')
   assert.equal(entries[0].deploy, '1')
   assert.equal(entries[0].target, 'codex')
   assert.equal(entries[0].mode, 'global')
@@ -136,7 +140,7 @@ test('install.sh install without an explicit target only installs the package', 
 
   const entries = readLogEntries(logPath)
   assert.equal(entries.length, 1)
-  assert.equal(entries[0].args, 'install -g helloagents')
+  assert.equal(entries[0].args, 'install -g --allow-scripts=helloagents helloagents')
   assert.equal(entries[0].deploy, '')
   assert.equal(entries[0].target, '')
   assert.equal(entries[0].mode, '')
@@ -154,7 +158,7 @@ test('install.sh update without an explicit target only updates the package', { 
 
   const entries = readLogEntries(logPath)
   assert.equal(entries.length, 1)
-  assert.equal(entries[0].args, 'update -g helloagents')
+  assert.equal(entries[0].args, 'install -g --allow-scripts=helloagents helloagents@latest')
   assert.equal(entries[0].deploy, '')
   assert.equal(entries[0].target, '')
   assert.equal(entries[0].mode, '')
@@ -176,7 +180,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
+      'install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- codex --standby',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
@@ -192,7 +196,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      `install -g ${customPackage}`,
+      `install -g --allow-scripts=helloagents ${customPackage}`,
       'explore -g helloagents -- npm run sync-hosts -- codex',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
@@ -224,7 +228,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
+      'install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- gemini --global',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
@@ -241,7 +245,7 @@ test('install.sh update, cleanup, switch-branch, and uninstall dispatch the expe
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      `install -g ${customPackage}`,
+      `install -g --allow-scripts=helloagents ${customPackage}`,
       'explore -g helloagents -- npm run sync-hosts -- gemini --global',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
@@ -289,7 +293,7 @@ test('install.sh omits the mode for non-install actions so the CLI can reuse tra
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      'update -g helloagents',
+      'install -g --allow-scripts=helloagents helloagents@latest',
       'explore -g helloagents -- npm run sync-hosts -- codex',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
@@ -319,9 +323,25 @@ test('install.sh omits the mode for non-install actions so the CLI can reuse tra
     runInstallSh(pkgRoot, home, env)
     const entries = readLogEntries(logPath)
     assert.deepEqual(entries.map((entry) => entry.args), [
-      'install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
+      'install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz',
       'explore -g helloagents -- npm run sync-hosts -- gemini',
     ])
     assert.ok(entries.every((entry) => entry.deploy === '' && entry.target === '' && entry.mode === '' && entry.compact === ''))
   }
+})
+
+test('install.sh omits allow-scripts for npm 10 and below', { skip: !POSIX_SHELL }, () => {
+  const { root: pkgRoot } = createPackageFixture()
+  const home = createHomeFixture()
+  const { logPath, env } = createScriptEnv(home, {
+    HELLOAGENTS_ACTION: 'install',
+    HELLOAGENTS: 'codex',
+    FAKE_NPM_VERSION: '10.9.3',
+  })
+
+  runInstallSh(pkgRoot, home, env)
+
+  const entries = readLogEntries(logPath)
+  assert.equal(entries.length, 1)
+  assert.equal(entries[0].args, 'install -g helloagents')
 })

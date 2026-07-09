@@ -243,7 +243,7 @@ CLI 显式管理宿主文件：
 ### 1）安装包
 
 ```bash
-npm install -g helloagents
+npm install -g --allow-scripts=helloagents helloagents
 ```
 
 如果系统里已经有别的 `helloagents` 可执行文件，可以使用稳定的受管入口别名：
@@ -253,6 +253,8 @@ helloagents-js
 ```
 
 默认情况下，`postinstall` 会安装包命令、初始化 `~/.helloagents/helloagents.json`，并把运行时文件同步到 `~/.helloagents/helloagents`。如果希望 npm 在安装或更新后直接部署，设置 `HELLOAGENTS=目标[:模式]`，例如 `HELLOAGENTS=codex:global`。
+
+如果你使用的是 npm 11 或更高版本，建议在直接安装或升级包时保留 `--allow-scripts=helloagents`，这样 npm 会直接放行受管 `postinstall`，不再弹出审批警告。若你仍在使用 npm 10 或更早版本，可以省略这个参数。
 
 ### 2）部署到目标 CLI
 
@@ -323,7 +325,7 @@ helloagents codex goals enable
 
 ### npm 和一键脚本入口
 
-当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`grok`、`cursor`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。如果未提供 `HELLOAGENTS`，一键安装脚本现在会保持“只装包/只升级包”的默认语义，不会自动部署任何宿主 CLI。若要安装自定义 tarball 或包规格，用 `HELLOAGENTS_PACKAGE`，不要写 `HELLOAGENTS_BRANCH`。对于已经装好的包，如需确保宿主一定刷新，优先在包命令后显式执行一次 `npm explore -g helloagents -- npm run sync-hosts -- ...`。
+当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`grok`、`cursor`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。如果未提供 `HELLOAGENTS`，一键安装脚本现在会保持“只装包/只升级包”的默认语义，不会自动部署任何宿主 CLI。若要安装自定义 tarball 或包规格，用 `HELLOAGENTS_PACKAGE`，不要写 `HELLOAGENTS_BRANCH`。对于已经装好的包，如需确保宿主一定刷新，优先在包命令后显式执行一次 `npm explore -g helloagents -- npm run sync-hosts -- ...`。Shell 和 PowerShell 一键脚本会自动识别 npm 11+，只在宿主支持时追加 `--allow-scripts=helloagents`。
 
 宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。Claude Code 的 global 安装使用独立本地 marketplace 投影 `~/.helloagents/host-projections/claude-marketplace`，Gemini 的 global 扩展使用 `~/.helloagents/host-projections/gemini`，Grok Build 的 global 安装使用实体化 marketplace 投影 `~/.helloagents/host-projections/helloagents-grok-marketplace`，Cursor 的 global 安装使用精简本地插件投影 `~/.helloagents/host-projections/cursor-local-plugin/helloagents`，并把真实插件目录复制到 `~/.cursor/plugins/local/helloagents`，这样宿主专用打包链路不再污染共享运行根，也不依赖仅靠符号链接解析的插件加载。
 
@@ -333,17 +335,17 @@ macOS / Linux：
 
 ```bash
 # 安装到 Codex，标准模式
-HELLOAGENTS=codex npm install -g helloagents
+HELLOAGENTS=codex npm install -g --allow-scripts=helloagents helloagents
 
 # 安装到 Codex，全局模式
-HELLOAGENTS=codex:global npm install -g helloagents
+HELLOAGENTS=codex:global npm install -g --allow-scripts=helloagents helloagents
 
 # 先更新包，再刷新 Claude，标准模式
-npm update -g helloagents
+npm install -g --allow-scripts=helloagents helloagents@latest
 npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
 # 先切到 beta 分支，再刷新全部 CLI，标准模式
-npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # 卸载包前清理 Gemini 集成
@@ -355,17 +357,17 @@ Windows PowerShell：
 
 ```powershell
 # 安装到 Codex，标准模式
-$env:HELLOAGENTS="codex"; npm install -g helloagents
+$env:HELLOAGENTS="codex"; npm install -g --allow-scripts=helloagents helloagents
 
 # 安装到 Codex，全局模式
-$env:HELLOAGENTS="codex:global"; npm install -g helloagents
+$env:HELLOAGENTS="codex:global"; npm install -g --allow-scripts=helloagents helloagents
 
 # 先更新包，再刷新 Claude，标准模式
-npm update -g helloagents
+npm install -g --allow-scripts=helloagents helloagents@latest
 npm explore -g helloagents -- npm run sync-hosts -- claude --standby
 
 # 先切到 beta 分支，再刷新全部 CLI，标准模式
-npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
 npm explore -g helloagents -- npm run sync-hosts -- --all --standby
 
 # 卸载包前清理 Gemini 集成
@@ -441,8 +443,8 @@ helloagents branch beta --all --standby
 如果只想切换包本身，暂不同步宿主 CLI，可以直接使用 npm：
 
 ```bash
-npm install -g https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
-npm update -g helloagents
+npm install -g --allow-scripts=helloagents https://github.com/hellowind777/helloagents/archive/refs/heads/beta.tar.gz
+npm install -g --allow-scripts=helloagents helloagents@latest
 npm explore -g helloagents -- npm run uninstall -- --all
 npm uninstall -g helloagents
 ```

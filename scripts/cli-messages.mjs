@@ -17,13 +17,13 @@ export function createMessageHelpers(isCN) {
 function codexStandbyStatus({ home, msg }) {
   return existsSync(join(home, '.codex'))
     ? msg('已自动配置', 'Auto-configured')
-    : msg('安装 Codex CLI 后重新运行 npm install -g helloagents', 'Install Codex CLI then re-run npm install -g helloagents')
+    : msg('安装 Codex CLI 后重新运行 npm install -g --allow-scripts=helloagents helloagents', 'Install Codex CLI then re-run npm install -g --allow-scripts=helloagents helloagents')
 }
 
 function codexGlobalStatus({ home, msg }) {
   return existsSync(join(home, '.codex'))
     ? msg('已自动安装原生本地插件', 'Native local plugin auto-installed')
-    : msg('安装 Codex CLI 后重新运行 npm install -g helloagents', 'Install Codex CLI then re-run npm install -g helloagents')
+    : msg('安装 Codex CLI 后重新运行 npm install -g --allow-scripts=helloagents helloagents', 'Install Codex CLI then re-run npm install -g --allow-scripts=helloagents helloagents')
 }
 
 function pluginCommands(home) {
@@ -96,8 +96,8 @@ function renderHelp({ pkgVersion, msg, home }) {
 HelloAGENTS v${pkgVersion} — The orchestration kernel for AI CLIs
 
   ${msg('安装', 'Install')}:
-  npm install -g helloagents  ${msg('（安装命令并同步稳定运行根目录；CLI 部署需显式执行 helloagents install ...）', '(installs the command and syncs the stable runtime root; deploy to CLIs explicitly with helloagents install ...)')}
-  HELLOAGENTS=codex:global npm install -g helloagents
+  npm install -g --allow-scripts=helloagents helloagents  ${msg('（npm 11+ 推荐；会同步稳定运行根目录。CLI 部署需显式执行 helloagents install ...）', '(recommended for npm 11+; syncs the stable runtime root. Deploy to CLIs explicitly with helloagents install ...)')}
+  HELLOAGENTS=codex:global npm install -g --allow-scripts=helloagents helloagents
   helloagents-js             ${msg('（受管宿主配置的跨平台稳定入口）', '(cross-platform stable entrypoint for managed host configs)')}
 
 ${msg('模式切换', 'Mode switching')}:
