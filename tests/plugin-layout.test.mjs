@@ -33,6 +33,11 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.equal(Array.isArray(codexPlugin.interface?.defaultPrompt), true);
   assert.equal(codexPlugin.interface.defaultPrompt.length <= 3, true);
 
+  const grokPlugin = JSON.parse(read('.grok-plugin/plugin.json'));
+  assert.equal(grokPlugin.name, 'helloagents');
+  assert.equal(grokPlugin.author?.name, 'HelloWind');
+  assert.equal(grokPlugin.license, 'Apache-2.0');
+
   const geminiExtension = JSON.parse(read('gemini-extension.json'));
   assert.equal(geminiExtension.contextFileName, 'bootstrap.md');
 
@@ -59,6 +64,13 @@ test('plugin manifests and host hook files match their target CLIs', () => {
   assert.match(codexHooks, /--codex --silent/);
   assert.match(codexHooks, /\$\{PLUGIN_ROOT\}/);
   assert.doesNotMatch(codexHooks, /statusMessage/);
+
+  const grokHooks = read('hooks/hooks-grok.json');
+  assert.match(grokHooks, /UserPromptSubmit/);
+  assert.match(grokHooks, /SubagentStop/);
+  assert.match(grokHooks, /guard\.mjs\\\" --grok/);
+  assert.match(grokHooks, /\$\{GROK_PLUGIN_ROOT\}/);
+  assert.doesNotMatch(grokHooks, /BeforeAgent/);
 });
 
 test('bootstrap path rules no longer depend on host-name placeholders or wrong carrier-relative skills paths', () => {

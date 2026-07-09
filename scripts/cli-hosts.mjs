@@ -12,6 +12,7 @@ import {
   loadHooksWithCliEntry,
 } from './cli-utils.mjs';
 import { buildRuntimeCarrier, readCarrierSettings } from './cli-runtime-carrier.mjs';
+import { installGrokStandby, uninstallGrokStandby } from './cli-grok.mjs';
 
 export function installClaudeStandby(home, pkgRoot) {
   const claudeDir = join(home, '.claude');
@@ -81,3 +82,5 @@ export function uninstallGeminiStandby(home) {
 
   return true;
 }
+
+export { installGrokStandby, uninstallGrokStandby };

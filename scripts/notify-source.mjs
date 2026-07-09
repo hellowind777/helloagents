@@ -6,6 +6,7 @@ const HOST_LABELS = {
   codex: 'Codex',
   claude: 'Claude Code',
   gemini: 'Gemini',
+  grok: 'Grok Build',
 }
 
 function normalizePath(filePath = '') {

@@ -1,6 +1,10 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { getClaudeMarketplaceRoot, getGeminiExtensionRoot } from './cli-runtime-root.mjs'
+import {
+  getClaudeMarketplaceRoot,
+  getGeminiExtensionRoot,
+  getGrokMarketplaceRoot,
+} from './cli-runtime-root.mjs'
 
 export function createMessageHelpers(isCN) {
   const msg = (cn, en) => (isCN ? cn : en)
@@ -21,17 +25,20 @@ function codexGlobalStatus({ home, msg }) {
 }
 
 function pluginCommands(home) {
+  const grokMarketplaceRoot = getGrokMarketplaceRoot(home)
   return [
     `    Claude Code:  /plugin marketplace add "${getClaudeMarketplaceRoot(home)}"`,
     '                  /plugin install helloagents@helloagents',
     `    Gemini CLI:   gemini extensions link "${getGeminiExtensionRoot(home)}"`,
+    `    Grok Build:   grok plugin marketplace add "${grokMarketplaceRoot}"`,
+    `                  grok plugin install "${join(grokMarketplaceRoot, 'plugins', 'helloagents')}" --trust`,
   ].join('\n')
 }
 
 function removeHint(msg) {
   return msg(
-    '如已安装 Claude Code 插件，可手动移除: /plugin remove helloagents\n  如已安装 Gemini CLI 扩展，可手动移除: gemini extensions uninstall helloagents',
-    'If the Claude Code plugin is installed, you can remove it: /plugin remove helloagents\n  If the Gemini CLI extension is installed, you can remove it: gemini extensions uninstall helloagents',
+    '如已安装 Claude Code 插件，可手动移除: /plugin remove helloagents\n  如已安装 Gemini CLI 扩展，可手动移除: gemini extensions uninstall helloagents\n  如已安装 Grok Build 插件，可手动移除: grok plugin uninstall helloagents --confirm',
+    'If the Claude Code plugin is installed, you can remove it: /plugin remove helloagents\n  If the Gemini CLI extension is installed, you can remove it: gemini extensions uninstall helloagents\n  If the Grok Build plugin is installed, you can remove it: grok plugin uninstall helloagents --confirm',
   )
 }
 
@@ -50,24 +57,24 @@ function renderInstallMessage(context, mode, state) {
   if (mode === 'global') {
     if (install) {
       return msg(
-        `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n    Claude Code / Gemini CLI: 已自动尝试宿主原生插件/扩展安装\n    Codex:        ${codexGlobalStatus(context)}（~/.agents/plugins/marketplace.json + ~/plugins/helloagents）\n\n  ${restartHint(msg)}\n\n  若宿主命令不可用，请手动执行：\n${pluginCommands(home)}\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
-        `\n  ✅ HelloAGENTS installed (global mode)!\n\n    Claude Code / Gemini CLI: native plugin/extension install attempted automatically\n    Codex:        ${codexGlobalStatus(context)} (~/.agents/plugins/marketplace.json + ~/plugins/helloagents)\n\n  ${restartHint(msg)}\n\n  If a host command is unavailable, run manually:\n${pluginCommands(home)}\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`,
+        `\n  ✅ HelloAGENTS 已安装（global 模式）！\n\n    Claude Code / Gemini CLI / Grok Build: 已自动尝试宿主原生插件或 marketplace 安装\n    Codex:        ${codexGlobalStatus(context)}（~/.agents/plugins/marketplace.json + ~/plugins/helloagents）\n\n  ${restartHint(msg)}\n\n  若宿主命令不可用，请手动执行：\n${pluginCommands(home)}\n\n  切换模式：\n    helloagents --standby   标准模式（默认，非插件安装）`,
+        `\n  ✅ HelloAGENTS installed (global mode)!\n\n    Claude Code / Gemini CLI / Grok Build: native plugin or marketplace install attempted automatically\n    Codex:        ${codexGlobalStatus(context)} (~/.agents/plugins/marketplace.json + ~/plugins/helloagents)\n\n  ${restartHint(msg)}\n\n  If a host command is unavailable, run manually:\n${pluginCommands(home)}\n\n  Switch modes:\n    helloagents --standby   Standby mode (default, non-plugin install)`,
       )
     }
     return msg(
       refresh
-        ? `  global 模式已刷新。\n  Claude Code / Gemini 已自动尝试刷新宿主插件/扩展；Codex 原生本地插件已重装并同步最新文件。\n  ${restartHint(msg)}`
-        : `  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini 已自动尝试安装宿主插件/扩展；Codex 已自动安装原生本地插件。\n  ${restartHint(msg)}\n\n若宿主命令不可用，请手动执行：\n${pluginCommands(home)}`,
+        ? `  global 模式已刷新。\n  Claude Code / Gemini / Grok 已自动尝试刷新宿主原生插件或 marketplace；Codex 原生本地插件已重装并同步最新文件。\n  ${restartHint(msg)}`
+        : `  所有项目将自动启用完整 HelloAGENTS 规则。\n  Claude Code / Gemini / Grok 已自动尝试安装宿主原生插件或 marketplace；Codex 已自动安装原生本地插件。\n  ${restartHint(msg)}\n\n若宿主命令不可用，请手动执行：\n${pluginCommands(home)}`,
       refresh
-        ? `  Global mode refreshed.\n  Claude Code / Gemini native plugin/extension refresh was attempted automatically; Codex native local-plugin files were reinstalled and synced.\n  ${restartHint(msg)}`
-        : `  All projects will use full HelloAGENTS rules.\n  Claude Code / Gemini native plugin/extension install was attempted automatically; Codex now uses the native local-plugin path automatically.\n  ${restartHint(msg)}\n\nIf a host command is unavailable, run manually:\n${pluginCommands(home)}`,
+        ? `  Global mode refreshed.\n  Claude Code / Gemini / Grok native plugin or marketplace refresh was attempted automatically; Codex native local-plugin files were reinstalled and synced.\n  ${restartHint(msg)}`
+        : `  All projects will use full HelloAGENTS rules.\n  Claude Code / Gemini / Grok native plugin or marketplace install was attempted automatically; Codex now uses the native local-plugin path automatically.\n  ${restartHint(msg)}\n\nIf a host command is unavailable, run manually:\n${pluginCommands(home)}`,
     )
   }
 
   if (install) {
     return msg(
-      `\n  ✅ HelloAGENTS 已安装（standby 模式）！\n\n    Claude Code:  已自动配置（~/.claude/CLAUDE.md + hooks）\n    Gemini CLI:   已自动配置（~/.gemini/GEMINI.md）\n    Codex:        ${codexStandbyStatus(context)}\n\n  ${restartHint(msg)}\n\n  standby 模式下，hello-* 技能不会自动触发。\n  在项目中使用 ~init 初始化完整项目工作流；未初始化时也可继续用 ~command 按需调用。\n\n  切换模式：\n    helloagents --global    宿主级全局部署（自动尝试 Claude/Gemini 插件或扩展；Codex 自动装原生本地插件）`,
-      `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Codex:        ${codexStandbyStatus(context)}\n\n  ${restartHint(msg)}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~init to initialize the full project workflow; uninitialized repos can still use ~command on demand.\n\n  Switch modes:\n    helloagents --global    Host-wide global deployment (auto-attempts Claude/Gemini plugins or extensions; native local plugin auto-install for Codex)`,
+      `\n  ✅ HelloAGENTS 已安装（standby 模式）！\n\n    Claude Code:  已自动配置（~/.claude/CLAUDE.md + hooks）\n    Gemini CLI:   已自动配置（~/.gemini/GEMINI.md）\n    Grok Build:   已自动配置（~/.grok/AGENTS.md + hooks）\n    Codex:        ${codexStandbyStatus(context)}\n\n  ${restartHint(msg)}\n\n  standby 模式下，hello-* 技能不会自动触发。\n  在项目中使用 ~init 初始化完整项目工作流；未初始化时也可继续用 ~command 按需调用。\n\n  切换模式：\n    helloagents --global    宿主级全局部署（自动尝试 Claude/Gemini/Grok 原生插件或 marketplace；Codex 自动装原生本地插件）`,
+      `\n  ✅ HelloAGENTS installed (standby mode)!\n\n    Claude Code:  Auto-configured (~/.claude/CLAUDE.md + hooks)\n    Gemini CLI:   Auto-configured (~/.gemini/GEMINI.md)\n    Grok Build:   Auto-configured (~/.grok/AGENTS.md + hooks)\n    Codex:        ${codexStandbyStatus(context)}\n\n  ${restartHint(msg)}\n\n  In standby mode, hello-* skills won't auto-trigger.\n  Use ~init to initialize the full project workflow; uninitialized repos can still use ~command on demand.\n\n  Switch modes:\n    helloagents --global    Host-wide global deployment (auto-attempts Claude/Gemini/Grok native plugin or marketplace installs; native local plugin auto-install for Codex)`,
     )
   }
 
@@ -91,17 +98,18 @@ HelloAGENTS v${pkgVersion} — The orchestration kernel for AI CLIs
   helloagents-js             ${msg('（受管宿主配置的跨平台稳定入口）', '(cross-platform stable entrypoint for managed host configs)')}
 
 ${msg('模式切换', 'Mode switching')}:
-  helloagents --global     ${msg('宿主级全局部署（自动尝试 Claude/Gemini 插件或扩展；Codex 自动装原生本地插件）', 'Host-wide global deployment (auto-attempts Claude/Gemini plugins or extensions; native local plugin auto-install for Codex)')}
+  helloagents --global     ${msg('宿主级全局部署（自动尝试 Claude/Gemini/Grok 原生插件或 marketplace；Codex 自动装原生本地插件）', 'Host-wide global deployment (auto-attempts Claude/Gemini/Grok native plugin or marketplace installs; native local plugin auto-install for Codex)')}
   helloagents --standby    ${msg('标准模式（非插件安装，hello-* 不自动触发，默认）', "Standby mode (non-plugin install, hello-* won't auto-trigger, default)")}
 
 ${msg('单 CLI 管理', 'Scoped CLI management')}:
   helloagents install codex --standby
   helloagents install gemini --standby
+  helloagents install grok --global
   helloagents install --all --global
   helloagents update codex
   helloagents cleanup claude --global
   helloagents uninstall gemini
-  ${msg('支持: claude | gemini | codex | --all；省略模式时优先沿用该 CLI 已记录/已检测的模式，否则回退 standby', 'Hosts: claude | gemini | codex | --all; omit mode to reuse the tracked/detected mode for that CLI, then fall back to standby')}
+  ${msg('支持: claude | gemini | grok | codex | --all；省略模式时优先沿用该 CLI 已记录/已检测的模式，否则回退 standby', 'Hosts: claude | gemini | grok | codex | --all; omit mode to reuse the tracked/detected mode for that CLI, then fall back to standby')}
 
 ${msg('分支切换', 'Branch switching')}:
   helloagents switch-branch beta
@@ -125,6 +133,7 @@ ${msg('卸载', 'Uninstall')}:
   ${msg('如宿主命令不可用，另需手动移除：', 'If host commands are unavailable, also remove manually:')}
     Claude Code:  /plugin remove helloagents
     Gemini CLI:   gemini extensions uninstall helloagents
+    Grok Build:   grok plugin uninstall helloagents --confirm
 `.trim()
 }
 

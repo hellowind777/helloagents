@@ -174,7 +174,7 @@ export function getProjectRoot(cwd) {
 
 function getCarrierPathForRoot(root, host = '') {
   if (!root) return ''
-  if (host === 'codex') return join(root, 'AGENTS.md')
+  if (host === 'codex' || host === 'grok') return join(root, 'AGENTS.md')
   if (host === 'gemini') return join(root, '.gemini', 'GEMINI.md')
   return join(root, 'CLAUDE.md')
 }

@@ -49,7 +49,7 @@
 
 AI 编码 CLI 写代码能力很强，但常见问题也很明显：停在建议不肯动手、跳过检查步骤、丢失项目上下文、遇到困难推卸责任、没做完就报告完成。
 
-HelloAGENTS 叠加在 Claude Code、Gemini CLI 和 Codex CLI 之上，将模型锚定为高能力执行者，阻断推责模式，帮助模型选择合适流程、使用任务相关的质量技能、维护项目知识库，并在交付前完成验证。
+HelloAGENTS 叠加在 Claude Code、Gemini CLI、Grok Build 和 Codex CLI 之上，将模型锚定为高能力执行者，阻断推责模式，帮助模型选择合适流程、使用任务相关的质量技能、维护项目知识库，并在交付前完成验证。
 
 <table>
 <tr>
@@ -231,12 +231,12 @@ CLI 显式管理宿主文件：
 - `update` 刷新指定目标或全部目标
 - `cleanup` 删除受管注入和链接
 - `uninstall` 在移除包前执行对应清理
-- `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本、版本漂移，以及 Claude / Gemini 是否真的装上了全局插件或扩展；对 Codex 还会在可用时附带原生 `codex doctor` 结果
+- `doctor` 检查规则文件、链接、hooks、配置项、插件根目录、缓存副本、版本漂移，以及 Claude / Gemini / Grok 是否真的装上了全局插件、扩展或 marketplace 插件；对 Codex 还会在可用时附带原生 `codex doctor` 结果
 - Codex 受管 `notify = ["helloagents-js", "codex-notify"]` 会继续保持可移植；`doctor`、`cleanup` 和 `uninstall` 也能识别 Codex App / Computer Use 使用的 `--previous-notify` 包装链
 - 单 CLI 模式记录只会在宿主安装成功后写入；如果原生全局清理失败，也会继续保留 `global` 记录，而不是悄悄叠加 standby
 - 直接执行 `switch-branch` 时，会先清掉陈旧的 `HELLOAGENTS*` 生命周期环境变量；包级 `preuninstall` 在没有显式宿主参数时固定回退到 `--all`，避免残留 shell 环境把切分支或卸载清理错误缩窄到旧目标
 - Windows 下的 `.cmd` / `.bat` 生命周期调用现在统一走显式命令包装，不再出现 Node `DEP0190` shell 弃用警告
-- Claude Code、Gemini CLI 和 Codex CLI 的配置写入、更新、清理、卸载、模式切换与分支切换，现在按一条完整生命周期链路验证，而不是分散的“尽量覆盖”
+- Claude Code、Gemini CLI、Grok Build 和 Codex CLI 的配置写入、更新、清理、卸载、模式切换与分支切换，现在按一条完整生命周期链路验证，而不是分散的“尽量覆盖”
 
 ## 快速开始
 
@@ -314,6 +314,7 @@ helloagents codex goals enable
 
 - `claude`
 - `gemini`
+- `grok`
 - `codex`
 - `--all`
 
@@ -321,9 +322,9 @@ helloagents codex goals enable
 
 ### npm 和一键脚本入口
 
-当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。如果未提供 `HELLOAGENTS`，一键安装脚本现在会保持“只装包/只升级包”的默认语义，不会自动部署任何宿主 CLI。若要安装自定义 tarball 或包规格，用 `HELLOAGENTS_PACKAGE`，不要写 `HELLOAGENTS_BRANCH`。对于已经装好的包，如需确保宿主一定刷新，优先在包命令后显式执行一次 `npm explore -g helloagents -- npm run sync-hosts -- ...`。
+当你不想依赖更新过程中的 `helloagents` 可执行文件时，用 npm 或一键脚本。`HELLOAGENTS=目标[:模式]` 中，目标支持 `all`、`claude`、`gemini`、`grok`、`codex`；模式支持 `standby`、`global`。用于安装时，省略模式按 `standby` 处理；用于更新、清理、卸载和切换分支时，省略模式会原样下传，让 HelloAGENTS 先复用该 CLI 已记录或检测到的模式。如果未提供 `HELLOAGENTS`，一键安装脚本现在会保持“只装包/只升级包”的默认语义，不会自动部署任何宿主 CLI。若要安装自定义 tarball 或包规格，用 `HELLOAGENTS_PACKAGE`，不要写 `HELLOAGENTS_BRANCH`。对于已经装好的包，如需确保宿主一定刷新，优先在包命令后显式执行一次 `npm explore -g helloagents -- npm run sync-hosts -- ...`。
 
-宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。Claude Code 的 global 安装现在使用独立本地 marketplace 投影 `~/.helloagents/host-projections/claude-marketplace`，Gemini 的 global 扩展使用 `~/.helloagents/host-projections/gemini`，宿主专用打包链路不再污染共享运行根。
+宿主配置使用稳定的 `helloagents-js` 入口和运行根目录 `~/.helloagents/helloagents`，Node 全局包路径变化不会破坏受管 hooks 或 Codex `notify`。Codex hooks 使用独立 `~/.codex/hooks.json`，不把大段配置写入 `config.toml`；Codex 全局插件根目录和插件缓存也会回链到这个稳定运行根目录。Claude Code 的 global 安装使用独立本地 marketplace 投影 `~/.helloagents/host-projections/claude-marketplace`，Gemini 的 global 扩展使用 `~/.helloagents/host-projections/gemini`，Grok Build 的 global 安装使用实体化 marketplace 投影 `~/.helloagents/host-projections/helloagents-grok-marketplace`，宿主专用打包链路不再污染共享运行根。
 
 #### npm 命令
 
@@ -451,6 +452,7 @@ npm uninstall -g helloagents
 |-----|------------------|----------|
 | Claude Code | `~/.claude/CLAUDE.md`、`~/.claude/settings.json`、`~/.claude/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks / 权限和符号链接 |
 | Gemini CLI | `~/.gemini/GEMINI.md`、`~/.gemini/settings.json`、`~/.gemini/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、HelloAGENTS hooks 和符号链接 |
+| Grok Build | `~/.grok/AGENTS.md`、`~/.grok/hooks/helloagents.json`、`~/.grok/helloagents -> ~/.helloagents/helloagents` | 删除受管标记块、受管 Grok hooks 文件和符号链接 |
 | Codex CLI | `~/.codex/AGENTS.md`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents`、受管备份 | 删除受管标记块、受管配置键、受管 hooks、符号链接和最近一次受管备份 |
 
 ### 全局模式文件
@@ -459,19 +461,22 @@ npm uninstall -g helloagents
 |-----|----------|----------|
 | Claude Code | 原生插件安装 | `~/.helloagents/host-projections/claude-marketplace`，以及由 Claude Code 宿主管理的插件元数据 / 缓存 |
 | Gemini CLI | 原生扩展安装 | `~/.helloagents/host-projections/gemini`、`~/.gemini/extensions/helloagents` |
+| Grok Build | 原生 marketplace + 插件安装 | `~/.helloagents/host-projections/helloagents-grok-marketplace`、`~/.grok/config.toml`、`~/.grok/installed-plugins/registry.json`，以及由 Grok 宿主管理的插件缓存 |
 | Codex CLI | 原生本地插件流程 | `~/.agents/plugins/marketplace.json`、`~/plugins/helloagents/ -> ~/.helloagents/helloagents`、`~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`、`~/.codex/config.toml`、`~/.codex/hooks.json`、`~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-全局模式下，HelloAGENTS 会自动尝试宿主原生命令。Claude Code 走本地 marketplace 投影，Gemini 走本地 extension 投影，Codex 继续回链同一个稳定运行根，因此安装、更新、切分支、切模式、清理和卸载都会围绕同一份运行时副本刷新。若宿主命令不可用，再手动执行：
+全局模式下，HelloAGENTS 会自动尝试宿主原生命令。Claude Code 走本地 marketplace 投影，Gemini 走本地 extension 投影，Grok Build 走实体化的本地 marketplace 投影，Codex 继续回链同一个稳定运行根，因此安装、更新、切分支、切模式、清理和卸载都会围绕同一份运行时副本刷新。若宿主命令不可用，再手动执行：
 
 ```text
 /plugin marketplace add "~/.helloagents/host-projections/claude-marketplace"
 /plugin install helloagents@helloagents
 gemini extensions link "~/.helloagents/host-projections/gemini"
+grok plugin marketplace add "~/.helloagents/host-projections/helloagents-grok-marketplace"
+grok plugin install "~/.helloagents/host-projections/helloagents-grok-marketplace/plugins/helloagents" --trust
 ```
 
 Claude Code 会自动尝试等价的 `claude plugin marketplace add ...` 和 `claude plugin install ...` 命令。marketplace 名称和插件名称都是 `helloagents`，所以安装目标是 `helloagents@helloagents`。全局安装后需要重启宿主 CLI。
 
-当你把 Claude 或 Gemini 从全局模式切回标准模式时，HelloAGENTS 会先移除原生插件或扩展。如果这一步失败，会继续把该宿主记录为 `global`，而不是静默叠加 standby。
+当你把 Claude、Gemini 或 Grok 从全局模式切回标准模式时，HelloAGENTS 会先移除原生插件、扩展或 marketplace 插件。如果这一步失败，会继续把该宿主记录为 `global`，而不是静默叠加 standby。
 
 Codex 全局模式由 HelloAGENTS 通过本地插件路径自动安装。
 
@@ -700,7 +705,7 @@ npm test
 - 直接 `switch-branch` 与包级 `preuninstall` 的陈旧生命周期环境变量防护
 - Windows `.cmd` / `.bat` 生命周期分发链路，且不再出现 Node `DEP0190` 警告
 - shell 与 PowerShell 一键脚本分发链路，以及包装脚本在安装、更新、清理、卸载和分支切换中的环境清理与模式传递规则
-- Claude、Gemini、Codex 的宿主集成行为，包括全局切回标准模式的清理和原生清理失败时的模式保留
+- Claude、Gemini、Grok、Codex 的宿主集成行为，包括全局切回标准模式的清理和原生清理失败时的模式保留
 - Codex 受管 `model_instructions_file`、`notify`、`hooks.json`、hook trust 状态、本地插件、marketplace 和缓存行为
 - Codex 清理链路，以及包括 wrapped `--previous-notify` 在内的受管 notify 恢复规则
 - Codex `/goal` 功能开关、长程路由上下文和 goal 感知命令契约

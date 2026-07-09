@@ -44,7 +44,8 @@
     "install.ps1",
     "gemini-extension.json",
     ".claude-plugin/",
-    ".codex-plugin/"
+    ".codex-plugin/",
+    ".grok-plugin/"
   ],
   "keywords": [
     "ai",

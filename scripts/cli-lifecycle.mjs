@@ -10,7 +10,7 @@ import {
 import { installAllHosts, runHostLifecycle } from './cli-lifecycle-hosts.mjs'
 import { ensureDir, safeJson, safeWrite } from './cli-utils.mjs'
 
-export const HOSTS = ['claude', 'gemini', 'codex']
+export const HOSTS = ['claude', 'gemini', 'grok', 'codex']
 
 const runtime = {
   home: '',
@@ -166,6 +166,7 @@ export function syncVersion() {
   const targets = [
     join(packageRoot, '.claude-plugin', 'plugin.json'),
     join(packageRoot, '.codex-plugin', 'plugin.json'),
+    join(packageRoot, '.grok-plugin', 'plugin.json'),
     join(packageRoot, 'gemini-extension.json'),
   ]
   for (const path of targets) {

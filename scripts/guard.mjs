@@ -21,7 +21,8 @@ import {
 
 const CONFIG_FILE = join(homedir(), '.helloagents', 'helloagents.json')
 const IS_GEMINI = process.argv.includes('--gemini')
-const HOST = IS_GEMINI ? 'gemini' : 'claude'
+const IS_GROK = process.argv.includes('--grok')
+const HOST = IS_GEMINI ? 'gemini' : (IS_GROK ? 'grok' : 'claude')
 const HOOK_EVENT = process.env.HELLOAGENTS_HOOK_EVENT
   || (
     process.argv.includes('post-write')

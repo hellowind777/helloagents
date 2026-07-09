@@ -49,7 +49,7 @@
 
 AI coding CLIs can move fast, but they can also stop at advice, skip checks, lose project context, shift responsibility when tasks get hard, or report completion before the work is really done.
 
-HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, and Codex CLI. It anchors the agent as a capable executor, blocks responsibility-shifting patterns, helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
+HelloAGENTS adds a workflow layer on top of Claude Code, Gemini CLI, Grok Build, and Codex CLI. It anchors the agent as a capable executor, blocks responsibility-shifting patterns, helps the agent choose the right path, use task-specific quality skills, keep a project knowledge base, and verify work before delivery.
 
 <table>
 <tr>
@@ -236,7 +236,7 @@ The CLI manages host files explicitly:
 - per-host mode tracking is written only after host setup succeeds, and failed native global cleanup keeps the host tracked as `global` instead of silently layering standby on top
 - direct `switch-branch` clears stale `HELLOAGENTS*` lifecycle env before its internal npm install/sync steps, and package `preuninstall` falls back to `--all` when no explicit host args are provided, so stale shell env does not shrink branch-switch or uninstall cleanup scope
 - Windows `.cmd` / `.bat` lifecycle calls now run through an explicit command wrapper, so host installs, branch switching, and doctor flows do not emit Node `DEP0190` shell deprecation warnings
-- Claude Code, Gemini CLI, and Codex CLI config writes, updates, cleanup, uninstall, mode switching, and branch switching are covered as one tested lifecycle chain instead of separate best-effort paths
+- Claude Code, Gemini CLI, Grok Build, and Codex CLI config writes, updates, cleanup, uninstall, mode switching, and branch switching are covered as one tested lifecycle chain instead of separate best-effort paths
 
 ## Quick Start
 
@@ -314,6 +314,7 @@ Supported targets:
 
 - `claude`
 - `gemini`
+- `grok`
 - `codex`
 - `--all`
 
@@ -321,9 +322,9 @@ If you omit `--standby` or `--global`, HelloAGENTS first reuses the tracked/dete
 
 ### npm and one-shot script entries
 
-Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
+Use these when you do not want to depend on the `helloagents` binary being available during package updates. In `HELLOAGENTS=target[:mode]`, target can be `all`, `claude`, `gemini`, `grok`, or `codex`; mode can be `standby` or `global`. For install, an omitted mode is treated as `standby`. For update, cleanup, uninstall, and branch switching, an omitted mode is forwarded unchanged so HelloAGENTS can reuse the tracked or detected mode for that CLI first. If you do not provide `HELLOAGENTS`, the one-shot install scripts now behave like plain package install: they install or update the package only and do not auto-deploy any host CLI. For a custom tarball or package spec, set `HELLOAGENTS_PACKAGE` instead of `HELLOAGENTS_BRANCH`. For a guaranteed refresh of an already installed package, prefer `npm explore -g helloagents -- npm run sync-hosts -- ...` after the package command.
 
-Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root. Claude Code global installs now use a dedicated local marketplace projection under `~/.helloagents/host-projections/claude-marketplace`, and Gemini global extension packaging uses `~/.helloagents/host-projections/gemini`, so host-specific packaging stays isolated from the shared runtime root.
+Host configs use the stable `helloagents-js` entrypoint and runtime root `~/.helloagents/helloagents`, so Node global package paths can change without breaking managed hooks or Codex `notify`. Codex hooks use standalone `~/.codex/hooks.json` instead of adding large hook blocks to `config.toml`, and Codex global plugin roots plus plugin cache now link back to that same stable runtime root. Claude Code global installs use a dedicated local marketplace projection under `~/.helloagents/host-projections/claude-marketplace`, Gemini global extension packaging uses `~/.helloagents/host-projections/gemini`, and Grok Build global installs use the materialized marketplace projection `~/.helloagents/host-projections/helloagents-grok-marketplace`, so host-specific packaging stays isolated from the shared runtime root.
 
 #### npm commands
 
@@ -451,6 +452,7 @@ npm uninstall -g helloagents
 |-----|--------------------------|------------------|
 | Claude Code | `~/.claude/CLAUDE.md`, `~/.claude/settings.json`, `~/.claude/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks/permissions, and symlink |
 | Gemini CLI | `~/.gemini/GEMINI.md`, `~/.gemini/settings.json`, `~/.gemini/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, HelloAGENTS hooks, and symlink |
+| Grok Build | `~/.grok/AGENTS.md`, `~/.grok/hooks/helloagents.json`, `~/.grok/helloagents -> ~/.helloagents/helloagents` | removes managed marker block, managed Grok hooks file, and symlink |
 | Codex CLI | `~/.codex/AGENTS.md`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents`, managed backups | removes managed marker block, managed config keys, managed hooks, symlink, and the latest managed backup |
 
 ### Global mode files
@@ -459,14 +461,17 @@ npm uninstall -g helloagents
 |-----|----------------|----------------|
 | Claude Code | native plugin install | `~/.helloagents/host-projections/claude-marketplace`, Claude Code plugin metadata/cache managed by the host |
 | Gemini CLI | native extension install | `~/.helloagents/host-projections/gemini`, `~/.gemini/extensions/helloagents` |
+| Grok Build | native marketplace + plugin install | `~/.helloagents/host-projections/helloagents-grok-marketplace`, `~/.grok/config.toml`, `~/.grok/installed-plugins/registry.json`, Grok plugin cache managed by the host |
 | Codex CLI | native local-plugin chain | `~/.agents/plugins/marketplace.json`, `~/plugins/helloagents/ -> ~/.helloagents/helloagents`, `~/.codex/plugins/cache/local-plugins/helloagents/local/ -> ~/.helloagents/helloagents`, `~/.codex/config.toml`, `~/.codex/hooks.json`, `~/.codex/helloagents -> ~/.helloagents/helloagents` |
 
-In global mode, HelloAGENTS now attempts the host-native install commands automatically. Claude Code uses the local marketplace projection, Gemini uses the local extension projection, and Codex keeps linking back to the same stable runtime root, so install, update, branch switching, mode switching, cleanup, and uninstall all refresh against one consistent runtime copy. If a host command is unavailable, run the same commands manually:
+In global mode, HelloAGENTS now attempts the host-native install commands automatically. Claude Code uses the local marketplace projection, Gemini uses the local extension projection, Grok Build uses the materialized local marketplace projection, and Codex keeps linking back to the same stable runtime root, so install, update, branch switching, mode switching, cleanup, and uninstall all refresh against one consistent runtime copy. If a host command is unavailable, run the same commands manually:
 
 ```text
 /plugin marketplace add "~/.helloagents/host-projections/claude-marketplace"
 /plugin install helloagents@helloagents
 gemini extensions link "~/.helloagents/host-projections/gemini"
+grok plugin marketplace add "~/.helloagents/host-projections/helloagents-grok-marketplace"
+grok plugin install "~/.helloagents/host-projections/helloagents-grok-marketplace/plugins/helloagents" --trust
 ```
 
 For Claude Code, the CLI also tries the equivalent `claude plugin marketplace add ...` and `claude plugin install ...` commands. The marketplace is named `helloagents`, and the plugin is also named `helloagents`, so the install target is `helloagents@helloagents`. Restart the host CLI after a global install.
@@ -661,6 +666,15 @@ Default shape:
 - global mode uses Gemini's extension system
 - switching from global back to standby removes the native extension first; if that cleanup fails, HelloAGENTS keeps Gemini tracked as `global`
 
+### Grok Build
+
+- standby writes `~/.grok/AGENTS.md`
+- standby writes a managed global hooks file at `~/.grok/hooks/helloagents.json`
+- standby creates `~/.grok/helloagents -> ~/.helloagents/helloagents`
+- global mode uses Grok Build's native marketplace plus plugin install path
+- global packaging is materialized under `~/.helloagents/host-projections/helloagents-grok-marketplace`
+- switching from global back to standby removes the native plugin and marketplace source first; if that cleanup fails, HelloAGENTS keeps Grok tracked as `global`
+
 ### Codex CLI
 
 Codex is rules-file driven by default.
@@ -697,7 +711,7 @@ The current suite covers:
 - stale lifecycle-env protection for direct `switch-branch` and package `preuninstall`
 - Windows `.cmd` / `.bat` lifecycle dispatch without Node `DEP0190` warnings
 - one-shot shell and PowerShell lifecycle dispatch, plus wrapper env cleanup and mode-routing rules for install, update, cleanup, uninstall, and branch switching
-- Claude, Gemini, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
+- Claude, Gemini, Grok, and Codex host integration behavior, including global-to-standby cleanup and failed native cleanup tracking
 - Codex managed `model_instructions_file`, `notify`, `hooks.json`, hook trust state, local plugin, marketplace, and cache behavior
 - Codex cleanup and canonical managed notify restoration rules, including wrapped `--previous-notify` chains
 - Codex `/goal` feature toggles, long-running route context, and goal-aware command contracts
@@ -705,7 +719,7 @@ The current suite covers:
 - project storage and `repo-shared` behavior
 - workspace-session scoped `state_path`, runtime signals, and evidence
 - runtime injection, routing, guard, verification, visual evidence, delivery gates, closeout de-duplication, sub-agent wrapper and notification suppression, and successful-mode tracking after native install failures
-- end-to-end host config write, update, cleanup, uninstall, mode-switch, and branch-switch flows across Claude Code, Gemini CLI, and Codex CLI
+- end-to-end host config write, update, cleanup, uninstall, mode-switch, and branch-switch flows across Claude Code, Gemini CLI, Grok Build, and Codex CLI
 - README and skill contract alignment
 
 ## FAQ
