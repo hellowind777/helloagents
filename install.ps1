@@ -57,6 +57,35 @@ function Invoke-Npm {
     }
 }
 
+function Get-AllowScriptsArgs {
+    if ($script:AllowScriptsArgsResolved) {
+        return $script:AllowScriptsArgs
+    }
+
+    $script:AllowScriptsArgsResolved = $true
+    $script:AllowScriptsArgs = @()
+
+    try {
+        $npmVersion = (& npm --version).Trim()
+        $majorText = $npmVersion.Split(".", 2)[0]
+        $major = 0
+        if ([int]::TryParse($majorText, [ref]$major) -and $major -ge 11) {
+            $script:AllowScriptsArgs = @("--allow-scripts=helloagents")
+        }
+    } catch {
+        $script:AllowScriptsArgs = @()
+    }
+
+    return $script:AllowScriptsArgs
+}
+
+function Invoke-InstallPackage {
+    param([string]$PackageSpec)
+    $allowScriptsArgs = Get-AllowScriptsArgs
+    $npmArgs = @("install", "-g") + $allowScriptsArgs + @($PackageSpec)
+    Invoke-Npm -NpmArgs $npmArgs
+}
+
 function Clear-HelloagentsEnv {
     foreach ($name in @(
         "HELLOAGENTS",
@@ -113,16 +142,13 @@ switch ($Action) {
         if ($HasExplicitTarget) {
             Enable-PostinstallDeploy
         }
-        Invoke-Npm -NpmArgs @("install", "-g", $Package)
+        Invoke-InstallPackage -PackageSpec $Package
     }
     "update" {
         if ($Branch -or $HasExplicitPackage) {
-            Invoke-Npm -NpmArgs @("install", "-g", $Package)
+            Invoke-InstallPackage -PackageSpec $Package
         } else {
-            & npm update -g helloagents
-            if ($LASTEXITCODE -ne 0) {
-                Invoke-Npm -NpmArgs @("install", "-g", "helloagents")
-            }
+            Invoke-InstallPackage -PackageSpec "helloagents@latest"
         }
         if ($HasExplicitTarget) {
             Sync-Hosts
@@ -135,14 +161,14 @@ switch ($Action) {
         if (-not $Branch -and -not $HasExplicitPackage) {
             throw "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for switch-branch"
         }
-        Invoke-Npm -NpmArgs @("install", "-g", $Package)
+        Invoke-InstallPackage -PackageSpec $Package
         Sync-Hosts
     }
     "branch" {
         if (-not $Branch -and -not $HasExplicitPackage) {
             throw "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for branch"
         }
-        Invoke-Npm -NpmArgs @("install", "-g", $Package)
+        Invoke-InstallPackage -PackageSpec $Package
         Sync-Hosts
     }
     "uninstall" {
