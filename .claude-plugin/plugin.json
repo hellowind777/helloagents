@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "思维激活层：纠偏内核 + 按需思维技能。Thinking-activation layer: a behavior-correcting kernel plus on-demand thinking skills.",
   "author": {
     "name": "HelloWind"

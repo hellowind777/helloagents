@@ -81,6 +81,30 @@ function settingsEntries(app, addon, hostId) {
 function writeGrokHooksFile(ctx, host, enabled) {
   const filePath = host.grokHooksPath(ctx.home)
   if (!filePath) return
+  _writeManagedHooksFile(ctx, 'grok', filePath, enabled)
+}
+
+/**
+ * Hermes 使用独立的 hooks 文件，格式与 Grok 一致：
+ * 按当前启用的组件重写全文；两个组件都停用时删除文件。
+ * @param {import('./main.mjs').CliContext} ctx
+ * @param {HostAdapter} host
+ * @param {{ guard: boolean, notify: boolean }} enabled
+ */
+function writeHermesHooksFile(ctx, host, enabled) {
+  const filePath = host.hermesHooksPath(ctx.home)
+  if (!filePath) return
+  _writeManagedHooksFile(ctx, 'hermes', filePath, enabled)
+}
+
+/**
+ * 写入受管 hooks JSON 文件。
+ * @param {import('./main.mjs').CliContext} ctx
+ * @param {string} hostId
+ * @param {string} filePath
+ * @param {{ guard: boolean, notify: boolean }} enabled
+ */
+function _writeManagedHooksFile(ctx, hostId, filePath, enabled) {
   if (!enabled.guard && !enabled.notify) {
     removePath(filePath)
     return
@@ -92,7 +116,7 @@ function writeGrokHooksFile(ctx, host, enabled) {
       {
         matcher: 'Bash',
         hooks: [
-          { type: 'command', command: hookCommand(ctx.app, 'guard.mjs', ['--host', 'grok']), timeout: 5 },
+          { type: 'command', command: hookCommand(ctx.app, 'guard.mjs', ['--host', hostId]), timeout: 5 },
         ],
       },
     ]
@@ -102,7 +126,7 @@ function writeGrokHooksFile(ctx, host, enabled) {
       {
         matcher: '',
         hooks: [
-          { type: 'command', command: hookCommand(ctx.app, 'notify.mjs', ['stop', '--host', 'grok']), timeout: 10 },
+          { type: 'command', command: hookCommand(ctx.app, 'notify.mjs', ['stop', '--host', hostId]), timeout: 10 },
         ],
       },
     ]
@@ -168,6 +192,11 @@ export function applyAddon(ctx, host, addon, enable, enabledAfter) {
     return { status: enable ? 'enabled' : 'disabled' }
   }
 
+  if (host.id === 'hermes') {
+    writeHermesHooksFile(ctx, host, enabledAfter)
+    return { status: enable ? 'enabled' : 'disabled' }
+  }
+
   if (host.id === 'cursor') {
     const hooksPath = host.cursorHooksPath(ctx.home)
     if (!hooksPath) return { status: 'unsupported' }
@@ -213,6 +242,7 @@ export function addonPresent(ctx, host, addon) {
     return configPath ? codexNotifyState(configPath) === 'managed' : false
   }
   if (host.id === 'grok') return containsOwnedCommand(readJson(host.grokHooksPath(ctx.home) ?? ''))
+  if (host.id === 'hermes') return containsOwnedCommand(readJson(host.hermesHooksPath(ctx.home) ?? ''))
   if (host.id === 'cursor') return containsOwnedCommand(readJson(host.cursorHooksPath(ctx.home) ?? ''))
   return containsOwnedCommand(readJson(host.settingsPath(ctx.home) ?? ''))
 }

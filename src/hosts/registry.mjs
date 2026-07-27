@@ -5,7 +5,7 @@
 import { join } from 'node:path'
 
 /**
- * @typedef {'claude' | 'codex' | 'grok' | 'cursor'} HostId
+ * @typedef {'claude' | 'codex' | 'grok' | 'cursor' | 'hermes'} HostId
  *
  * @typedef {Object} HostCapabilities
  * @property {boolean} inject 支持注入方式（用户级载体文件）
@@ -22,6 +22,7 @@ import { join } from 'node:path'
  * @property {(home: string) => string | null} settingsPath settings 形态 hooks 所在文件
  * @property {(home: string) => string | null} cursorHooksPath cursor 形态 hooks 所在文件
  * @property {(home: string) => string | null} grokHooksPath grok 独立 hooks 文件
+ * @property {(home: string) => string | null} hermesHooksPath Hermes 独立 hooks 文件
  * @property {(home: string) => string | null} codexConfigPath Codex 的 config.toml
  */
 
@@ -58,6 +59,19 @@ export const HOSTS = [
     settingsPath: () => null,
     cursorHooksPath: () => null,
     grokHooksPath: (home) => join(home, '.grok', 'hooks', 'helloagents.json'),
+    hermesHooksPath: () => null,
+    codexConfigPath: () => null,
+  },
+  {
+    id: 'hermes',
+    label: 'Hermes',
+    aliases: [],
+    capabilities: { inject: true, plugin: false, guard: true, notify: true },
+    carrierPath: (home) => join(home, '.hermes', 'AGENTS.md'),
+    settingsPath: () => null,
+    cursorHooksPath: () => null,
+    grokHooksPath: () => null,
+    hermesHooksPath: (home) => join(home, '.hermes', 'hooks', 'helloagents.json'),
     codexConfigPath: () => null,
   },
   {

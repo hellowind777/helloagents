@@ -138,6 +138,12 @@ export function buildDoctorReport(ctx) {
   if (fileExists(legacyGrokHooks) && isLegacyHookCommand(readText(legacyGrokHooks) ?? '')) {
     legacy.push(legacyGrokHooks)
   }
+  for (const hooksDir of ['.grok', '.hermes']) {
+    const hooksFile = join(ctx.home, hooksDir, 'hooks', 'helloagents.json')
+    if (fileExists(hooksFile) && isLegacyHookCommand(readText(hooksFile) ?? '')) {
+      legacy.push(hooksFile)
+    }
+  }
   const legacyCursorPlugin = cursorPluginDir(ctx.home)
   if (fileExists(join(legacyCursorPlugin, 'scripts'))) legacy.push(legacyCursorPlugin)
   // Gemini CLI 已不再是宿主，它留下的一切都算残留。
