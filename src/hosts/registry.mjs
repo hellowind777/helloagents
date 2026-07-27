@@ -37,6 +37,7 @@ export const HOSTS = [
     settingsPath: (home) => join(home, '.claude', 'settings.json'),
     cursorHooksPath: () => null,
     grokHooksPath: () => null,
+    hermesHooksPath: () => null,
     codexConfigPath: () => null,
   },
   {
@@ -48,6 +49,7 @@ export const HOSTS = [
     settingsPath: () => null,
     cursorHooksPath: () => null,
     grokHooksPath: () => null,
+    hermesHooksPath: () => null,
     codexConfigPath: (home) => join(home, '.codex', 'config.toml'),
   },
   {
@@ -83,6 +85,7 @@ export const HOSTS = [
     settingsPath: () => null,
     cursorHooksPath: (home) => join(home, '.cursor', 'hooks.json'),
     grokHooksPath: () => null,
+    hermesHooksPath: () => null,
     codexConfigPath: () => null,
   },
 ]
