@@ -1,5 +1,17 @@
 # 更新日志
 
+## 4.0.2（2026-07-27）
+
+宿主覆盖完整性与工具一致性修复。Hermes 在 4.0.1 被引入为第五个宿主，本次将文档与工具链路中遗漏之处补全。
+
+新增与变化：
+
+- **help 文本**：宿主列表、guard/notify 支持列表均补上 Hermes（CN/EN 两版）。
+- **安装脚本**：`install.ps1` 和 `install.sh` 的 `HELLOAGENTS_HOSTS` 注释中补上 `hermes`。
+- **migrate**：现在检查并清理 `.hermes/hooks/helloagents.json` 中的 3.x 遗留 hooks，与 doctor 行为一致（此前仅清理 `.grok`）。
+- **doctor**：移除对 `.grok/hooks/helloagents.json` 的重复检查（此前死代码）。
+- **内核提示词**：宿主技能入口示例从 Claude Code 特有写法改为通用表述。
+
 ## 4.0.1（2026-07-27）
 
 内核结构化重组与知识库体系完善。

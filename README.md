@@ -4,9 +4,9 @@
 
 # HelloAGENTS
 
-**The thinking activation layer for AI coding CLIs: a course-correction kernel plus 23 on-demand thinking skills, shipped to Claude Code, Codex CLI, Grok Build, and Cursor with one command.**
+**The thinking activation layer for AI coding CLIs: a course-correction kernel plus 23 on-demand thinking skills, shipped to Claude Code, Codex CLI, Grok Build, Cursor, and Hermes with one command.**
 
-English · [简体中文](./README_CN.md)
+[English](./README.md) · [简体中文](./README_CN.md) · [Changelog](./CHANGELOG.md)
 
 [![npm](https://img.shields.io/npm/v/helloagents.svg)](https://www.npmjs.com/package/helloagents)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.19-339933.svg)](./package.json)
@@ -14,17 +14,26 @@ English · [简体中文](./README_CN.md)
 
 > 4.0 is a breaking major release. To upgrade from 3.x, run `npx helloagents@4 migrate` first; docs for older versions live on the 3.x branch.
 
-## What it does
+## Why HelloAGENTS
 
-The models behind AI coding tools are already strong, but a few behavioral habits still hold them back: stopping at suggestions instead of acting, recommending "some other tool" when things get hard, calling work done before it is, and reflexively piling up abstraction layers and process documents to prove they weren't wrong. HelloAGENTS does three things:
+The models behind AI coding tools are already strong, but a few behavioral habits still hold them back: stopping at suggestions instead of acting, recommending "some other tool" when things get hard, calling work done before it is, and reflexively piling up abstraction layers and process documents to prove they weren't wrong.
+
+| Without HelloAGENTS | With HelloAGENTS |
+|---|---|
+| The model stops at "you could try…" and waits | The model acts: it knows its job is to deliver, not to suggest |
+| A hard problem gets "I'm not the right tool for this" | The model switches strategy, tries another path, only stops when truly blocked |
+| Work is declared done before verification | The model runs real verification commands and pastes the raw output |
+| Every task spawns a design doc, a plan, and three README drafts | The model matches effort to problem size; no ceremony without substance |
+
+HelloAGENTS does three things:
 
 1. **Course-correct**: a kernel lives in the host's rules file and corrects the habits above — organized into explicit sections covering identity, bias-correction patterns, dynamic capability routing, execution discipline, verification habits, interruption recovery, knowledge management, and safety.
-2. **Activate**: 23 thinking skills (planning, implementation, requirements discovery, quality self-check, full-scope review, UI, debugging, security…) load on demand, each supplying the judgment framework and quality bar for its scenario — not an approval checklist.
-3. **Distribute**: it reliably installs all of this into four hosts across three methods; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
+2. **Activate**: 23 thinking skills (planning, implementation, requirements discovery, quality self-check, full-scope review, UI, debugging, security, and more) load on demand, each supplying the judgment framework and quality bar for its scenario — not an approval checklist.
+3. **Distribute**: it reliably installs all of this into five hosts across three methods; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
 
 What it doesn't do: no process management, no state machines, no scripts that evaluate, verify, or audit in the model's place — verification is an activated model habit (run real commands yourself, paste the raw output), not something for scripts to intercept.
 
-## Get started in three minutes
+## Quick Start
 
 ```bash
 # Install to all hosts (each host gets the best-fit method automatically)
@@ -46,7 +55,7 @@ Once installed, just talk to your host as usual. To jump straight into a specifi
 ~eva review this project                            # evaluate, verify, and audit any target in one pass
 ```
 
-For teams, the project method is recommended: run `npx helloagents init` at the project root and the kernel is written into `AGENTS.md` (the common rules carrier adopted by 60,000+ repositories and read directly by some 30 tools), then ships to the whole team with the repo.
+For teams, the project method is recommended: run `npx helloagents init` at the project root and the kernel is written into `AGENTS.md` (the common rules carrier adopted by thousands of repositories and read directly by dozens of tools), then ships to the whole team with the repo.
 
 ## Commands
 
@@ -61,9 +70,9 @@ For teams, the project method is recommended: run `npx helloagents init` at the 
 | `guard on\|off [host…]` | Add-on: dangerous-command interception |
 | `notify on\|off [host…]` | Add-on: alerts for turn end and pending confirmation |
 
-Pick the language with `HELLOAGENTS_LANG=cn|en`; the default follows your system locale.
+Pick the language with `HELLOAGENTS_LANG=cn\|en`; the default follows your system locale.
 
-## Install methods and host matrix
+## Install Methods and Host Matrix
 
 The three methods can be stacked (hosts generally follow "the nearest rules file wins"):
 
@@ -77,6 +86,7 @@ The three methods can be stacked (hosts generally follow "the nearest rules file
 | Codex CLI | `~/.codex/AGENTS.md` | — (no plugin system) | — | Yes (managed lines in config.toml) |
 | Grok Build | `~/.grok/AGENTS.md` | — | Yes | Yes |
 | Cursor | — (no global rules file) | `~/.cursor/plugins/local/helloagents` (kernel ships as a rule) | Yes | Yes |
+| Hermes | `~/.hermes/AGENTS.md` | — | Yes | Yes |
 
 A "—" means the host doesn't have that mechanism yet; we degrade honestly instead of building a simulation layer.
 
@@ -84,13 +94,13 @@ Cursor is plugin-only for a reason: it has no global rules file. `~/.cursor/rule
 
 Gemini CLI is no longer a supported host. If you installed it there, run `npx helloagents migrate` to strip the managed block from `~/.gemini/GEMINI.md` and drop the install record, then remove the extension yourself with `gemini extensions uninstall helloagents`.
 
-## Skills at a glance
+## Skills at a Glance
 
 All 23 skills carry a `hello-` prefix. Skill names are global inside a host: Cursor's skill namespace is flat, with no dedup and no documented precedence between plugin, user, and project skills, and while Claude Code namespaces plugin skills as `helloagents:…`, a same-named skill still muddies the model's choice. The prefix keeps HelloAGENTS from colliding with your own `build`, `commit`, or `plan`.
 
-Command skills: hello-plan (planning), hello-build (implementation), hello-auto (autonomous execution), hello-prd (requirements discovery), hello-qa (quality self-check of your own just-finished work), hello-eva (full-scope evaluation, verification, and audit of any target — separately or in one pass, with on-demand reference files), hello-ask (discussion only), hello-init (initialization), hello-commit (committing), hello-clean (cleanup), hello-help (help).
+**Command skills**: hello-plan (planning), hello-build (implementation), hello-auto (autonomous execution), hello-prd (requirements discovery), hello-qa (quality self-check of your own just-finished work), hello-eva (full-scope evaluation, verification, and audit of any target — separately or in one pass, with on-demand reference files), hello-ask (discussion only), hello-init (initialization), hello-commit (committing), hello-clean (cleanup), hello-help (help).
 
-Quality skills (auto-relevant by task type): hello-ui (interfaces), hello-test (testing), hello-security (security), hello-debug (troubleshooting), hello-arch (structure), hello-api (APIs), hello-data (data), hello-perf (performance), hello-errors (error handling), hello-write (technical writing), hello-reflect (retrospectives), hello-subagent (subagent collaboration).
+**Quality skills** (auto-relevant by task type): hello-ui (interfaces), hello-test (testing), hello-security (security), hello-debug (troubleshooting), hello-arch (structure), hello-api (APIs), hello-data (data), hello-perf (performance), hello-errors (error handling), hello-write (technical writing), hello-reflect (retrospectives), hello-subagent (subagent collaboration).
 
 The `~commands` stay short — `~plan` and `~hello-plan` are equivalent. Use the full name with a host's own skill entry point, e.g. `/hello-plan` in Claude Code.
 
@@ -103,9 +113,21 @@ Both add-ons are optional and decoupled from the core:
 - **guard**: intercepts a short list of high-risk operations before they run (full-tree rm -rf, force-pushing main, DROP DATABASE, chmod 777, and the like), with rules drawn from the same list as the kernel's; matching is semantic, based on command structure, so a sensitive word in a commit message won't trigger a false block. On runtime errors it blocks rather than silently waving things through.
 - **notify**: plays a sound and sends a desktop notification at turn end and when confirmation is pending. A pure quality-of-life add-on; Windows notifications go through an encoding-safe channel, so Chinese paths and messages never come out garbled.
 
-## Project knowledge base
+## Project Knowledge Base
 
 `helloagents init` sets up `.helloagents/` in your project: `context.md` (project facts), `guidelines.md` (conventions), `DESIGN.md` (design system, for UI projects), `verify.yaml` (verification commands), `plans/` (plan documents), and `archive/` (completed plans). The kernel also defines a `notes/` convention for extracting thick topics out of `context.md`. One principle: record only what can't be read from the code; no empty files are created, no boilerplate is filled in.
+
+## One-Click Install Scripts
+
+```bash
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
+
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | sh
+```
+
+Environment variables: `HELLOAGENTS_HOSTS` (comma-separated, default `all`), `HELLOAGENTS_METHOD` (`inject` or `plugin`), `HELLOAGENTS_VERSION` (npm tag, default `latest`).
 
 ## Migrating from 3.x
 
@@ -128,4 +150,4 @@ migrate removes only what it can positively identify as 3.x artifacts; config it
 
 ## License
 
-[Apache-2.0](./LICENSE.md)
+Licensed under [Apache-2.0](./LICENSE.md).

@@ -121,10 +121,12 @@ export function runMigrate(ctx, projectDir) {
   if (removeSettingsHooks(codexHooksJson, { home: ctx.home, legacyOnly: true }) > 0) {
     record(codexHooksJson)
   }
-  const grokLegacyHooks = join(ctx.home, '.grok', 'hooks', 'helloagents.json')
-  if (fileExists(grokLegacyHooks) && isLegacyHookCommand(readText(grokLegacyHooks) ?? '')) {
-    removePath(grokLegacyHooks)
-    record(grokLegacyHooks)
+  for (const hooksDir of ['.grok', '.hermes']) {
+    const legacyHooksFile = join(ctx.home, hooksDir, 'hooks', 'helloagents.json')
+    if (fileExists(legacyHooksFile) && isLegacyHookCommand(readText(legacyHooksFile) ?? '')) {
+      removePath(legacyHooksFile)
+      record(legacyHooksFile)
+    }
   }
   const legacyCursorPlugin = cursorPluginDir(ctx.home)
   if (fileExists(join(legacyCursorPlugin, 'scripts'))) {

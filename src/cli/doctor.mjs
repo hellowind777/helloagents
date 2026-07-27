@@ -134,10 +134,6 @@ export function buildDoctorReport(ctx) {
       if (text.split(/\r?\n/).some((line) => isLegacyHookCommand(line))) legacy.push(codexConfig)
     }
   }
-  const legacyGrokHooks = join(ctx.home, '.grok', 'hooks', 'helloagents.json')
-  if (fileExists(legacyGrokHooks) && isLegacyHookCommand(readText(legacyGrokHooks) ?? '')) {
-    legacy.push(legacyGrokHooks)
-  }
   for (const hooksDir of ['.grok', '.hermes']) {
     const hooksFile = join(ctx.home, hooksDir, 'hooks', 'helloagents.json')
     if (fileExists(hooksFile) && isLegacyHookCommand(readText(hooksFile) ?? '')) {

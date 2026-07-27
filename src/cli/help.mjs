@@ -17,8 +17,8 @@ HelloAGENTS v{version} — AI 编码 CLI 的思维激活层
   migrate                                     清理 3.x 版本的全部残留
 
 附加组件（可选）
-  guard on|off [宿主…]                        危险命令拦截（支持：claude、grok、cursor）
-  notify on|off [宿主…]                       完成提醒（支持：claude、grok、cursor、codex）
+  guard on|off [宿主…]                        危险命令拦截（支持：claude、grok、cursor、hermes）
+  notify on|off [宿主…]                       完成提醒（支持：claude、grok、cursor、codex、hermes）
 
 其他
   version                                     显示版本
@@ -26,7 +26,7 @@ HelloAGENTS v{version} — AI 编码 CLI 的思维激活层
 
 宿主
   claude（Claude Code）  codex（Codex CLI）
-  grok（Grok Build）     cursor（Cursor）
+  grok（Grok Build）     cursor（Cursor）       hermes（Hermes）
 
 说明
   安装方式有两种：插件方式使用宿主自带的插件机制；注入方式把内核写入宿主的
@@ -50,8 +50,8 @@ Install and maintain
   migrate                                      Clean up everything left behind by version 3.x
 
 Optional add-ons
-  guard on|off [hosts…]                        Dangerous-command blocking (claude, grok, cursor)
-  notify on|off [hosts…]                       Completion notifications (claude, grok, cursor, codex)
+  guard on|off [hosts…]                        Dangerous-command blocking (claude, grok, cursor, hermes)
+  notify on|off [hosts…]                       Completion notifications (claude, grok, cursor, codex, hermes)
 
 Other
   version                                      Show version
@@ -59,7 +59,7 @@ Other
 
 Hosts
   claude (Claude Code)  codex (Codex CLI)
-  grok (Grok Build)     cursor (Cursor)
+  grok (Grok Build)     cursor (Cursor)        hermes (Hermes)
 
 Notes
   Two install methods: the plugin method uses the host's own plugin system; the inject

@@ -1,7 +1,7 @@
 #!/bin/sh
 # HelloAGENTS 一键安装脚本（macOS / Linux）。
 # 环境变量：
-#   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,grok,cursor），默认 all
+#   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,grok,cursor,hermes），默认 all
 #   HELLOAGENTS_METHOD  安装方式：inject 或 plugin，默认由各宿主自动选择
 #   HELLOAGENTS_VERSION npm 版本标签，默认 latest
 set -eu
