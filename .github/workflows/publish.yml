@@ -101,6 +101,9 @@ jobs:
         if: needs.prepare.outputs.is_beta == 'true'
         run: npm version "${{ needs.prepare.outputs.npm_version }}" --no-git-tag-version
 
+      - name: Run tests
+        run: npm test
+
       - name: Preview package contents
         run: npm pack --dry-run 2>&1 | tee /tmp/npm-pack.log
 
