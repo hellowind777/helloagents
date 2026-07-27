@@ -1,199 +1,48 @@
-#!/usr/bin/env sh
+#!/bin/sh
+# HelloAGENTS 一键安装脚本（macOS / Linux）。
+# 环境变量：
+#   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,grok,cursor），默认 all
+#   HELLOAGENTS_METHOD  安装方式：inject 或 plugin，默认由各宿主自动选择
+#   HELLOAGENTS_VERSION npm 版本标签，默认 latest
 set -eu
 
-# HelloAGENTS one-shot installer.
-#
-# Environment:
-#   HELLOAGENTS=all|claude|gemini|codex|cursor|grok[:standby|global]
-#   HELLOAGENTS_ACTION=install|update|cleanup|uninstall|switch-branch|branch
-#   HELLOAGENTS_TARGET=all|claude|gemini|codex|cursor|grok
-#   HELLOAGENTS_MODE=standby|global
-#   HELLOAGENTS_BRANCH=main|beta|...
-#   HELLOAGENTS_PACKAGE=helloagents|https://github.com/owner/repo/archive/refs/heads/ref.tar.gz|...
+VERSION="${HELLOAGENTS_VERSION:-latest}"
+HOSTS="${HELLOAGENTS_HOSTS:-all}"
+METHOD="${HELLOAGENTS_METHOD:-}"
 
-ACTION="${HELLOAGENTS_ACTION:-install}"
-TARGET="${HELLOAGENTS_TARGET:-}"
-MODE="${HELLOAGENTS_MODE:-}"
-BRANCH="${HELLOAGENTS_BRANCH:-}"
-PACKAGE="${HELLOAGENTS_PACKAGE:-}"
-HAS_EXPLICIT_PACKAGE=0
-HAS_EXPLICIT_TARGET=0
-if [ -n "$PACKAGE" ]; then
-  HAS_EXPLICIT_PACKAGE=1
+if ! command -v node >/dev/null 2>&1; then
+  echo "未找到 Node.js，请先安装 Node.js 20.19 或更高版本。" >&2
+  echo "Node.js not found. Install Node.js 20.19 or newer first." >&2
+  exit 1
+fi
+if ! command -v npm >/dev/null 2>&1; then
+  echo "未找到 npm，请确认 Node.js 安装完整。" >&2
+  echo "npm not found. Make sure your Node.js installation is complete." >&2
+  exit 1
 fi
 
-if [ -n "${HELLOAGENTS:-}" ]; then
-  SPEC_TARGET="${HELLOAGENTS%%:*}"
-  SPEC_MODE=""
-  if [ -z "$SPEC_TARGET" ]; then
-    echo "HELLOAGENTS must be target[:mode], for example codex:global" >&2
-    exit 1
-  fi
-  if [ "$SPEC_TARGET" != "$HELLOAGENTS" ]; then
-    SPEC_MODE="${HELLOAGENTS#*:}"
-  fi
-  TARGET="${TARGET:-$SPEC_TARGET}"
-  MODE="${MODE:-$SPEC_MODE}"
+echo "安装 helloagents@${VERSION} …"
+npm install -g "helloagents@${VERSION}"
+
+set -- install
+if [ "$HOSTS" = "all" ]; then
+  set -- "$@" --all
+else
+  OLD_IFS="$IFS"; IFS=','
+  for host in $HOSTS; do
+    set -- "$@" "$host"
+  done
+  IFS="$OLD_IFS"
 fi
-
-if [ -n "$TARGET" ]; then
-  HAS_EXPLICIT_TARGET=1
-fi
-
-TARGET="${TARGET:-all}"
-TARGET="$(printf '%s' "$TARGET" | tr '[:upper:]' '[:lower:]')"
-MODE="$(printf '%s' "$MODE" | tr '[:upper:]' '[:lower:]')"
-
-case "$TARGET" in
-  all|claude|gemini|codex|cursor|grok) ;;
-  *) echo "Unsupported HELLOAGENTS target: $TARGET" >&2; exit 1 ;;
-esac
-
-if [ -n "$MODE" ]; then
-  case "$MODE" in
-    standby|global) ;;
-    *) echo "Unsupported HELLOAGENTS mode: $MODE" >&2; exit 1 ;;
-  esac
-fi
-
-if [ -z "$PACKAGE" ]; then
-  if [ -n "$BRANCH" ]; then
-    PACKAGE="https://github.com/hellowind777/helloagents/archive/refs/heads/$BRANCH.tar.gz"
-  else
-    PACKAGE="helloagents"
-  fi
-fi
-
-clear_lifecycle_env() {
-  unset HELLOAGENTS
-  unset HELLOAGENTS_ACTION
-  unset HELLOAGENTS_TARGET
-  unset HELLOAGENTS_HOST
-  unset HELLOAGENTS_MODE
-  unset HELLOAGENTS_BRANCH
-  unset HELLOAGENTS_PACKAGE
-  unset HELLOAGENTS_DEPLOY
-}
-
-clear_lifecycle_env
-
-ALLOW_SCRIPTS_FLAG=""
-
-resolve_allow_scripts_flag() {
-  if [ -n "$ALLOW_SCRIPTS_FLAG" ]; then
-    return
-  fi
-  NPM_VERSION="$(npm --version 2>/dev/null || printf '')"
-  NPM_MAJOR="${NPM_VERSION%%.*}"
-  case "$NPM_MAJOR" in
-    ''|*[!0-9]*) ;;
-    *)
-      if [ "$NPM_MAJOR" -ge 11 ]; then
-        ALLOW_SCRIPTS_FLAG="--allow-scripts=helloagents"
-      fi
-      ;;
-  esac
-}
-
-install_package() {
-  resolve_allow_scripts_flag
-  if [ -n "$ALLOW_SCRIPTS_FLAG" ]; then
-    npm install -g "$ALLOW_SCRIPTS_FLAG" "$1"
-  else
-    npm install -g "$1"
-  fi
-}
-
-sync_hosts() {
-  if [ "$TARGET" = "all" ]; then
-    if [ -n "$MODE" ]; then
-      npm explore -g helloagents -- npm run sync-hosts -- --all "--$MODE"
-    else
-      npm explore -g helloagents -- npm run sync-hosts -- --all
-    fi
-  else
-    if [ -n "$MODE" ]; then
-      npm explore -g helloagents -- npm run sync-hosts -- "$TARGET" "--$MODE"
-    else
-      npm explore -g helloagents -- npm run sync-hosts -- "$TARGET"
-    fi
-  fi
-}
-
-cleanup_hosts() {
-  if [ "$TARGET" = "all" ]; then
-    if [ -n "$MODE" ]; then
-      npm explore -g helloagents -- npm run cleanup-hosts -- --all "--$MODE"
-    else
-      npm explore -g helloagents -- npm run cleanup-hosts -- --all
-    fi
-  else
-    if [ -n "$MODE" ]; then
-      npm explore -g helloagents -- npm run cleanup-hosts -- "$TARGET" "--$MODE"
-    else
-      npm explore -g helloagents -- npm run cleanup-hosts -- "$TARGET"
-    fi
-  fi
-}
-
-uninstall_hosts() {
-  if [ "$TARGET" = "all" ]; then
-    if [ -n "$MODE" ]; then
-      npm explore -g helloagents -- npm run uninstall -- --all "--$MODE"
-    else
-      npm explore -g helloagents -- npm run uninstall -- --all
-    fi
-  else
-    if [ -n "$MODE" ]; then
-      npm explore -g helloagents -- npm run uninstall -- "$TARGET" "--$MODE"
-    else
-      npm explore -g helloagents -- npm run uninstall -- "$TARGET"
-    fi
-  fi
-}
-
-enable_postinstall_deploy() {
-  export HELLOAGENTS_DEPLOY=1
-  export HELLOAGENTS_TARGET="$TARGET"
-  export HELLOAGENTS_MODE="${MODE:-standby}"
-}
-
-case "$ACTION" in
-  install)
-    if [ "$HAS_EXPLICIT_TARGET" -eq 1 ]; then
-      enable_postinstall_deploy
-    fi
-    install_package "$PACKAGE"
-    ;;
-  update)
-    if [ -n "$BRANCH" ] || [ "$HAS_EXPLICIT_PACKAGE" -eq 1 ]; then
-      install_package "$PACKAGE"
-    else
-      install_package "helloagents@latest"
-    fi
-    if [ "$HAS_EXPLICIT_TARGET" -eq 1 ]; then
-      sync_hosts
-    fi
-    ;;
-  cleanup)
-    cleanup_hosts
-    ;;
-  switch-branch|branch)
-    if [ -z "$BRANCH" ] && [ "$HAS_EXPLICIT_PACKAGE" -ne 1 ]; then
-      echo "HELLOAGENTS_BRANCH or HELLOAGENTS_PACKAGE is required for switch-branch" >&2
-      exit 1
-    fi
-    install_package "$PACKAGE"
-    sync_hosts
-    ;;
-  uninstall)
-    if ! uninstall_hosts; then
-      echo "Warning: failed to cleanup HelloAGENTS host integrations before uninstall" >&2
-    fi
-    npm uninstall -g helloagents
-    ;;
+case "$METHOD" in
+  inject) set -- "$@" --inject ;;
+  plugin) set -- "$@" --plugin ;;
+  '') ;;
   *)
-    echo "Unsupported HELLOAGENTS_ACTION: $ACTION" >&2
+    echo "HELLOAGENTS_METHOD 只接受 inject 或 plugin，当前值：$METHOD" >&2
     exit 1
     ;;
 esac
+
+helloagents "$@"
+helloagents doctor

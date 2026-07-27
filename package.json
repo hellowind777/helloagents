@@ -1,8 +1,8 @@
 {
   "name": "helloagents",
-  "version": "3.1.9",
+  "version": "4.0.0",
   "type": "module",
-  "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, unified QA gates, safety guards, and notifications.",
+  "description": "HelloAGENTS — AI 编码 CLI 的思维激活层：纠偏内核 + 按需思维技能，一条命令分发到 Claude Code、Codex、Grok、Cursor。A thinking-activation layer for AI coding CLIs.",
   "author": "HelloWind",
   "license": "Apache-2.0",
   "homepage": "https://github.com/hellowind777/helloagents",
@@ -11,56 +11,36 @@
     "url": "git+https://github.com/hellowind777/helloagents.git"
   },
   "bin": {
-    "helloagents": "cli.mjs",
-    "helloagents-js": "cli.mjs",
-    "helloagents-js.cmd": "cli.mjs",
-    "helloagents-turn-state": "scripts/turn-state-cli.mjs"
-  },
-  "scripts": {
-    "test": "node --test",
-    "postinstall": "node cli.mjs postinstall",
-    "preuninstall": "node cli.mjs preuninstall",
-    "uninstall": "node cli.mjs preuninstall",
-    "postuninstall": "node cli.mjs preuninstall",
-    "prepublishOnly": "node cli.mjs sync-version",
-    "deploy": "node cli.mjs install",
-    "deploy:standby": "node cli.mjs install --all --standby",
-    "deploy:global": "node cli.mjs install --all --global",
-    "sync-hosts": "node cli.mjs update",
-    "cleanup-hosts": "node cli.mjs cleanup",
-    "switch-branch": "node cli.mjs switch-branch"
+    "helloagents": "cli.mjs"
   },
   "files": [
     "cli.mjs",
-    "scripts/",
-    "hooks/",
+    "src/",
+    "prompts/",
     "skills/",
-    "templates/",
     "assets/",
-    "bootstrap.md",
-    "bootstrap-lite.md",
-    "README_CN.md",
-    "install.sh",
-    "install.ps1",
-    "gemini-extension.json",
-    ".cursor-plugin/",
     ".claude-plugin/",
-    ".codex-plugin/",
-    ".grok-plugin/"
+    ".cursor-plugin/",
+    "README_CN.md"
   ],
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "typecheck": "tsc -p jsconfig.json",
+    "sync-version": "node cli.mjs sync-version",
+    "verify": "npm run test"
+  },
   "keywords": [
     "ai",
     "agent",
     "claude",
     "codex",
+    "grok",
     "cursor",
     "cli",
-    "orchestration",
-    "subagent",
-    "hooks",
-    "skills"
+    "skills",
+    "prompt"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19.0"
   }
 }

@@ -1,0 +1,1106 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 34e352b..55df49e 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,5 +1,13 @@
+ # 更新日志
+ 
++## 未发布
++
++不兼容变更：技能全部改名、Gemini CLI 不再受支持。「~命令」的短写不变，升级后照常使用。
++
++- 技能命名：11 个通用名技能（ask、auto、build、clean、commit、eva、help、init、plan、prd、qa）改为 `hello-` 前缀，与既有的 12 个质量技能统一，23 个技能全部带前缀。原因是技能名在宿主里是全局的：Cursor 的技能命名空间扁平、同名不去重也无优先级规则（官方插件仓库为此手工改过重名技能），Gemini CLI 的扩展层优先级低于用户与工作区，会被静默覆盖。「~命令」保持短写，`~plan` 与 `~hello-plan` 等价；宿主自身的技能入口按正式名称调用（如 `/hello-plan`）。
++- Cursor 提升为一等宿主：内核此前完全没有下发到 Cursor，现在随插件以 `rules/helloagents-kernel.mdc` 下发（`alwaysApply: true`，刻意不写 `description` 以规避 Cursor 已知的规则降级缺陷）。插件目录不再是运行副本的整体复制，只包含 Cursor 认识的清单、技能与规则；`doctor` 增加规则文件缺失（`plugin-rule-missing`）与插件版本过期（`plugin-outdated`）两项检查。注入方式对 Cursor 仍然不可用——`~/.cursor/rules/` 不是受支持的机制，官方明确规则解析不会查到主目录，这里如实降级而不是写一个不生效的文件。
++- 移除 Gemini CLI 支持：宿主注册表、扩展安装/卸载、`gemini-extension.json`、清单版本同步与运行副本条目全部删除。已安装的用户执行 `helloagents migrate` 可移除 `~/.gemini/GEMINI.md` 中的受管块并清掉安装记录，扩展本体需手动执行 `gemini extensions uninstall helloagents`；`doctor` 会把这些残留列出来。
++
+ ## 4.0.0（2026-07-26）
+ 
+ 定位重构：从“工程治理引擎”转向“思维激活器”。这是不兼容的大版本，从 3.x 升级请先执行 `npx helloagents@4 migrate` 清理旧版本残留。
+diff --git a/README.md b/README.md
+index 2a1da1c..b64461a 100644
+--- a/README.md
++++ b/README.md
+@@ -4,7 +4,7 @@
+ 
+ # HelloAGENTS
+ 
+-**The thinking activation layer for AI coding CLIs: a course-correction kernel plus 23 on-demand thinking skills, shipped to Claude Code, Codex CLI, Gemini CLI, Grok Build, and Cursor with one command.**
++**The thinking activation layer for AI coding CLIs: a course-correction kernel plus 23 on-demand thinking skills, shipped to Claude Code, Codex CLI, Grok Build, and Cursor with one command.**
+ 
+ English · [简体中文](./README_CN.md)
+ 
+@@ -18,9 +18,9 @@ English · [简体中文](./README_CN.md)
+ 
+ The models behind AI coding tools are already strong, but a few behavioral habits still hold them back: stopping at suggestions instead of acting, recommending "some other tool" when things get hard, calling work done before it is, and reflexively piling up abstraction layers and process documents to prove they weren't wrong. HelloAGENTS does three things:
+ 
+-1. **Course-correct**: an 83-line kernel lives in the host's rules file and corrects the habits above — including an explicit "simplicity first (anti-over-engineering)" section.
++1. **Course-correct**: an 85-line kernel lives in the host's rules file and corrects the habits above — including an explicit "simplicity first (anti-over-engineering)" section.
+ 2. **Activate**: 23 thinking skills (planning, implementation, requirements discovery, quality self-check, full-scope review, UI, debugging, security…) load on demand, each supplying the judgment framework and quality bar for its scenario — not an approval checklist.
+-3. **Distribute**: it reliably installs all of this into five hosts across three methods; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
++3. **Distribute**: it reliably installs all of this into four hosts across three methods; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
+ 
+ What it doesn't do: no process management, no state machines, no scripts that evaluate, verify, or audit in the model's place — verification is an activated model habit (run real commands yourself, paste the raw output), not something for scripts to intercept.
+ 
+@@ -75,18 +75,25 @@ The three methods can be stacked (hosts generally follow "the nearest rules file
+ |---|---|---|---|---|
+ | Claude Code | `~/.claude/CLAUDE.md` | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
+ | Codex CLI | `~/.codex/AGENTS.md` | — (no plugin system) | — | Yes (managed lines in config.toml) |
+-| Gemini CLI | `~/.gemini/GEMINI.md` | `gemini extensions install` | — | — |
+ | Grok Build | `~/.grok/AGENTS.md` | — | Yes | Yes |
+-| Cursor | — (use `init` in the project) | Local plugin directory | Yes | Yes |
++| Cursor | — (no global rules file) | `~/.cursor/plugins/local/helloagents` (kernel ships as a rule) | Yes | Yes |
+ 
+ A "—" means the host doesn't have that mechanism yet; we degrade honestly instead of building a simulation layer.
+ 
++Cursor is plugin-only for a reason: it has no global rules file. `~/.cursor/rules/` is not supported — Cursor staff have stated that rule resolution walks upward from the workspace and never reaches the home directory. So the kernel ships inside the plugin as `rules/helloagents-kernel.mdc`, with `alwaysApply: true` and deliberately **no** `description` (Cursor currently has a known defect where a rule carrying both is downgraded to "agent-requested" instead of always applying). The plugin directory holds only what Cursor reads — manifest, skills, rules; the HelloAGENTS CLI itself stays out of it. Run **Developer: Reload Window** in Cursor after installing.
++
++Gemini CLI is no longer a supported host. If you installed it there, run `npx helloagents migrate` to strip the managed block from `~/.gemini/GEMINI.md` and drop the install record, then remove the extension yourself with `gemini extensions uninstall helloagents`.
++
+ ## Skills at a glance
+ 
+-Command skills: plan (planning), build (implementation), auto (autonomous execution), prd (requirements discovery), qa (quality self-check of your own just-finished work), eva (full-scope evaluation, verification, and audit of any target — separately or in one pass, with on-demand reference files), ask (discussion only), init (initialization), commit (committing), clean (cleanup), help (help).
++All 23 skills carry a `hello-` prefix. Skill names are global inside a host: Cursor's skill namespace is flat, with no dedup and no documented precedence between plugin, user, and project skills, and while Claude Code namespaces plugin skills as `helloagents:…`, a same-named skill still muddies the model's choice. The prefix keeps HelloAGENTS from colliding with your own `build`, `commit`, or `plan`.
++
++Command skills: hello-plan (planning), hello-build (implementation), hello-auto (autonomous execution), hello-prd (requirements discovery), hello-qa (quality self-check of your own just-finished work), hello-eva (full-scope evaluation, verification, and audit of any target — separately or in one pass, with on-demand reference files), hello-ask (discussion only), hello-init (initialization), hello-commit (committing), hello-clean (cleanup), hello-help (help).
+ 
+ Quality skills (auto-relevant by task type): hello-ui (interfaces), hello-test (testing), hello-security (security), hello-debug (troubleshooting), hello-arch (structure), hello-api (APIs), hello-data (data), hello-perf (performance), hello-errors (error handling), hello-write (technical writing), hello-reflect (retrospectives), hello-subagent (subagent collaboration).
+ 
++The `~commands` stay short — `~plan` and `~hello-plan` are equivalent. Use the full name with a host's own skill entry point, e.g. `/hello-plan` in Claude Code.
++
+ Each skill is about 30 lines with a uniform structure: how to think right now → what good looks like → questions to ask before delivery. At startup only the name and a one-line description enter the context; the body is read only when actually used.
+ 
+ ## Add-ons
+@@ -111,7 +118,7 @@ migrate removes only what it can positively identify as 3.x artifacts; config it
+ 
+ ## FAQ
+ 
+-**Why did 4.0 drop the mandatory verification gates?** Three lines of evidence agree: a model's self-reported evidence proves nothing; official best practices point toward "show real test output" rather than process approvals; and hosts now ship built-in continuous verification and code review (when enforcement is needed, prefer the host's native features). 4.0 turns verification into a kernel habit plus the qa skill — the model runs the commands and pastes the output itself.
++**Why did 4.0 drop the mandatory verification gates?** Three lines of evidence agree: a model's self-reported evidence proves nothing; official best practices point toward "show real test output" rather than process approvals; and hosts now ship built-in continuous verification and code review (when enforcement is needed, prefer the host's native features). 4.0 turns verification into a kernel habit plus the hello-qa skill — the model runs the commands and pastes the output itself.
+ 
+ **Does installing run any implicit scripts?** No. 4.0 removed every npm lifecycle hook; nothing is written until you explicitly run `helloagents install`, and doctor can audit all of it.
+ 
+diff --git a/README_CN.md b/README_CN.md
+index 89a1d26..1861ba4 100644
+--- a/README_CN.md
++++ b/README_CN.md
+@@ -4,7 +4,7 @@
+ 
+ # HelloAGENTS
+ 
+-**AI 编码 CLI 的思维激活层：一份纠偏内核 + 23 个按需加载的思维技能，一条命令分发到 Claude Code、Codex CLI、Gemini CLI、Grok Build、Cursor。**
++**AI 编码 CLI 的思维激活层：一份纠偏内核 + 23 个按需加载的思维技能，一条命令分发到 Claude Code、Codex CLI、Grok Build、Cursor。**
+ 
+ [English](./README.md) · 简体中文
+ 
+@@ -18,9 +18,9 @@
+ 
+ AI 编码工具的模型已经很强，但一些行为习惯仍然拖后腿：停在建议不动手、遇到困难推荐“别的工具”、没做完就说做完、下意识堆抽象层和流程文档来证明自己没错。HelloAGENTS 做三件事：
+ 
+-1. **纠偏**：一份 83 行的内核常驻宿主规则文件，矫正上述习惯——包括一节明确的“简单优先（反过度工程）”。
++1. **纠偏**：一份 85 行的内核常驻宿主规则文件，矫正上述习惯——包括一节明确的“简单优先（反过度工程）”。
+ 2. **激活**：23 个思维技能（方案、实现、需求探索、质量自检、全量审查、界面、调试、安全……）按需读取，提供该场景下的判断框架与质量标准，不是审批清单。
+-3. **分发**：把这套内容可靠地安装进五个宿主的三种形态，安装、更新、体检、卸载、迁移全部一条命令，卸载即完整还原。
++3. **分发**：把这套内容可靠地安装进四个宿主的三种形态，安装、更新、体检、卸载、迁移全部一条命令，卸载即完整还原。
+ 
+ 它不做什么：不做流程管理，不做状态机，不写脚本替模型评估、验证、审计——验证是激活出来的模型习惯（自己跑真实命令、贴原始输出），不是被脚本拦截的对象。
+ 
+@@ -75,19 +75,26 @@ npx helloagents doctor
+ |---|---|---|---|---|
+ | Claude Code | `~/.claude/CLAUDE.md` | 插件市场（自动注册本地市场） | 支持 | 支持 |
+ | Codex CLI | `~/.codex/AGENTS.md` | —（无插件体系） | — | 支持（config.toml 受管行） |
+-| Gemini CLI | `~/.gemini/GEMINI.md` | `gemini extensions install` | — | — |
+ | Grok Build | `~/.grok/AGENTS.md` | — | 支持 | 支持 |
+-| Cursor | —（项目内用 `init`） | 本地插件目录 | 支持 | 支持 |
++| Cursor | —（无全局规则文件） | `~/.cursor/plugins/local/helloagents`（内核以 rules 下发） | 支持 | 支持 |
+ 
+ 表中的“—”表示宿主暂不具备对应机制，我们如实降级，不做模拟层。
+ 
++Cursor 只有插件这一条路：它没有全局规则文件——`~/.cursor/rules/` 不被支持，官方在论坛上明确说过规则解析只从工作区向上查找，不会读到主目录。所以内核随插件以 `rules/helloagents-kernel.mdc` 下发（`alwaysApply: true` 且刻意不写 `description`，因为 Cursor 目前有已知缺陷：两者同时存在时规则会被降级成“按需取用”）。插件目录里只有 Cursor 认识的三样东西——清单、技能、规则；`helloagents` 的 CLI 本体不进去。安装后需要在 Cursor 里执行 **Developer: Reload Window** 才生效。
++
++Gemini CLI 已不再是支持的宿主。之前装过的用户执行 `npx helloagents migrate`，它会移除 `~/.gemini/GEMINI.md` 里的受管块并清掉安装记录；扩展本体需要自己执行一次 `gemini extensions uninstall helloagents`。
++
+ ## 技能一览
+ 
+-命令技能：plan（方案）、build（实现）、auto（自主推进）、prd（需求探索）、qa（质量自检，对象是刚完成的工作）、eva（对任意内容交付全量评估、全量验证、全量审计或三者合一，附按需加载的参考文件）、ask（只讨论）、init（初始化）、commit（提交）、clean（清理）、help（帮助）。
++全部 23 个技能的正式名称都带 `hello-` 前缀。技能名在宿主里是全局的：Cursor 的技能命名空间是扁平的、同名不去重也没有优先级规则，Claude Code 虽然给插件技能加了 `helloagents:` 前缀，但同名技能仍会让模型在选择时犯迷糊。前缀是为了不和你自己的 `build`、`commit`、`plan` 撞车。
++
++命令技能：hello-plan（方案）、hello-build（实现）、hello-auto（自主推进）、hello-prd（需求探索）、hello-qa（质量自检，对象是刚完成的工作）、hello-eva（对任意内容交付全量评估、全量验证、全量审计或三者合一，附按需加载的参考文件）、hello-ask（只讨论）、hello-init（初始化）、hello-commit（提交）、hello-clean（清理）、hello-help（帮助）。
+ 
+ 质量技能（按任务类型自动相关）：hello-ui（界面）、hello-test（测试）、hello-security（安全）、hello-debug（排障）、hello-arch（结构）、hello-api（接口）、hello-data（数据）、hello-perf（性能）、hello-errors（错误处理）、hello-write（技术写作）、hello-reflect（复盘）、hello-subagent（子代理协作）。
+ 
+-常规技能 30 行左右，结构统一：此刻该怎么想 → 好的标准 → 交付前自问；eva 为完整的审查引擎，正文之外的细则放在 references 参考文件中按需加载。启动时只有名称与一句话描述进入上下文，正文用到才读取。
++「~命令」保持短写，`~plan` 与 `~hello-plan` 等价；用宿主自己的技能入口时按正式名称调用，例如 Claude Code 里的 `/hello-plan`。
++
++常规技能 30 行左右，结构统一：此刻该怎么想 → 好的标准 → 交付前自问；hello-eva 为完整的审查引擎，正文之外的细则放在 references 参考文件中按需加载。启动时只有名称与一句话描述进入上下文，正文用到才读取。
+ 
+ ## 附加组件
+ 
+@@ -111,7 +118,7 @@ migrate 只清理能明确识别为 3.x 产物的内容；无法确认归属的
+ 
+ ## 常见问题
+ 
+-**为什么 4.0 删掉了强制验证闸门？** 三方面证据一致：模型的自述式证据没有证明力；官方最佳实践的方向是“展示真实测试输出”而不是流程审批；宿主已内置持续验证与代码审查能力（需要强制时优先使用宿主原生功能）。4.0 把验证写成内核里的习惯与 qa 技能，让模型自己跑命令、贴输出。
++**为什么 4.0 删掉了强制验证闸门？** 三方面证据一致：模型的自述式证据没有证明力；官方最佳实践的方向是“展示真实测试输出”而不是流程审批；宿主已内置持续验证与代码审查能力（需要强制时优先使用宿主原生功能）。4.0 把验证写成内核里的习惯与 hello-qa 技能，让模型自己跑命令、贴输出。
+ 
+ **安装会执行隐式脚本吗？** 不会。4.0 移除了全部 npm 生命周期钩子，任何写入都发生在你显式执行 `helloagents install` 之时，doctor 可以完整核对。
+ 
+diff --git a/gemini-extension.json b/gemini-extension.json
+deleted file mode 100644
+index 9ae2d9c..0000000
+--- a/gemini-extension.json
++++ /dev/null
+@@ -1,5 +0,0 @@
+-{
+-  "name": "helloagents",
+-  "version": "4.0.0",
+-  "contextFileName": "prompts/kernel.md"
+-}
+diff --git a/install.ps1 b/install.ps1
+index a0447b6..83d905a 100644
+--- a/install.ps1
++++ b/install.ps1
+@@ -1,6 +1,6 @@
+ ﻿# HelloAGENTS 一键安装脚本（Windows PowerShell 5.1 及以上）。
+ # 环境变量：
+-#   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,gemini,grok,cursor），默认 all
++#   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,grok,cursor），默认 all
+ #   HELLOAGENTS_METHOD  安装方式：inject 或 plugin，默认由各宿主自动选择
+ #   HELLOAGENTS_VERSION npm 版本标签，默认 latest
+ $ErrorActionPreference = 'Stop'
+diff --git a/install.sh b/install.sh
+index fa9581b..af6101e 100644
+--- a/install.sh
++++ b/install.sh
+@@ -1,7 +1,7 @@
+ #!/bin/sh
+ # HelloAGENTS 一键安装脚本（macOS / Linux）。
+ # 环境变量：
+-#   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,gemini,grok,cursor），默认 all
++#   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,grok,cursor），默认 all
+ #   HELLOAGENTS_METHOD  安装方式：inject 或 plugin，默认由各宿主自动选择
+ #   HELLOAGENTS_VERSION npm 版本标签，默认 latest
+ set -eu
+diff --git a/package.json b/package.json
+index fb37ecb..1122a75 100644
+--- a/package.json
++++ b/package.json
+@@ -2,7 +2,7 @@
+   "name": "helloagents",
+   "version": "4.0.0",
+   "type": "module",
+-  "description": "HelloAGENTS — AI 编码 CLI 的思维激活层：纠偏内核 + 按需思维技能，一条命令分发到 Claude Code、Codex、Gemini、Grok、Cursor。A thinking-activation layer for AI coding CLIs.",
++  "description": "HelloAGENTS — AI 编码 CLI 的思维激活层：纠偏内核 + 按需思维技能，一条命令分发到 Claude Code、Codex、Grok、Cursor。A thinking-activation layer for AI coding CLIs.",
+   "author": "HelloWind",
+   "license": "Apache-2.0",
+   "homepage": "https://github.com/hellowind777/helloagents",
+@@ -21,7 +21,6 @@
+     "assets/",
+     ".claude-plugin/",
+     ".cursor-plugin/",
+-    "gemini-extension.json",
+     "README_CN.md"
+   ],
+   "scripts": {
+@@ -35,7 +34,6 @@
+     "agent",
+     "claude",
+     "codex",
+-    "gemini",
+     "grok",
+     "cursor",
+     "cli",
+diff --git a/prompts/kernel.md b/prompts/kernel.md
+index 45e7cd2..3cf8263 100644
+--- a/prompts/kernel.md
++++ b/prompts/kernel.md
+@@ -54,23 +54,24 @@
+ 
+ ## 命令与技能
+ 
+-用户可用「~命令」快速进入对应的工作方式；命中后读取对应技能文件并按其执行：
+-
+-| 命令 | 用途 |
+-|---|---|
+-| ~plan | 方案先行：澄清需求，给出可确认的方案再动手 |
+-| ~build | 按已确认方案或直接实现，附验证结果 |
+-| ~auto | 自主推进：自己选路并持续执行到完成 |
+-| ~prd | 需求探索：按维度整理产品需求文档 |
+-| ~qa | 质量自检：对刚完成的工作运行验证并系统性检查 |
+-| ~eva | 对任意对象交付全量评估、全量验证、全量审计（可单点可合一）的独立审查 |
+-| ~ask | 只讨论不动手 |
+-| ~init | 初始化项目知识库 |
+-| ~commit | 规范化提交当前变更 |
+-| ~clean | 清理项目临时产物 |
+-| ~help | 说明可用能力 |
++全部技能的正式名称都带 hello- 前缀。用户可用「~命令」快速进入对应的工作方式，短写与全称等价（~plan 等同于 ~hello-plan）；命中后读取对应技能文件并按其执行：
++
++| 命令 | 技能 | 用途 |
++|---|---|---|
++| ~plan | hello-plan | 方案先行：澄清需求，给出可确认的方案再动手 |
++| ~build | hello-build | 按已确认方案或直接实现，附验证结果 |
++| ~auto | hello-auto | 自主推进：自己选路并持续执行到完成 |
++| ~prd | hello-prd | 需求探索：按维度整理产品需求文档 |
++| ~qa | hello-qa | 质量自检：对刚完成的工作运行验证并系统性检查 |
++| ~eva | hello-eva | 对任意对象交付全量评估、全量验证、全量审计（可单点可合一）的独立审查 |
++| ~ask | hello-ask | 只讨论不动手 |
++| ~init | hello-init | 初始化项目知识库 |
++| ~commit | hello-commit | 规范化提交当前变更 |
++| ~clean | hello-clean | 清理项目临时产物 |
++| ~help | hello-help | 说明可用能力 |
+ 
+ - 技能位置：用户级安装在 ~/.helloagents/app/skills/ 下，每个技能一个子目录，内含 SKILL.md；宿主以插件方式安装时也可能直接提供同名技能。
++- 宿主自身的技能入口按正式名称调用（例如 /hello-plan）；hello- 前缀用于与用户自己的同名技能区分，不要去猜无前缀的名字。
+ - 质量技能（hello-ui、hello-test、hello-security、hello-debug、hello-arch、hello-api、hello-data、hello-perf、hello-errors、hello-write、hello-reflect、hello-subagent）按任务类型在需要时读取，不预先加载。
+ - 宿主自带的规划模式、待办清单、检查点、代码审查、持续验证等能力优先使用，不重复造替代品。
+ 
+diff --git a/skills/ask/SKILL.md b/skills/hello-ask/SKILL.md
+similarity index 92%
+rename from skills/ask/SKILL.md
+rename to skills/hello-ask/SKILL.md
+index 3afcde5..1a9b437 100644
+--- a/skills/ask/SKILL.md
++++ b/skills/hello-ask/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: ask
+-description: 用户只想讨论、提问或要建议时使用：给出回答、分析与建议，不修改任何文件。用户输入 ~ask 时必须使用。
++name: hello-ask
++description: 用户只想讨论、提问或要建议时使用：给出回答、分析与建议，不修改任何文件。用户输入 ~ask 或 ~hello-ask 时必须使用。
+ ---
+ 
+ # 只讨论不动手
+@@ -19,7 +19,7 @@ description: 用户只想讨论、提问或要建议时使用：给出回答、
+ 
+ ## 讨论收敛之后
+ 
+-- 结论指向改动时，主动问一句是否进入实现；用户同意后按 plan 或 build 技能继续，不在讨论模式里顺手改文件。
++- 结论指向改动时，主动问一句是否进入实现；用户同意后按 hello-plan 或 hello-build 技能继续，不在讨论模式里顺手改文件。
+ - 用户在讨论中途直接要求改代码时，明确说一句切换工作方式，再按对应技能继续，不一边说只讨论一边动手。
+ - 没有收敛也如实说：哪些清楚了、哪些还悬着、补什么信息能定。
+ 
+diff --git a/skills/auto/SKILL.md b/skills/hello-auto/SKILL.md
+similarity index 79%
+rename from skills/auto/SKILL.md
+rename to skills/hello-auto/SKILL.md
+index 68409f3..e033ae8 100644
+--- a/skills/auto/SKILL.md
++++ b/skills/hello-auto/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: auto
+-description: 任务全权交给你、过程不想被打扰时使用：自己判断直接做还是先出方案，持续执行到交付完成。用户输入 ~auto 时必须使用。
++name: hello-auto
++description: 任务全权交给你、过程不想被打扰时使用：自己判断直接做还是先出方案，持续执行到交付完成。用户输入 ~auto 或 ~hello-auto 时必须使用。
+ ---
+ 
+ # 自主推进
+@@ -9,7 +9,7 @@ description: 任务全权交给你、过程不想被打扰时使用：自己判
+ 
+ ~auto 的含义是用户把过程决策交给了你：怎么做、先做哪块、岔路怎么选，都由你判断并对结果负责。把“可以开始吗”“A 做完了要不要继续 B”这类问题留给自己回答。
+ 
+-- 先选路：需求清楚、影响面可控，直接按 build 技能实现；存在多种合理做法或牵连面大，先按 plan 技能把方案写下来，然后继续实现，不停下等确认——落盘是为了想清楚、留下可核对的依据，不是为了等审批。
++- 先选路：需求清楚、影响面可控，直接按 hello-build 技能实现；存在多种合理做法或牵连面大，先按 hello-plan 技能把方案写下来，然后继续实现，不停下等确认——落盘是为了想清楚、留下可核对的依据，不是为了等审批。
+ - 选路不是一次性的：做着做着发现比预想复杂，就补一份方案再继续；比预想简单，就别硬走重流程。
+ - 停下只因为内核定义的三种阻塞情况；其余犹豫（怕选错、任务太长、没人拍板）都不是停下的理由。可自主决定的取舍，往更简单、可逆、贴近项目现状的方向选，记下来交付时说明。
+ - 长任务优先用宿主原生的持续执行能力：计划模式、待办清单、检查点、后台任务，能用就用，不自造循环和状态文件。
+@@ -19,7 +19,7 @@ description: 任务全权交给你、过程不想被打扰时使用：自己判
+ 
+ ## 收尾
+ 
+-- 实现完成后按 qa 技能自检，通过后才报告完成。
++- 实现完成后按 hello-qa 技能自检，通过后才报告完成。
+ - 交付汇报一次说全：做成了什么、关键取舍及理由、验证结果、明确没做的事。
+ - 确实没做完就要交还时（命中阻塞、预算耗尽），说清停在哪、剩什么、下一步从哪继续。
+ 
+diff --git a/skills/build/SKILL.md b/skills/hello-build/SKILL.md
+similarity index 89%
+rename from skills/build/SKILL.md
+rename to skills/hello-build/SKILL.md
+index 3aeee28..d9cd17f 100644
+--- a/skills/build/SKILL.md
++++ b/skills/hello-build/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: build
+-description: 需求明确或方案已确认、要动手实现时使用：贴着项目既有约定实现，完成后自检并附验证输出。用户输入 ~build 时必须使用。
++name: hello-build
++description: 需求明确或方案已确认、要动手实现时使用：贴着项目既有约定实现，完成后自检并附验证输出。用户输入 ~build 或 ~hello-build 时必须使用。
+ ---
+ 
+ # 实现纪律
+@@ -9,7 +9,7 @@ description: 需求明确或方案已确认、要动手实现时使用：贴着
+ 
+ 实现的目标是让改动无缝融进项目，而不是在项目里留下自己的风格印记。
+ 
+-- 动手前先锁定目标形态：有已确认的方案就按方案做，方案里的“不做清单”同样是边界；没有方案但需求清楚，就直接做。发现存在多种合理做法，或改动会波及公开接口、持久化数据时，先按 plan 技能对齐再动手，不赌一个方向写完再说。
++- 动手前先锁定目标形态：有已确认的方案就按方案做，方案里的“不做清单”同样是边界；没有方案但需求清楚，就直接做。发现存在多种合理做法，或改动会波及公开接口、持久化数据时，先按 hello-plan 技能对齐再动手，不赌一个方向写完再说。
+ - 新代码要像项目原有代码：先读一两处同类实现，再沿用既有技术栈、目录组织、命名与错误处理方式。想引入新依赖或新模式时，先确认现有能力确实做不到，并把理由讲给用户。
+ - 先想好怎么验证再写实现：能补一个最小测试就先补上，写代码时就有靶子；补不了的，至少想清楚完成后跑什么命令、看什么结果。
+ - 小步前进：每完成一个可独立验证的片段，就跑一次最快的检查（类型检查、相关单测），不攒到最后一把梭。
+@@ -20,7 +20,7 @@ description: 需求明确或方案已确认、要动手实现时使用：贴着
+ ## 什么才算完成
+ 
+ - 验收标准逐条走通，而不是“代码写完了”。
+-- 按 qa 技能自检，把验证命令的关键输出附在交付里。
++- 按 hello-qa 技能自检，把验证命令的关键输出附在交付里。
+ - 交付时说清：改了哪些文件、为什么这样改、与方案的偏差在哪、明确没做什么。
+ 
+ ## 交付前自问
+diff --git a/skills/clean/SKILL.md b/skills/hello-clean/SKILL.md
+similarity index 95%
+rename from skills/clean/SKILL.md
+rename to skills/hello-clean/SKILL.md
+index d5f7b67..d2e800e 100644
+--- a/skills/clean/SKILL.md
++++ b/skills/hello-clean/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: clean
+-description: 项目里积了构建产物、缓存或调试残留时使用：列出清理清单，经确认后删除，不动源码与配置。用户输入 ~clean 时必须使用。
++name: hello-clean
++description: 项目里积了构建产物、缓存或调试残留时使用：列出清理清单，经确认后删除，不动源码与配置。用户输入 ~clean 或 ~hello-clean 时必须使用。
+ ---
+ 
+ # 清理临时产物
+diff --git a/skills/commit/SKILL.md b/skills/hello-commit/SKILL.md
+similarity index 95%
+rename from skills/commit/SKILL.md
+rename to skills/hello-commit/SKILL.md
+index 8a02907..ed2a8ee 100644
+--- a/skills/commit/SKILL.md
++++ b/skills/hello-commit/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: commit
+-description: 变更要进入版本库时使用：核对暂存内容，按项目已有风格写清晰的提交信息，敏感文件不入库。用户输入 ~commit 时必须使用。
++name: hello-commit
++description: 变更要进入版本库时使用：核对暂存内容，按项目已有风格写清晰的提交信息，敏感文件不入库。用户输入 ~commit 或 ~hello-commit 时必须使用。
+ ---
+ 
+ # 规范提交
+diff --git a/skills/eva/SKILL.md b/skills/hello-eva/SKILL.md
+similarity index 98%
+rename from skills/eva/SKILL.md
+rename to skills/hello-eva/SKILL.md
+index 60b1f48..5c1dc9d 100644
+--- a/skills/eva/SKILL.md
++++ b/skills/hello-eva/SKILL.md
+@@ -1,7 +1,7 @@
+ ---
+-name: eva
++name: hello-eva
+ description: >-
+-  eva = 智能全量审查引擎（思维激活器）——评估（Evaluate）、验证（Verify）、审计（Audit）三职能一体，按诉求交付全量评估、全量验证、全量审计或三者合一的完整审查。当用户要求对任意内容——代码仓库、项目、插件、技能、MCP 配置、提示词、文档、脚本、配置文件——进行审计、评审、评估、验证、质检、验收、找问题、风险排查（audit / review / verify / assess）时使用；用户输入 ~eva 时必须使用。证实或证伪被审对象的每一项关键承诺，判断它好在哪、值不值得选，输出证据充分的真实问题、根因分析与最佳修复方案。默认只读，仅在用户明确要求修复时才修改被审内容。日常实现后的快速自检不必使用本技能，它面向独立、完整的审查交付。
++  eva = 智能全量审查引擎（思维激活器）——评估（Evaluate）、验证（Verify）、审计（Audit）三职能一体，按诉求交付全量评估、全量验证、全量审计或三者合一的完整审查。当用户要求对任意内容——代码仓库、项目、插件、技能、MCP 配置、提示词、文档、脚本、配置文件——进行审计、评审、评估、验证、质检、验收、找问题、风险排查（audit / review / verify / assess）时使用；用户输入 ~eva 或 ~hello-eva 时必须使用。证实或证伪被审对象的每一项关键承诺，判断它好在哪、值不值得选，输出证据充分的真实问题、根因分析与最佳修复方案。默认只读，仅在用户明确要求修复时才修改被审内容。日常实现后的快速自检不必使用本技能，它面向独立、完整的审查交付。
+ ---
+ 
+ # 智能全量审查
+diff --git a/skills/eva/references/agentic-security.md b/skills/hello-eva/references/agentic-security.md
+similarity index 100%
+rename from skills/eva/references/agentic-security.md
+rename to skills/hello-eva/references/agentic-security.md
+diff --git a/skills/eva/references/evaluation-judgment.md b/skills/hello-eva/references/evaluation-judgment.md
+similarity index 100%
+rename from skills/eva/references/evaluation-judgment.md
+rename to skills/hello-eva/references/evaluation-judgment.md
+diff --git a/skills/eva/references/finding-quality.md b/skills/hello-eva/references/finding-quality.md
+similarity index 100%
+rename from skills/eva/references/finding-quality.md
+rename to skills/hello-eva/references/finding-quality.md
+diff --git a/skills/eva/references/instruction-text.md b/skills/hello-eva/references/instruction-text.md
+similarity index 100%
+rename from skills/eva/references/instruction-text.md
+rename to skills/hello-eva/references/instruction-text.md
+diff --git a/skills/eva/references/report-template.md b/skills/hello-eva/references/report-template.md
+similarity index 100%
+rename from skills/eva/references/report-template.md
+rename to skills/hello-eva/references/report-template.md
+diff --git a/skills/eva/references/verification-design.md b/skills/hello-eva/references/verification-design.md
+similarity index 100%
+rename from skills/eva/references/verification-design.md
+rename to skills/hello-eva/references/verification-design.md
+diff --git a/skills/help/SKILL.md b/skills/hello-help/SKILL.md
+similarity index 81%
+rename from skills/help/SKILL.md
+rename to skills/hello-help/SKILL.md
+index 0e8e56c..f4288b2 100644
+--- a/skills/help/SKILL.md
++++ b/skills/hello-help/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: help
+-description: 用户想了解可用能力或不知从哪个入口开始时使用：介绍 ~命令 与质量技能，推荐合适入口。用户输入 ~help 时必须使用。
++name: hello-help
++description: 用户想了解可用能力或不知从哪个入口开始时使用：介绍 ~命令 与质量技能，推荐合适入口。用户输入 ~help 或 ~hello-help 时必须使用。
+ ---
+ 
+ # 能力说明
+@@ -10,6 +10,7 @@ description: 用户想了解可用能力或不知从哪个入口开始时使用
+ - 只介绍真实存在的能力：以内核的命令表与当前环境实际可用的技能为准，不夸大，不许诺清单之外的功能；发现某项能力在当前环境缺失（技能文件不在、命令没装），如实说明。
+ - 用户多半带着具体困境来：先从他的问题出发推荐一个入口并说明为什么是它，再给全景；单纯问“都有什么”时，一句话一个命令过完即可，用户对哪个感兴趣再展开。
+ - 顺带讲清两件事：质量技能（hello-ui、hello-test 等）按任务类型在需要时自动生效，不用手动调用；~命令 是快速入口而不是使用门槛，不用命令、直接说需求同样会被正确处理。
++- 全部技能的正式名称都带 hello- 前缀（hello-plan、hello-build……），所以 ~plan 与 ~hello-plan 等价；宿主自身的技能入口（如 /hello-plan）用的是正式名称。用户问起时才解释，不主动铺开。
+ - 用“什么时候用它”解释每个命令，不用实现机制解释；照顾第一次接触的人，不堆内部术语。
+ 
+ ## 按处境找入口
+@@ -22,6 +23,7 @@ description: 用户想了解可用能力或不知从哪个入口开始时使用
+ | 需求清楚，直接实现 | ~build |
+ | 整件事交出去，过程不想管 | ~auto |
+ | 做完了，想检查质量 | ~qa |
++| 要对仓库、插件、技能等做独立的完整审查 | ~eva |
+ | 刚接手项目，想建立知识库 | ~init |
+ | 变更要提交入库 | ~commit |
+ | 项目里堆了临时文件 | ~clean |
+diff --git a/skills/init/SKILL.md b/skills/hello-init/SKILL.md
+similarity index 96%
+rename from skills/init/SKILL.md
+rename to skills/hello-init/SKILL.md
+index d0f43e5..4920a1a 100644
+--- a/skills/init/SKILL.md
++++ b/skills/hello-init/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: init
+-description: 接手新项目或项目知识库缺失时使用：执行 helloagents init 建立知识库，补充从代码看不出来的事实。用户输入 ~init 时必须使用。
++name: hello-init
++description: 接手新项目或项目知识库缺失时使用：执行 helloagents init 建立知识库，补充从代码看不出来的事实。用户输入 ~init 或 ~hello-init 时必须使用。
+ ---
+ 
+ # 初始化项目知识库
+diff --git a/skills/plan/SKILL.md b/skills/hello-plan/SKILL.md
+similarity index 96%
+rename from skills/plan/SKILL.md
+rename to skills/hello-plan/SKILL.md
+index 78fb57e..4a17c0b 100644
+--- a/skills/plan/SKILL.md
++++ b/skills/hello-plan/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: plan
+-description: 改动值得先对齐做法时使用：澄清需求，给出一份可确认的方案，确认后再实现。用户输入 ~plan 时必须使用。
++name: hello-plan
++description: 改动值得先对齐做法时使用：澄清需求，给出一份可确认的方案，确认后再实现。用户输入 ~plan 或 ~hello-plan 时必须使用。
+ ---
+ 
+ # 方案思维
+diff --git a/skills/prd/SKILL.md b/skills/hello-prd/SKILL.md
+similarity index 89%
+rename from skills/prd/SKILL.md
+rename to skills/hello-prd/SKILL.md
+index d37cd04..2857f2e 100644
+--- a/skills/prd/SKILL.md
++++ b/skills/hello-prd/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+-name: prd
+-description: 产品需求尚未成形、要从头梳理时使用：按维度与用户讨论，产出一份信息密度高的 PRD 文档。用户输入 ~prd 时必须使用。
++name: hello-prd
++description: 产品需求尚未成形、要从头梳理时使用：按维度与用户讨论，产出一份信息密度高的 PRD 文档。用户输入 ~prd 或 ~hello-prd 时必须使用。
+ ---
+ 
+ # 需求探索
+@@ -25,7 +25,7 @@ PRD 的质量取决于讨论的质量，文档只是讨论结果的沉淀。目
+ ## 落盘与后续
+ 
+ - 项目里有 .helloagents/ 时写入 .helloagents/plans/；尚无项目目录时按用户指定的位置输出。
+-- 确认后要实现的，按 plan 或 build 技能继续；PRD 记录“要什么”，实现方案记录“怎么做”，不混在一份文档里。
++- 确认后要实现的，按 hello-plan 或 hello-build 技能继续；PRD 记录“要什么”，实现方案记录“怎么做”，不混在一份文档里。
+ 
+ ## 交付前自问
+ 
+diff --git a/skills/qa/SKILL.md b/skills/hello-qa/SKILL.md
+similarity index 94%
+rename from skills/qa/SKILL.md
+rename to skills/hello-qa/SKILL.md
+index 4e33433..9ed0d0c 100644
+--- a/skills/qa/SKILL.md
++++ b/skills/hello-qa/SKILL.md
+@@ -1,13 +1,13 @@
+ ---
+-name: qa
+-description: 实现完成后做质量自检，或用户输入 ~qa 时使用：运行真实验证命令，系统性检查后如实报告。
++name: hello-qa
++description: 实现完成后做质量自检，或用户输入 ~qa 或 ~hello-qa 时使用：运行真实验证命令，系统性检查后如实报告。
+ ---
+ 
+ # 质量自检
+ 
+ ## 此刻该怎么想
+ 
+-质量结论来自运行结果，不来自自我评价。检查的目的是发现问题，不是产出一份“检查过了”的证明。本技能的对象是你刚完成的工作；要对任意对象（仓库、插件、技能、文档等）做独立的全量审查，使用 eva 技能（~eva）。
++质量结论来自运行结果，不来自自我评价。检查的目的是发现问题，不是产出一份“检查过了”的证明。本技能的对象是你刚完成的工作；要对任意对象（仓库、插件、技能、文档等）做独立的全量审查，使用 hello-eva 技能（~eva）。
+ 
+ 1. 找到项目的真实验证命令，按优先级：方案 frontmatter 的 verify 字段 → 项目脚本（package.json scripts、Makefile 等）→ 项目文档。逐条运行。
+ 2. 失败就修复，修复后重新运行，直到通过；无法修复的如实说明原因与影响。
+diff --git a/src/cli/doctor.mjs b/src/cli/doctor.mjs
+index 5c0175c..073b38f 100644
+--- a/src/cli/doctor.mjs
++++ b/src/cli/doctor.mjs
+@@ -5,10 +5,10 @@
+ import { join } from 'node:path'
+ import { readInstallState } from '../kernel/config.mjs'
+ import { fileExists, readJson, readText } from '../kernel/fsx.mjs'
+-import { helloagentsRoot } from '../kernel/paths.mjs'
++import { helloagentsRoot, installStatePath } from '../kernel/paths.mjs'
+ import { hasMarkedBlock, isLegacyHookCommand, readMarkedVersion } from '../kernel/ownership.mjs'
+ import { codexNotifyState } from '../hosts/codex-toml.mjs'
+-import { cursorPluginDir } from '../hosts/plugins.mjs'
++import { cursorPluginDir, cursorRuleFile } from '../hosts/plugins.mjs'
+ import { HOSTS, findHost } from '../hosts/registry.mjs'
+ import { carrierStatus } from '../hosts/carriers.mjs'
+ import { addonPresent, enabledAddons } from './addons.mjs'
+@@ -75,13 +75,24 @@ export function buildDoctorReport(ctx) {
+       }
+     }
+ 
+-    if (install.mode === 'plugin' && host.id === 'cursor' && !fileExists(cursorPluginDir(ctx.home))) {
+-      issues.push({
+-        code: 'plugin-missing',
+-        level: 'error',
+-        host: host.id,
+-        message: cursorPluginDir(ctx.home),
+-      })
++    if (install.mode === 'plugin' && host.id === 'cursor') {
++      const pluginDir = cursorPluginDir(ctx.home)
++      const ruleFile = cursorRuleFile(pluginDir)
++      const manifest = /** @type {{ version?: string } | null} */ (
++        readJson(join(pluginDir, '.cursor-plugin', 'plugin.json'))
++      )
++      if (!manifest || !fileExists(join(pluginDir, 'skills'))) {
++        issues.push({ code: 'plugin-missing', level: 'error', host: host.id, message: pluginDir })
++      } else if (!fileExists(ruleFile)) {
++        issues.push({ code: 'plugin-rule-missing', level: 'error', host: host.id, message: ruleFile })
++      } else if (manifest.version !== ctx.version) {
++        issues.push({
++          code: 'plugin-outdated',
++          level: 'warn',
++          host: host.id,
++          message: `${pluginDir} (${manifest.version ?? 'unknown'})`,
++        })
++      }
+     }
+ 
+     const addons = enabledAddons(state, host.id)
+@@ -129,6 +140,10 @@ export function buildDoctorReport(ctx) {
+   }
+   const legacyCursorPlugin = cursorPluginDir(ctx.home)
+   if (fileExists(join(legacyCursorPlugin, 'scripts'))) legacy.push(legacyCursorPlugin)
++  // Gemini CLI 已不再是宿主，它留下的一切都算残留。
++  const geminiCarrier = join(ctx.home, '.gemini', 'GEMINI.md')
++  if (hasMarkedBlock(geminiCarrier)) legacy.push(geminiCarrier)
++  if (state.hosts.gemini) legacy.push(`${installStatePath(ctx.home)} (gemini)`)
+ 
+   return { version: ctx.version, app, issues, legacy: [...new Set(legacy)] }
+ }
+diff --git a/src/cli/help.mjs b/src/cli/help.mjs
+index 548a5e1..a514a4d 100644
+--- a/src/cli/help.mjs
++++ b/src/cli/help.mjs
+@@ -25,13 +25,14 @@ HelloAGENTS v{version} — AI 编码 CLI 的思维激活层
+   help                                        显示本说明
+ 
+ 宿主
+-  claude（Claude Code）  codex（Codex CLI）  gemini（Gemini CLI）
++  claude（Claude Code）  codex（Codex CLI）
+   grok（Grok Build）     cursor（Cursor）
+ 
+ 说明
+-  安装方式有两种：插件方式使用宿主自带的插件或扩展机制；注入方式把内核写入
+-  宿主的用户级规则文件（标记包裹，卸载即还原）。Cursor 没有用户级规则文件，
+-  项目内请使用 helloagents init。语言可用环境变量 HELLOAGENTS_LANG=cn|en 指定。
++  安装方式有两种：插件方式使用宿主自带的插件机制；注入方式把内核写入宿主的
++  用户级规则文件（标记包裹，卸载即还原）。Cursor 只支持插件方式——它没有全局
++  规则文件，内核随插件以 rules 规则下发，安装后需在 Cursor 里重载窗口生效。
++  语言可用环境变量 HELLOAGENTS_LANG=cn|en 指定。
+ `
+ 
+ const HELP_EN = `
+@@ -57,14 +58,15 @@ Other
+   help                                         Show this message
+ 
+ Hosts
+-  claude (Claude Code)  codex (Codex CLI)  gemini (Gemini CLI)
++  claude (Claude Code)  codex (Codex CLI)
+   grok (Grok Build)     cursor (Cursor)
+ 
+ Notes
+-  Two install methods: the plugin method uses the host's own plugin or extension system;
+-  the inject method writes the kernel into the host's user-level rules file (wrapped in
+-  markers; uninstalling restores the file). Cursor has no user-level rules file — use
+-  "helloagents init" inside a project. Set HELLOAGENTS_LANG=cn|en to choose the language.
++  Two install methods: the plugin method uses the host's own plugin system; the inject
++  method writes the kernel into the host's user-level rules file (wrapped in markers;
++  uninstalling restores the file). Cursor supports the plugin method only — it has no
++  global rules file, so the kernel ships as a plugin rule; reload the window in Cursor
++  after installing. Set HELLOAGENTS_LANG=cn|en to choose the language.
+ `
+ 
+ /**
+diff --git a/src/cli/install.mjs b/src/cli/install.mjs
+index 840624c..01b00c6 100644
+--- a/src/cli/install.mjs
++++ b/src/cli/install.mjs
+@@ -10,10 +10,8 @@ import { injectKernel, readKernelText, removeKernel } from '../hosts/carriers.mj
+ import {
+   installClaudePlugin,
+   installCursorPlugin,
+-  installGeminiExtension,
+   uninstallClaudePlugin,
+   uninstallCursorPlugin,
+-  uninstallGeminiExtension,
+ } from '../hosts/plugins.mjs'
+ import { applyAddon, enabledAddons } from './addons.mjs'
+ import { removeApp, syncApp } from './runtime-app.mjs'
+@@ -28,7 +26,6 @@ import { removeApp, syncApp } from './runtime-app.mjs'
+  */
+ function installHostPlugin(ctx, host) {
+   if (host.id === 'claude') return installClaudePlugin(ctx.app)
+-  if (host.id === 'gemini') return installGeminiExtension()
+   if (host.id === 'cursor') return installCursorPlugin(ctx.home, ctx.app)
+   return { ok: false }
+ }
+@@ -39,7 +36,6 @@ function installHostPlugin(ctx, host) {
+  */
+ function uninstallHostPlugin(ctx, host) {
+   if (host.id === 'claude') return uninstallClaudePlugin()
+-  if (host.id === 'gemini') return uninstallGeminiExtension()
+   if (host.id === 'cursor') return uninstallCursorPlugin(ctx.home)
+   return { ok: true }
+ }
+diff --git a/src/cli/migrate.mjs b/src/cli/migrate.mjs
+index 0ca71cf..997d669 100644
+--- a/src/cli/migrate.mjs
++++ b/src/cli/migrate.mjs
+@@ -3,8 +3,9 @@
+  * 原则：只清理能明确识别为 3.x 产物的条目；不能确认归属的内容一律不动并提示人工确认。
+  */
+ import { join } from 'node:path'
++import { readInstallState, writeInstallState } from '../kernel/config.mjs'
+ import { fileExists, readText, removePath, writeTextAtomic } from '../kernel/fsx.mjs'
+-import { helloagentsRoot } from '../kernel/paths.mjs'
++import { helloagentsRoot, installStatePath } from '../kernel/paths.mjs'
+ import {
+   hasMarkedBlock,
+   isLegacyHookCommand,
+@@ -96,10 +97,26 @@ export function runMigrate(ctx, projectDir) {
+     }
+   }
+ 
++  // Gemini CLI 已不再是宿主，它下面的一切都按残留处理：
++  // GEMINI.md 里的受管块无论版本号一律移除，settings.json 只清 3.x 的 hooks。
++  const geminiCarrier = join(ctx.home, '.gemini', 'GEMINI.md')
++  if (hasMarkedBlock(geminiCarrier)) {
++    removeMarkedBlock(geminiCarrier)
++    record(geminiCarrier)
++  }
+   const geminiSettings = join(ctx.home, '.gemini', 'settings.json')
+   if (removeSettingsHooks(geminiSettings, { home: ctx.home, legacyOnly: true }) > 0) {
+     record(geminiSettings)
+   }
++  const state = readInstallState(ctx.home)
++  if (state.hosts.gemini) {
++    delete state.hosts.gemini
++    state.addons.guard = state.addons.guard.filter((id) => id !== 'gemini')
++    state.addons.notify = state.addons.notify.filter((id) => id !== 'gemini')
++    writeInstallState(ctx.home, state)
++    record(`${installStatePath(ctx.home)} (gemini)`)
++    ctx.log(ctx.t('migrate.geminiExtension'))
++  }
+   const codexHooksJson = join(ctx.home, '.codex', 'hooks.json')
+   if (removeSettingsHooks(codexHooksJson, { home: ctx.home, legacyOnly: true }) > 0) {
+     record(codexHooksJson)
+diff --git a/src/cli/runtime-app.mjs b/src/cli/runtime-app.mjs
+index dc7997c..608324d 100644
+--- a/src/cli/runtime-app.mjs
++++ b/src/cli/runtime-app.mjs
+@@ -16,7 +16,6 @@ export const APP_ENTRIES = [
+   'assets',
+   '.claude-plugin',
+   '.cursor-plugin',
+-  'gemini-extension.json',
+   'package.json',
+   'LICENSE.md',
+ ]
+diff --git a/src/cli/sync-version.mjs b/src/cli/sync-version.mjs
+index e9f6c68..a37b849 100644
+--- a/src/cli/sync-version.mjs
++++ b/src/cli/sync-version.mjs
+@@ -10,7 +10,6 @@ export const MANIFEST_FILES = [
+   '.claude-plugin/plugin.json',
+   '.claude-plugin/marketplace.json',
+   '.cursor-plugin/plugin.json',
+-  'gemini-extension.json',
+ ]
+ 
+ /**
+diff --git a/src/hosts/native.mjs b/src/hosts/native.mjs
+index fe483ac..bf867b0 100644
+--- a/src/hosts/native.mjs
++++ b/src/hosts/native.mjs
+@@ -1,5 +1,5 @@
+ /**
+- * 调用宿主自带的命令行工具（claude、gemini 等）。
++ * 调用宿主自带的命令行工具（目前只有 claude）。
+  * Windows 下按 .cmd、.exe 追加候选；不经过 shell，避免转义问题。
+  */
+ import { spawnSync } from 'node:child_process'
+diff --git a/src/hosts/plugins.mjs b/src/hosts/plugins.mjs
+index 7d7a767..4645250 100644
+--- a/src/hosts/plugins.mjs
++++ b/src/hosts/plugins.mjs
+@@ -3,10 +3,10 @@
+  * 原则：优先调用宿主自带命令；命令缺失或失败时返回手动步骤，不静默失败。
+  */
+ import { join } from 'node:path'
+-import { copyPath, fileExists, readJson, removePath } from '../kernel/fsx.mjs'
++import { copyPath, fileExists, readJson, removePath, writeTextAtomic } from '../kernel/fsx.mjs'
++import { readKernelText } from './carriers.mjs'
+ import { runHostCommand } from './native.mjs'
+ 
+-export const REPO_URL = 'https://github.com/hellowind777/helloagents'
+ export const CLAUDE_PLUGIN_ID = 'helloagents@helloagents'
+ 
+ /**
+@@ -43,28 +43,16 @@ export function uninstallClaudePlugin() {
+   }
+ }
+ 
+-/**
+- * Gemini CLI：通过扩展机制安装。
+- * @returns {PluginResult}
+- */
+-export function installGeminiExtension() {
+-  const result = runHostCommand('gemini', ['extensions', 'install', REPO_URL])
+-  if (result.ok) return { ok: true }
+-  return { ok: false, manualSteps: `gemini extensions install ${REPO_URL}` }
+-}
+-
+-/** @returns {PluginResult} */
+-export function uninstallGeminiExtension() {
+-  const result = runHostCommand('gemini', ['extensions', 'uninstall', 'helloagents'])
+-  if (result.ok || result.missing) return { ok: true }
+-  return { ok: false, manualSteps: 'gemini extensions uninstall helloagents' }
+-}
+-
+-/** @param {string} home */
++/** Cursor 本地插件目录。官方约定即为 ~/.cursor/plugins/local/<插件名>/。 @param {string} home */
+ export function cursorPluginDir(home) {
+   return join(home, '.cursor', 'plugins', 'local', 'helloagents')
+ }
+ 
++/** 内核在 Cursor 插件中的规则文件。 @param {string} pluginDir */
++export function cursorRuleFile(pluginDir) {
++  return join(pluginDir, 'rules', 'helloagents-kernel.mdc')
++}
++
+ /** @param {string} pluginDir */
+ function isOurCursorPlugin(pluginDir) {
+   const manifest = /** @type {{ name?: string } | null} */ (
+@@ -74,7 +62,19 @@ function isOurCursorPlugin(pluginDir) {
+ }
+ 
+ /**
+- * Cursor：把运行副本复制为本地插件目录。
++ * 内核转成 Cursor 规则文件内容。
++ * 只写 alwaysApply、不写 description：Cursor 已知缺陷是二者同时存在时，
++ * 规则会被降级为「按需取用」而不是始终生效。
++ * @param {string} kernelText
++ */
++export function buildCursorRule(kernelText) {
++  return `---\nalwaysApply: true\n---\n\n${kernelText.trimEnd()}\n`
++}
++
++/**
++ * Cursor：生成本地插件目录。
++ * 只放 Cursor 认识的三样东西——清单、技能、规则；运行副本的 CLI 与资源不进插件目录。
++ * 附加组件的 hooks 指向 ~/.helloagents/app，不依赖这里。
+  * @param {string} home
+  * @param {string} appDirPath
+  * @returns {PluginResult}
+@@ -84,8 +84,14 @@ export function installCursorPlugin(home, appDirPath) {
+   if (fileExists(target) && !isOurCursorPlugin(target)) {
+     return { ok: false, manualSteps: `目标目录已被其他内容占用，请先移除：${target}` }
+   }
++  const kernel = readKernelText(appDirPath)
++  if (kernel === null) {
++    return { ok: false, manualSteps: `运行副本缺少内核文件：${join(appDirPath, 'prompts', 'kernel.md')}` }
++  }
+   removePath(target)
+-  copyPath(appDirPath, target)
++  copyPath(join(appDirPath, '.cursor-plugin'), join(target, '.cursor-plugin'))
++  copyPath(join(appDirPath, 'skills'), join(target, 'skills'))
++  writeTextAtomic(cursorRuleFile(target), buildCursorRule(kernel))
+   return { ok: true }
+ }
+ 
+diff --git a/src/hosts/registry.mjs b/src/hosts/registry.mjs
+index 0516292..2150fd8 100644
+--- a/src/hosts/registry.mjs
++++ b/src/hosts/registry.mjs
+@@ -1,11 +1,11 @@
+ /**
+- * 宿主注册表：五个宿主的能力声明与文件路径，全项目唯一来源。
++ * 宿主注册表：四个宿主的能力声明与文件路径，全项目唯一来源。
+  * 安装、卸载、体检、文档中的宿主矩阵都从这里取数。
+  */
+ import { join } from 'node:path'
+ 
+ /**
+- * @typedef {'claude' | 'codex' | 'gemini' | 'grok' | 'cursor'} HostId
++ * @typedef {'claude' | 'codex' | 'grok' | 'cursor'} HostId
+  *
+  * @typedef {Object} HostCapabilities
+  * @property {boolean} inject 支持注入方式（用户级载体文件）
+@@ -49,17 +49,6 @@ export const HOSTS = [
+     grokHooksPath: () => null,
+     codexConfigPath: (home) => join(home, '.codex', 'config.toml'),
+   },
+-  {
+-    id: 'gemini',
+-    label: 'Gemini CLI',
+-    aliases: ['gemini-cli'],
+-    capabilities: { inject: true, plugin: true, guard: false, notify: false },
+-    carrierPath: (home) => join(home, '.gemini', 'GEMINI.md'),
+-    settingsPath: () => null,
+-    cursorHooksPath: () => null,
+-    grokHooksPath: () => null,
+-    codexConfigPath: () => null,
+-  },
+   {
+     id: 'grok',
+     label: 'Grok Build',
+diff --git a/src/kernel/messages.mjs b/src/kernel/messages.mjs
+index 5c1d952..7b50ea5 100644
+--- a/src/kernel/messages.mjs
++++ b/src/kernel/messages.mjs
+@@ -133,6 +133,10 @@ export const MESSAGES = {
+     cn: '未发现 3.x 残留，无需迁移。',
+     en: 'No 3.x leftovers found. Nothing to migrate.',
+   },
++  'migrate.geminiExtension': {
++    cn: 'Gemini CLI 已不再是支持的宿主，安装记录已清除。若当初以扩展方式安装过，请手动执行：gemini extensions uninstall helloagents',
++    en: 'Gemini CLI is no longer a supported host; its install record was removed. If you installed the extension, run manually: gemini extensions uninstall helloagents',
++  },
+   'migrate.codexManualNotify': {
+     cn: 'Codex config.toml 中存在疑似 3.x 的 notify 配置但未带管理标记，为安全起见未改动，请人工确认：{path}',
+     en: 'A notify entry in Codex config.toml looks like 3.x but has no managed marker. It was left unchanged for safety; please review: {path}',
+diff --git a/tests/contract/prompts.test.mjs b/tests/contract/prompts.test.mjs
+index aec4da3..4cd888f 100644
+--- a/tests/contract/prompts.test.mjs
++++ b/tests/contract/prompts.test.mjs
+@@ -9,7 +9,9 @@ import { REPO_ROOT } from '../helpers/env.mjs'
+ const KERNEL_PATH = join(REPO_ROOT, 'prompts', 'kernel.md')
+ const kernel = readFileSync(KERNEL_PATH, 'utf-8')
+ 
+-const COMMAND_SKILLS = ['plan', 'build', 'auto', 'prd', 'qa', 'eva', 'ask', 'init', 'commit', 'clean', 'help']
++/** ~命令的短写；技能正式名是 hello- 前缀加短写。 */
++const COMMAND_ALIASES = ['plan', 'build', 'auto', 'prd', 'qa', 'eva', 'ask', 'init', 'commit', 'clean', 'help']
++const COMMAND_SKILLS = COMMAND_ALIASES.map((alias) => `hello-${alias}`)
+ const QUALITY_SKILLS = [
+   'hello-ui',
+   'hello-test',
+@@ -25,8 +27,8 @@ const QUALITY_SKILLS = [
+   'hello-subagent',
+ ]
+ 
+-// 个别技能允许更大的正文预算（eva 是收编的完整审计技能，附 references 参考文件）。
+-const LINE_BUDGETS = { eva: 200 }
++// 个别技能允许更大的正文预算（hello-eva 是收编的完整审计技能，附 references 参考文件）。
++const LINE_BUDGETS = { 'hello-eva': 200 }
+ 
+ test('内核不超过 150 行', () => {
+   const lines = kernel.trimEnd().split('\n').length
+@@ -52,11 +54,20 @@ test('内核的阻断清单与 guard 规则同步', () => {
+ })
+ 
+ test('内核命令表覆盖全部命令技能', () => {
+-  for (const name of COMMAND_SKILLS) {
+-    assert.ok(kernel.includes(`~${name}`), `内核命令表缺少 ~${name}`)
++  for (const alias of COMMAND_ALIASES) {
++    assert.ok(kernel.includes(`~${alias}`), `内核命令表缺少 ~${alias}`)
+   }
+-  for (const name of QUALITY_SKILLS) {
+-    assert.ok(kernel.includes(name), `内核质量技能列表缺少 ${name}`)
++  for (const name of [...COMMAND_SKILLS, ...QUALITY_SKILLS]) {
++    assert.ok(kernel.includes(name), `内核缺少技能正式名 ${name}`)
++  }
++})
++
++test('命令技能的描述同时认短写与全称', () => {
++  const skillsDir = join(REPO_ROOT, 'skills')
++  for (const alias of COMMAND_ALIASES) {
++    const text = readFileSync(join(skillsDir, `hello-${alias}`, 'SKILL.md'), 'utf-8')
++    const description = text.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? ''
++    assert.ok(description.includes(`~${alias} 或 ~hello-${alias}`), `hello-${alias} 的描述缺少两种触发写法`)
+   }
+ })
+ 
+diff --git a/tests/integration/doctor-migrate.test.mjs b/tests/integration/doctor-migrate.test.mjs
+index 6d00916..31d5cb0 100644
+--- a/tests/integration/doctor-migrate.test.mjs
++++ b/tests/integration/doctor-migrate.test.mjs
+@@ -61,6 +61,19 @@ function seedLegacyArtifacts(home) {
+   mkdirSync(join(home, '.cursor', 'plugins', 'local', 'helloagents', 'scripts'), { recursive: true })
+ }
+ 
++/** Gemini CLI 不再受支持，它留下的内容按残留处理。 @param {string} home */
++function seedGeminiArtifacts(home) {
++  writeTextAtomic(
++    join(home, '.gemini', 'GEMINI.md'),
++    '# 我的规则\n\n<!-- HELLOAGENTS_START -->\n<!-- HelloAGENTS v4.0.0 -->\n内核正文\n<!-- HELLOAGENTS_END -->\n',
++  )
++  writeJsonAtomic(join(home, '.helloagents', 'install.json'), {
++    version: 4,
++    hosts: { gemini: { mode: 'plugin', version: '4.0.0', updatedAt: '2026-07-01T00:00:00.000Z' } },
++    addons: { guard: [], notify: ['gemini'] },
++  })
++}
++
+ test('doctor 识别 3.x 残留；migrate 全部清理且不伤用户内容', () => {
+   const { home, cleanup } = makeFakeHome()
+   try {
+@@ -101,6 +114,31 @@ test('doctor 识别 3.x 残留；migrate 全部清理且不伤用户内容', ()
+   }
+ })
+ 
++test('doctor 与 migrate 处理 Gemini 残留，用户自己的内容不动', () => {
++  const { home, cleanup } = makeFakeHome()
++  try {
++    const { ctx, lines } = makeCtx(home)
++    seedGeminiArtifacts(home)
++
++    const before = buildDoctorReport(ctx)
++    assert.ok(before.legacy.some((item) => item.endsWith('GEMINI.md')), 'doctor 应把 GEMINI.md 列为残留')
++    assert.ok(before.legacy.some((item) => item.includes('(gemini)')), 'doctor 应把 gemini 安装记录列为残留')
++
++    const projectDir = mkdtempSync(join(tmpdir(), 'helloagents-project-'))
++    runMigrate(ctx, projectDir)
++    rmSync(projectDir, { recursive: true, force: true })
++
++    assert.equal(readText(join(home, '.gemini', 'GEMINI.md')), '# 我的规则\n')
++    assert.ok(
++      lines.some((line) => line.includes('gemini extensions uninstall helloagents')),
++      'migrate 应提示手动卸载扩展本体',
++    )
++    assert.deepEqual(buildDoctorReport(ctx).legacy, [])
++  } finally {
++    cleanup()
++  }
++})
++
+ test('migrate 不动用户自己的 notify 配置，只提示人工确认', () => {
+   const dir = mkdtempSync(join(tmpdir(), 'helloagents-codex-'))
+   try {
+diff --git a/tests/integration/install.test.mjs b/tests/integration/install.test.mjs
+index 8077192..f04741c 100644
+--- a/tests/integration/install.test.mjs
++++ b/tests/integration/install.test.mjs
+@@ -19,7 +19,7 @@ test('注入方式安装：载体写入内核，安装状态记录，重复安
+   const { home, cleanup } = makeFakeHome()
+   try {
+     const { ctx } = makeCtx(home)
+-    const targets = [host('claude'), host('codex'), host('gemini'), host('grok')]
++    const targets = [host('claude'), host('codex'), host('grok')]
+ 
+     runInstall(ctx, targets, 'inject')
+     runInstall(ctx, targets, 'inject')
+@@ -36,10 +36,10 @@ test('注入方式安装：载体写入内核，安装状态记录，重复安
+     const state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
+       readJson(join(home, '.helloagents', 'install.json'))
+     )
+-    assert.equal(Object.keys(state.hosts).length, 4)
++    assert.equal(Object.keys(state.hosts).length, 3)
+     assert.equal(state.hosts.claude?.mode, 'inject')
+     assert.ok(fileExists(join(home, '.helloagents', 'app', 'prompts', 'kernel.md')))
+-    assert.ok(fileExists(join(home, '.helloagents', 'app', 'skills', 'plan', 'SKILL.md')))
++    assert.ok(fileExists(join(home, '.helloagents', 'app', 'skills', 'hello-plan', 'SKILL.md')))
+   } finally {
+     cleanup()
+   }
+@@ -63,7 +63,7 @@ test('注入方式保留用户已有内容，卸载后完整还原', () => {
+   }
+ })
+ 
+-test('cursor 不支持注入方式，插件方式复制运行副本', () => {
++test('cursor 不支持注入方式；插件方式下发清单、技能与内核规则', () => {
+   const { home, cleanup } = makeFakeHome()
+   try {
+     const { ctx, lines } = makeCtx(home)
+@@ -72,8 +72,36 @@ test('cursor 不支持注入方式，插件方式复制运行副本', () => {
+ 
+     runInstall(ctx, [host('cursor')], 'plugin')
+     const pluginDir = join(home, '.cursor', 'plugins', 'local', 'helloagents')
+-    assert.ok(fileExists(join(pluginDir, 'prompts', 'kernel.md')))
+     assert.ok(fileExists(join(pluginDir, '.cursor-plugin', 'plugin.json')))
++    assert.ok(fileExists(join(pluginDir, 'skills', 'hello-plan', 'SKILL.md')))
++
++    const rule = readText(join(pluginDir, 'rules', 'helloagents-kernel.mdc')) ?? ''
++    assert.ok(rule.startsWith('---\nalwaysApply: true\n---\n'), '规则文件缺少 alwaysApply frontmatter')
++    assert.ok(!rule.includes('description:'), 'Cursor 缺陷：alwaysApply 与 description 同时存在会被降级')
++    assert.ok(rule.includes('简单优先'), '规则文件应包含内核正文')
++
++    // 插件目录只放 Cursor 认识的东西，运行副本的 CLI 与资源不进去。
++    for (const noise of ['src', 'cli.mjs', 'assets', 'package.json', '.claude-plugin']) {
++      assert.equal(fileExists(join(pluginDir, noise)), false, `插件目录不应包含 ${noise}`)
++    }
++
++    runUninstall(ctx, [host('cursor')], { all: false, purge: false })
++    assert.equal(fileExists(pluginDir), false, '卸载后插件目录应被完整移除')
++  } finally {
++    cleanup()
++  }
++})
++
++test('cursor 插件随 update 刷新到当前版本', () => {
++  const { home, cleanup } = makeFakeHome()
++  try {
++    const { ctx } = makeCtx(home)
++    runInstall(ctx, [host('cursor')], 'plugin')
++    const ruleFile = join(home, '.cursor', 'plugins', 'local', 'helloagents', 'rules', 'helloagents-kernel.mdc')
++    writeTextAtomic(ruleFile, '---\nalwaysApply: true\n---\n\n过期内容\n')
++
++    runUpdate(ctx, HOSTS)
++    assert.ok((readText(ruleFile) ?? '').includes('简单优先'))
+   } finally {
+     cleanup()
+   }
+diff --git a/tests/smoke/cli.test.mjs b/tests/smoke/cli.test.mjs
+index 3b5c1da..47616a5 100644
+--- a/tests/smoke/cli.test.mjs
++++ b/tests/smoke/cli.test.mjs
+@@ -99,14 +99,20 @@ test('npm 包内容：关键文件在列，测试与旧产物不在列', () => {
+     'src/cli/main.mjs',
+     'src/addons/guard.mjs',
+     'prompts/kernel.md',
+-    'skills/plan/SKILL.md',
++    'skills/hello-plan/SKILL.md',
+     'skills/hello-ui/SKILL.md',
+     '.claude-plugin/plugin.json',
++    '.cursor-plugin/plugin.json',
+     'package.json',
+   ]) {
+     assert.ok(files.has(required), `npm 包缺少 ${required}`)
+   }
+-  for (const excluded of ['bootstrap.md', 'scripts/notify.mjs', 'tests/smoke/cli.test.mjs']) {
++  for (const excluded of [
++    'bootstrap.md',
++    'scripts/notify.mjs',
++    'tests/smoke/cli.test.mjs',
++    'gemini-extension.json',
++  ]) {
+     assert.ok(!files.has(excluded), `npm 包不应包含 ${excluded}`)
+   }
+ })
+diff --git a/tests/unit/ownership.test.mjs b/tests/unit/ownership.test.mjs
+index 4cc1bed..ac92dad 100644
+--- a/tests/unit/ownership.test.mjs
++++ b/tests/unit/ownership.test.mjs
+@@ -53,7 +53,7 @@ test('用户内容在注入与移除后保持原样', () => {
+ 
+ test('只包含受管内容的文件在移除后被删除', () => {
+   withTempDir((dir) => {
+-    const file = join(dir, 'GEMINI.md')
++    const file = join(dir, 'AGENTS.md')
+     upsertMarkedBlock(file, buildMarkedBlock('内核', '4.0.0'))
+     removeMarkedBlock(file)
+     assert.equal(readText(file), null)

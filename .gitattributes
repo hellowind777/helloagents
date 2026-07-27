@@ -1,0 +1,8 @@
+# 工作区换行符固定为 LF。
+# 提示词与技能文件由契约测试按 LF 解析，Windows 上 core.autocrlf=true 是默认值，
+# 不锁定的话 clone 或打补丁会产出 CRLF，frontmatter 解析随之失效。
+* text=auto eol=lf
+
+# 二进制资源不做任何转换。
+*.png binary
+*.wav binary

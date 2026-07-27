@@ -1,19 +1,14 @@
 {
   "name": "helloagents",
-  "description": "Official marketplace for the HelloAGENTS quality-driven orchestration kernel",
   "owner": {
-    "name": "HelloWind",
-    "email": "hellowind777@gmail.com"
+    "name": "HelloWind"
   },
   "plugins": [
     {
       "name": "helloagents",
-      "description": "Quality-driven orchestration kernel for AI CLIs: intelligent routing, quality verification, safety guards, and notifications",
-      "source": "./",
-      "author": {
-        "name": "HelloWind",
-        "email": "hellowind777@gmail.com"
-      }
+      "source": ".",
+      "version": "4.0.0",
+      "description": "思维激活层：纠偏内核 + 按需思维技能。Thinking-activation layer: a behavior-correcting kernel plus on-demand thinking skills."
     }
   ]
 }

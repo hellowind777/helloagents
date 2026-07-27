@@ -1,21 +1,8 @@
 {
   "name": "helloagents",
-  "version": "3.1.9",
-  "description": "HelloAGENTS — The orchestration kernel that makes any AI CLI smarter. Adds intelligent routing, unified QA gates, safety guards, and notifications.",
+  "version": "4.0.0",
+  "description": "思维激活层：纠偏内核 + 按需思维技能。Thinking-activation layer: a behavior-correcting kernel plus on-demand thinking skills.",
   "author": {
-    "name": "HelloWind",
-    "email": "hellowind777@gmail.com"
-  },
-  "license": "Apache-2.0",
-  "keywords": [
-    "orchestration",
-    "subagent",
-    "routing",
-    "quality",
-    "notification",
-    "safety"
-  ],
-  "repository": "https://github.com/hellowind777/helloagents",
-  "skills": "./skills",
-  "hooks": "./hooks/hooks-claude.json"
+    "name": "HelloWind"
+  }
 }

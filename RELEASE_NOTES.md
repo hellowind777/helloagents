@@ -1,43 +1,20 @@
-# HelloAGENTS v3.1.9 beta
+# HelloAGENTS 4.0.0 发布说明
 
-## 中文
+一句话：任何宿主，同一份技能，激活模型自己的智能。
 
-### 新增支持
+4.0 回答一个问题：当模型和宿主工具都在快速变强时，一个第三方层还应该做什么？我们的答案是三件事——纠偏（矫正模型的坏习惯：推责、停在建议、过度工程化自证）、激活（在对的时机提供对的思维模式）、分发（可靠地装进五个宿主的三种安装形态）。3.x 里那套用脚本证明“任务真的完成了”的治理机器（停止闸门、证据文件、状态协议）被整体移除：验证是激活出来的模型习惯——自己跑真实命令、贴原始输出，而不是被脚本拦截的对象。
 
-- 新增 Grok Build 双模式支持：standby 写入 `~/.grok/AGENTS.md`、`~/.grok/hooks/helloagents.json` 和运行时链接；global 走原生 marketplace + plugin install 流程，并使用 `~/.helloagents/host-projections/helloagents-grok-marketplace`
-- 新增 Cursor 双模式支持：standby 写入 `~/.cursor/hooks.json` 和运行时链接；global 走原生本地插件目录 `~/.cursor/plugins/local/helloagents`
+从 3.x 升级：
 
-### 修复与强化
+```
+npx helloagents@4 migrate   # 清理 3.x 残留
+npx helloagents@4 install --all
+```
 
-- 修复 `helloagents` / `helloagents help` 在渲染 Cursor 卸载路径时的 `home is not defined` 异常
-- Cursor global 安装改为把受管插件内容实体化复制到 `~/.cursor/plugins/local/helloagents`，不再依赖指向 `~/.cursor` 之外的符号链接或 junction，降低 Windows 下本地插件识别失败风险
-- install / update / cleanup / uninstall / 模式切换 / 分支切换 / doctor / README / 测试 对 Cursor 与 Grok 全链路对齐，标准模式、全局模式、npm 命令和一键脚本路径保持一致
+数字对比（3.1.9 → 4.0.0）：
 
-### 变更记录
-
-- `feat` 新增 Grok Build 双模式安装支持
-- `feat` 新增 Cursor 双模式安装支持
-- `fix` 修复 CLI help 的 Cursor 路径渲染异常
-- `fix` Cursor global 改为真实本地插件目录复制，增强 Windows 兼容性
-- `test` 补充 CLI help 与 Cursor global 安装目录同步验证
-
-## English
-
-### Added Support
-
-- Added Grok Build dual-mode support: standby writes `~/.grok/AGENTS.md`, `~/.grok/hooks/helloagents.json`, and the runtime link; global uses the native marketplace + plugin-install flow backed by `~/.helloagents/host-projections/helloagents-grok-marketplace`
-- Added Cursor dual-mode support: standby writes `~/.cursor/hooks.json` and the runtime link; global uses the native local-plugin directory `~/.cursor/plugins/local/helloagents`
-
-### Fixes and Hardening
-
-- Fixed the `home is not defined` crash in `helloagents` / `helloagents help` when rendering the Cursor uninstall path
-- Cursor global install now materializes a real plugin copy into `~/.cursor/plugins/local/helloagents` instead of relying on a symlink or junction that points outside `~/.cursor`, reducing Windows local-plugin detection risk
-- Aligned install / update / cleanup / uninstall / mode-switch / branch-switch / doctor / README / tests across the full Cursor and Grok lifecycle so standby mode, global mode, npm commands, and one-shot script paths stay consistent
-
-### Changelog
-
-- `feat` add Grok Build dual-mode installation support
-- `feat` add Cursor dual-mode installation support
-- `fix` repair the CLI help Cursor path rendering crash
-- `fix` switch Cursor global install to a real local-plugin copy for stronger Windows compatibility
-- `test` add CLI help coverage and Cursor global install-directory sync validation
+- 常驻注入：最高约 48K 字符 → 约 3K 字符（一份内核，无二次注入）
+- 运行时代码：12,209 行 → 约 2,600 行
+- hook 数量：每宿主 6~8 个 → 至多 2 个（可选装）
+- hook 冷启动：约 174 毫秒 → 44~50 毫秒
+- 测试与工程：新增 52 项测试、3 系统 × 3 Node 版本 CI、发布测试门禁、严格类型检查

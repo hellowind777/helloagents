@@ -1,108 +1,36 @@
-name: Publish to npm
+name: Publish
 
 on:
   push:
-    tags:
-      - "v*"
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to publish (e.g. v3.0.0 or v3.0.0-beta.1)"
-        required: true
+    tags: ['v*']
 
-concurrency:
-  group: publish-${{ github.ref }}
-  cancel-in-progress: false
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
-  prepare:
+  verify:
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.tag.outputs.version }}
-      base_version: ${{ steps.tag.outputs.base_version }}
-      channel: ${{ steps.tag.outputs.channel }}
-      is_beta: ${{ steps.tag.outputs.is_beta }}
-      npm_version: ${{ steps.tag.outputs.npm_version }}
     steps:
-      - name: Resolve tag ref
-        id: ref
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          fi
-
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          ref: ${{ steps.ref.outputs.tag }}
+          node-version: '22'
+      - name: 运行测试
+        run: npm test
+      - name: 校验清单版本一致
+        run: node cli.mjs sync-version --check
 
-      - name: Parse tag info
-        id: tag
-        run: |
-          TAG_VERSION="${{ steps.ref.outputs.tag }}"
-          TAG_VERSION="${TAG_VERSION#v}"
-          echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
-          if [[ "$TAG_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)[-._\ ]?b(eta)?[-._\ ]?([0-9]*)$ ]]; then
-            BASE="${BASH_REMATCH[1]}"
-            BETA_NUM="${BASH_REMATCH[3]:-1}"
-            echo "is_beta=true" >> $GITHUB_OUTPUT
-            echo "channel=beta" >> $GITHUB_OUTPUT
-            echo "base_version=$BASE" >> $GITHUB_OUTPUT
-            echo "npm_version=${BASE}-beta.${BETA_NUM}" >> $GITHUB_OUTPUT
-          else
-            echo "is_beta=false" >> $GITHUB_OUTPUT
-            echo "channel=latest" >> $GITHUB_OUTPUT
-            echo "base_version=$TAG_VERSION" >> $GITHUB_OUTPUT
-            echo "npm_version=$TAG_VERSION" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Verify version
-        run: |
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$PKG_VERSION" != "${{ steps.tag.outputs.base_version }}" ]; then
-            echo "::error::package.json version ($PKG_VERSION) != tag base version (${{ steps.tag.outputs.base_version }})"
-            exit 1
-          fi
-
-      - name: Summary
-        run: |
-          echo "### Publish Info" >> $GITHUB_STEP_SUMMARY
-          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Tag | ${{ steps.ref.outputs.tag }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Beta | ${{ steps.tag.outputs.is_beta }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Channel | ${{ steps.tag.outputs.channel }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| npm version | ${{ steps.tag.outputs.npm_version }} |" >> $GITHUB_STEP_SUMMARY
-
-  npm:
-    needs: prepare
+  publish:
+    needs: verify
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-          package-manager-cache: false
-
-      - name: Show runtime versions
-        run: |
-          node --version
-          npm --version
-
-      - name: Set beta version in package.json
-        if: needs.prepare.outputs.is_beta == 'true'
-        run: npm version "${{ needs.prepare.outputs.npm_version }}" --no-git-tag-version
-
-      - name: Preview package contents
-        run: npm pack --dry-run 2>&1 | tee /tmp/npm-pack.log
-
-      - name: Publish to npm
-        run: npm publish --provenance --access public --tag ${{ needs.prepare.outputs.channel }}
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: 发布到 npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
