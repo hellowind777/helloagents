@@ -95,7 +95,9 @@ test('npm 包内容：关键文件在列，测试与旧产物不在列', () => {
   })
   assert.equal(pack.status, 0, pack.stderr ?? String(pack.error ?? 'npm pack 未能启动'))
   const report = JSON.parse(pack.stdout)
-  const files = new Set(report[0].files.map((/** @type {{ path: string }} */ file) => file.path))
+  // npm >=11 输出对象 { "pkgname": {...} }，老版本输出数组 [{...}]
+  const entry = Array.isArray(report) ? report[0] : Object.values(report)[0]
+  const files = new Set(entry.files.map((/** @type {{ path: string }} */ file) => file.path))
   for (const required of [
     'cli.mjs',
     'src/cli/main.mjs',

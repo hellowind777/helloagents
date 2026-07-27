@@ -18,7 +18,7 @@ English · [简体中文](./README_CN.md)
 
 The models behind AI coding tools are already strong, but a few behavioral habits still hold them back: stopping at suggestions instead of acting, recommending "some other tool" when things get hard, calling work done before it is, and reflexively piling up abstraction layers and process documents to prove they weren't wrong. HelloAGENTS does three things:
 
-1. **Course-correct**: an 85-line kernel lives in the host's rules file and corrects the habits above — including an explicit "simplicity first (anti-over-engineering)" section.
+1. **Course-correct**: a kernel lives in the host's rules file and corrects the habits above — organized into explicit sections covering identity, bias-correction patterns, dynamic capability routing, execution discipline, verification habits, interruption recovery, knowledge management, and safety.
 2. **Activate**: 23 thinking skills (planning, implementation, requirements discovery, quality self-check, full-scope review, UI, debugging, security…) load on demand, each supplying the judgment framework and quality bar for its scenario — not an approval checklist.
 3. **Distribute**: it reliably installs all of this into four hosts across three methods; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
 
@@ -94,7 +94,7 @@ Quality skills (auto-relevant by task type): hello-ui (interfaces), hello-test (
 
 The `~commands` stay short — `~plan` and `~hello-plan` are equivalent. Use the full name with a host's own skill entry point, e.g. `/hello-plan` in Claude Code.
 
-Each skill is about 30 lines with a uniform structure: how to think right now → what good looks like → questions to ask before delivery. At startup only the name and a one-line description enter the context; the body is read only when actually used.
+Each skill is 30–70 lines with a uniform structure: how to think right now → what good looks like → questions to ask before delivery. At startup only the name and a one-line description enter the context; the body is read only when actually used.
 
 ## Add-ons
 
@@ -105,7 +105,7 @@ Both add-ons are optional and decoupled from the core:
 
 ## Project knowledge base
 
-`helloagents init` sets up `.helloagents/` in your project: `context.md` (project facts), `guidelines.md` (conventions), `DESIGN.md` (design system, for UI projects), and `plans/` (plan documents). There is exactly one principle: record only what can't be read from the code; no empty files are created, no boilerplate is filled in.
+`helloagents init` sets up `.helloagents/` in your project: `context.md` (project facts), `guidelines.md` (conventions), `DESIGN.md` (design system, for UI projects), `verify.yaml` (verification commands), `plans/` (plan documents), and `archive/` (completed plans). The kernel also defines a `notes/` convention for extracting thick topics out of `context.md`. One principle: record only what can't be read from the code; no empty files are created, no boilerplate is filled in.
 
 ## Migrating from 3.x
 

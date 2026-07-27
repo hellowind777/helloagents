@@ -122,7 +122,8 @@ function playSound(event) {
     return
   }
   if (PLATFORM === 'win32') {
-    runPowerShell(`(New-Object System.Media.SoundPlayer '${wav.replaceAll("'", "''")}').PlaySync()`)
+    const escapedWav = wav.replaceAll("'", "''").replaceAll('[', '`[').replaceAll(']', '`]')
+    runPowerShell(`(New-Object System.Media.SoundPlayer '${escapedWav}').PlaySync()`)
   } else if (PLATFORM === 'darwin') {
     runDetached('afplay', [wav])
   } else {

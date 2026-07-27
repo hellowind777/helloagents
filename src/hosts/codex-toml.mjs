@@ -6,7 +6,7 @@
  * 避免 3.x 时代三种匹配规则不一致导致的重复键问题。
  */
 import { join } from 'node:path'
-import { readText, writeTextAtomic } from '../kernel/fsx.mjs'
+import { readText, removePath, writeTextAtomic } from '../kernel/fsx.mjs'
 import { toPosix } from '../kernel/paths.mjs'
 
 export const MANAGED_SUFFIX = '# helloagents-managed'
@@ -94,6 +94,13 @@ export function disableCodexNotify(configPath) {
   const lines = text.split(/\r?\n/)
   const kept = lines.filter((line) => !isManagedLine(line))
   const removed = lines.length - kept.length
-  if (removed > 0) writeTextAtomic(configPath, kept.join('\n'))
+  if (removed > 0) {
+    const content = kept.join('\n').trim()
+    if (content) {
+      writeTextAtomic(configPath, content)
+    } else {
+      removePath(configPath)
+    }
+  }
   return removed
 }

@@ -10,7 +10,7 @@ import { fileExists, readText, removePath, writeTextAtomic } from './fsx.mjs'
 export const MARKER_START = '<!-- HELLOAGENTS_START -->'
 export const MARKER_END = '<!-- HELLOAGENTS_END -->'
 
-const MARKER_PATTERN = new RegExp(`\\n*${MARKER_START}[\\s\\S]*?${MARKER_END}\\n*`, 'g')
+const MARKER_PATTERN = new RegExp(`[\\r\\n]*${MARKER_START}[\\s\\S]*?${MARKER_END}[\\r\\n]*`, 'g')
 const VERSION_PATTERN = /<!-- HelloAGENTS v([0-9A-Za-z.-]+) -->/
 
 /**

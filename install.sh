@@ -30,6 +30,7 @@ if [ "$HOSTS" = "all" ]; then
 else
   OLD_IFS="$IFS"; IFS=','
   for host in $HOSTS; do
+    host=$(echo "$host" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     set -- "$@" "$host"
   done
   IFS="$OLD_IFS"

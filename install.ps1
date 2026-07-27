@@ -1,4 +1,4 @@
-﻿# HelloAGENTS 一键安装脚本（Windows PowerShell 5.1 及以上）。
+# HelloAGENTS 一键安装脚本（Windows PowerShell 5.1 及以上）。
 # 环境变量：
 #   HELLOAGENTS_HOSTS   目标宿主，逗号分隔（claude,codex,grok,cursor），默认 all
 #   HELLOAGENTS_METHOD  安装方式：inject 或 plugin，默认由各宿主自动选择
@@ -18,7 +18,7 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 
 Write-Host "安装 helloagents@$version …"
 npm install -g "helloagents@$version"
-if ($LASTEXITCODE -ne 0) { Write-Error "npm install 失败，退出码 $LASTEXITCODE" }
+if ($LASTEXITCODE -ne 0) { Write-Error "npm install 失败，退出码 $LASTEXITCODE"; exit 1 }
 
 $arguments = @('install')
 if ($hosts -eq 'all') {
@@ -31,7 +31,7 @@ if ($hosts -eq 'all') {
 }
 if ($method -eq 'inject') { $arguments += '--inject' }
 elseif ($method -eq 'plugin') { $arguments += '--plugin' }
-elseif ($method) { Write-Error "HELLOAGENTS_METHOD 只接受 inject 或 plugin，当前值：$method" }
+elseif ($method) { Write-Error "HELLOAGENTS_METHOD 只接受 inject 或 plugin，当前值：$method"; exit 1 }
 
 helloagents @arguments
 if ($LASTEXITCODE -ne 0) { Write-Error "helloagents install 失败，退出码 $LASTEXITCODE" }

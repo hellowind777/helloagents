@@ -1,12 +1,21 @@
 # 更新日志
 
-## 未发布
+## 4.0.1（2026-07-27）
 
-不兼容变更：技能全部改名、Gemini CLI 不再受支持。「~命令」的短写不变，升级后照常使用。
+内核结构化重组与知识库体系完善。
 
-- 技能命名：11 个通用名技能（ask、auto、build、clean、commit、eva、help、init、plan、prd、qa）改为 `hello-` 前缀，与既有的 12 个质量技能统一，23 个技能全部带前缀。原因是技能名在宿主里是全局的：Cursor 的技能命名空间扁平、同名不去重也无优先级规则（官方插件仓库为此手工改过重名技能），Gemini CLI 的扩展层优先级低于用户与工作区，会被静默覆盖。「~命令」保持短写，`~plan` 与 `~hello-plan` 等价；宿主自身的技能入口按正式名称调用（如 `/hello-plan`）。
-- Cursor 提升为一等宿主：内核此前完全没有下发到 Cursor，现在随插件以 `rules/helloagents-kernel.mdc` 下发（`alwaysApply: true`，刻意不写 `description` 以规避 Cursor 已知的规则降级缺陷）。插件目录不再是运行副本的整体复制，只包含 Cursor 认识的清单、技能与规则；`doctor` 增加规则文件缺失（`plugin-rule-missing`）与插件版本过期（`plugin-outdated`）两项检查。注入方式对 Cursor 仍然不可用——`~/.cursor/rules/` 不是受支持的机制，官方明确规则解析不会查到主目录，这里如实降级而不是写一个不生效的文件。
-- 移除 Gemini CLI 支持：宿主注册表、扩展安装/卸载、`gemini-extension.json`、清单版本同步与运行副本条目全部删除。已安装的用户执行 `helloagents migrate` 可移除 `~/.gemini/GEMINI.md` 中的受管块并清掉安装记录，扩展本体需手动执行 `gemini extensions uninstall helloagents`；`doctor` 会把这些残留列出来。
+新增与变化：
+
+- 内核：重组为 11 个明确章节——身份与执行底线、思维纠偏（四类偏差自检）、能力调用与动态路由（模式选择表 + 子代理决策框架）、执行纪律与简单优先、验证习惯与信息增益（证伪能力）、中断恢复、安全底线、表达与协作、命令与技能、知识管理、子代理协作。
+- 知识库：`helloagents init` 新增 `verify.yaml`（验证命令源）和 `archive/`（已完成方案按月归档）；内核定义 `notes/` 约定（context.md 过厚主题抽出）；新增 `prompts/templates/verify.yaml`；移除 `prompts/templates/STATE.md`。
+- 技能：hello-auto 重构为四阶段（分析 → 模式选择 → 执行 → 交付）；hello-qa 验证优先级对接 verify.yaml；hello-eva description 精简。
+- 安装：install.ps1 补全错误退出码；install.sh 修复宿主名含空白符的问题。
+- Codex：卸载 notify 时若 config.toml 仅剩空行，改为删除文件而非写入空内容。
+- 工程：内核行数预算 150→420，hello-eva 预算 200→500（契约测试）；兼容 npm 11 pack 输出格式；中文引号检查改为 Unicode 精确匹配。
+
+清理：
+
+15→- `cleanup-v3-files.ps1`、`evals/` 目录、`helloagents-4.1-refactor.patch` 等早期实验和临时文件。
 
 ## 4.0.0（2026-07-26）
 
@@ -14,13 +23,13 @@
 
 新增与变化：
 
-- 内核：常驻规则收敛为一份 83 行的 `prompts/kernel.md`（3.x 为 bootstrap 双文件约 700 行，最高三份并存注入），内容以行为纠偏为主体，新增“简单优先（反过度工程）”一节。
+- 内核：常驻规则收敛为一份约 200 行的 `prompts/kernel.md`（3.x 为 bootstrap 双文件约 700 行，最高三份并存注入），内容以行为纠偏为主体，包含“简单优先（反过度工程）”、思维纠偏模式、能力调用与动态路由、知识管理纪律等。
 - 技能：22 个技能全部按“思维模式”重写（判断框架 + 质量标准 + 交付前自问），去掉审批流程与格式要求；按需读取，不常驻。另收编独立设计的 eva（评估、验证、审计三职能一体的全量审查引擎，~eva 调用，含按需加载的 references 参考文件），合计 23 个技能。
 - 安装形态：项目方式（`helloagents init` 写入 AGENTS.md，随仓库分发）、注入方式（用户级规则文件，标记包裹）、插件方式（宿主原生插件或扩展）三种，能力矩阵按宿主如实声明。
 - 附加组件：guard（危险命令拦截）与 notify（完成提醒）改为可选安装，与主体解耦；guard 规则改为语义匹配，消除“提交信息含敏感词被拦”“rm 删除单个文件被拦”一类误报。
 - 运行时：删除 3.x 的停止闸门、证据文件、turn-state 协议、会话寻址、工作流推荐等治理机制（约 8,700 行）；运行时收敛到约 2,600 行，只负责安装、体检、迁移与两个可选 hook。
 - 性能：hook 冷启动实测 44~50 毫秒（3.x 转发路径约 174 毫秒）。
-- 工程：新增跨平台 CI（3 系统 × Node 20/22/24）、发布前测试门禁、JSDoc 严格类型检查；npm 包保持零依赖。
+- 工程：新增跨平台 CI（3 系统 × Node 20/22/24）、发布前测试门禁、JSDoc 严格类型检查；npm 包保持零依赖。当前测试套件 55 项。
 - 卸载与迁移：`uninstall` 完整还原宿主配置；`migrate` 清理 3.x 写入用户机器的全部内容，无法确认归属的配置保持不动并提示人工确认。
 
 移除：

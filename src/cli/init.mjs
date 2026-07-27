@@ -24,6 +24,7 @@ export function runInit(ctx, projectDir) {
 
   const kbDir = join(projectDir, '.helloagents')
   ensureDir(join(kbDir, 'plans'))
+  ensureDir(join(kbDir, 'archive'))
   /** @type {string[]} */
   const existing = []
   for (const name of KB_FILES) {

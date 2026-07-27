@@ -7,3 +7,12 @@ dist/
 _to_delete/
 *.log
 .DS_Store
+
+# 敏感与本地配置
+.env
+.env.*
+*.local
+*.pem
+*.key
+*.p12
+*.pfx
