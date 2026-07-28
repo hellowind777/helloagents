@@ -64,8 +64,8 @@ function upsertOrderedTopLevel(text, entries) {
     }
     return true
   })
-  // 追加新行
-  const body = [...kept, ...entries.map((e) => e.line)].join('\n')
+  // 受管行置顶，其余顶层键排在后面
+  const body = [...entries.map((e) => e.line), ...kept].join('\n')
   const remainder = sections.join('\n')
   const result = body && remainder ? `${body}\n\n${remainder}` : body || remainder
   return normalize(result) ? `${normalize(result)}\n` : ''
