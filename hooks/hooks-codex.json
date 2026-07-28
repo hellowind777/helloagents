@@ -1,13 +1,5 @@
 {
   "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [
-          { "type": "command", "command": "helloagents-js notify inject --host codex --silent", "timeout": 5 }
-        ]
-      }
-    ],
     "UserPromptSubmit": [
       {
         "matcher": "",

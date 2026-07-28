@@ -11,8 +11,8 @@
 import { execSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { readInstallState, writeInstallState } from '../kernel/config.mjs'
-import { ensureDir, fileExists, readJson, readText, removePath, writeTextAtomic } from '../kernel/fsx.mjs'
-import { appDir, helloagentsRoot, toPosix } from '../kernel/paths.mjs'
+import { ensureDir, fileExists, readJson, readText, removePath, writeJsonAtomic, writeTextAtomic } from '../kernel/fsx.mjs'
+import { appDir, helloagentsRoot, toPosix, userConfigPath } from '../kernel/paths.mjs'
 import { injectKernel, readKernelText, removeKernel } from '../hosts/carriers.mjs'
 import { backupCodexConfig, removeCodexBackups } from '../hosts/codex-backup.mjs'
 import { installCodexManagedConfig, syncCodexHookTrust, uninstallCodexManagedConfig } from '../hosts/codex-config.mjs'
@@ -218,6 +218,30 @@ function uninstallHostPlugin(ctx, host) {
   return { ok: true }
 }
 
+/** @param {string} home */
+function ensureUserConfig(home) {
+  const path = userConfigPath(home)
+  const defaults = { language: null, notify: { sound: true, desktop: false } }
+  const existing = /** @type {Partial<typeof defaults> | null} */ (readJson(path))
+  if (!existing) {
+    writeJsonAtomic(path, defaults)
+    return
+  }
+  // 合并缺失的默认键
+  let changed = false
+  const merged = { ...existing }
+  if (!('notify' in merged) || typeof merged.notify !== 'object' || !merged.notify) {
+    merged.notify = defaults.notify
+    changed = true
+  } else {
+    const n = /** @type {Record<string, unknown>} */ (merged.notify)
+    if (!('sound' in n)) { n.sound = defaults.notify.sound; changed = true }
+    if (!('desktop' in n)) { n.desktop = defaults.notify.desktop; changed = true }
+  }
+  if (!('language' in merged)) { merged.language = defaults.language; changed = true }
+  if (changed) writeJsonAtomic(path, merged)
+}
+
 // ── 主流程 ──────────────────────────────────────────────────────────────
 
 export function runInstall(ctx, targets, requestedMode) {
@@ -228,6 +252,10 @@ export function runInstall(ctx, targets, requestedMode) {
 
   const state = readInstallState(ctx.home)
   state.source = detectSource(ctx.packageRoot)
+
+  // 首次安装时写入默认用户配置
+  ensureUserConfig(ctx.home)
+
   let installedCount = 0
 
   for (const host of targets) {

@@ -1,9 +1,6 @@
 {
   "version": 1,
   "hooks": {
-    "sessionStart": [
-      { "command": "helloagents-js notify inject --host cursor", "timeout": 10 }
-    ],
     "stop": [
       { "command": "helloagents-js notify stop --host cursor", "timeout": 120 }
     ]
