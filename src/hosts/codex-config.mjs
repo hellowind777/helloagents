@@ -146,7 +146,8 @@ function removeSectionLine(text, header, key, shouldRemove) {
 }
 
 /**
- * 移除所有 [hooks.state] 段中带管理标记的条目。
+ * 移除受管的 [hooks.state.*] 段：标记可能在段头行（新格式）或内容行（旧格式），
+ * 两种都处理。移除段头及其后续内容行，直到遇到下一个表头。
  * @param {string} text
  * @returns {string}
  */
@@ -154,22 +155,73 @@ function removeManagedHookStateSections(text) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   const out = []
   let inManagedHookState = false
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = /** @type {string} */ (lines[i])
     const match = HOOK_STATE_HEADER_RE.exec(line.trim())
     if (match) {
-      // 进入一个新的 hooks.state 段
-      inManagedHookState = line.includes(MANAGED_TOML_SUFFIX)
-      if (inManagedHookState) continue // 跳过此头行
+      // 先检查段头行是否有标记，再检查后续内容行是否有标记
+      let hasManagedMarker = line.includes(MANAGED_TOML_SUFFIX)
+      if (!hasManagedMarker) {
+        for (let j = i + 1; j < lines.length && !isTableHeader(lines[j]); j += 1) {
+          if (lines[j] && lines[j].includes(MANAGED_TOML_SUFFIX)) {
+            hasManagedMarker = true
+            break
+          }
+        }
+      }
+      inManagedHookState = hasManagedMarker
+      if (inManagedHookState) continue
       out.push(line)
       continue
     }
     if (inManagedHookState && isTableHeader(line)) {
       inManagedHookState = false
     }
-    if (inManagedHookState) continue // 跳过托管段的内容
+    if (inManagedHookState) continue
     out.push(line)
   }
   return normalize(out.join('\n'))
+}
+
+/**
+ * 移除所有 key 在给定集合中的 [hooks.state.*] 段（无论有无管理标记）。
+ * Codex 在首次启用 hooks 时会自动生成 trust 条目，若其 key 与我们受管条目的
+ * key 重合，不预先移除将导致 TOML 重复键错误。
+ * @param {string} text
+ * @param {Set<string>} keys 要移除的段 key 集合（未转义的原始 key）
+ * @returns {string}
+ */
+function removeHookStateSectionsByKeys(text, keys) {
+  if (keys.size === 0) return text
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  const out = []
+  let inTargetSection = false
+  for (const line of lines) {
+    const match = HOOK_STATE_HEADER_RE.exec(line.trim())
+    if (match) {
+      // TOML 段头 key 是转义后的（\\→\，\"→"），比较前需反转义
+      const sectionKey = unescapeTomlKey(match[1] ?? '')
+      inTargetSection = keys.has(sectionKey)
+      if (inTargetSection) continue
+      out.push(line)
+      continue
+    }
+    if (inTargetSection && isTableHeader(line)) {
+      inTargetSection = false
+    }
+    if (inTargetSection) continue
+    out.push(line)
+  }
+  return normalize(out.join('\n'))
+}
+
+/**
+ * 反转义 TOML 基本字符串中的转义序列（\\、\"、\n 等）。
+ * @param {string} key
+ * @returns {string}
+ */
+function unescapeTomlKey(key) {
+  return key.replace(/\\(.)/g, (_, c) => c)
 }
 
 function readSectionLine(text, header, key) {
@@ -248,19 +300,25 @@ export function buildManagedHookTrustEntries(hooksPath, hooksData) {
  */
 function serializeHookStateBlocks(entries) {
   return entries.map((e) =>
-    `[hooks.state."${e.key.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]\ntrusted_hash = "${e.trustedHash}" ${MANAGED_TOML_SUFFIX}`
+    `[hooks.state."${e.key.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"] ${MANAGED_TOML_SUFFIX}\ntrusted_hash = "${e.trustedHash}"`
   ).join('\n\n')
 }
 
 /**
- * 同步 hooks.state 段：先移除所有受管条目，再按当前 hook 定义写入新的。
+ * 同步 hooks.state 段：先移除所有与受管条目 key 重合的既存段（无论有无管理标记），
+ * 再写入新的受管段。避免 Codex 自动生成的 trust 条目与受管条目键冲突。
  * @param {string} text — 当前 config.toml 内容
  * @param {Array<{ key: string, trustedHash: string }>} entries
  * @returns {string}
  */
 function syncHookStateSections(text, entries) {
   if (entries.length === 0) return removeManagedHookStateSections(text)
-  const cleaned = removeManagedHookStateSections(text)
+  // 先移除受管段，再移除与受管条目 key 重合的非受管段
+  let cleaned = removeManagedHookStateSections(text)
+  const managedKeys = new Set(entries.map((e) => e.key))
+  if (managedKeys.size > 0) {
+    cleaned = removeHookStateSectionsByKeys(cleaned, managedKeys)
+  }
   const base = cleaned.trim()
   const blocks = serializeHookStateBlocks(entries)
   return base ? `${base}\n\n${blocks}\n` : `${blocks}\n`
