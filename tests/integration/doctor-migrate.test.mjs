@@ -35,7 +35,7 @@ function seedLegacyArtifacts(home) {
     join(home, '.codex', 'config.toml'),
     [
       'model = "gpt-5"',
-      'notify = ["helloagents-js", "codex-notify"] # helloagents-managed',
+      'notify = ["node", "/scripts/notify.mjs"] # helloagents-managed',
       '',
       '[hooks.state."abc123"]',
       'command = "node /home/user/.helloagents/helloagents/scripts/notify.mjs"',

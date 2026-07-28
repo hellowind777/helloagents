@@ -63,12 +63,14 @@ test('标准模式保留用户已有内容，卸载后完整还原', () => {
   }
 })
 
-test('cursor 不支持标准模式；全局模式下发清单、技能与内核规则', () => {
+test('cursor 标准模式创建软链接与 hooks，全局模式下发清单、技能与内核规则', () => {
   const { home, cleanup } = makeFakeHome()
   try {
     const { ctx, lines } = makeCtx(home)
     runInstall(ctx, [host('cursor')], 'standard')
-    assert.ok(lines.some((line) => line.includes('不支持')))
+    // 标准模式：Cursor 无载体文件，但创建软链接和 hooks
+    assert.ok(fileExists(join(home, '.cursor', 'helloagents')))
+    assert.ok(fileExists(join(home, '.cursor', 'hooks.json')))
 
     runInstall(ctx, [host('cursor')], 'global')
     const pluginDir = join(home, '.cursor', 'plugins', 'local', 'helloagents')

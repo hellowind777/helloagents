@@ -14,6 +14,7 @@ import { runInit } from './init.mjs'
 import { runInstall, runUninstall, runUpdate } from './install.mjs'
 import { runMigrate } from './migrate.mjs'
 import { runSyncVersion } from './sync-version.mjs'
+import { spawnSync } from 'node:child_process'
 
 /**
  * @typedef {Object} CliContext
@@ -68,6 +69,24 @@ function resolveTargets(ctx, names, all) {
     if (!host) throw new Error(ctx.t('cli.unknownHost', { host: name, hosts: HOST_IDS.join('、') }))
     return host
   })
+}
+
+/**
+ * 运行时 hook 转发：helloagents-js notify route --host codex 等。
+ * 将剩余参数直接转发给对应的 addon 脚本执行，并继承其退出码。
+ * @param {CliContext} ctx
+ * @param {'guard' | 'notify'} addon
+ * @param {string[]} rest
+ */
+function runAddonRuntime(ctx, addon, rest) {
+  const script = join(ctx.app, 'src', 'addons', `${addon}.mjs`)
+  const result = spawnSync(process.execPath, [script, ...rest], {
+    stdio: 'inherit',
+    encoding: 'utf-8',
+    windowsHide: true,
+  })
+  if (result.error) throw result.error
+  if (result.status !== 0) process.exitCode = result.status ?? 1
 }
 
 /**
@@ -188,8 +207,18 @@ export function runCli(argv) {
         return 0
       case 'guard':
       case 'notify':
-        runAddonCommand(ctx, command, rest)
+      case 'codex-notify': {
+        // 若第一个参数是 on/off，按附加组件管理；否则作为运行时 hook 转发到 addon 脚本
+        const action = rest[0]
+        if (action === 'on' || action === 'off') {
+          runAddonCommand(ctx, command, rest)
+        } else {
+          // codex-notify 转发为 notify 组件的运行时调用
+          const addon = command === 'codex-notify' ? 'notify' : command
+          runAddonRuntime(ctx, addon, command === 'codex-notify' ? ['codex-notify', ...rest] : rest)
+        }
         return 0
+      }
       case 'sync-version':
         return runSyncVersion(ctx, { check: flags.has('--check') })
       case 'version':

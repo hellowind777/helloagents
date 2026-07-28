@@ -45,6 +45,10 @@ export const MESSAGES = {
     cn: '{host}：全局模式安装未成功，已改用标准模式。',
     en: '{host}: global mode install failed; fell back to the standard mode.',
   },
+  'install.codexExtrasFailed': {
+    cn: 'Codex 标准模式增强配置写入失败（非致命）：{message}',
+    en: 'Codex standard mode extras failed (non-fatal): {message}',
+  },
   'install.kernelMissing': {
     cn: '内核文件缺失：{path}',
     en: 'Kernel file missing: {path}',

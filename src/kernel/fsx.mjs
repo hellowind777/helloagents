@@ -11,7 +11,10 @@ const RETRY_ATTEMPTS = 6
 
 /** @param {number} ms */
 function sleepSync(ms) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+  const end = Date.now() + ms
+  while (Date.now() < end) {
+    // 忙等——等待时间很短（最长约 640ms），仅用于重试退避
+  }
 }
 
 /**

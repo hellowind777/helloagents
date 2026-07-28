@@ -1,84 +1,51 @@
-# HelloAGENTS 4.0.3 发布说明
+# Release Notes — v4.0.4
 
-一句话：全宿主双重安装模式、Git 源支持与命名体系统一。
+## 简体中文
 
-4.0.2 只有 Claude 和 Cursor 支持全局模式（原生插件市场安装），Codex、Grok、Hermes 仅支持标准模式。本次发布将全局模式覆盖到全部五个宿主，新增 Git 克隆安装方式，并统一了内部命名体系。
+### 缺陷修复
 
-## 新增：全宿主全局模式安装
+- **Codex 卸载时备份目录清理失败**（阻断）：`uninstallCodexManagedConfig` 中变量名 `backupPath` 未定义，应为 `backupDir`。此前该 `ReferenceError` 被调用方的 `catch {}` 静默吞掉，导致 `~/.helloagents/backups/codex/` 在卸载后不被清理。
+- **migrate 误删当前版本受管的 `[hooks.state.*]` 段**（阻断）：`cleanLegacyCodexConfig` 遍历配置行时，将所有 `[hooks.state.*]` 段（包括当前版本写入的受管段）一并移除。Codex 依赖这些段中的 `trusted_hash` 信任 hooks，移除后 hooks 将不可用。修复后仅移除无管理标记的旧版段。
+- **doctor 误报当前 `config.toml` 为 3.x 残留**：`notify = ["helloagents-js", ...] # helloagents-managed` 行中的 `helloagents-js` 被 `isLegacyHookCommand` 错误匹配。修复后 doctor 对带管理标记的 config.toml 行不再误报。
+- **`helloagents-js` 从遗留签名中移除**：该可执行文件名在 3.x 和 4.x 中均被使用，放在 `LEGACY_COMMAND_SIGNS` 中导致 doctor、migrate、hooks 清理等多个环节产生误判。路径级签名（`/scripts/notify.mjs` 等）足以区分真正的 3.x 残留。
 
-- **Codex CLI 全局模式**：构建 `~/plugins/helloagents/` 插件快照，写入 `~/.agents/plugins/marketplace.json`（local-plugins 市场索引）与 `~/.codex/config.toml` 启用项，通过 `codex plugin add helloagents@local-plugins` 安装。
-- **Grok Build 全局模式**：构建 `~/.grok/local-marketplaces/helloagents-marketplace/` 原生本地市场，同时在 `~/.grok/config.toml` 登记 `[[marketplace.sources]]`，通过 `grok plugin marketplace add` → `install --trust` → `enable` 安装。
-- **Hermes 全局模式**：将 skills 快照到 `HERMES_HOME/local-plugins/helloagents/`，在 `config.yaml` 的 `skills.external_dirs` 中登记，通过 Hermes 原生技能发现机制加载。
-- **doctor 体检**：现在对所有以全局模式安装的宿主进行插件完整性检查（此前仅检查 Cursor）。
-- **update 命令**：现在刷新所有全局模式宿主的插件快照（此前仅刷新 Cursor，其他宿主 update 后仍使用旧版本）。
+### 代码清理
 
-## 新增：Git 克隆安装方式
+- **删除 `codex-toml.mjs`**：该模块与 `codex-config.mjs` 功能重叠，且生产代码中无任何模块导入——仅测试文件引用。Codex 配置管理统一由 `codex-config.mjs` 负责。
+- **删除 `codex-backup.mjs` 的 `readLatestBackup` 导出**：全仓库无模块导入此函数，同时移除了其私有辅助函数和不再使用的 `readText` 导入。
 
-- **一键安装脚本**（`install.ps1` / `install.sh`）新增 `HELLOAGENTS_SOURCE=git` 支持，通过 `HELLOAGENTS_BRANCH` 指定分支（默认 main），`HELLOAGENTS_GIT_URL` 指定仓库地址。
-- **source 追踪**：安装状态（`install.json`）记录安装来源（npm 或 git），`helloagents update` 按来源自动选择同步策略——npm 来源从 npm 全局目录同步，git 来源执行 `git pull` 后再同步。
+### 低层修复
 
-## 命名体系统一
+- **`fsx.mjs` 的 `sleepSync`**：`Atomics.wait` 在主线程上无效（立即超时返回），退避等待从未真正执行。改为忙等循环，重试退避现在确实生效。
+- **`notify.mjs` 的多字节截断**：`.slice(0, 150)` 可能从 emoji 或补充平面汉字中间截断。改为按 Unicode 码点计数截断。
 
-所有以前使用 `inject` / `plugin` 的地方统一为 `standard` / `global`：
+### 安装脚本
 
-- **CLI 标志**：`--standard` 替代 `--inject`，`--global` 替代 `--plugin`（旧标志仍兼容）。
-- **注册表能力名**：`HostCapabilities` 的 `inject` → `standard`，`plugin` → `global`。
-- **安装状态模式值**：`install.json` 中宿主模式记录从 `inject`/`plugin` 改为 `standard`/`global`。
-- **消息键**：`install.inject.done` → `install.standard.done` 等，全部与新的 CLI 标志名保持一致。
-- **help 文本**：CN/EN 两版 help 同步更新，新增 `--lang` 标志文档，`update` 命令支持指定宿主参数。
-
-## Bug 修复
-
-- **`--version` 无法执行**：此前因 flag 解析器将所有 `--` 开头的参数视为标志吞掉，`helloagents --version` 输出 help 而非版本号。现已修复。
-- **`update` 命令忽略宿主参数**：此前 `helloagents update claude` 静默刷新全部宿主。现支持指定宿主。
-- **Doctor Cursor 插件刷新盲区**：此前 `update` 中 `mode === 'plugin'` 与实际存储值 `'global'` 不匹配，导致 Cursor 插件在 update 时从未刷新。现已统一为 `'global'`。
-- **Claude 插件 update 盲区**：此前 `runUpdate` 仅对 Cursor 执行插件刷新，Claude 全局模式用户每次 update 后仍使用旧插件代码。现已覆盖全部宿主。
-
-## 其他
-
-- **Hermes 别名**：新增 `hm` 别名，`helloagents install hm` 等效于 `helloagents install hermes`。
-- **Codex 能力补全**：Codex 的 `guard` 能力从 `false` 改为 `true`（Codex 同样支持 hooks，此前遗漏）。
-- **`.codex-plugin/` 清单文件**：补全 `.codex-plugin/plugin.json`、`.claude-plugin/plugin.json`、`.cursor-plugin/plugin.json` 三个仓库级清单文件，与 npm 包文件列表对齐。
+- **`install.ps1` 和 `install.sh` 现支持 `HELLOAGENTS_SOURCE=git`**：此前 README 声称支持但脚本未实现。现在设置该变量后脚本会克隆仓库到 `~/.helloagents/source/` 并从本地安装，后续 `helloagents update` 将在此执行 `git pull`。
+- **标志名更新**：脚本中的 `--inject`/`--plugin` 改为 `--standard`/`--global`（旧名仍兼容）。
 
 ---
-# HelloAGENTS 4.0.3 Release Notes
 
-In one line: full-host dual install modes, Git source support, and naming consistency.
+## English
 
-In 4.0.2, only Claude and Cursor supported global mode (native plugin marketplace installation); Codex, Grok, and Hermes were standard-mode only. This release brings global mode to all five hosts, adds Git clone as an installation source, and unifies the internal naming convention.
+### Bug Fixes
 
-## New: Global Mode for All Hosts
+- **Codex backup dir not cleaned on uninstall** (blocking): `uninstallCodexManagedConfig` referenced an undefined variable `backupPath` instead of the parameter `backupDir`. The resulting `ReferenceError` was silently swallowed by the caller's `catch {}`, leaving `~/.helloagents/backups/codex/` uncleaned after uninstall.
+- **migrate incorrectly removed current managed `[hooks.state.*]` sections** (blocking): `cleanLegacyCodexConfig` stripped all `[hooks.state.*]` sections regardless of managed markers. Codex relies on `trusted_hash` entries in these sections to trust hooks; removing them breaks hooks. Fixed to only remove sections without the `# helloagents-managed` marker.
+- **doctor falsely flagged current `config.toml` as 3.x legacy**: The `helloagents-js` string in `notify = ["helloagents-js", ...] # helloagents-managed` matched the legacy signature. Doctor now excludes managed lines from legacy detection.
+- **`helloagents-js` removed from legacy command signatures**: This executable name is used in both 3.x and 4.x. Its presence in `LEGACY_COMMAND_SIGNS` caused false positives across doctor, migrate, and hooks cleanup. Path-based signatures (e.g. `/scripts/notify.mjs`) are sufficient to identify true 3.x artifacts.
 
-- **Codex CLI global mode**: builds a `~/plugins/helloagents/` plugin snapshot, writes `~/.agents/plugins/marketplace.json` (local-plugins market index) and `~/.codex/config.toml` enable entry, installs via `codex plugin add helloagents@local-plugins`.
-- **Grok Build global mode**: builds `~/.grok/local-marketplaces/helloagents-marketplace/` native local marketplace, registers `[[marketplace.sources]]` in `~/.grok/config.toml`, installs via `grok plugin marketplace add` → `install --trust` → `enable`.
-- **Hermes global mode**: snapshots skills to `HERMES_HOME/local-plugins/helloagents/`, registers in `config.yaml` `skills.external_dirs`, loads through Hermes' native skill discovery.
-- **doctor checks**: now inspects plugin integrity for all global-mode hosts (previously only Cursor).
-- **update command**: now refreshes plugin snapshots for all global-mode hosts (previously only Cursor was refreshed; other hosts kept stale plugin code after update).
+### Code Cleanup
 
-## New: Git Clone Installation
+- **Removed `codex-toml.mjs`**: Duplicated `codex-config.mjs` functionality and was never imported by any production module — only referenced by tests. Codex config management is now unified in `codex-config.mjs`.
+- **Removed `readLatestBackup` export from `codex-backup.mjs`**: Never imported anywhere in the repository. Its private helper and the unused `readText` import were also removed.
 
-- **Bootstrap scripts** (`install.ps1` / `install.sh`): new `HELLOAGENTS_SOURCE=git` support, with `HELLOAGENTS_BRANCH` (default: main) and `HELLOAGENTS_GIT_URL` for the remote URL.
-- **Source tracking**: install state (`install.json`) records the source (npm or git). `helloagents update` chooses the sync strategy accordingly — npm sources sync from the global directory, git sources `git pull` first, then sync.
+### Low-Level Fixes
 
-## Naming Convention Unified
+- **`sleepSync` in `fsx.mjs`**: `Atomics.wait` is ineffective on the main thread (returns immediately), so retry backoff delays were never actually applied. Replaced with a spin-wait loop; exponential backoff now works correctly.
+- **Multi-byte truncation in `notify.mjs`**: `.slice(0, 150)` could split emoji or supplementary-plane CJK characters. Now truncates by Unicode code points.
 
-All occurrences of `inject` / `plugin` renamed to `standard` / `global`:
+### Install Scripts
 
-- **CLI flags**: `--standard` replaces `--inject`, `--global` replaces `--plugin` (legacy flags still accepted).
-- **Registry capabilities**: `HostCapabilities.inject` → `.standard`, `.plugin` → `.global`.
-- **Install state mode values**: `install.json` host mode entries changed from `inject`/`plugin` to `standard`/`global`.
-- **Message keys**: `install.inject.done` → `install.standard.done`, etc., consistent with the new CLI flag names.
-- **help text**: both CN and EN help updated; `--lang` flag documented; `update` command now accepts host arguments.
-
-## Bug Fixes
-
-- **`--version` unreachable**: the flag parser swallowed all `--` prefixed tokens, so `helloagents --version` printed help instead of the version. Fixed.
-- **`update` ignored host arguments**: `helloagents update claude` silently updated all hosts. Now accepts scoped targets.
-- **Doctor Cursor plugin refresh gap**: `update` compared `mode === 'plugin'` against the stored value `'global'`, so Cursor plugins were never actually refreshed during update. Unified to `'global'`.
-- **Claude plugin update gap**: `runUpdate` only refreshed Cursor plugins; Claude global-mode users stayed on stale plugin code after every update. Now covers all hosts.
-
-## Other
-
-- **Hermes alias**: added `hm` alias; `helloagents install hm` is equivalent to `helloagents install hermes`.
-- **Codex guard capability**: changed from `false` to `true` (Codex supports hooks, was an oversight).
-- **Plugin manifest files**: added `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json` at repo root, aligned with npm package file list.
+- **`install.ps1` and `install.sh` now support `HELLOAGENTS_SOURCE=git`**: Previously documented but not implemented. When set, the scripts clone the repository to `~/.helloagents/source/` and install from the local copy; subsequent `helloagents update` runs `git pull` there.
+- **Flag names updated**: `--inject`/`--plugin` changed to `--standard`/`--global` in scripts (legacy names still accepted).

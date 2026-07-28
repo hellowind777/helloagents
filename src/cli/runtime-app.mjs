@@ -13,6 +13,7 @@ export const APP_ENTRIES = [
   'src',
   'prompts',
   'skills',
+  'hooks',
   'assets',
   '.claude-plugin',
   '.cursor-plugin',

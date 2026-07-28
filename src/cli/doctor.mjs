@@ -7,7 +7,7 @@ import { readInstallState } from '../kernel/config.mjs'
 import { fileExists, readJson, readText } from '../kernel/fsx.mjs'
 import { helloagentsRoot, installStatePath } from '../kernel/paths.mjs'
 import { hasMarkedBlock, isLegacyHookCommand, readMarkedVersion } from '../kernel/ownership.mjs'
-import { codexNotifyState } from '../hosts/codex-toml.mjs'
+import { codexHooksFeatureEnabled, codexModelInstructionsState, codexNotifyTopLevelState, MANAGED_TOML_SUFFIX } from '../hosts/codex-config.mjs'
 import {
   claudeMarketplacePluginDir,
   codexPluginDir,
@@ -121,12 +121,46 @@ export function buildDoctorReport(ctx) {
       }
     }
 
+    // 标准模式通用检查：软链接、hooks 文件
+    if (install.mode === 'standard') {
+      const linkPath = join(ctx.home, `.${host.id}`, 'helloagents')
+      if (!fileExists(linkPath)) {
+        issues.push({ code: 'symlink-missing', level: 'warn', host: host.id, message: linkPath })
+      }
+
+      let hooksPath = ''
+      if (host.id === 'claude') hooksPath = String(host.settingsPath(ctx.home) || '')
+      else if (host.id === 'codex') hooksPath = join(ctx.home, '.codex', 'hooks.json')
+      else if (host.id === 'grok') hooksPath = join(ctx.home, '.grok', 'hooks', 'helloagents.json')
+      else if (host.id === 'cursor') hooksPath = join(ctx.home, '.cursor', 'hooks.json')
+
+      if (hooksPath) {
+        const hooksData = readJson(hooksPath)
+        if (!hooksData || !hooksData.hooks) {
+          issues.push({ code: 'hooks-missing', level: 'error', host: host.id, message: hooksPath })
+        }
+      }
+
+      // Codex 专属：config.toml 受管条目
+      if (host.id === 'codex') {
+        const configPath = String(host.codexConfigPath(ctx.home))
+        const configText = readText(configPath)
+        if (codexModelInstructionsState(configText) !== 'managed') {
+          issues.push({ code: 'codex-model-instructions-missing', level: 'error', host: host.id, message: configPath })
+        }
+        if (!codexHooksFeatureEnabled(configText)) {
+          issues.push({ code: 'codex-hooks-feature-disabled', level: 'warn', host: host.id, message: configPath })
+        }
+      }
+    }
+
     const addons = enabledAddons(state, host.id)
     for (const addon of /** @type {const} */ (['guard', 'notify'])) {
       if (!addons[addon]) continue
       if (host.id === 'codex' && addon === 'notify') {
         const configPath = host.codexConfigPath(ctx.home)
-        const notifyState = configPath ? codexNotifyState(configPath) : 'none'
+        const configText = configPath ? readText(configPath) : null
+        const notifyState = configPath ? codexNotifyTopLevelState(configText) : 'none'
         if (notifyState === 'user') {
           issues.push({ code: 'addon-notify-user-conflict', level: 'warn', host: host.id, message: configPath ?? '' })
         } else if (notifyState !== 'managed') {
@@ -152,17 +186,20 @@ export function buildDoctorReport(ctx) {
     for (const configFile of [host.settingsPath(ctx.home), host.cursorHooksPath(ctx.home)]) {
       if (!configFile) continue
       const text = JSON.stringify(readJson(configFile) ?? {})
-      if (isLegacyHookCommand(text)) legacy.push(configFile)
+      // 仅标记无法识别为当前版本受管的旧版 hooks 为遗留
+      if (isLegacyHookCommand(text) && !text.includes('helloagents-js')) legacy.push(configFile)
     }
     const codexConfig = host.codexConfigPath(ctx.home)
     if (codexConfig) {
       const text = readText(codexConfig) ?? ''
-      if (text.split(/\r?\n/).some((line) => isLegacyHookCommand(line))) legacy.push(codexConfig)
+      // 跳过带管理标记的行——那是当前版本写入的，不是 3.x 残留
+      if (text.split(/\r?\n/).some((line) => isLegacyHookCommand(line) && !line.includes(MANAGED_TOML_SUFFIX))) legacy.push(codexConfig)
     }
   }
   for (const hooksDir of ['.grok', '.hermes']) {
     const hooksFile = join(ctx.home, hooksDir, 'hooks', 'helloagents.json')
-    if (fileExists(hooksFile) && isLegacyHookCommand(readText(hooksFile) ?? '')) {
+    const hooksText = readText(hooksFile) ?? ''
+    if (fileExists(hooksFile) && isLegacyHookCommand(hooksText) && !hooksText.includes('helloagents-js')) {
       legacy.push(hooksFile)
     }
   }

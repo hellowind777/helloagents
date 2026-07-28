@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { join } from 'node:path'
 import { readInstallState, writeInstallState } from '../../src/kernel/config.mjs'
 import { readJson, readText, writeTextAtomic } from '../../src/kernel/fsx.mjs'
-import { codexNotifyState } from '../../src/hosts/codex-toml.mjs'
+import { codexNotifyTopLevelState } from '../../src/hosts/codex-config.mjs'
 import { findHost } from '../../src/hosts/registry.mjs'
 import { applyAddon } from '../../src/cli/addons.mjs'
 import { runInstall } from '../../src/cli/install.mjs'
@@ -123,9 +123,9 @@ test('codex：notify 写入受管行；用户已有配置时拒绝并保持原�
     const configPath = join(home, '.codex', 'config.toml')
 
     assert.equal(toggle(ctx, 'codex', 'notify', true).status, 'enabled')
-    assert.equal(codexNotifyState(configPath), 'managed')
+    assert.equal(codexNotifyTopLevelState(readText(configPath)), 'managed')
     assert.equal(toggle(ctx, 'codex', 'notify', false).status, 'disabled')
-    assert.equal(codexNotifyState(configPath), 'none')
+    assert.equal(codexNotifyTopLevelState(readText(configPath)), 'none')
 
     writeTextAtomic(configPath, 'notify = ["my-notifier"]\n')
     const blocked = toggle(ctx, 'codex', 'notify', true)

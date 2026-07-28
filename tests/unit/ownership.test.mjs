@@ -70,7 +70,7 @@ test('hooks 命令归属：按运行副本路径判断，而不是字符串嗅�
 
 test('3.x 遗留命令识别', () => {
   assert.equal(isLegacyHookCommand('node "${CLAUDE_PLUGIN_ROOT}/scripts/notify.mjs" stop'), true)
-  assert.equal(isLegacyHookCommand('helloagents-js guard'), true)
+  assert.equal(isLegacyHookCommand('helloagents-js guard'), false, 'helloagents-js 在 4.x 中仍使用，不应识别为遗留')
   assert.equal(isLegacyHookCommand('node /home/user/.helloagents/helloagents/scripts/guard.mjs'), true)
   assert.equal(isLegacyHookCommand('npm run build'), false)
 })

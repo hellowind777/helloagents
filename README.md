@@ -134,7 +134,7 @@ Environment variables:
 | Variable | Default | Description |
 |---|---|---|
 | `HELLOAGENTS_HOSTS` | `all` | Target hosts (comma-separated: claude,codex,grok,cursor,hermes) |
-| `HELLOAGENTS_METHOD` | (auto) | Install mode: `inject`/`standard` or `plugin`/`global` |
+| `HELLOAGENTS_METHOD` | (auto) | Install mode: `standard` or `global` (legacy `inject`/`plugin` also accepted) |
 | `HELLOAGENTS_VERSION` | `latest` | npm dist-tag (npm source only) |
 | `HELLOAGENTS_SOURCE` | `npm` | `npm` or `git` |
 | `HELLOAGENTS_BRANCH` | `main` | Git branch (git source only) |

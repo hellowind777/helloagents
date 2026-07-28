@@ -82,13 +82,15 @@ export function readMarkedVersion(filePath) {
 
 /**
  * 判断一条 hooks 命令是否由当前版本的 HelloAGENTS 写入：
- * 命令内容指向运行副本目录即视为受管。
+ * 命令内容指向运行副本目录即视为受管，或包含 helloagents-js 可执行文件。
  * @param {string} command
  * @param {string} home
  */
 export function isOwnedHookCommand(command, home) {
-  const needle = toPosix(appDir(home))
-  return needle.length > 0 && toPosix(String(command || '')).includes(needle)
+  const value = toPosix(String(command || ''))
+  const appPath = toPosix(appDir(home))
+  if (appPath.length > 0 && value.includes(appPath)) return true
+  return value.includes('helloagents-js')
 }
 
 /**
@@ -100,7 +102,6 @@ export const LEGACY_COMMAND_SIGNS = [
   '/scripts/guard.mjs',
   '/scripts/ralph-loop.mjs',
   '/scripts/cursor-hook.mjs',
-  'helloagents-js',
   'helloagents-turn-state',
   '.helloagents/helloagents/',
 ]

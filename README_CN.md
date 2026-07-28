@@ -134,7 +134,7 @@ curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/insta
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `HELLOAGENTS_HOSTS` | `all` | 目标宿主（逗号分隔：claude,codex,grok,cursor,hermes） |
-| `HELLOAGENTS_METHOD` | 自动 | 安装方式：`inject`/`standard` 或 `plugin`/`global` |
+| `HELLOAGENTS_METHOD` | 自动 | 安装方式：`standard` 或 `global`（也接受旧版 `inject`/`plugin`） |
 | `HELLOAGENTS_VERSION` | `latest` | npm dist-tag（仅 npm 来源） |
 | `HELLOAGENTS_SOURCE` | `npm` | 来源：`npm` 或 `git` |
 | `HELLOAGENTS_BRANCH` | `main` | Git 分支（仅 git 来源） |

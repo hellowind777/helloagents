@@ -1,14 +1,23 @@
 /**
  * 安装、卸载与更新。
- * 内核注入对所有具备载体文件的宿主统一执行；全局模式在标准模式之上叠加宿主原生插件。
+ *
+ * 标准模式：把内核注入宿主载体文件（AGENTS.md 等），标记包裹，卸载即还原。
+ *   同时为每个宿主创建软链接并注入 hooks（载体文件 + hooks + symlink 三步走）。
+ *   Cursor 例外：不注入载体文件（无全局规则文件），仅创建软链接和 hooks。
+ * 全局模式：在标准模式之上叠加宿主原生插件安装。
+ *
  * 切换安装方式时先移除旧方式的落盘内容，再写入新方式。
  */
 import { execSync } from 'node:child_process'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { readInstallState, writeInstallState } from '../kernel/config.mjs'
-import { fileExists, removePath } from '../kernel/fsx.mjs'
-import { helloagentsRoot } from '../kernel/paths.mjs'
+import { ensureDir, fileExists, readJson, readText, removePath, writeTextAtomic } from '../kernel/fsx.mjs'
+import { appDir, helloagentsRoot, toPosix } from '../kernel/paths.mjs'
 import { injectKernel, readKernelText, removeKernel } from '../hosts/carriers.mjs'
+import { backupCodexConfig, removeCodexBackups } from '../hosts/codex-backup.mjs'
+import { installCodexManagedConfig, syncCodexHookTrust, uninstallCodexManagedConfig } from '../hosts/codex-config.mjs'
+import { installCodexHooks, uninstallCodexHooks } from '../hosts/codex-hooks.mjs'
+import { removeCursorHooks, removeSettingsHooks, upsertCursorHooks, upsertSettingsHooks } from '../hosts/hooks-config.mjs'
 import {
   installClaudePlugin,
   installCodexPlugin,
@@ -28,11 +37,8 @@ import { removeApp, syncApp } from './runtime-app.mjs'
 /** @typedef {import('./main.mjs').CliContext} CliContext */
 /** @typedef {import('../kernel/config.mjs').InstallSource} InstallSource */
 
-/**
- * 检测 packageRoot 是否为 git 仓库，返回对应的安装源信息。
- * @param {string} packageRootPath
- * @returns {InstallSource}
- */
+// ── 工具函数 ────────────────────────────────────────────────────────────
+
 function detectSource(packageRootPath) {
   if (!fileExists(join(packageRootPath, '.git'))) {
     return { type: 'npm' }
@@ -44,16 +50,11 @@ function detectSource(packageRootPath) {
       return { type: 'git', url, branch, path: packageRootPath }
     }
   } catch {
-    // git 命令不可用或仓库异常，回退到 npm 模式
+    // git 不可用时回退
   }
   return { type: 'npm' }
 }
 
-/**
- * 从 git 克隆目录拉取最新代码。
- * @param {import('../kernel/config.mjs').GitSource} source
- * @returns {string | null} 成功返回路径，失败返回 null
- */
 function gitPullSource(source) {
   try {
     execSync(`git fetch origin ${source.branch}`, { cwd: source.path, encoding: 'utf-8', timeout: 60000 })
@@ -65,12 +66,139 @@ function gitPullSource(source) {
   }
 }
 
+/** @param {string} target @param {string} linkPath */
+function createSymlink(target, linkPath) {
+  if (fileExists(linkPath)) return
+  try {
+    ensureDir(dirname(linkPath))
+    if (process.platform === 'win32') {
+      execSync(`cmd /c mklink /J "${linkPath}" "${target}"`, { encoding: 'utf-8', timeout: 10000 })
+    } else {
+      execSync(`ln -s "${target}" "${linkPath}"`, { encoding: 'utf-8', timeout: 5000 })
+    }
+  } catch {
+    // 软链接创建失败不阻断主流程
+  }
+}
+
+// ── 宿主 hooks 安装 / 卸载 ─────────────────────────────────────────────
+
 /**
- * 执行宿主的全局模式插件安装。
+ * 从 hooks 定义文件中读取 hooks 内容并注入到宿主对应配置。
+ * 根据宿主类型选择不同的注入方式。
  * @param {CliContext} ctx
  * @param {HostAdapter} host
- * @returns {{ ok: boolean, manualSteps?: string }}
  */
+function installHostHooks(ctx, host) {
+  const hooksFile = join(ctx.app, 'hooks', `hooks-${host.id}.json`)
+  const hooksData = readJson(hooksFile)
+  if (!hooksData || !hooksData.hooks) return
+
+  if (host.id === 'claude') {
+    const settingsPath = host.settingsPath(ctx.home)
+    if (!settingsPath) return
+    upsertSettingsHooks(settingsPath, hooksData.hooks, { home: ctx.home })
+  } else if (host.id === 'codex') {
+    const hooksPath = join(ctx.home, '.codex', 'hooks.json')
+    installCodexHooks(hooksPath, hooksData.hooks)
+  } else if (host.id === 'grok') {
+    const hooksPath = join(ctx.home, '.grok', 'hooks', 'helloagents.json')
+    writeTextAtomic(hooksPath, JSON.stringify(hooksData, null, 2) + '\n')
+  } else if (host.id === 'cursor') {
+    const hooksPath = join(ctx.home, '.cursor', 'hooks.json')
+    /** @type {Record<string, Array<{ command: string, timeout: number }>>} */
+    const flat = {}
+    for (const [event, groups] of Object.entries(hooksData.hooks)) {
+      if (!Array.isArray(groups)) continue
+      flat[event] = groups.flatMap((g) =>
+        Array.isArray(g.hooks) ? g.hooks.map((h) => ({ command: h.command, timeout: h.timeout })) : []
+      )
+    }
+    upsertCursorHooks(hooksPath, flat, { home: ctx.home })
+  } else if (host.id === 'hermes') {
+    // Hermes hooks 通过 plugin 系统管理
+  }
+}
+
+/** @param {CliContext} ctx @param {HostAdapter} host */
+function uninstallHostHooks(ctx, host) {
+  if (host.id === 'claude') {
+    const settingsPath = host.settingsPath(ctx.home)
+    if (settingsPath) removeSettingsHooks(settingsPath, { home: ctx.home })
+  } else if (host.id === 'codex') {
+    const hooksPath = join(ctx.home, '.codex', 'hooks.json')
+    uninstallCodexHooks(hooksPath)
+  } else if (host.id === 'grok') {
+    removePath(join(ctx.home, '.grok', 'hooks', 'helloagents.json'))
+  } else if (host.id === 'cursor') {
+    const hooksPath = join(ctx.home, '.cursor', 'hooks.json')
+    removeCursorHooks(hooksPath, { home: ctx.home })
+  }
+}
+
+// ── 宿主标准模式安装 / 卸载 ────────────────────────────────────────────
+
+/**
+ * 单个宿主标准模式安装：载体文件 + 软链接 + hooks。
+ * Cursor 无载体文件，跳过内核注入。
+ * @param {CliContext} ctx
+ * @param {HostAdapter} host
+ * @param {string} kernel
+ */
+function installHostStandard(ctx, host, kernel) {
+  // 1. 载体文件注入（Cursor 跳过）
+  const carrier = host.carrierPath(ctx.home)
+  if (carrier) {
+    injectKernel(carrier, kernel, ctx.version)
+    ctx.log(ctx.t('install.standard.done', { host: host.label, path: carrier }))
+  }
+
+  // 2. 软链接
+  const linkPath = join(ctx.home, `.${host.id}`, 'helloagents')
+  createSymlink(ctx.app, linkPath)
+
+  // 3. hooks 注入
+  installHostHooks(ctx, host)
+
+  // 4. Codex 额外配置
+  if (host.id === 'codex') {
+    try {
+      const configPath = String(host.codexConfigPath(ctx.home))
+      backupCodexConfig(ctx.home, configPath)
+      const hooksPath = join(ctx.home, '.codex', 'hooks.json')
+      const hooksData = readJson(hooksPath)
+      installCodexManagedConfig(configPath, hooksPath, hooksData, join(helloagentsRoot(ctx.home), 'backups', 'codex'))
+    } catch (error) {
+      ctx.log(ctx.t('install.codexExtrasFailed', { message: error instanceof Error ? error.message : String(error) }))
+    }
+  }
+}
+
+/** @param {CliContext} ctx @param {HostAdapter} host */
+function uninstallHostStandard(ctx, host) {
+  // 载体文件
+  const carrier = host.carrierPath(ctx.home)
+  if (carrier) removeKernel(carrier)
+
+  // 软链接
+  removePath(join(ctx.home, `.${host.id}`, 'helloagents'))
+
+  // hooks
+  uninstallHostHooks(ctx, host)
+
+  // Codex 额外清理
+  if (host.id === 'codex') {
+    try {
+      const configPath = String(host.codexConfigPath(ctx.home))
+      uninstallCodexManagedConfig(configPath, join(helloagentsRoot(ctx.home), 'backups', 'codex'))
+      removeCodexBackups(ctx.home)
+    } catch { /* 清理异常不中断 */ }
+  }
+}
+
+// ── 全局模式插件 ────────────────────────────────────────────────────────
+
+/** @param {CliContext} ctx @param {HostAdapter} host */
 function installHostPlugin(ctx, host) {
   if (host.id === 'claude') return installClaudePlugin(ctx.home, ctx.app)
   if (host.id === 'cursor') return installCursorPlugin(ctx.home, ctx.app)
@@ -80,11 +208,7 @@ function installHostPlugin(ctx, host) {
   return { ok: false }
 }
 
-/**
- * 执行宿主的全局模式插件卸载。
- * @param {CliContext} ctx
- * @param {HostAdapter} host
- */
+/** @param {CliContext} ctx @param {HostAdapter} host */
 function uninstallHostPlugin(ctx, host) {
   if (host.id === 'claude') return uninstallClaudePlugin(ctx.home)
   if (host.id === 'cursor') return uninstallCursorPlugin(ctx.home)
@@ -94,12 +218,8 @@ function uninstallHostPlugin(ctx, host) {
   return { ok: true }
 }
 
-/**
- * 安装到指定宿主。
- * @param {CliContext} ctx
- * @param {HostAdapter[]} targets
- * @param {'standard' | 'global' | null} requestedMode
- */
+// ── 主流程 ──────────────────────────────────────────────────────────────
+
 export function runInstall(ctx, targets, requestedMode) {
   const version = syncApp(ctx.packageRoot, ctx.app)
   ctx.log(ctx.t('app.synced', { path: ctx.app, version: version ?? ctx.version }))
@@ -107,7 +227,6 @@ export function runInstall(ctx, targets, requestedMode) {
   if (!kernel) throw new Error(ctx.t('install.kernelMissing', { path: join(ctx.app, 'prompts', 'kernel.md') }))
 
   const state = readInstallState(ctx.home)
-  // 记录安装源，供后续 update 使用。
   state.source = detectSource(ctx.packageRoot)
   let installedCount = 0
 
@@ -117,13 +236,7 @@ export function runInstall(ctx, targets, requestedMode) {
       const supported = ['standard', 'global'].filter(
         (mode) => host.capabilities[/** @type {'standard' | 'global'} */ (mode)],
       )
-      ctx.log(
-        ctx.t('install.mode.unsupported', {
-          host: host.label,
-          mode: desired,
-          supported: supported.join('、') || '-',
-        }),
-      )
+      ctx.log(ctx.t('install.mode.unsupported', { host: host.label, mode: desired, supported: supported.join('、') || '-' }))
       continue
     }
 
@@ -151,11 +264,9 @@ export function runInstall(ctx, targets, requestedMode) {
       }
     }
 
-    const carrier = host.carrierPath(ctx.home)
-    if (carrier) {
-      injectKernel(carrier, kernel, ctx.version)
-      ctx.log(ctx.t('install.standard.done', { host: host.label, path: carrier }))
-    }
+    // 标准模式安装（载体文件 + hooks + symlink）
+    // 全局模式也需执行——全局模式叠加在标准模式之上
+    installHostStandard(ctx, host, kernel)
 
     state.hosts[host.id] = {
       mode: finalMode,
@@ -173,12 +284,6 @@ export function runInstall(ctx, targets, requestedMode) {
   ctx.log(ctx.t('install.summary', { count: installedCount }))
 }
 
-/**
- * 从指定宿主卸载；--all 时同时删除运行副本。
- * @param {CliContext} ctx
- * @param {HostAdapter[]} targets
- * @param {{ all: boolean, purge: boolean }} options
- */
 export function runUninstall(ctx, targets, options) {
   const state = readInstallState(ctx.home)
 
@@ -188,8 +293,8 @@ export function runUninstall(ctx, targets, options) {
     state.addons.guard = state.addons.guard.filter((id) => id !== host.id)
     state.addons.notify = state.addons.notify.filter((id) => id !== host.id)
 
-    const carrier = host.carrierPath(ctx.home)
-    if (carrier) removeKernel(carrier)
+    uninstallHostStandard(ctx, host)
+
     if (state.hosts[host.id]?.mode === 'global' || host.capabilities.global) {
       uninstallHostPlugin(ctx, host)
     }
@@ -210,11 +315,6 @@ export function runUninstall(ctx, targets, options) {
   }
 }
 
-/**
- * 刷新运行副本与全部已安装宿主。
- * @param {CliContext} ctx
- * @param {HostAdapter[]} allHosts
- */
 export function runUpdate(ctx, allHosts) {
   const state = readInstallState(ctx.home)
   const installed = allHosts.filter((host) => state.hosts[host.id])
@@ -223,7 +323,6 @@ export function runUpdate(ctx, allHosts) {
     return
   }
 
-  // git 源：先拉取再同步；npm 源或无记录：沿用当前包路径。
   let sourceRoot = ctx.packageRoot
   if (state.source?.type === 'git') {
     const pulled = gitPullSource(state.source)
@@ -242,8 +341,24 @@ export function runUpdate(ctx, allHosts) {
   if (!kernel) throw new Error(ctx.t('install.kernelMissing', { path: join(ctx.app, 'prompts', 'kernel.md') }))
 
   for (const host of installed) {
+    // 更新载体文件
     const carrier = host.carrierPath(ctx.home)
     if (carrier) injectKernel(carrier, kernel, ctx.version)
+
+    // 更新 hooks（可能已变更）
+    installHostHooks(ctx, host)
+
+    // 更新 Codex 信任哈希
+    if (host.id === 'codex' && state.hosts[host.id]?.mode === 'standard') {
+      try {
+        const hooksPath = join(ctx.home, '.codex', 'hooks.json')
+        const hooksData = readJson(hooksPath)
+        if (hooksData) {
+          syncCodexHookTrust(String(host.codexConfigPath(ctx.home)), hooksPath, hooksData)
+        }
+      } catch { /* 非关键 */ }
+    }
+
     if (state.hosts[host.id]?.mode === 'global') {
       installHostPlugin(ctx, host)
     }
@@ -257,7 +372,6 @@ export function runUpdate(ctx, allHosts) {
     }
   }
 
-  // git 源版本可能已变，重新检测并更新。
   state.source = detectSource(sourceRoot)
   writeInstallState(ctx.home, state)
   ctx.log(ctx.t('update.done', { count: installed.length, version: ctx.version }))

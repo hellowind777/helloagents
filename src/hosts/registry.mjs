@@ -80,7 +80,7 @@ export const HOSTS = [
     id: 'cursor',
     label: 'Cursor',
     aliases: [],
-    capabilities: { standard: false, global: true, guard: true, notify: true },
+    capabilities: { standard: true, global: true, guard: true, notify: true },
     carrierPath: () => null,
     settingsPath: () => null,
     cursorHooksPath: (home) => join(home, '.cursor', 'hooks.json'),

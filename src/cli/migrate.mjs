@@ -12,7 +12,7 @@ import {
   readMarkedVersion,
   removeMarkedBlock,
 } from '../kernel/ownership.mjs'
-import { MANAGED_SUFFIX } from '../hosts/codex-toml.mjs'
+import { MANAGED_TOML_SUFFIX } from '../hosts/codex-config.mjs'
 import { removeCursorHooks, removeSettingsHooks } from '../hosts/hooks-config.mjs'
 import { cursorPluginDir } from '../hosts/plugins.mjs'
 import { HOSTS } from '../hosts/registry.mjs'
@@ -33,27 +33,49 @@ export function cleanLegacyCodexConfig(configPath) {
   let inLegacySection = false
   let userNotifyMentionsHelloagents = false
 
-  for (const line of lines) {
+  let i = 0
+  while (i < lines.length) {
+    const line = /** @type {string} */ (lines[i])
     const isHeader = /^\s*\[/.test(line)
     if (isHeader) inLegacySection = false
+
     if (/^\s*\[hooks\.state\./.test(line)) {
-      inLegacySection = true
-      removed += 1
-      continue
+      // 窥视后续非空行，判断该段是否由当前版本写入（内容行带管理标记）
+      let contentHasManagedMarker = false
+      for (let j = i + 1; j < lines.length && !/^\s*\[/.test(lines[j]); j += 1) {
+        const nextLine = lines[j]
+        if (nextLine && nextLine.trim() && nextLine.includes(MANAGED_TOML_SUFFIX)) {
+          contentHasManagedMarker = true
+          break
+        }
+      }
+      if (!contentHasManagedMarker) {
+        // 无管理标记：旧版残留段，移除整个段
+        inLegacySection = true
+        removed += 1
+        i += 1
+        continue
+      }
+      // 有管理标记：当前版本受管段，保留
     }
+
     if (inLegacySection) {
       removed += 1
+      i += 1
       continue
     }
-    const managed = line.trimEnd().endsWith(MANAGED_SUFFIX)
+
+    const managed = line.trimEnd().endsWith(MANAGED_TOML_SUFFIX)
     if (managed && isLegacyHookCommand(line)) {
       removed += 1
+      i += 1
       continue
     }
     if (!managed && /^\s*notify\s*=/.test(line) && line.includes('helloagents')) {
       userNotifyMentionsHelloagents = true
     }
     kept.push(line)
+    i += 1
   }
 
   if (removed > 0) writeTextAtomic(configPath, kept.join('\n'))

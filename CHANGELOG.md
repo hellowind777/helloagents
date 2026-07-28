@@ -1,5 +1,31 @@
 # 更新日志
 
+## 4.0.4（2026-07-28）
+
+缺陷修复与代码清理。
+
+缺陷修复：
+
+- 修复 Codex 卸载时备份目录不清理的问题——`uninstallCodexManagedConfig` 中变量名 `backupPath` 未定义，`ReferenceError` 被调用方 `catch {}` 静默吞掉
+- 修复 `cleanLegacyCodexConfig` 误删当前版本受管 `[hooks.state.*]` 段的问题——现在仅移除无管理标记的旧版段
+- 修复 doctor 误报当前 `config.toml` 为 3.x 残留——`helloagents-js` 签名同时存在于新旧版本中
+- 从 `LEGACY_COMMAND_SIGNS` 中移除 `helloagents-js`——该可执行文件名在 4.x 中仍然使用，路径级签名足以区分真正的 3.x 残留
+
+代码清理：
+
+- 删除 `codex-toml.mjs`——与 `codex-config.mjs` 功能重叠，生产代码中无任何模块导入
+- 删除 `codex-backup.mjs` 的 `readLatestBackup` 导出——全仓库无引用
+
+低层修复：
+
+- `fsx.mjs` 的 `sleepSync`：`Atomics.wait` 在主线程无效，改为忙等循环
+- `notify.mjs` 的消息截断改为按 Unicode 码点计数，避免多字节字符被截断
+
+安装脚本：
+
+- `install.ps1` 和 `install.sh` 现实际支持 `HELLOAGENTS_SOURCE=git`
+- 脚本标志名从 `--inject`/`--plugin` 更新为 `--standard`/`--global`
+
 ## 4.0.3（2026-07-28）
 
 全宿主双重安装模式、Git 源支持与命名体系统一。
