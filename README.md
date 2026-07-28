@@ -29,7 +29,7 @@ HelloAGENTS does three things:
 
 1. **Course-correct**: a kernel lives in the host's rules file and corrects the habits above — organized into explicit sections covering identity, bias-correction patterns, dynamic capability routing, execution discipline, verification habits, interruption recovery, knowledge management, and safety.
 2. **Activate**: 23 thinking skills (planning, implementation, requirements discovery, quality self-check, full-scope review, UI, debugging, security, and more) load on demand, each supplying the judgment framework and quality bar for its scenario — not an approval checklist.
-3. **Distribute**: it reliably installs all of this into five hosts across three methods; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
+3. **Distribute**: it reliably installs all of this into five hosts via npm or git clone, across standard mode and global (native marketplace) mode; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
 
 What it doesn't do: no process management, no state machines, no scripts that evaluate, verify, or audit in the model's place — verification is an activated model habit (run real commands yourself, paste the raw output), not something for scripts to intercept.
 
@@ -61,36 +61,36 @@ For teams, the project method is recommended: run `npx helloagents init` at the 
 
 | Command | Description |
 |---|---|
-| `install <host…\|--all> [--inject\|--plugin]` | Install. Prefers the plugin method by default, then the inject method |
+| `install <host…\|--all> [--standard\|--global]` | Install. Prefers global mode by default, then standard mode |
 | `uninstall <host…\|--all> [--purge]` | Uninstall and restore host config; `--purge` also deletes `~/.helloagents` |
-| `update` | Refresh the running copy and sync every installed host |
+| `update [host…]` | Refresh the running copy and sync installed hosts; all if omitted |
 | `init` | Project method: write `./AGENTS.md` and set up the `.helloagents/` knowledge base |
 | `doctor [--json]` | Health check: verify on-disk state against the install record, spot 3.x leftovers |
 | `migrate` | Clean up everything 3.x wrote to the user's machine |
 | `guard on\|off [host…]` | Add-on: dangerous-command interception |
 | `notify on\|off [host…]` | Add-on: alerts for turn end and pending confirmation |
 
-Pick the language with `HELLOAGENTS_LANG=cn\|en`; the default follows your system locale.
+Pick the language with `HELLOAGENTS_LANG=cn\|en` or the `--lang cn\|en` flag; the default follows your system locale. Legacy `--inject`/`--plugin` aliases are still accepted.
 
 ## Install Methods and Host Matrix
 
 The three methods can be stacked (hosts generally follow "the nearest rules file wins"):
 
 - **Project method**: the kernel goes into the project's `AGENTS.md`, ships via git, keeps the team consistent, and never touches user-global config.
-- **Inject method**: the kernel goes into the host's user-level rules file, wrapped in `<!-- HELLOAGENTS_START/END -->` markers; content outside the markers is never touched, and uninstalling restores the file.
-- **Plugin method**: installs through the host's own plugin or extension mechanism, with the host's native management and updates.
+- **Standard mode** (`--standard`): the kernel goes into the host's user-level rules file, wrapped in `<!-- HELLOAGENTS_START/END -->` markers; content outside the markers is never touched, and uninstalling restores the file.
+- **Global mode** (`--global`): installs through the host's own native plugin marketplace, with the host's native management and updates.
 
-| Host | Inject method | Plugin method | guard | notify |
+| Host | Standard mode | Global mode | guard | notify |
 |---|---|---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
-| Codex CLI | `~/.codex/AGENTS.md` | — (no plugin system) | — | Yes (managed lines in config.toml) |
-| Grok Build | `~/.grok/AGENTS.md` | — | Yes | Yes |
+| Codex CLI | `~/.codex/AGENTS.md` | Plugin marketplace (local-plugins auto-registered) | Yes | Yes |
+| Grok Build | `~/.grok/AGENTS.md` | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
 | Cursor | — (no global rules file) | `~/.cursor/plugins/local/helloagents` (kernel ships as a rule) | Yes | Yes |
-| Hermes | `~/.hermes/AGENTS.md` | — | Yes | Yes |
+| Hermes | `~/.hermes/AGENTS.md` | `HERMES_HOME/local-plugins/helloagents` (external_dirs registered) | Yes | Yes |
 
-A "—" means the host doesn't have that mechanism yet; we degrade honestly instead of building a simulation layer.
+All five hosts now support both standard and global modes.
 
-Cursor is plugin-only for a reason: it has no global rules file. `~/.cursor/rules/` is not supported — Cursor staff have stated that rule resolution walks upward from the workspace and never reaches the home directory. So the kernel ships inside the plugin as `rules/helloagents-kernel.mdc`, with `alwaysApply: true` and deliberately **no** `description` (Cursor currently has a known defect where a rule carrying both is downgraded to "agent-requested" instead of always applying). The plugin directory holds only what Cursor reads — manifest, skills, rules; the HelloAGENTS CLI itself stays out of it. Run **Developer: Reload Window** in Cursor after installing.
+Cursor is global-mode-only for a reason: it has no global rules file. `~/.cursor/rules/` is not supported — Cursor staff have stated that rule resolution walks upward from the workspace and never reaches the home directory. So the kernel ships inside the plugin as `rules/helloagents-kernel.mdc`, with `alwaysApply: true` and deliberately **no** `description` (Cursor currently has a known defect where a rule carrying both is downgraded to "agent-requested" instead of always applying). The plugin directory holds only what Cursor reads — manifest, skills, rules; the HelloAGENTS CLI itself stays out of it. Run **Developer: Reload Window** in Cursor after installing.
 
 Gemini CLI is no longer a supported host. If you installed it there, run `npx helloagents migrate` to strip the managed block from `~/.gemini/GEMINI.md` and drop the install record, then remove the extension yourself with `gemini extensions uninstall helloagents`.
 
@@ -119,6 +119,8 @@ Both add-ons are optional and decoupled from the core:
 
 ## One-Click Install Scripts
 
+### npm (default)
+
 ```bash
 # Windows (PowerShell)
 irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
@@ -127,7 +129,29 @@ irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 
 curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | sh
 ```
 
-Environment variables: `HELLOAGENTS_HOSTS` (comma-separated, default `all`), `HELLOAGENTS_METHOD` (`inject` or `plugin`), `HELLOAGENTS_VERSION` (npm tag, default `latest`).
+Environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `HELLOAGENTS_HOSTS` | `all` | Target hosts (comma-separated: claude,codex,grok,cursor,hermes) |
+| `HELLOAGENTS_METHOD` | (auto) | Install mode: `inject`/`standard` or `plugin`/`global` |
+| `HELLOAGENTS_VERSION` | `latest` | npm dist-tag (npm source only) |
+| `HELLOAGENTS_SOURCE` | `npm` | `npm` or `git` |
+| `HELLOAGENTS_BRANCH` | `main` | Git branch (git source only) |
+| `HELLOAGENTS_GIT_URL` | (repo URL) | Git remote URL (git source only) |
+| `HELLOAGENTS_LANG` | (system) | Language: `cn` or `en` |
+
+### Git clone (alternative)
+
+```bash
+# Install from the main branch
+curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_SOURCE=git sh
+
+# Install from the beta branch  
+curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_SOURCE=git HELLOAGENTS_BRANCH=beta sh
+```
+
+The git source clones to `~/.helloagents/source/` and `helloagents update` will `git pull` from there.
 
 ## Migrating from 3.x
 

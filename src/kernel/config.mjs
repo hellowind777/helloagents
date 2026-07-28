@@ -16,7 +16,7 @@ export const STATE_VERSION = 4
 
 /**
  * @typedef {Object} HostInstall
- * @property {'inject' | 'plugin'} mode
+ * @property {'standard' | 'global'} mode
  * @property {string} version
  * @property {string} updatedAt
  */

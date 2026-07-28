@@ -8,7 +8,15 @@ import { fileExists, readJson, readText } from '../kernel/fsx.mjs'
 import { helloagentsRoot, installStatePath } from '../kernel/paths.mjs'
 import { hasMarkedBlock, isLegacyHookCommand, readMarkedVersion } from '../kernel/ownership.mjs'
 import { codexNotifyState } from '../hosts/codex-toml.mjs'
-import { cursorPluginDir, cursorRuleFile } from '../hosts/plugins.mjs'
+import {
+  claudeMarketplacePluginDir,
+  codexPluginDir,
+  cursorPluginDir,
+  cursorRuleFile,
+  grokMarketplacePluginDir,
+  hermesPluginDir,
+  resolveHermesHome,
+} from '../hosts/plugins.mjs'
 import { HOSTS, findHost } from '../hosts/registry.mjs'
 import { carrierStatus } from '../hosts/carriers.mjs'
 import { addonPresent, enabledAddons } from './addons.mjs'
@@ -75,23 +83,41 @@ export function buildDoctorReport(ctx) {
       }
     }
 
-    if (install.mode === 'plugin' && host.id === 'cursor') {
-      const pluginDir = cursorPluginDir(ctx.home)
-      const ruleFile = cursorRuleFile(pluginDir)
-      const manifest = /** @type {{ version?: string } | null} */ (
-        readJson(join(pluginDir, '.cursor-plugin', 'plugin.json'))
-      )
-      if (!manifest || !fileExists(join(pluginDir, 'skills'))) {
-        issues.push({ code: 'plugin-missing', level: 'error', host: host.id, message: pluginDir })
-      } else if (!fileExists(ruleFile)) {
-        issues.push({ code: 'plugin-rule-missing', level: 'error', host: host.id, message: ruleFile })
-      } else if (manifest.version !== ctx.version) {
-        issues.push({
-          code: 'plugin-outdated',
-          level: 'warn',
-          host: host.id,
-          message: `${pluginDir} (${manifest.version ?? 'unknown'})`,
-        })
+    if (install.mode === 'global') {
+      let pluginDir = ''
+      let manifestPath = ''
+      if (host.id === 'claude') {
+        pluginDir = claudeMarketplacePluginDir(ctx.home)
+        manifestPath = join(pluginDir, '.claude-plugin', 'plugin.json')
+      } else if (host.id === 'codex') {
+        pluginDir = codexPluginDir(ctx.home)
+        manifestPath = join(pluginDir, '.codex-plugin', 'plugin.json')
+      } else if (host.id === 'grok') {
+        pluginDir = grokMarketplacePluginDir(ctx.home)
+        manifestPath = join(pluginDir, 'plugin.json')
+      } else if (host.id === 'cursor') {
+        pluginDir = cursorPluginDir(ctx.home)
+        manifestPath = join(pluginDir, '.cursor-plugin', 'plugin.json')
+      } else if (host.id === 'hermes') {
+        const hermesHome = resolveHermesHome(ctx.home)
+        pluginDir = hermesPluginDir(hermesHome)
+        manifestPath = join(pluginDir, 'skills')
+      }
+      if (pluginDir) {
+        const manifest = /** @type {{ version?: string } | null} */ (readJson(manifestPath))
+        const skillsOk = fileExists(join(pluginDir, 'skills', 'hello-plan', 'SKILL.md'))
+        if (!skillsOk && !fileExists(join(pluginDir, 'skills'))) {
+          issues.push({ code: 'plugin-missing', level: 'error', host: host.id, message: pluginDir })
+        } else if (manifest && manifest.version && manifest.version !== ctx.version) {
+          issues.push({ code: 'plugin-outdated', level: 'warn', host: host.id, message: `${pluginDir} (${manifest.version})` })
+        }
+        // Cursor 额外检查规则文件
+        if (host.id === 'cursor') {
+          const ruleFile = cursorRuleFile(pluginDir)
+          if (!fileExists(ruleFile)) {
+            issues.push({ code: 'plugin-rule-missing', level: 'error', host: host.id, message: ruleFile })
+          }
+        }
       }
     }
 

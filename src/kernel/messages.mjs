@@ -29,21 +29,25 @@ export const MESSAGES = {
     cn: '{host} 不支持 {mode} 方式，已跳过。支持的方式：{supported}。',
     en: '{host} does not support the {mode} method; skipped. Supported: {supported}.',
   },
-  'install.inject.done': {
+  'install.standard.done': {
     cn: '{host}：内核已写入 {path}',
     en: '{host}: kernel written to {path}',
   },
-  'install.plugin.done': {
-    cn: '{host}：插件安装完成',
-    en: '{host}: plugin installed',
+  'install.global.done': {
+    cn: '{host}：全局模式安装完成',
+    en: '{host}: global mode installed',
   },
-  'install.plugin.manual': {
+  'install.global.manual': {
     cn: '{host}：自动安装未成功，请手动执行：{steps}',
     en: '{host}: automatic install failed. Run manually: {steps}',
   },
-  'install.plugin.fallback': {
-    cn: '{host}：插件安装未成功，已改用注入方式。',
-    en: '{host}: plugin install failed; fell back to the inject method.',
+  'install.global.fallback': {
+    cn: '{host}：全局模式安装未成功，已改用标准模式。',
+    en: '{host}: global mode install failed; fell back to the standard mode.',
+  },
+  'install.kernelMissing': {
+    cn: '内核文件缺失：{path}',
+    en: 'Kernel file missing: {path}',
   },
   'install.switched': {
     cn: '{host}：安装方式已从 {from} 切换为 {to}。',
@@ -122,8 +126,8 @@ export const MESSAGES = {
     en: '  Cleaned: {item}',
   },
   'cli.modeConflict': {
-    cn: '--inject 与 --plugin 只能二选一。',
-    en: 'Use either --inject or --plugin, not both.',
+    cn: '--standard 与 --global 只能二选一。',
+    en: 'Use either --standard or --global, not both.',
   },
   'migrate.done': {
     cn: '迁移完成：清理 {count} 项 3.x 残留。现在可以执行 helloagents install 安装 4.x。',

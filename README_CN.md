@@ -29,7 +29,7 @@ HelloAGENTS 做三件事：
 
 1. **纠偏**：一份内核常驻宿主规则文件，按明确章节组织——涵盖身份与执行底线、思维纠偏模式、能力调用与动态路由、执行纪律、验证习惯、中断恢复、知识管理、安全底线等。
 2. **激活**：23 个思维技能（方案、实现、需求探索、质量自检、全量审查、界面、调试、安全等）按需读取，提供对应场景下的判断框架与质量标准，不是审批清单。
-3. **分发**：把这套内容可靠地安装进五个宿主、三种形态，安装、更新、体检、卸载、迁移全部一条命令，卸载即完整还原。
+3. **分发**：把这套内容可靠地安装进五个宿主，通过 npm 或 git clone 两种来源，覆盖标准模式与全局（原生插件市场）模式；安装、更新、体检、卸载、迁移全部一条命令，卸载即完整还原。
 
 它不做什么：不做流程管理，不做状态机，不写脚本替模型评估、验证、审计——验证是激活出来的模型习惯（自己跑真实命令、贴原始输出），不是被脚本拦截的对象。
 
@@ -61,36 +61,36 @@ npx helloagents doctor
 
 | 命令 | 说明 |
 |---|---|
-| `install <宿主…\|--all> [--inject\|--plugin]` | 安装（默认优先插件方式，其次注入方式） |
+| `install <宿主…\|--all> [--standard\|--global]` | 安装（默认优先全局模式，其次标准模式） |
 | `uninstall <宿主…\|--all> [--purge]` | 卸载并还原宿主配置；`--purge` 同时删除 `~/.helloagents` |
-| `update` | 刷新运行副本并同步全部已安装宿主 |
+| `update [宿主…]` | 刷新运行副本并同步已安装宿主；不指定则全部刷新 |
 | `init` | 项目方式：写入 `./AGENTS.md` 内核并建立 `.helloagents/` 知识库 |
 | `doctor [--json]` | 体检安装状态，识别 3.x 残留 |
 | `migrate` | 清理 3.x 版本写入用户机器的全部残留 |
 | `guard on\|off [宿主…]` | 附加组件：危险命令拦截 |
 | `notify on\|off [宿主…]` | 附加组件：回合结束与等待确认时提醒 |
 
-可用环境变量 `HELLOAGENTS_LANG=cn\|en` 指定语言；默认跟随系统。
+可用环境变量 `HELLOAGENTS_LANG=cn\|en` 或 `--lang cn\|en` 指定语言；默认跟随系统。旧版 `--inject`/`--plugin` 别名仍然可用。
 
 ## 安装方式与宿主矩阵
 
 三种方式可以叠加（宿主一般遵循「就近规则文件生效」）：
 
 - **项目方式**：内核写入项目的 `AGENTS.md`，随 git 分发，团队保持一致，不碰用户全局配置。
-- **注入方式**：内核写入宿主的用户级规则文件，包裹在 `<!-- HELLOAGENTS_START/END -->` 标记内；标记外的用户内容永不改动，卸载时完整还原。
-- **插件方式**：通过宿主自带的插件或扩展机制安装，由宿主原生管理更新。
+- **标准模式**（`--standard`）：内核写入宿主的用户级规则文件，包裹在 `<!-- HELLOAGENTS_START/END -->` 标记内；标记外的用户内容永不改动，卸载时完整还原。
+- **全局模式**（`--global`）：通过宿主自带的原生插件市场安装，由宿主原生管理更新。
 
-| 宿主 | 注入方式 | 插件方式 | guard | notify |
+| 宿主 | 标准模式 | 全局模式 | guard | notify |
 |---|---|---|---|---|
 | Claude Code | `~/.claude/CLAUDE.md` | 插件市场（自动注册本地市场） | 是 | 是 |
-| Codex CLI | `~/.codex/AGENTS.md` | —（无插件系统） | — | 是（config.toml 受管行） |
-| Grok Build | `~/.grok/AGENTS.md` | — | 是 | 是 |
+| Codex CLI | `~/.codex/AGENTS.md` | 插件市场（自动注册 local-plugins） | 是 | 是 |
+| Grok Build | `~/.grok/AGENTS.md` | 插件市场（自动注册本地市场） | 是 | 是 |
 | Cursor | —（无全局规则文件） | `~/.cursor/plugins/local/helloagents`（内核以规则下发） | 是 | 是 |
-| Hermes | `~/.hermes/AGENTS.md` | — | 是 | 是 |
+| Hermes | `~/.hermes/AGENTS.md` | `HERMES_HOME/local-plugins/helloagents`（external_dirs 登记） | 是 | 是 |
 
-「—」表示宿主暂不具备该机制，如实降级，不做模拟层。
+全部五个宿主均支持标准模式与全局模式。
 
-Cursor 只支持插件方式有明确原因：它没有全局规则文件，`~/.cursor/rules/` 不被支持——Cursor 团队已确认规则解析从工作区向上遍历，永远不会到达家目录。因此内核随插件以 `rules/helloagents-kernel.mdc` 下发，设置 `alwaysApply: true` 且刻意**不写** `description`（Cursor 目前已知缺陷是二者同时存在时，规则会被降级为「按需取用」而不是始终生效）。插件目录只放 Cursor 读取的内容——清单、技能、规则；HelloAGENTS CLI 本身不放入。安装后在 Cursor 中执行 **Developer: Reload Window** 重载窗口。
+Cursor 只支持全局模式有明确原因：它没有全局规则文件，`~/.cursor/rules/` 不被支持——Cursor 团队已确认规则解析从工作区向上遍历，永远不会到达家目录。因此内核随插件以 `rules/helloagents-kernel.mdc` 下发，设置 `alwaysApply: true` 且刻意**不写** `description`（Cursor 目前已知缺陷是二者同时存在时，规则会被降级为「按需取用」而不是始终生效）。插件目录只放 Cursor 读取的内容——清单、技能、规则；HelloAGENTS CLI 本身不放入。安装后在 Cursor 中执行 **Developer: Reload Window** 重载窗口。
 
 Gemini CLI 不再是支持的宿主。如果你之前在那里安装过，执行 `npx helloagents migrate` 清理 `~/.gemini/GEMINI.md` 中的受管块并删除安装记录，再手动执行 `gemini extensions uninstall helloagents` 移除扩展。
 
@@ -119,6 +119,8 @@ Gemini CLI 不再是支持的宿主。如果你之前在那里安装过，执行
 
 ## 一键安装脚本
 
+### npm 方式（默认）
+
 ```bash
 # Windows（PowerShell）
 irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 | iex
@@ -127,7 +129,29 @@ irm https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.ps1 
 curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | sh
 ```
 
-环境变量：`HELLOAGENTS_HOSTS`（逗号分隔，默认 `all`）、`HELLOAGENTS_METHOD`（`inject` 或 `plugin`）、`HELLOAGENTS_VERSION`（npm 标签，默认 `latest`）。
+环境变量：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `HELLOAGENTS_HOSTS` | `all` | 目标宿主（逗号分隔：claude,codex,grok,cursor,hermes） |
+| `HELLOAGENTS_METHOD` | 自动 | 安装方式：`inject`/`standard` 或 `plugin`/`global` |
+| `HELLOAGENTS_VERSION` | `latest` | npm dist-tag（仅 npm 来源） |
+| `HELLOAGENTS_SOURCE` | `npm` | 来源：`npm` 或 `git` |
+| `HELLOAGENTS_BRANCH` | `main` | Git 分支（仅 git 来源） |
+| `HELLOAGENTS_GIT_URL` | 仓库地址 | Git 远程地址（仅 git 来源） |
+| `HELLOAGENTS_LANG` | 系统 | 语言：`cn` 或 `en` |
+
+### Git clone 方式（备选）
+
+```bash
+# 从 main 分支安装
+curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_SOURCE=git sh
+
+# 从 beta 分支安装
+curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/install.sh | HELLOAGENTS_SOURCE=git HELLOAGENTS_BRANCH=beta sh
+```
+
+Git 来源会把仓库克隆到 `~/.helloagents/source/`，后续 `helloagents update` 将在此目录执行 `git pull`。
 
 ## 从 3.x 迁移
 

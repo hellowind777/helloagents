@@ -25,7 +25,10 @@ import { runSyncVersion } from './sync-version.mjs'
  * @property {(line: string) => void} log
  */
 
-const KNOWN_FLAGS = new Set(['--all', '--inject', '--plugin', '--json', '--purge', '--check'])
+const KNOWN_FLAGS = new Set([
+  '--all', '--inject', '--plugin', '--standard', '--global',
+  '--json', '--purge', '--check',
+])
 
 /**
  * @param {string[]} argv
@@ -147,10 +150,23 @@ export function runCli(argv) {
   const rest = positionals.slice(1)
 
   try {
+    // 优先处理 --version、--help（会被 flag 解析吞掉，到不了 switch 分支）。
+    if (command === 'help' && (flags.has('--version') || flags.has('-v'))) {
+      ctx.log(ctx.version)
+      return 0
+    }
+    if (command === 'help' && (flags.has('--help') || flags.has('-h'))) {
+      runHelp(ctx, language)
+      return 0
+    }
+
     switch (command) {
       case 'install': {
-        if (flags.has('--inject') && flags.has('--plugin')) throw new Error(t('cli.modeConflict'))
-        const mode = flags.has('--inject') ? 'inject' : flags.has('--plugin') ? 'plugin' : null
+        if ((flags.has('--inject') || flags.has('--standard')) && (flags.has('--plugin') || flags.has('--global'))) {
+          throw new Error(t('cli.modeConflict'))
+        }
+        const mode = (flags.has('--inject') || flags.has('--standard')) ? 'standard'
+          : (flags.has('--plugin') || flags.has('--global')) ? 'global' : null
         runInstall(ctx, resolveTargets(ctx, rest, flags.has('--all')), mode)
         return 0
       }
@@ -160,7 +176,7 @@ export function runCli(argv) {
         return 0
       }
       case 'update':
-        runUpdate(ctx, HOSTS)
+        runUpdate(ctx, rest.length > 0 ? resolveTargets(ctx, rest, false) : HOSTS)
         return 0
       case 'init':
         runInit(ctx, process.cwd())

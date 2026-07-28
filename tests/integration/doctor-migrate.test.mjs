@@ -159,7 +159,7 @@ test('健康安装下 doctor 无问题；破坏载体后能定位', () => {
     const { ctx } = makeCtx(home)
     const claude = findHost('claude')
     assert.ok(claude)
-    runInstall(ctx, [claude], 'inject')
+    runInstall(ctx, [claude], 'standard')
 
     const healthy = buildDoctorReport(ctx)
     assert.deepEqual(healthy.issues, [])

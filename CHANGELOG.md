@@ -1,5 +1,24 @@
 # 更新日志
 
+## 4.0.3（2026-07-28）
+
+全宿主双重安装模式、Git 源支持与命名体系统一。
+
+新增与变化：
+
+- **全宿主全局模式**：Codex CLI、Grok Build、Hermes 新增全局模式安装（原生插件市场），此前仅 Claude 和 Cursor 支持。
+- **Git 克隆安装**：一键安装脚本新增 `HELLOAGENTS_SOURCE=git` 支持，通过 `HELLOAGENTS_BRANCH` 指定分支，来源信息记录到安装状态，`update` 按来源自动选择 npm 或 git pull 同步策略。
+- **命名体系统一**：所有 `inject`/`plugin` 重命名为 `standard`/`global`，覆盖 CLI 标志（旧标志仍兼容）、注册表能力名、安装状态模式值、消息键、help 文本。
+- **doctor 体检**：新增对所有全局模式宿主的插件完整性检查（此前仅检查 Cursor），update 刷新覆盖全部宿主（此前仅刷新 Cursor）。
+- **插件清单文件**：补全 `.codex-plugin/plugin.json`、`.claude-plugin/plugin.json`、`.cursor-plugin/plugin.json` 三个仓库级清单。
+- **Hermes 别名**：新增 `hm` 别名；Codex guard 能力从 false 改为 true。
+
+Bug 修复：
+
+- `--version` 无法执行（此前 flag 解析器吞掉 `--version` 导致输出 help）。
+- `update` 命令忽略宿主参数（`helloagents update claude` 静默刷新全部宿主）。
+- `runUpdate` 中 `mode === 'plugin'` 与实际存储值 `'global'` 不匹配，导致 cursor/claude 插件在 update 时从未刷新。
+
 ## 4.0.2（2026-07-27）
 
 宿主覆盖完整性与工具一致性修复。Hermes 在 4.0.1 被引入为第五个宿主，本次将文档与工具链路中遗漏之处补全。

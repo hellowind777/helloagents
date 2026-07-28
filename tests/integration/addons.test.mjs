@@ -38,7 +38,7 @@ test('claude：guard 与 notify 写入 settings.json，停用后干净移除', (
   const { home, cleanup } = makeFakeHome()
   try {
     const { ctx } = makeCtx(home)
-    runInstall(ctx, [host('claude')], 'inject')
+    runInstall(ctx, [host('claude')], 'standard')
     const settingsPath = join(home, '.claude', 'settings.json')
     writeTextAtomic(settingsPath, `${JSON.stringify({ model: 'opus' }, null, 2)}\n`)
 
@@ -68,7 +68,7 @@ test('grok：附加组件共用独立 hooks 文件，全部停用后文件删除
   const { home, cleanup } = makeFakeHome()
   try {
     const { ctx } = makeCtx(home)
-    runInstall(ctx, [host('grok')], 'inject')
+    runInstall(ctx, [host('grok')], 'standard')
     const hooksPath = join(home, '.grok', 'hooks', 'helloagents.json')
 
     toggle(ctx, 'grok', 'guard', true)
@@ -93,7 +93,7 @@ test('cursor：hooks.json 中的用户条目不受影响', () => {
   const { home, cleanup } = makeFakeHome()
   try {
     const { ctx } = makeCtx(home)
-    runInstall(ctx, [host('cursor')], 'plugin')
+    runInstall(ctx, [host('cursor')], 'global')
     const hooksPath = join(home, '.cursor', 'hooks.json')
     writeTextAtomic(
       hooksPath,
@@ -119,7 +119,7 @@ test('codex：notify 写入受管行；用户已有配置时拒绝并保持原�
   const { home, cleanup } = makeFakeHome()
   try {
     const { ctx } = makeCtx(home)
-    runInstall(ctx, [host('codex')], 'inject')
+    runInstall(ctx, [host('codex')], 'standard')
     const configPath = join(home, '.codex', 'config.toml')
 
     assert.equal(toggle(ctx, 'codex', 'notify', true).status, 'enabled')
