@@ -53,6 +53,28 @@ function detectLanguage() {
 }
 const LANG = detectLanguage()
 
+/**
+ * 读取用户配置中的通知开关。遵循旧版 notify_level 语义：
+ * config.json 中 notify.sound/notify.desktop 各自控制对应渠道。
+ * 测试模式（HELLOAGENTS_NOTIFY_TEST_LOG 有值）时始终返回 true。
+ * @returns {{ sound: boolean, desktop: boolean }}
+ */
+function readNotifyConfig() {
+  if (process.env.HELLOAGENTS_NOTIFY_TEST_LOG) return { sound: true, desktop: true }
+  try {
+    const configPath = join(HOME, '.helloagents', 'config.json')
+    if (!existsSync(configPath)) return { sound: true, desktop: false }
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8'))
+    const n = raw?.notify
+    return {
+      sound: n?.sound !== false,
+      desktop: n?.desktop === true,
+    }
+  } catch {
+    return { sound: true, desktop: false }
+  }
+}
+
 // ── 工具函数 ───────────────────────────────────────────────────────────
 
 /** @returns {Record<string, unknown>} */
@@ -110,6 +132,7 @@ function recordTestTransport(channel, event) {
 /** @param {string} event */
 function notifySound(event) {
   if (process.env.HELLOAGENTS_DISABLE_OS_NOTIFICATIONS === '1') return
+  if (!readNotifyConfig().sound) return
   if (recordTestTransport('sound', event)) return
   const file = event === 'notification' ? 'confirm.wav' : 'complete.wav'
   const wav = join(PACKAGE_ROOT, 'assets', 'sounds', file)
@@ -135,6 +158,7 @@ function notifySound(event) {
 /** @param {string} event @param {string} detail */
 function notifyDesktop(event, detail) {
   if (process.env.HELLOAGENTS_DISABLE_OS_NOTIFICATIONS === '1') return
+  if (!readNotifyConfig().desktop) return
   if (recordTestTransport('desktop', event)) return
   const title = 'HelloAGENTS'
   const body = event === 'notification'
