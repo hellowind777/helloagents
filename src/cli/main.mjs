@@ -213,9 +213,11 @@ export function runCli(argv) {
         if (action === 'on' || action === 'off') {
           runAddonCommand(ctx, command, rest)
         } else {
-          // codex-notify 转发为 notify 组件的运行时调用
+          // 运行时转发：原始 argv 中跳过 command 和 subcommand，其余原样传给 addon 脚本。
+          // 不能用 positionals/rest，因为 --silent、--host 等标志会被 CLI 解析器吞掉。
           const addon = command === 'codex-notify' ? 'notify' : command
-          runAddonRuntime(ctx, addon, command === 'codex-notify' ? ['codex-notify', ...rest] : rest)
+          const passThrough = argv.slice(argv.indexOf(action))
+          runAddonRuntime(ctx, addon, command === 'codex-notify' ? ['codex-notify', ...passThrough] : passThrough)
         }
         return 0
       }
