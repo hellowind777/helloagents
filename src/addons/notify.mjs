@@ -82,7 +82,13 @@ function emptySuppress() {
  * @param {string} message
  */
 function injectContext(eventName, message) {
-  emit({ hookSpecificOutput: { hookEventName: eventName, systemMessage: message } })
+  emit({
+    hookSpecificOutput: {
+      hookEventName: eventName,
+      additionalContext: message,
+    },
+    suppressOutput: true,
+  })
 }
 
 // ── 通知功能 ───────────────────────────────────────────────────────────
