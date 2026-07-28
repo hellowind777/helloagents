@@ -169,12 +169,7 @@
 | ~clean | hello-clean | 清理项目临时产物 |
 | ~help | hello-help | 说明可用能力 |
 
-- ~命令 路由规则：用户输入 `~xxx` 时，立即读取对应的技能文件并按其流程执行，不要自行探索或猜测。技能文件路径：`{HELLOAGENTS_READ_ROOT}/skills/{技能名}/SKILL.md`。`{HELLOAGENTS_READ_ROOT}` 按以下顺序确定，取第一个存在的：
-  1. 当前上下文中已注入的读取根目录（如有）
-  2. `~/.helloagents/app/`（稳定运行副本，所有宿主通用）
-  3. 宿主固定链接仅作兼容别名（Codex `~/.codex/helloagents/`、Claude `~/.claude/helloagents/`、Grok `~/.grok/helloagents/`），不作为优先探测路径
-  仍无法确定时，不要递归扫描 `$HOME`、项目目录或旧版本目录。
-  标准模式下即使项目目录存在本地 `.helloagents/skills/`，也不要读取项目路径。不要扫描整个目录，也不要对同一命令重复探测多个路径。
+- ~命令 路由规则：用户输入 `~xxx` 时，立即读取对应的技能文件并按其流程执行，不要自行探索或猜测。技能统一从 `~/.helloagents/app/skills/{技能名}/SKILL.md` 读取，不扫描目录、不探测其他路径。
   示例：`~help` → 技能名 `hello-help`，读取 `~/.helloagents/app/skills/hello-help/SKILL.md`
 - 宿主自身的技能入口按正式名称调用（例如通过宿主命令触发 hello-plan）；hello- 前缀用于与用户自己的同名技能区分，不要去猜无前缀的名字。
 - 质量技能（hello-ui、hello-test、hello-security、hello-debug、hello-arch、hello-api、hello-data、hello-perf、hello-errors、hello-write、hello-reflect、hello-subagent）按任务类型在需要时读取，不预先加载。各技能的 description 字段已写明触发场景（例如 hello-security 在涉及认证、权限、用户输入、敏感数据或对外暴露面时使用），按语义匹配判断，不按关键词硬匹配。
