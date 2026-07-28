@@ -4,7 +4,7 @@
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "helloagents-js notify inject --host codex", "timeout": 5 }
+          { "type": "command", "command": "helloagents-js notify inject --host codex --silent", "timeout": 5 }
         ]
       }
     ],
@@ -12,7 +12,7 @@
       {
         "matcher": "",
         "hooks": [
-          { "type": "command", "command": "helloagents-js notify route --host codex", "timeout": 5 }
+          { "type": "command", "command": "helloagents-js notify route --host codex --silent", "timeout": 5 }
         ]
       }
     ],
