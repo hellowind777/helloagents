@@ -8,7 +8,6 @@
  */
 import { readJson, removePath, writeJsonAtomic } from '../kernel/fsx.mjs'
 
-const HOOKS_VERSION = 1
 // hooks.json 中归我们管理的 hook。每条至少包含 type: command 且 command 中含 helloagents。
 function isManagedHookHandler(handler) {
   return handler && typeof handler === 'object' &&
@@ -28,7 +27,6 @@ function isManagedHookHandler(handler) {
 export function installCodexHooks(hooksPath, managedHooks) {
   const existing = /** @type {{ version?: number, hooks?: Record<string, unknown[]> } | null} */ (readJson(hooksPath))
   const config = {
-    version: existing?.version ?? HOOKS_VERSION,
     hooks: /** @type {Record<string, unknown[]>} */ (existing?.hooks || {}),
   }
 
@@ -82,7 +80,7 @@ export function uninstallCodexHooks(hooksPath) {
   if (Object.keys(cleaned).length === 0) {
     removePath(hooksPath)
   } else {
-    writeJsonAtomic(hooksPath, { version: existing.version ?? HOOKS_VERSION, hooks: cleaned })
+    writeJsonAtomic(hooksPath, { hooks: cleaned })
   }
   return true
 }
