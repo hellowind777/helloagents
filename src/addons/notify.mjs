@@ -18,7 +18,7 @@
  *   helloagents-js notify route --host codex
  *   （从 stdin 读取 Codex hook 传入的 JSON payload）
  */
-import { spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -118,11 +118,13 @@ function notifySound(event) {
     const escaped = wav.replaceAll("'", "''").replaceAll('[', '`[').replaceAll(']', '`]')
     const script = `(New-Object System.Media.SoundPlayer '${escaped}').PlaySync()`
     const encoded = Buffer.from(script, 'utf16le').toString('base64')
-    const child = spawn('powershell', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], {
-      stdio: 'ignore', detached: true, windowsHide: true,
-    })
-    child.on('error', () => { process.stderr.write('\x07') })
-    child.unref()
+    try {
+      execSync(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`, {
+        stdio: 'ignore', windowsHide: true, timeout: 10000,
+      })
+    } catch {
+      process.stderr.write('\x07')
+    }
   } else if (PLATFORM === 'darwin') {
     spawn('afplay', [wav], { stdio: 'ignore', detached: true }).unref()
   } else {
@@ -157,7 +159,11 @@ function notifyDesktop(event, detail) {
       `[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('${appId}').Show([Windows.UI.Notifications.ToastNotification]::new($doc))`,
     ].join('\n')
     const encoded = Buffer.from(script, 'utf16le').toString('base64')
-    spawn('powershell', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { stdio: 'ignore', detached: true, windowsHide: true }).unref()
+    try {
+      execSync(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`, {
+        stdio: 'ignore', windowsHide: true, timeout: 10000,
+      })
+    } catch { /* 通知失败不阻断 */ }
   } else if (PLATFORM === 'darwin') {
     spawn('osascript', ['-e', `display notification "${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}" with title "${title.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { stdio: 'ignore', detached: true }).unref()
   } else {
