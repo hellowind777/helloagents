@@ -44,36 +44,37 @@ function readFlag(name) {
   return index >= 0 ? (args[index + 1] ?? '') : ''
 }
 
-function detectLanguage() {
+function detectLanguage(configLanguage) {
   const forced = String(process.env.HELLOAGENTS_LANG || '').toLowerCase()
   if (forced.startsWith('cn') || forced.startsWith('zh')) return 'cn'
   if (forced.startsWith('en')) return 'en'
+  if (configLanguage === 'cn' || configLanguage === 'en') return configLanguage
   const locale = `${process.env.LANG || ''} ${process.env.LC_ALL || ''}`.toLowerCase()
   return locale.includes('zh') || locale.includes('cn') ? 'cn' : 'en'
 }
-const LANG = detectLanguage()
 
 /**
- * 读取用户配置中的通知开关。遵循旧版 notify_level 语义：
- * config.json 中 notify.sound/notify.desktop 各自控制对应渠道。
- * 测试模式（HELLOAGENTS_NOTIFY_TEST_LOG 有值）时始终返回 true。
- * @returns {{ sound: boolean, desktop: boolean }}
+ * 读取用户配置。未配置时返回默认值。
+ * @returns {{ sound: boolean, desktop: boolean, language: string | null }}
  */
-function readNotifyConfig() {
-  if (process.env.HELLOAGENTS_NOTIFY_TEST_LOG) return { sound: true, desktop: true }
+function readUserConfig() {
+  if (process.env.HELLOAGENTS_NOTIFY_TEST_LOG) return { sound: true, desktop: true, language: null }
   try {
     const configPath = join(HOME, '.helloagents', 'config.json')
-    if (!existsSync(configPath)) return { sound: true, desktop: false }
+    if (!existsSync(configPath)) return { sound: true, desktop: false, language: null }
     const raw = JSON.parse(readFileSync(configPath, 'utf-8'))
     const n = raw?.notify
     return {
       sound: n?.sound !== false,
       desktop: n?.desktop === true,
+      language: raw?.language ?? null,
     }
   } catch {
-    return { sound: true, desktop: false }
+    return { sound: true, desktop: false, language: null }
   }
 }
+const USER_CONFIG = readUserConfig()
+const LANG = detectLanguage(USER_CONFIG.language)
 
 // ── 工具函数 ───────────────────────────────────────────────────────────
 
@@ -132,7 +133,7 @@ function recordTestTransport(channel, event) {
 /** @param {string} event */
 function notifySound(event) {
   if (process.env.HELLOAGENTS_DISABLE_OS_NOTIFICATIONS === '1') return
-  if (!readNotifyConfig().sound) return
+  if (!USER_CONFIG.sound) return
   if (recordTestTransport('sound', event)) return
   const file = event === 'notification' ? 'confirm.wav' : 'complete.wav'
   const wav = join(PACKAGE_ROOT, 'assets', 'sounds', file)
@@ -158,7 +159,7 @@ function notifySound(event) {
 /** @param {string} event @param {string} detail */
 function notifyDesktop(event, detail) {
   if (process.env.HELLOAGENTS_DISABLE_OS_NOTIFICATIONS === '1') return
-  if (!readNotifyConfig().desktop) return
+  if (!USER_CONFIG.desktop) return
   if (recordTestTransport('desktop', event)) return
   const title = 'HelloAGENTS'
   const body = event === 'notification'
