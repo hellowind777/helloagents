@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "4.0.4-beta.4",
+  "version": "4.0.4",
   "type": "module",
   "description": "HelloAGENTS — AI 编码 CLI 的思维激活层：纠偏内核 + 按需思维技能，一条命令分发到 Claude Code、Codex、Grok、Cursor。A thinking-activation layer for AI coding CLIs.",
   "author": "HelloWind",
