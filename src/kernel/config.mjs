@@ -40,7 +40,7 @@ export function readUserConfig(home) {
     language: raw?.language === 'cn' || raw?.language === 'en' ? raw.language : null,
     notify: {
       sound: raw?.notify?.sound !== false,
-      desktop: raw?.notify?.desktop !== false,
+      desktop: raw?.notify?.desktop === true,
     },
   }
 }
