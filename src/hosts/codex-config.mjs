@@ -5,13 +5,12 @@
  *   notify — 注册 agent-turn-complete 回调命令
  *   [features] hooks — 启用 hooks 功能
  *   [tui] notifications — TUI 通知偏好
+ *   [hooks.state.*] — 各 hook 的信任哈希，安装后自动受信
  *
  * 所有受管行尾均带 # helloagents-managed 标记，便于识别与清理。
  * 安装前会备份原始 config.toml，卸载时恢复。
- *
- * 注意：Codex 0.145.0 起不再通过 config.toml 的 [hooks.state.*] 段管理 hook 信任，
- * 信任由 Codex 内部数据库（state_5.sqlite）管理，用户在首次安装后手动信任一次即持久生效。
  */
+import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 import { readdirSync } from 'node:fs'
 import { fileExists, readText, removePath, writeTextAtomic } from '../kernel/fsx.mjs'
@@ -24,6 +23,26 @@ const MANAGED_NOTIFY_ARG = 'codex-notify'
 
 const FEATURES_HEADER = '[features]'
 const TUI_HEADER = '[tui]'
+
+// ── hooks 信任：事件名映射与 matcher 规则 ─────────────────────────────
+const HOOK_EVENT_KEY = {
+  PreToolUse: 'pre_tool_use',
+  PermissionRequest: 'permission_request',
+  PostToolUse: 'post_tool_use',
+  PreCompact: 'pre_compact',
+  PostCompact: 'post_compact',
+  SessionStart: 'session_start',
+  UserPromptSubmit: 'user_prompt_submit',
+  Stop: 'stop',
+}
+
+/** 这些事件的身份计算中需包含 matcher 字段 */
+const EVENTS_WITH_MATCHER = new Set([
+  'PreToolUse', 'PermissionRequest', 'PostToolUse',
+  'PreCompact', 'PostCompact', 'SessionStart',
+])
+
+const HOOK_STATE_HEADER_RE = /^\[hooks\.state\."((?:\\.|[^"])*)"\](?:\s*#.*)?$/
 
 // 命令参数别名映射，兼容旧版短写
 const COMMAND_ALIASES = { do: 'build', design: 'plan', review: 'qa', idea: 'ask' }
@@ -49,9 +68,6 @@ function normalize(text) {
 /**
  * 在顶层区域（第一个表头之前）按顺序更新指定键的值行。
  * 受管行置顶，其余顶层键排在后面。
- * @param {string} text
- * @param {Array<{ key: string, line: string }>} entries
- * @returns {string}
  */
 function upsertOrderedTopLevel(text, entries) {
   const { top, sections } = splitTopLevel(text)
@@ -68,10 +84,6 @@ function upsertOrderedTopLevel(text, entries) {
   return normalize(result) ? `${normalize(result)}\n` : ''
 }
 
-/**
- * 在指定段（[header]）中更新或插入一个键值行。
- * 段不存在时在文件末尾新建。
- */
 function upsertSectionLine(text, header, key, line) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   let sectionStart = -1
@@ -97,9 +109,6 @@ function upsertSectionLine(text, header, key, line) {
   return `${normalize(lines.join('\n'))}\n`
 }
 
-/**
- * 从指定段中移除匹配的键值行。移除后段为空则同时移除段头。
- */
 function removeSectionLine(text, header, key, shouldRemove) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   let sectionStart = -1
@@ -139,6 +148,147 @@ function readSectionLine(text, header, key) {
   return ''
 }
 
+// ── TOML 转义 / 反转义 ────────────────────────────────────────────────
+function escapeTomlBasicString(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+function unescapeTomlBasicString(value) {
+  return String(value || '').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+}
+
+// ── JSON 规范化（按键排序，确保哈希稳定） ─────────────────────────────
+function canonicalizeJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalizeJson)
+  if (!value || typeof value !== 'object') return value
+  return Object.keys(value).sort().reduce((acc, key) => {
+    if (value[key] !== undefined) acc[key] = canonicalizeJson(value[key])
+    return acc
+  }, {})
+}
+
+// ── hooks 信任哈希计算 ────────────────────────────────────────────────
+
+/**
+ * 收集 config.toml 中所有 hooks.state 段的信息。
+ */
+function collectHookStateSections(text) {
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  const sections = []
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = HOOK_STATE_HEADER_RE.exec(lines[index].trim())
+    if (!match) continue
+    let end = lines.length
+    for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+      if (isTableHeader(lines[cursor])) { end = cursor; break }
+    }
+    const bodyLines = lines.slice(index + 1, end)
+    const trustedHashLine = bodyLines.find((line) => /^\s*trusted_hash\s*=/.test(line))
+    const trustedHashMatch = trustedHashLine?.match(/^\s*trusted_hash\s*=\s*"((?:\\.|[^"])*)"/)
+    sections.push({
+      key: unescapeTomlBasicString(match[1]),
+      start: index,
+      end,
+      trustedHash: trustedHashMatch ? unescapeTomlBasicString(trustedHashMatch[1]) : '',
+      managed: lines[index].includes(MANAGED_TOML_SUFFIX)
+        || bodyLines.some((line) => line.includes(MANAGED_TOML_SUFFIX)),
+    })
+    index = end - 1
+  }
+  return { lines, sections }
+}
+
+function removeHookStateSections(text, shouldRemove) {
+  const { lines, sections } = collectHookStateSections(text)
+  if (!sections.length) return normalize(text)
+  const removedStarts = new Set(sections.filter(shouldRemove).map((s) => s.start))
+  if (!removedStarts.size) return normalize(text)
+  const kept = []
+  for (let index = 0; index < lines.length;) {
+    const section = sections.find((item) => item.start === index)
+    if (!section) { kept.push(lines[index]); index += 1; continue }
+    if (!removedStarts.has(section.start)) {
+      kept.push(...lines.slice(section.start, section.end))
+    }
+    index = section.end
+  }
+  return normalize(kept.join('\n'))
+}
+
+function serializeHookStateBlock(entry) {
+  return `[hooks.state."${escapeTomlBasicString(entry.key)}"] ${MANAGED_TOML_SUFFIX}\ntrusted_hash = "${escapeTomlBasicString(entry.trustedHash)}"`
+}
+
+function appendHookStateBlocks(text, entries) {
+  if (!entries.length) return normalize(text)
+  const blocks = entries.map(serializeHookStateBlock).join('\n\n')
+  const base = text.replace(/\r\n/g, '\n').trimEnd()
+  return normalize(base ? `${base}\n\n${blocks}` : blocks)
+}
+
+/**
+ * 从 hooks.json 中提取我们管理的 hook 条目，计算信任哈希。
+ * 使用与 Codex 一致的身份格式：snake_case 事件名 + 排序 JSON keys +
+ * 对 SessionStart 等事件包含 matcher 字段。
+ */
+export function buildManagedHookTrustEntries(hooksPath, hooksData) {
+  const hooks = hooksData && typeof hooksData === 'object' && !Array.isArray(hooksData)
+    ? /** @type {Record<string, unknown>} */ (hooksData).hooks
+    : null
+  if (!hooks || typeof hooks !== 'object') return []
+
+  /** @type {Array<{ key: string, trustedHash: string }>} */
+  const entries = []
+  for (const [eventName, groups] of Object.entries(hooks)) {
+    if (!Array.isArray(groups)) continue
+    groups.forEach((group, groupIndex) => {
+      const handlers = Array.isArray(group?.hooks) ? group.hooks : []
+      handlers.forEach((handler, handlerIndex) => {
+        if (!handler || typeof handler !== 'object') return
+        const cmd = /** @type {{ command?: string }} */ (handler)
+        if (typeof cmd.command !== 'string' || !cmd.command.includes('helloagents')) return
+
+        const matcher = EVENTS_WITH_MATCHER.has(eventName)
+          ? String(/** @type {{ matcher?: string }} */ (group).matcher ?? '')
+          : undefined
+
+        /** @type {Record<string, unknown>} */
+        const identity = {
+          event_name: HOOK_EVENT_KEY[/** @type {keyof typeof HOOK_EVENT_KEY} */ (eventName)],
+          ...(matcher !== undefined ? { matcher } : {}),
+          hooks: [{
+            type: 'command',
+            command: cmd.command,
+            timeout: Number(/** @type {{ timeout?: number }} */ (handler).timeout) || 600,
+            async: Boolean(/** @type {{ async?: boolean }} */ (handler).async),
+          }],
+        }
+        const key = `${hooksPath}:${HOOK_EVENT_KEY[/** @type {keyof typeof HOOK_EVENT_KEY} */ (eventName)]}:${groupIndex}:${handlerIndex}`
+        const serialized = JSON.stringify(canonicalizeJson(identity))
+        const trustedHash = `sha256:${createHash('sha256').update(serialized).digest('hex')}`
+        entries.push({ key, trustedHash })
+      })
+    })
+  }
+  return entries
+}
+
+/**
+ * 同步 hooks.state 信任段：移除受管旧段及 key 重合的非受管段，写入新受管段。
+ */
+function syncHookStateSections(text, entries) {
+  if (!entries.length) {
+    // 无受管 hook 时清理所有受管段
+    return removeHookStateSections(text, (section) => section.managed)
+  }
+  const keySet = new Set(entries.map((e) => e.key))
+  let cleaned = removeHookStateSections(
+    text,
+    (section) => section.managed || keySet.has(section.key),
+  )
+  return appendHookStateBlocks(cleaned, entries)
+}
+
 // ── 受管行构造 ────────────────────────────────────────────────────────
 function managedModelInstructionsLine() {
   return `model_instructions_file = "${MANAGED_MODEL_INSTRUCTIONS_PATH}" ${MANAGED_TOML_SUFFIX}`
@@ -157,15 +307,16 @@ const MANAGED_TUI_NOTIFICATIONS_LINE = `notifications = ["plan-mode-prompt"] ${M
 // ── 公开 API ───────────────────────────────────────────────────────────
 
 /**
- * 安装受管的 config.toml 顶层配置与段。
+ * 安装受管的 config.toml 顶层配置与段，含 hooks.state 信任哈希。
  * @param {string} configPath — ~/.codex/config.toml
+ * @param {string} hooksPath — ~/.codex/hooks.json（用于计算 trust hash）
+ * @param {unknown} hooksData — hooks.json 的内容
  * @param {string} backupDir — 备份存放目录
- * @param {boolean} hooksEnabled — 是否启用 hooks（默认 true）
+ * @param {boolean} [hooksEnabled=true]
  * @returns {boolean} 是否有修改
  */
-export function installCodexManagedConfig(configPath, backupDir, hooksEnabled = true) {
+export function installCodexManagedConfig(configPath, hooksPath, hooksData, backupDir, hooksEnabled = true) {
   const existing = readText(configPath)
-
   let text = existing || ''
 
   // 顶层键：model_instructions_file、notify（置顶）
@@ -182,15 +333,16 @@ export function installCodexManagedConfig(configPath, backupDir, hooksEnabled = 
   // [tui] notifications
   text = upsertSectionLine(text, TUI_HEADER, 'notifications', MANAGED_TUI_NOTIFICATIONS_LINE)
 
+  // [hooks.state] 信任哈希（使用与 Codex 一致的身份格式自动预信任 hook）
+  const trustEntries = buildManagedHookTrustEntries(hooksPath, hooksData)
+  text = syncHookStateSections(text, trustEntries)
+
   writeTextAtomic(configPath, text)
   return true
 }
 
 /**
  * 移除 config.toml 中所有受管内容，恢复备份中的原始值。
- * @param {string} configPath
- * @param {string} backupDir
- * @returns {boolean} 是否有修改
  */
 export function uninstallCodexManagedConfig(configPath, backupDir) {
   let backup = null
@@ -205,10 +357,8 @@ export function uninstallCodexManagedConfig(configPath, backupDir) {
     } catch { /* 读取失败则跳过恢复 */ }
   }
   const existing = readText(configPath)
-
   if (!fileExists(configPath)) return false
 
-  // 有备份则恢复备份（仅替换顶层键）
   if (backup !== null) {
     const { top: backupTop } = splitTopLevel(backup)
     let text = existing || ''
@@ -229,11 +379,9 @@ export function uninstallCodexManagedConfig(configPath, backupDir) {
     text = mergedTop && sections.join('\n') ? `${mergedTop}\n\n${sections.join('\n')}` : mergedTop || sections.join('\n')
   }
 
-  // 移除受管段
   text = removeSectionLine(text, FEATURES_HEADER, 'hooks', (l) => l.includes(MANAGED_TOML_SUFFIX))
   text = removeSectionLine(text, TUI_HEADER, 'notifications', (l) => l.includes(MANAGED_TOML_SUFFIX))
-
-  // 清理备份
+  text = removeHookStateSections(text, (section) => section.managed)
   removePath(backupDir)
 
   if (text.trim()) {
@@ -242,6 +390,19 @@ export function uninstallCodexManagedConfig(configPath, backupDir) {
   } else {
     removePath(configPath)
   }
+  return true
+}
+
+/**
+ * 更新 hooks.state 信任哈希（hooks.json 变更时调用）。
+ */
+export function syncCodexHookTrust(configPath, hooksPath, hooksData) {
+  const existing = readText(configPath)
+  if (existing === null) return false
+  const entries = buildManagedHookTrustEntries(hooksPath, hooksData)
+  const updated = syncHookStateSections(existing, entries)
+  if (normalize(updated) === normalize(existing)) return false
+  writeTextAtomic(configPath, updated)
   return true
 }
 
@@ -286,11 +447,6 @@ export function codexHooksFeatureEnabled(text) {
 
 // ── 命令路由（供 notify route 使用）──────────────────────────────────
 
-/**
- * 解析 ~command 获取规范技能名。
- * @param {string} command — 例如 'plan'、'build'、'do'
- * @returns {string}
- */
 export function resolveCanonicalCommandSkill(command) {
   return COMMAND_ALIASES[command] || command
 }
