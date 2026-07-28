@@ -71,9 +71,9 @@ function emit(payload) {
   process.stdout.write(JSON.stringify(payload))
 }
 
-/** 空抑制：告诉 Codex 无需干预。 */
+/** 空抑制：告诉 Codex 无需干预。各 hook 事件通用，不指定 hookEventName。 */
 function emptySuppress() {
-  emit({ hookSpecificOutput: { hookEventName: 'UserPromptSubmit', systemMessage: '' } })
+  emit({ suppressOutput: true })
 }
 
 /**
