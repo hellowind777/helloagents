@@ -15,7 +15,7 @@ import { ensureDir, fileExists, readJson, readText, removePath, writeTextAtomic 
 import { appDir, helloagentsRoot, toPosix } from '../kernel/paths.mjs'
 import { injectKernel, readKernelText, removeKernel } from '../hosts/carriers.mjs'
 import { backupCodexConfig, removeCodexBackups } from '../hosts/codex-backup.mjs'
-import { installCodexManagedConfig, syncCodexHookTrust, uninstallCodexManagedConfig } from '../hosts/codex-config.mjs'
+import { installCodexManagedConfig, uninstallCodexManagedConfig } from '../hosts/codex-config.mjs'
 import { installCodexHooks, uninstallCodexHooks } from '../hosts/codex-hooks.mjs'
 import { removeCursorHooks, removeSettingsHooks, upsertCursorHooks, upsertSettingsHooks } from '../hosts/hooks-config.mjs'
 import {
@@ -167,7 +167,7 @@ function installHostStandard(ctx, host, kernel) {
       backupCodexConfig(ctx.home, configPath)
       const hooksPath = join(ctx.home, '.codex', 'hooks.json')
       const hooksData = readJson(hooksPath)
-      installCodexManagedConfig(configPath, hooksPath, hooksData, join(helloagentsRoot(ctx.home), 'backups', 'codex'))
+      installCodexManagedConfig(configPath, join(helloagentsRoot(ctx.home), 'backups', 'codex'))
     } catch (error) {
       ctx.log(ctx.t('install.codexExtrasFailed', { message: error instanceof Error ? error.message : String(error) }))
     }
@@ -350,13 +350,7 @@ export function runUpdate(ctx, allHosts) {
 
     // 更新 Codex 信任哈希
     if (host.id === 'codex' && state.hosts[host.id]?.mode === 'standard') {
-      try {
-        const hooksPath = join(ctx.home, '.codex', 'hooks.json')
-        const hooksData = readJson(hooksPath)
-        if (hooksData) {
-          syncCodexHookTrust(String(host.codexConfigPath(ctx.home)), hooksPath, hooksData)
-        }
-      } catch { /* 非关键 */ }
+      // Codex 0.145.0 起信任由内部数据库管理，不再需要写入 config.toml
     }
 
     if (state.hosts[host.id]?.mode === 'global') {
