@@ -169,7 +169,10 @@
 | ~clean | hello-clean | 清理项目临时产物 |
 | ~help | hello-help | 说明可用能力 |
 
-- 技能存储位置：用户级在 `~/.helloagents/app/skills/` 下，Codex 中可通过软链接 `~/.codex/helloagents/skills/` 访问；宿主以插件方式安装时也可能直接提供同名技能。每个技能一个子目录内含 SKILL.md。
+- ~命令 路由规则：用户输入 `~xxx` 时，立即读取对应的技能文件并按其流程执行，不要自行探索或猜测。技能文件路径：`{技能根目录}/skills/{技能名}/SKILL.md`。技能根目录按以下顺序确定，取第一个存在的：
+  1. 当前项目目录下的 `.helloagents/skills/`（项目级技能）
+  2. Codex：`~/.codex/helloagents/skills/`；Claude Code/Grok：`~/.helloagents/app/skills/`；Cursor：`~/.cursor/plugins/local/helloagents/skills/`
+  示例：`~help` → 技能名 `hello-help`，读取 `~/.codex/helloagents/skills/hello-help/SKILL.md`
 - 宿主自身的技能入口按正式名称调用（例如通过宿主命令触发 hello-plan）；hello- 前缀用于与用户自己的同名技能区分，不要去猜无前缀的名字。
 - 质量技能（hello-ui、hello-test、hello-security、hello-debug、hello-arch、hello-api、hello-data、hello-perf、hello-errors、hello-write、hello-reflect、hello-subagent）按任务类型在需要时读取，不预先加载。各技能的 description 字段已写明触发场景（例如 hello-security 在涉及认证、权限、用户输入、敏感数据或对外暴露面时使用），按语义匹配判断，不按关键词硬匹配。
 - 宿主自带的规划模式、待办清单、检查点、代码审查、持续验证等能力优先使用，不重复造替代品。
