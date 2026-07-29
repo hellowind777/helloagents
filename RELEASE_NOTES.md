@@ -1,28 +1,18 @@
-# Release Notes — v4.0.4
+# Release Notes — v4.0.4-beta.18
 
 ## 简体中文
 
 ### 缺陷修复
 
-- **Codex 卸载时备份目录清理失败**（阻断）：`uninstallCodexManagedConfig` 中变量名 `backupPath` 未定义，应为 `backupDir`。此前该 `ReferenceError` 被调用方的 `catch {}` 静默吞掉，导致 `~/.helloagents/backups/codex/` 在卸载后不被清理。
-- **migrate 误删当前版本受管的 `[hooks.state.*]` 段**（阻断）：`cleanLegacyCodexConfig` 遍历配置行时，将所有 `[hooks.state.*]` 段（包括当前版本写入的受管段）一并移除。Codex 依赖这些段中的 `trusted_hash` 信任 hooks，移除后 hooks 将不可用。修复后仅移除无管理标记的旧版段。
-- **doctor 误报当前 `config.toml` 为 3.x 残留**：`notify = ["helloagents-js", ...] # helloagents-managed` 行中的 `helloagents-js` 被 `isLegacyHookCommand` 错误匹配。修复后 doctor 对带管理标记的 config.toml 行不再误报。
-- **`helloagents-js` 从遗留签名中移除**：该可执行文件名在 3.x 和 4.x 中均被使用，放在 `LEGACY_COMMAND_SIGNS` 中导致 doctor、migrate、hooks 清理等多个环节产生误判。路径级签名（`/scripts/notify.mjs` 等）足以区分真正的 3.x 残留。
+- **Codex 卸载无法清理受管 config.toml**（阻断）：`uninstallCodexManagedConfig` 将 `text` 声明在 `if (backup)` 块内，块外引用触发 `ReferenceError`，被调用方 `catch {}` 静默吞掉，导致 `model_instructions_file`、`notify`、`[features] hooks`、`[tui] notifications`、`[hooks.state.*]` 在卸载后残留。修复后在任意备份状态下均可正确清理；无备份时仅移除受管行，有备份时恢复安装前的用户原值。
+- **update 在全局模式下不刷新 Codex 受管配置**：此前仅当安装模式为 `standard` 时同步 hooks 信任哈希。全局模式同样依赖标准层 hooks 与受管配置，现对两种模式统一调用 `installCodexManagedConfig` 刷新受管行与信任哈希。
+- **doctor 在全局模式下跳过标准层检查**：全局模式叠加标准层（软链接、hooks、Codex 受管条目），但 doctor 原先只在 `mode === 'standard'` 时检查这些落盘。现对两种安装模式均检查标准层完整性。
+- **Codex hooks 功能开关误判**：Codex 默认开启 hooks；安装时不再无条件写入 `hooks = true`，仅当用户显式设为 `false` 时才覆盖为受管 `true`。doctor 同步改为仅在显式关闭时告警。
+- **`.codex-plugin/plugin.json` 版本漂移**：清单版本停留在 `4.0.3`，且未纳入 `sync-version` 同步列表。现已对齐 `package.json` 并加入清单同步。
 
-### 代码清理
+### 行为说明
 
-- **删除 `codex-toml.mjs`**：该模块与 `codex-config.mjs` 功能重叠，且生产代码中无任何模块导入——仅测试文件引用。Codex 配置管理统一由 `codex-config.mjs` 负责。
-- **删除 `codex-backup.mjs` 的 `readLatestBackup` 导出**：全仓库无模块导入此函数，同时移除了其私有辅助函数和不再使用的 `readText` 导入。
-
-### 低层修复
-
-- **`fsx.mjs` 的 `sleepSync`**：`Atomics.wait` 在主线程上无效（立即超时返回），退避等待从未真正执行。改为忙等循环，重试退避现在确实生效。
-- **`notify.mjs` 的多字节截断**：`.slice(0, 150)` 可能从 emoji 或补充平面汉字中间截断。改为按 Unicode 码点计数截断。
-
-### 安装脚本
-
-- **`install.ps1` 和 `install.sh` 现支持 `HELLOAGENTS_SOURCE=git`**：此前 README 声称支持但脚本未实现。现在设置该变量后脚本会克隆仓库到 `~/.helloagents/source/` 并从本地安装，后续 `helloagents update` 将在此执行 `git pull`。
-- **标志名更新**：脚本中的 `--inject`/`--plugin` 改为 `--standard`/`--global`（旧名仍兼容）。
+- **help 文案与 Cursor 双模式对齐**：Cursor 标准模式安装 hooks 与软链接（无用户级规则文件）；全局模式额外下发插件规则。帮助文本不再写“仅支持全局模式”。
 
 ---
 
@@ -30,22 +20,12 @@
 
 ### Bug Fixes
 
-- **Codex backup dir not cleaned on uninstall** (blocking): `uninstallCodexManagedConfig` referenced an undefined variable `backupPath` instead of the parameter `backupDir`. The resulting `ReferenceError` was silently swallowed by the caller's `catch {}`, leaving `~/.helloagents/backups/codex/` uncleaned after uninstall.
-- **migrate incorrectly removed current managed `[hooks.state.*]` sections** (blocking): `cleanLegacyCodexConfig` stripped all `[hooks.state.*]` sections regardless of managed markers. Codex relies on `trusted_hash` entries in these sections to trust hooks; removing them breaks hooks. Fixed to only remove sections without the `# helloagents-managed` marker.
-- **doctor falsely flagged current `config.toml` as 3.x legacy**: The `helloagents-js` string in `notify = ["helloagents-js", ...] # helloagents-managed` matched the legacy signature. Doctor now excludes managed lines from legacy detection.
-- **`helloagents-js` removed from legacy command signatures**: This executable name is used in both 3.x and 4.x. Its presence in `LEGACY_COMMAND_SIGNS` caused false positives across doctor, migrate, and hooks cleanup. Path-based signatures (e.g. `/scripts/notify.mjs`) are sufficient to identify true 3.x artifacts.
+- **Codex uninstall left managed `config.toml` entries behind** (blocking): `uninstallCodexManagedConfig` declared `text` inside the `if (backup)` block, so the outer references threw `ReferenceError`, which the caller's empty `catch {}` swallowed. Managed `model_instructions_file`, `notify`, `[features] hooks`, `[tui] notifications`, and `[hooks.state.*]` survived uninstall. Cleanup now works with or without a backup; without a backup only managed lines are removed, and with a backup the pre-install user values are restored.
+- **`update` skipped Codex managed config in global mode**: Hook trust was synced only when `mode === 'standard'`. Global mode also relies on the standard-layer hooks and managed config; both modes now refresh managed lines and trust hashes via `installCodexManagedConfig`.
+- **doctor skipped standard-layer checks in global mode**: Global mode layers on the standard base (symlink, hooks, Codex managed entries), but doctor only inspected those when `mode === 'standard'`. Both install modes now get the same base checks.
+- **Codex hooks feature flag mishandled**: Codex enables hooks by default. Install no longer always writes `hooks = true`; it only overrides when the user explicitly set `hooks = false`. Doctor warns only when hooks are explicitly disabled.
+- **`.codex-plugin/plugin.json` version drift**: The manifest stayed at `4.0.3` and was missing from `sync-version`. It is now aligned with `package.json` and included in the sync list.
 
-### Code Cleanup
+### Behavior Clarification
 
-- **Removed `codex-toml.mjs`**: Duplicated `codex-config.mjs` functionality and was never imported by any production module — only referenced by tests. Codex config management is now unified in `codex-config.mjs`.
-- **Removed `readLatestBackup` export from `codex-backup.mjs`**: Never imported anywhere in the repository. Its private helper and the unused `readText` import were also removed.
-
-### Low-Level Fixes
-
-- **`sleepSync` in `fsx.mjs`**: `Atomics.wait` is ineffective on the main thread (returns immediately), so retry backoff delays were never actually applied. Replaced with a spin-wait loop; exponential backoff now works correctly.
-- **Multi-byte truncation in `notify.mjs`**: `.slice(0, 150)` could split emoji or supplementary-plane CJK characters. Now truncates by Unicode code points.
-
-### Install Scripts
-
-- **`install.ps1` and `install.sh` now support `HELLOAGENTS_SOURCE=git`**: Previously documented but not implemented. When set, the scripts clone the repository to `~/.helloagents/source/` and install from the local copy; subsequent `helloagents update` runs `git pull` there.
-- **Flag names updated**: `--inject`/`--plugin` changed to `--standard`/`--global` in scripts (legacy names still accepted).
+- **Help text matches Cursor dual-mode support**: Standard mode installs hooks and the symlink (no user-level rules file); global mode also ships the plugin rule. Help no longer claims Cursor is global-only.

@@ -77,20 +77,20 @@ npx helloagents doctor
 三种方式可以叠加（宿主一般遵循「就近规则文件生效」）：
 
 - **项目方式**：内核写入项目的 `AGENTS.md`，随 git 分发，团队保持一致，不碰用户全局配置。
-- **标准模式**（`--standard`）：内核写入宿主的用户级规则文件，包裹在 `<!-- HELLOAGENTS_START/END -->` 标记内；标记外的用户内容永不改动，卸载时完整还原。
-- **全局模式**（`--global`）：通过宿主自带的原生插件市场安装，由宿主原生管理更新。
+- **标准模式**（`--standard`）：内核写入宿主的用户级规则文件（若该宿主有），包裹在 `<!-- HELLOAGENTS_START/END -->` 标记内；标记外的用户内容永不改动。同时安装 hooks 与 `~/.{host}/helloagents` 软链接。卸载时还原规则文件并移除受管 hooks/配置。
+- **全局模式**（`--global`）：通过宿主自带的原生插件市场安装（叠加在标准层之上），由宿主原生管理更新。
 
 | 宿主 | 标准模式 | 全局模式 | guard | notify |
 |---|---|---|---|---|
-| Claude Code | `~/.claude/CLAUDE.md` | 插件市场（自动注册本地市场） | 是 | 是 |
-| Codex CLI | `~/.codex/AGENTS.md` | 插件市场（自动注册 local-plugins） | 是 | 是 |
-| Grok Build | `~/.grok/AGENTS.md` | 插件市场（自动注册本地市场） | 是 | 是 |
-| Cursor | —（无全局规则文件） | `~/.cursor/plugins/local/helloagents`（内核以规则下发） | 是 | 是 |
-| Hermes | `~/.hermes/AGENTS.md` | `HERMES_HOME/local-plugins/helloagents`（external_dirs 登记） | 是 | 是 |
+| Claude Code | `~/.claude/CLAUDE.md` + hooks + 软链接 | 插件市场（自动注册本地市场） | 是 | 是 |
+| Codex CLI | `~/.codex/AGENTS.md` + hooks + 受管 `config.toml` + 软链接 | 插件市场（自动注册 local-plugins） | 是 | 是 |
+| Grok Build | `~/.grok/AGENTS.md` + hooks + 软链接 | 插件市场（自动注册本地市场） | 是 | 是 |
+| Cursor | hooks + 软链接（无用户级规则文件） | `~/.cursor/plugins/local/helloagents`（内核以规则下发） | 是 | 是 |
+| Hermes | `~/.hermes/AGENTS.md` + 软链接 | `HERMES_HOME/local-plugins/helloagents`（external_dirs 登记） | 是 | 是 |
 
-全部五个宿主均支持标准模式与全局模式。
+全部五个宿主均支持标准模式与全局模式。全局模式叠加在标准层之上（hooks、软链接，以及适用时的用户级规则载体），而不是替换标准层。
 
-Cursor 只支持全局模式有明确原因：它没有全局规则文件，`~/.cursor/rules/` 不被支持——Cursor 团队已确认规则解析从工作区向上遍历，永远不会到达家目录。因此内核随插件以 `rules/helloagents-kernel.mdc` 下发，设置 `alwaysApply: true` 且刻意**不写** `description`（Cursor 目前已知缺陷是二者同时存在时，规则会被降级为「按需取用」而不是始终生效）。插件目录只放 Cursor 读取的内容——清单、技能、规则；HelloAGENTS CLI 本身不放入。安装后在 Cursor 中执行 **Developer: Reload Window** 重载窗口。
+Cursor 没有可供 HelloAGENTS 注入的用户级规则文件。`~/.cursor/rules/` 不作为全局载体使用——Cursor 的规则解析从工作区向上遍历，无法可靠到达家目录。因此标准模式只安装 hooks 与 `~/.cursor/helloagents` 软链接；全局模式额外下发本地插件，内核规则为 `rules/helloagents-kernel.mdc`，设置 `alwaysApply: true` 且刻意**不写** `description`（Cursor 目前已知缺陷是二者同时存在时，规则会被降级为「按需取用」）。插件目录只放 Cursor 读取的内容——清单、技能、规则；HelloAGENTS CLI 本身不放入。全局模式安装后在 Cursor 中执行 **Developer: Reload Window** 重载窗口。
 
 Gemini CLI 不再是支持的宿主。如果你之前在那里安装过，执行 `npx helloagents migrate` 清理 `~/.gemini/GEMINI.md` 中的受管块并删除安装记录，再手动执行 `gemini extensions uninstall helloagents` 移除扩展。
 

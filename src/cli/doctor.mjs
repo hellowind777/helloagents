@@ -7,7 +7,7 @@ import { readInstallState } from '../kernel/config.mjs'
 import { fileExists, readJson, readText } from '../kernel/fsx.mjs'
 import { helloagentsRoot, installStatePath } from '../kernel/paths.mjs'
 import { hasMarkedBlock, isLegacyHookCommand, readMarkedVersion } from '../kernel/ownership.mjs'
-import { codexHooksFeatureEnabled, codexModelInstructionsState, codexNotifyTopLevelState, MANAGED_TOML_SUFFIX } from '../hosts/codex-config.mjs'
+import { isHooksFeatureDisabled, codexModelInstructionsState, codexNotifyTopLevelState, MANAGED_TOML_SUFFIX } from '../hosts/codex-config.mjs'
 import {
   claudeMarketplacePluginDir,
   codexPluginDir,
@@ -121,8 +121,8 @@ export function buildDoctorReport(ctx) {
       }
     }
 
-    // 标准模式通用检查：软链接、hooks 文件
-    if (install.mode === 'standard') {
+    // 标准层基础落盘（全局模式叠加在标准层之上，两种模式都检查）
+    {
       const linkPath = join(ctx.home, `.${host.id}`, 'helloagents')
       if (!fileExists(linkPath)) {
         issues.push({ code: 'symlink-missing', level: 'warn', host: host.id, message: linkPath })
@@ -148,7 +148,7 @@ export function buildDoctorReport(ctx) {
         if (codexModelInstructionsState(configText) !== 'managed') {
           issues.push({ code: 'codex-model-instructions-missing', level: 'error', host: host.id, message: configPath })
         }
-        if (!codexHooksFeatureEnabled(configText)) {
+        if (isHooksFeatureDisabled(configText)) {
           issues.push({ code: 'codex-hooks-feature-disabled', level: 'warn', host: host.id, message: configPath })
         }
       }

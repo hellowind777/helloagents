@@ -31,8 +31,9 @@ HelloAGENTS v{version} — AI 编码 CLI 的思维激活层
 
 说明
   安装方式有两种：全局模式使用宿主自带的原生插件市场；标准模式把内核注入宿主的
-  用户级规则文件（标记包裹，卸载即还原）。Cursor 只支持全局模式——它没有全局
-  规则文件，内核随插件以 rules 规则下发，安装后需在 Cursor 里重载窗口生效。
+  用户级规则文件（标记包裹，卸载即还原），并写入 hooks 与软链接。Cursor 没有
+  用户级规则文件，标准模式只安装 hooks 与软链接；全局模式额外下发插件规则
+  （rules），安装后需在 Cursor 里重载窗口生效。全局模式叠加在标准层之上。
   语言可用环境变量 HELLOAGENTS_LANG=cn|en 指定，或在命令前加 --lang cn|en。
   旧版 --inject/--plugin 别名仍然可用，对应 --standard/--global。
 `
@@ -67,9 +68,10 @@ Hosts
 Notes
   Two install methods: global mode uses the host's own native plugin marketplace; standard
   mode writes the kernel into the host's user-level rules file (wrapped in markers; uninstalling
-  restores the file). Cursor supports global mode only — it has no global rules file, so the
-  kernel ships as a plugin rule; reload the window in Cursor after installing.
-  Set HELLOAGENTS_LANG=cn|en or use --lang cn|en to choose the language.
+  restores the file), plus hooks and a symlink. Cursor has no user-level rules file, so
+  standard mode only installs hooks and the symlink; global mode also ships the kernel as a
+  plugin rule (reload the Cursor window after installing). Global mode layers on top of the
+  standard base. Set HELLOAGENTS_LANG=cn|en or use --lang cn|en to choose the language.
   Legacy --inject/--plugin aliases still work, mapping to --standard/--global.
 `
 

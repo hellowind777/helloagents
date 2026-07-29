@@ -78,7 +78,9 @@ function upsertOrderedTopLevel(text, entries) {
     }
     return true
   })
-  const body = [...entries.map((e) => e.line), ...kept].join('\n')
+  const managedPart = entries.map((e) => e.line).join('\n')
+  const keptPart = kept.join('\n')
+  const body = managedPart && keptPart ? `${managedPart}\n\n${keptPart}` : managedPart || keptPart
   const remainder = sections.join('\n')
   const result = body && remainder ? `${body}\n\n${remainder}` : body || remainder
   return normalize(result) ? `${normalize(result)}\n` : ''
@@ -325,8 +327,8 @@ export function installCodexManagedConfig(configPath, hooksPath, hooksData, back
     { key: 'notify', line: managedNotifyLine() },
   ])
 
-  // [features] hooks
-  if (hooksEnabled) {
+  // [features] hooks — Codex 默认开启 hooks，仅当用户显式关闭时才覆盖为 true
+  if (hooksEnabled && isHooksFeatureDisabled(existing)) {
     text = upsertSectionLine(text, FEATURES_HEADER, 'hooks', managedHooksFeatureLine())
   }
 
@@ -342,7 +344,8 @@ export function installCodexManagedConfig(configPath, hooksPath, hooksData, back
 }
 
 /**
- * 移除 config.toml 中所有受管内容，恢复备份中的原始值。
+ * 移除 config.toml 中所有受管内容；若有安装前备份，则恢复其中的
+ * model_instructions_file / notify 原始值。
  */
 export function uninstallCodexManagedConfig(configPath, backupDir) {
   let backup = null
@@ -359,25 +362,40 @@ export function uninstallCodexManagedConfig(configPath, backupDir) {
   const existing = readText(configPath)
   if (!fileExists(configPath)) return false
 
+  let text = existing || ''
+  const { top, sections } = splitTopLevel(text)
+
+  // 去掉受管顶层键；有备份时再去掉同名键，以便从备份恢复用户原值
+  let cleanedTop = top.filter((line) => {
+    const trimmed = line.trim()
+    if (!trimmed) return true
+    const isTarget =
+      trimmed.startsWith('model_instructions_file') || trimmed.startsWith('notify')
+    if (!isTarget) return true
+    if (trimmed.includes(MANAGED_TOML_SUFFIX)) return false
+    // 无备份时保留用户自有（非受管）同名键；有备份时统一从备份恢复
+    return backup === null
+  })
+
   if (backup !== null) {
     const { top: backupTop } = splitTopLevel(backup)
-    let text = existing || ''
-    const { sections } = splitTopLevel(text)
     const restoredTop = backupTop.filter((line) => {
       const trimmed = line.trim()
-      return !trimmed.includes(MANAGED_TOML_SUFFIX) &&
+      return (
+        !trimmed.includes(MANAGED_TOML_SUFFIX) &&
         (trimmed.startsWith('model_instructions_file') || trimmed.startsWith('notify'))
+      )
     })
-    const cleanedTop = (text ? text.replace(/\r\n/g, '\n').split('\n') : [])
-      .slice(0, splitTopLevel(text).top.length)
-      .filter((line) => {
-        const trimmed = line.trim()
-        return !trimmed.includes(MANAGED_TOML_SUFFIX) &&
-          !(trimmed.startsWith('model_instructions_file') || trimmed.startsWith('notify'))
-      })
-    const mergedTop = [...cleanedTop, ...restoredTop].join('\n')
-    text = mergedTop && sections.join('\n') ? `${mergedTop}\n\n${sections.join('\n')}` : mergedTop || sections.join('\n')
+    cleanedTop = cleanedTop.filter((line) => {
+      const trimmed = line.trim()
+      return !(trimmed.startsWith('model_instructions_file') || trimmed.startsWith('notify'))
+    })
+    cleanedTop = [...cleanedTop, ...restoredTop]
   }
+
+  const mergedTop = cleanedTop.join('\n')
+  const sectionBody = sections.join('\n')
+  text = mergedTop && sectionBody ? `${mergedTop}\n\n${sectionBody}` : mergedTop || sectionBody
 
   text = removeSectionLine(text, FEATURES_HEADER, 'hooks', (l) => l.includes(MANAGED_TOML_SUFFIX))
   text = removeSectionLine(text, TUI_HEADER, 'notifications', (l) => l.includes(MANAGED_TOML_SUFFIX))
@@ -443,6 +461,19 @@ export function codexHooksFeatureEnabled(text) {
   const line = readSectionLine(text, FEATURES_HEADER, 'hooks')
   if (!line) return false
   return /=\s*true\b/.test(line)
+}
+
+/**
+ * 检查 hooks 是否被显式设为 false。
+ * Codex 默认开启 hooks，未设置时等同于开启。
+ * 仅当用户显式写了 hooks = false 时才返回 true。
+ * @param {string | null} text
+ */
+export function isHooksFeatureDisabled(text) {
+  if (!text) return false
+  const line = readSectionLine(text, FEATURES_HEADER, 'hooks')
+  if (!line) return false
+  return /=\s*false\b/.test(line)
 }
 
 // ── 命令路由（供 notify route 使用）──────────────────────────────────

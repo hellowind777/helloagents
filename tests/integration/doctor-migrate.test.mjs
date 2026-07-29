@@ -172,3 +172,30 @@ test('健康安装下 doctor 无问题；破坏载体后能定位', () => {
     cleanup()
   }
 })
+
+test('doctor 在全局模式下仍检查标准层 hooks 与 Codex 受管配置', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const { ctx } = makeCtx(home)
+    const codex = findHost('codex')
+    assert.ok(codex)
+    runInstall(ctx, [codex], 'global')
+
+    const healthy = buildDoctorReport(ctx)
+    assert.equal(
+      healthy.issues.filter((issue) => issue.host === 'codex').length,
+      0,
+      JSON.stringify(healthy.issues),
+    )
+
+    rmSync(join(home, '.codex', 'hooks.json'), { force: true })
+    writeTextAtomic(join(home, '.codex', 'config.toml'), 'model = "x"\n')
+    const broken = buildDoctorReport(ctx)
+    assert.ok(broken.issues.some((issue) => issue.code === 'hooks-missing' && issue.host === 'codex'))
+    assert.ok(
+      broken.issues.some((issue) => issue.code === 'codex-model-instructions-missing' && issue.host === 'codex'),
+    )
+  } finally {
+    cleanup()
+  }
+})

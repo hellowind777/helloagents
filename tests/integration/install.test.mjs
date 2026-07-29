@@ -158,7 +158,71 @@ test('codex 全局模式：写入插件快照、市场索引与 config 启用项
 
     runUninstall(ctx, [host('codex')], { all: false, purge: false })
     assert.equal(fileExists(pluginDir), false)
-    assert.equal((readText(join(home, '.codex', 'config.toml')) ?? '').includes('helloagents@local-plugins'), false)
+    const afterConfig = readText(join(home, '.codex', 'config.toml')) ?? ''
+    assert.equal(afterConfig.includes('helloagents@local-plugins'), false)
+    assert.equal(afterConfig.includes('helloagents-managed'), false, '卸载后不应残留受管标记')
+    assert.equal(afterConfig.includes('model_instructions_file'), false)
+    assert.equal(fileExists(join(home, '.codex', 'hooks.json')), false)
+  } finally {
+    cleanup()
+  }
+})
+
+test('codex 标准模式：安装写入受管 config，卸载清理干净且可恢复用户原值', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const { ctx } = makeCtx(home)
+    const configPath = join(home, '.codex', 'config.toml')
+    writeTextAtomic(configPath, 'notify = ["my-own-notify"]\nmodel = "gpt-test"\n')
+
+    runInstall(ctx, [host('codex')], 'standard')
+    const installed = readText(configPath) ?? ''
+    assert.ok(installed.includes('model_instructions_file'))
+    assert.ok(installed.includes('helloagents-managed'))
+    assert.ok(installed.includes('helloagents-js'))
+    assert.ok(fileExists(join(home, '.codex', 'hooks.json')))
+    assert.ok(hasMarkedBlock(host('codex').carrierPath(home) ?? ''))
+
+    runUninstall(ctx, [host('codex')], { all: false, purge: false })
+    const after = readText(configPath) ?? ''
+    assert.equal(after.includes('helloagents-managed'), false)
+    assert.equal(after.includes('model_instructions_file'), false)
+    assert.ok(after.includes('notify = ["my-own-notify"]'), '应恢复用户原有 notify')
+    assert.ok(after.includes('model = "gpt-test"'))
+    assert.equal(fileExists(join(home, '.codex', 'hooks.json')), false)
+    assert.equal(hasMarkedBlock(host('codex').carrierPath(home) ?? ''), false)
+  } finally {
+    cleanup()
+  }
+})
+
+test('模式切换：global → standard 移除插件，standard → global 重建插件', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const { ctx } = makeCtx(home)
+    const pluginDir = join(home, 'plugins', 'helloagents')
+
+    runInstall(ctx, [host('codex')], 'global')
+    assert.ok(fileExists(pluginDir))
+    let state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
+      readJson(join(home, '.helloagents', 'install.json'))
+    )
+    assert.equal(state.hosts.codex?.mode, 'global')
+
+    runInstall(ctx, [host('codex')], 'standard')
+    assert.equal(fileExists(pluginDir), false, '切到标准模式应移除插件目录')
+    assert.ok(hasMarkedBlock(host('codex').carrierPath(home) ?? ''), '载体应保留')
+    state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
+      readJson(join(home, '.helloagents', 'install.json'))
+    )
+    assert.equal(state.hosts.codex?.mode, 'standard')
+
+    runInstall(ctx, [host('codex')], 'global')
+    assert.ok(fileExists(pluginDir), '切回全局模式应重建插件')
+    state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
+      readJson(join(home, '.helloagents', 'install.json'))
+    )
+    assert.equal(state.hosts.codex?.mode, 'global')
   } finally {
     cleanup()
   }

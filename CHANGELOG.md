@@ -1,5 +1,17 @@
 # 更新日志
 
+## 4.0.4-beta.18（2026-07-29）
+
+缺陷修复：
+
+- 修复 Codex 卸载时受管 `config.toml` 无法清理的问题——`uninstallCodexManagedConfig` 中 `text` 作用域错误导致 `ReferenceError` 被静默吞掉
+- 无备份时卸载也会移除受管顶层键；有备份时恢复安装前的用户原值
+- 修复 `update` 在全局模式下不刷新 Codex 受管配置与 hooks 信任哈希
+- 修复 doctor 在全局模式下跳过软链接、hooks、Codex 受管条目检查
+- Codex 仅在 hooks 被显式设为 `false` 时才写入受管 `hooks = true`；doctor 同步调整
+- `.codex-plugin/plugin.json` 版本对齐并纳入 `sync-version`
+- help 文案与 Cursor 双模式（标准层 hooks/软链接 + 全局插件规则）对齐
+
 ## 4.0.4（2026-07-28）
 
 缺陷修复与代码清理。

@@ -10,6 +10,7 @@ export const MANIFEST_FILES = [
   '.claude-plugin/plugin.json',
   '.claude-plugin/marketplace.json',
   '.cursor-plugin/plugin.json',
+  '.codex-plugin/plugin.json',
 ]
 
 /**

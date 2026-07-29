@@ -15,7 +15,7 @@ import { ensureDir, fileExists, readJson, readText, removePath, writeJsonAtomic,
 import { appDir, helloagentsRoot, toPosix, userConfigPath } from '../kernel/paths.mjs'
 import { injectKernel, readKernelText, removeKernel } from '../hosts/carriers.mjs'
 import { backupCodexConfig, removeCodexBackups } from '../hosts/codex-backup.mjs'
-import { installCodexManagedConfig, syncCodexHookTrust, uninstallCodexManagedConfig } from '../hosts/codex-config.mjs'
+import { installCodexManagedConfig, uninstallCodexManagedConfig } from '../hosts/codex-config.mjs'
 import { installCodexHooks, uninstallCodexHooks } from '../hosts/codex-hooks.mjs'
 import { removeCursorHooks, removeSettingsHooks, upsertCursorHooks, upsertSettingsHooks } from '../hosts/hooks-config.mjs'
 import {
@@ -376,13 +376,19 @@ export function runUpdate(ctx, allHosts) {
     // 更新 hooks（可能已变更）
     installHostHooks(ctx, host)
 
-    // 更新 Codex 信任哈希
-    if (host.id === 'codex' && state.hosts[host.id]?.mode === 'standard') {
+    // Codex：标准/全局模式均依赖标准层受管配置，统一刷新受管行与 hooks 信任哈希
+    if (host.id === 'codex') {
       try {
+        const configPath = String(host.codexConfigPath(ctx.home))
         const hooksPath = join(ctx.home, '.codex', 'hooks.json')
         const hooksData = readJson(hooksPath)
         if (hooksData) {
-          syncCodexHookTrust(String(host.codexConfigPath(ctx.home)), hooksPath, hooksData)
+          installCodexManagedConfig(
+            configPath,
+            hooksPath,
+            hooksData,
+            join(helloagentsRoot(ctx.home), 'backups', 'codex'),
+          )
         }
       } catch { /* 非关键 */ }
     }

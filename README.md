@@ -77,20 +77,20 @@ Pick the language with `HELLOAGENTS_LANG=cn\|en` or the `--lang cn\|en` flag; th
 The three methods can be stacked (hosts generally follow "the nearest rules file wins"):
 
 - **Project method**: the kernel goes into the project's `AGENTS.md`, ships via git, keeps the team consistent, and never touches user-global config.
-- **Standard mode** (`--standard`): the kernel goes into the host's user-level rules file, wrapped in `<!-- HELLOAGENTS_START/END -->` markers; content outside the markers is never touched, and uninstalling restores the file.
-- **Global mode** (`--global`): installs through the host's own native plugin marketplace, with the host's native management and updates.
+- **Standard mode** (`--standard`): the kernel goes into the host's user-level rules file (when the host has one), wrapped in `<!-- HELLOAGENTS_START/END -->` markers; content outside the markers is never touched. Hooks and a `~/.{host}/helloagents` symlink are also installed. Uninstalling restores the rules file and removes managed hooks/config.
+- **Global mode** (`--global`): installs through the host's own native plugin marketplace (layered on the standard base), with the host's native management and updates.
 
 | Host | Standard mode | Global mode | guard | notify |
 |---|---|---|---|---|
-| Claude Code | `~/.claude/CLAUDE.md` | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
-| Codex CLI | `~/.codex/AGENTS.md` | Plugin marketplace (local-plugins auto-registered) | Yes | Yes |
-| Grok Build | `~/.grok/AGENTS.md` | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
-| Cursor | — (no global rules file) | `~/.cursor/plugins/local/helloagents` (kernel ships as a rule) | Yes | Yes |
-| Hermes | `~/.hermes/AGENTS.md` | `HERMES_HOME/local-plugins/helloagents` (external_dirs registered) | Yes | Yes |
+| Claude Code | `~/.claude/CLAUDE.md` + hooks + symlink | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
+| Codex CLI | `~/.codex/AGENTS.md` + hooks + managed `config.toml` + symlink | Plugin marketplace (local-plugins auto-registered) | Yes | Yes |
+| Grok Build | `~/.grok/AGENTS.md` + hooks + symlink | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
+| Cursor | hooks + symlink (no user-level rules file) | `~/.cursor/plugins/local/helloagents` (kernel ships as a rule) | Yes | Yes |
+| Hermes | `~/.hermes/AGENTS.md` + symlink | `HERMES_HOME/local-plugins/helloagents` (external_dirs registered) | Yes | Yes |
 
-All five hosts now support both standard and global modes.
+All five hosts support both standard and global modes. Global mode always layers on the standard base (hooks, symlink, and where applicable the user-level rules carrier); it does not replace it.
 
-Cursor is global-mode-only for a reason: it has no global rules file. `~/.cursor/rules/` is not supported — Cursor staff have stated that rule resolution walks upward from the workspace and never reaches the home directory. So the kernel ships inside the plugin as `rules/helloagents-kernel.mdc`, with `alwaysApply: true` and deliberately **no** `description` (Cursor currently has a known defect where a rule carrying both is downgraded to "agent-requested" instead of always applying). The plugin directory holds only what Cursor reads — manifest, skills, rules; the HelloAGENTS CLI itself stays out of it. Run **Developer: Reload Window** in Cursor after installing.
+Cursor has no user-level rules file that HelloAGENTS can inject. `~/.cursor/rules/` is not used as a global carrier — Cursor rule resolution walks upward from the workspace and does not reliably reach the home directory. Standard mode therefore installs only hooks and the `~/.cursor/helloagents` symlink. Global mode also drops a local plugin whose kernel rule is `rules/helloagents-kernel.mdc` with `alwaysApply: true` and deliberately **no** `description` (Cursor currently downgrades rules that carry both to "agent-requested"). The plugin directory holds only what Cursor reads — manifest, skills, rules; the HelloAGENTS CLI itself stays out of it. Run **Developer: Reload Window** in Cursor after a global install.
 
 Gemini CLI is no longer a supported host. If you installed it there, run `npx helloagents migrate` to strip the managed block from `~/.gemini/GEMINI.md` and drop the install record, then remove the extension yourself with `gemini extensions uninstall helloagents`.
 
