@@ -182,7 +182,7 @@ export function applyAddon(ctx, host, addon, enable, enabledAfter) {
       const existing = readText(configPath)
       const state = codexNotifyTopLevelState(existing)
       if (state === 'user') return { status: 'blocked', detail: 'user-notify-exists' }
-      if (state === 'managed') return { status: 'enabled' }
+      if (state === 'managed' || state === 'wrapped') return { status: 'enabled' }
       // 不存在受管行，写入一行
       const line = 'notify = ["helloagents-js", "codex-notify"] # helloagents-managed'
       writeTextAtomic(configPath, `${existing || ''}\n${line}\n`)
@@ -252,7 +252,9 @@ export function addonPresent(ctx, host, addon) {
   }
   if (host.id === 'codex') {
     const configPath = host.codexConfigPath(ctx.home)
-    return configPath ? codexNotifyTopLevelState(readText(configPath)) === 'managed' : false
+    if (!configPath) return false
+    const state = codexNotifyTopLevelState(readText(configPath))
+    return state === 'managed' || state === 'wrapped'
   }
   if (host.id === 'grok') return containsOwnedCommand(readJson(host.grokHooksPath(ctx.home) ?? ''))
   if (host.id === 'hermes') return containsOwnedCommand(readJson(host.hermesHooksPath(ctx.home) ?? ''))

@@ -163,7 +163,7 @@ export function buildDoctorReport(ctx) {
         const notifyState = configPath ? codexNotifyTopLevelState(configText) : 'none'
         if (notifyState === 'user') {
           issues.push({ code: 'addon-notify-user-conflict', level: 'warn', host: host.id, message: configPath ?? '' })
-        } else if (notifyState !== 'managed') {
+        } else if (notifyState !== 'managed' && notifyState !== 'wrapped') {
           issues.push({ code: 'addon-notify-missing', level: 'error', host: host.id, message: configPath ?? '' })
         }
         continue

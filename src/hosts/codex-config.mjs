@@ -48,6 +48,27 @@ const HOOK_STATE_HEADER_RE = /^\[hooks\.state\."((?:\\.|[^"])*)"\](?:\s*#.*)?$/
 const COMMAND_ALIASES = { do: 'build', design: 'plan', review: 'qa', idea: 'ask' }
 
 // ── TOML 行级工具 ─────────────────────────────────────────────────────
+
+/**
+ * 检查 config.toml 顶层是否已有 notify 行引用了 helloagents-js 命令，
+ * 即使该行被外部工具（如 ChatGPT App CUA）包裹也视为已覆盖。
+ * 用于避免覆盖外部工具的 wrapper 配置。
+ * @param {string | null} text
+ * @returns {boolean}
+ */
+function existingNotifyCoversHelloagents(text) {
+  if (!text) return false
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (/^\s*\[/.test(trimmed)) break
+    if ((trimmed.startsWith('notify =') || trimmed.startsWith('notify=')) && trimmed.includes('helloagents-js')) {
+      return true
+    }
+  }
+  return false
+}
+
 function isTableHeader(line) {
   return /^\s*\[/.test(line.trim())
 }
@@ -322,10 +343,15 @@ export function installCodexManagedConfig(configPath, hooksPath, hooksData, back
   let text = existing || ''
 
   // 顶层键：model_instructions_file、notify（置顶）
-  text = upsertOrderedTopLevel(text, [
+  // 如果 config 中已有 notify 行引用了 helloagents-js（包括被 ChatGPT App
+  // 等外部工具包裹的情形），则跳过写入，避免覆盖外部 wrapper 破坏其功能。
+  const topEntries = [
     { key: 'model_instructions_file', line: managedModelInstructionsLine() },
-    { key: 'notify', line: managedNotifyLine() },
-  ])
+  ]
+  if (!existingNotifyCoversHelloagents(text)) {
+    topEntries.push({ key: 'notify', line: managedNotifyLine() })
+  }
+  text = upsertOrderedTopLevel(text, topEntries)
 
   // [features] hooks — Codex 默认开启 hooks，仅当用户显式关闭时才覆盖为 true
   if (hooksEnabled && isHooksFeatureDisabled(existing)) {
@@ -438,7 +464,14 @@ export function codexModelInstructionsState(text) {
   return 'none'
 }
 
-/** @param {string | null} text */
+/**
+ * @param {string | null} text
+ * @returns {'none' | 'managed' | 'user' | 'wrapped'}
+ *   - 'managed': 我们写入的受管行，带 # helloagents-managed 标记
+ *   - 'wrapped': 外部工具（如 ChatGPT App）包裹了 notify，但命令链中仍引用 helloagents-js
+ *   - 'user': 用户自有的 notify 行，未引用 helloagents-js
+ *   - 'none': 不存在 notify 行
+ */
 export function codexNotifyTopLevelState(text) {
   if (!text) return 'none'
   const lines = text.replace(/\r\n/g, '\n').split('\n')
@@ -449,6 +482,7 @@ export function codexNotifyTopLevelState(text) {
     const trimmed = line.trim()
     if (trimmed.startsWith('notify') && (trimmed.includes('='))) {
       if (trimmed.includes(MANAGED_TOML_SUFFIX)) return 'managed'
+      if (trimmed.includes('helloagents-js')) return 'wrapped'
       return 'user'
     }
   }
