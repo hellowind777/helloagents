@@ -105,6 +105,8 @@ test('npm 包内容：关键文件在列，测试与旧产物不在列', () => {
     'prompts/kernel.md',
     'skills/hello-plan/SKILL.md',
     'skills/hello-ui/SKILL.md',
+    'dsh/index.js',
+    'dsh/cordis.patch.yml',
     '.claude-plugin/plugin.json',
     '.cursor-plugin/plugin.json',
     'package.json',

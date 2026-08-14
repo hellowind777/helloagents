@@ -17,7 +17,13 @@ import {
   hermesPluginDir,
   resolveHermesHome,
 } from '../hosts/plugins.mjs'
-import { HOSTS, findHost } from '../hosts/registry.mjs'
+import {
+  dshHomePatchPath,
+  dshHomePatchState,
+  dshPluginDir,
+  dshSkillsDir,
+} from '../hosts/dsh-config.mjs'
+import { HOSTS, findHost, resolveDshHome } from '../hosts/registry.mjs'
 import { carrierStatus } from '../hosts/carriers.mjs'
 import { addonPresent, enabledAddons } from './addons.mjs'
 import { appVersion } from './runtime-app.mjs'
@@ -102,6 +108,9 @@ export function buildDoctorReport(ctx) {
         const hermesHome = resolveHermesHome(ctx.home)
         pluginDir = hermesPluginDir(hermesHome)
         manifestPath = join(pluginDir, 'skills')
+      } else if (host.id === 'dsh') {
+        pluginDir = dshPluginDir(ctx.home)
+        manifestPath = join(pluginDir, 'package.json')
       }
       if (pluginDir) {
         const manifest = /** @type {{ version?: string } | null} */ (readJson(manifestPath))
@@ -110,6 +119,18 @@ export function buildDoctorReport(ctx) {
           issues.push({ code: 'plugin-missing', level: 'error', host: host.id, message: pluginDir })
         } else if (manifest && manifest.version && manifest.version !== ctx.version) {
           issues.push({ code: 'plugin-outdated', level: 'warn', host: host.id, message: `${pluginDir} (${manifest.version})` })
+        }
+        // dsh 额外检查 home 补丁层注册行
+        if (host.id === 'dsh') {
+          const patchState = dshHomePatchState(ctx.home)
+          if (patchState === 'missing') {
+            issues.push({
+              code: 'dsh-patch-missing',
+              level: 'error',
+              host: host.id,
+              message: dshHomePatchPath(ctx.home),
+            })
+          }
         }
         // Cursor 额外检查规则文件
         if (host.id === 'cursor') {
@@ -123,7 +144,10 @@ export function buildDoctorReport(ctx) {
 
     // 标准层基础落盘（全局模式叠加在标准层之上，两种模式都检查）
     {
-      const linkPath = join(ctx.home, `.${host.id}`, 'helloagents')
+      const linkPath =
+        host.id === 'dsh'
+          ? join(resolveDshHome(ctx.home), 'helloagents')
+          : join(ctx.home, `.${host.id}`, 'helloagents')
       if (!fileExists(linkPath)) {
         issues.push({ code: 'symlink-missing', level: 'warn', host: host.id, message: linkPath })
       }
@@ -150,6 +174,14 @@ export function buildDoctorReport(ctx) {
         }
         if (isHooksFeatureDisabled(configText)) {
           issues.push({ code: 'codex-hooks-feature-disabled', level: 'warn', host: host.id, message: configPath })
+        }
+      }
+
+      // dsh 专属：原生技能目录
+      if (host.id === 'dsh') {
+        const skillsOk = fileExists(join(dshSkillsDir(ctx.home), 'hello-plan', 'SKILL.md'))
+        if (!skillsOk) {
+          issues.push({ code: 'dsh-skills-missing', level: 'error', host: host.id, message: dshSkillsDir(ctx.home) })
         }
       }
     }

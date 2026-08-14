@@ -49,6 +49,10 @@ export const MESSAGES = {
     cn: 'Codex 标准模式增强配置写入失败（非致命）：{message}',
     en: 'Codex standard mode extras failed (non-fatal): {message}',
   },
+  'install.dshSkillsFailed': {
+    cn: 'DeepSeek Harness 技能同步失败（非致命）：{message}',
+    en: 'DeepSeek Harness skill sync failed (non-fatal): {message}',
+  },
   'install.kernelMissing': {
     cn: '内核文件缺失：{path}',
     en: 'Kernel file missing: {path}',

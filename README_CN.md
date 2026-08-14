@@ -4,7 +4,7 @@
 
 # HelloAGENTS
 
-**AI 编码 CLI 的思维激活层：一份纠偏内核 + 23 个按需加载的思维技能，一条命令分发到 Claude Code、Codex CLI、Grok Build、Cursor、Hermes。**
+**AI 编码 CLI 的思维激活层：一份纠偏内核 + 23 个按需加载的思维技能，一条命令分发到 Claude Code、Codex CLI、Grok Build、Cursor、Hermes、DeepSeek Harness。**
 
 [English](./README.md) · [简体中文](./README_CN.md) · [更新日志](./CHANGELOG.md)
 
@@ -29,7 +29,7 @@ HelloAGENTS 做三件事：
 
 1. **纠偏**：一份内核常驻宿主规则文件，按明确章节组织——涵盖身份与执行底线、思维纠偏模式、能力调用与动态路由、执行纪律、验证习惯、中断恢复、知识管理、安全底线等。
 2. **激活**：23 个思维技能（方案、实现、需求探索、质量自检、全量审查、界面、调试、安全等）按需读取，提供对应场景下的判断框架与质量标准，不是审批清单。
-3. **分发**：把这套内容可靠地安装进五个宿主，通过 npm 或 git clone 两种来源，覆盖标准模式与全局（原生插件市场）模式；安装、更新、体检、卸载、迁移全部一条命令，卸载即完整还原。
+3. **分发**：把这套内容可靠地安装进六个宿主，通过 npm 或 git clone 两种来源，覆盖标准模式与全局（原生插件市场）模式；安装、更新、体检、卸载、迁移全部一条命令，卸载即完整还原。
 
 它不做什么：不做流程管理，不做状态机，不写脚本替模型评估、验证、审计——验证是激活出来的模型习惯（自己跑真实命令、贴原始输出），不是被脚本拦截的对象。
 
@@ -87,12 +87,25 @@ npx helloagents doctor
 | Grok Build | `~/.grok/AGENTS.md` + hooks + 软链接 | 插件市场（自动注册本地市场） | 是 | 是 |
 | Cursor | hooks + 软链接（无用户级规则文件） | `~/.cursor/plugins/local/helloagents`（内核以规则下发） | 是 | 是 |
 | Hermes | `~/.hermes/AGENTS.md` + 软链接 | `HERMES_HOME/local-plugins/helloagents`（external_dirs 登记） | 是 | 是 |
+| DeepSeek Harness | `~/.dsh/AGENTS.md` + `~/.dsh/skills/` + 软链接 | dsh bundle（本地快照 + `$DSH_HOME/cordis.patch.yml`，或 `dsh plugin add helloagents@beta`） | – | – |
 
-全部五个宿主均支持标准模式与全局模式。全局模式叠加在标准层之上（hooks、软链接，以及适用时的用户级规则载体），而不是替换标准层。
+全部六个宿主均支持标准模式与全局模式。全局模式叠加在标准层之上（hooks、软链接，以及适用时的用户级规则载体），而不是替换标准层。
 
 Cursor 没有可供 HelloAGENTS 注入的用户级规则文件。`~/.cursor/rules/` 不作为全局载体使用——Cursor 的规则解析从工作区向上遍历，无法可靠到达家目录。因此标准模式只安装 hooks 与 `~/.cursor/helloagents` 软链接；全局模式额外下发本地插件，内核规则为 `rules/helloagents-kernel.mdc`，设置 `alwaysApply: true` 且刻意**不写** `description`（Cursor 目前已知缺陷是二者同时存在时，规则会被降级为「按需取用」）。插件目录只放 Cursor 读取的内容——清单、技能、规则；HelloAGENTS CLI 本身不放入。全局模式安装后在 Cursor 中执行 **Developer: Reload Window** 重载窗口。
 
 Gemini CLI 不再是支持的宿主。如果你之前在那里安装过，执行 `npx helloagents migrate` 清理 `~/.gemini/GEMINI.md` 中的受管块并删除安装记录，再手动执行 `gemini extensions uninstall helloagents` 移除扩展。
+
+## DeepSeek Harness
+
+DeepSeek Harness（`dsh`）原生读取 `$DSH_HOME/AGENTS.md`（默认 `~/.dsh/AGENTS.md`）作为用户级指令，并自动发现 `$DSH_HOME/skills/` 中的技能——两者都是原生机制，不需要插件。
+
+- **标准模式**（`helloagents install dsh --standard`）：内核写入 `~/.dsh/AGENTS.md`，23 个技能同步到 `~/.dsh/skills/hello-*`。dsh 内置的 `skill` 工具按需暴露技能。卸载只删除 HelloAGENTS 管理的技能。
+- **全局模式**（`helloagents install dsh --global`）：本地 bundle 快照安装到 `~/.dsh/plugins/helloagents/`，并在 `$DSH_HOME/cordis.patch.yml`（对所有 profile 生效的机器级补丁层）注册插件行。插件把内核注册为系统提示段落、23 个技能注册为运行时技能；标准层（AGENTS.md + 技能目录 + 软链接）照常安装。
+- npm 包自带 `dsh.bundle` 清单，也可以从 registry 直接安装：`dsh plugin --profile <name> add helloagents@beta`。
+
+dsh 支持目前发布在 npm `beta` 通道（稳定版发布前请使用 `npx helloagents@beta install dsh`）。兼容性已在 dsh `0.1.0-rc.5`（mainline 快照 `7b9644f`，2026-08-14）上验证；dsh 处于开发者预览阶段，升级 dsh 后建议重新执行 `helloagents doctor`。
+
+HelloAGENTS 已收录在 [`dsh-plugin` topic](https://github.com/topics/dsh-plugin)。
 
 ## 技能一览
 
@@ -133,7 +146,7 @@ curl -fsSL https://raw.githubusercontent.com/hellowind777/helloagents/beta/insta
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `HELLOAGENTS_HOSTS` | `all` | 目标宿主（逗号分隔：claude,codex,grok,cursor,hermes） |
+| `HELLOAGENTS_HOSTS` | `all` | 目标宿主（逗号分隔：claude,codex,grok,cursor,hermes,dsh） |
 | `HELLOAGENTS_METHOD` | 自动 | 安装方式：`standard` 或 `global`（也接受旧版 `inject`/`plugin`） |
 | `HELLOAGENTS_VERSION` | `latest` | npm dist-tag（仅 npm 来源） |
 | `HELLOAGENTS_SOURCE` | `npm` | 来源：`npm` 或 `git` |

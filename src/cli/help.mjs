@@ -26,14 +26,17 @@ HelloAGENTS v{version} — AI 编码 CLI 的思维激活层
   help                                         显示本说明
 
 宿主
-  claude（Claude Code）    codex（Codex CLI）
-  grok（Grok Build）       cursor（Cursor）       hermes（Hermes）
+  claude（Claude Code）    codex（Codex CLI）     grok（Grok Build）
+  cursor（Cursor）         hermes（Hermes）       dsh（DeepSeek Harness）
 
 说明
   安装方式有两种：全局模式使用宿主自带的原生插件市场；标准模式把内核注入宿主的
   用户级规则文件（标记包裹，卸载即还原），并写入 hooks 与软链接。Cursor 没有
   用户级规则文件，标准模式只安装 hooks 与软链接；全局模式额外下发插件规则
   （rules），安装后需在 Cursor 里重载窗口生效。全局模式叠加在标准层之上。
+  DeepSeek Harness 标准模式把内核写入 ~/.dsh/AGENTS.md（dsh 原生读取），技能同步到
+  ~/.dsh/skills/；全局模式安装本地 bundle 快照并写入 $DSH_HOME/cordis.patch.yml，
+  对所有 profile 生效，也可用 dsh plugin --profile <name> add helloagents 从 npm 安装。
   语言可用环境变量 HELLOAGENTS_LANG=cn|en 指定，或在命令前加 --lang cn|en。
   旧版 --inject/--plugin 别名仍然可用，对应 --standard/--global。
 `
@@ -62,8 +65,8 @@ Other
   help                                          Show this message
 
 Hosts
-  claude (Claude Code)    codex (Codex CLI)
-  grok (Grok Build)       cursor (Cursor)       hermes (Hermes)
+  claude (Claude Code)    codex (Codex CLI)     grok (Grok Build)
+  cursor (Cursor)         hermes (Hermes)       dsh (DeepSeek Harness)
 
 Notes
   Two install methods: global mode uses the host's own native plugin marketplace; standard
@@ -71,7 +74,11 @@ Notes
   restores the file), plus hooks and a symlink. Cursor has no user-level rules file, so
   standard mode only installs hooks and the symlink; global mode also ships the kernel as a
   plugin rule (reload the Cursor window after installing). Global mode layers on top of the
-  standard base. Set HELLOAGENTS_LANG=cn|en or use --lang cn|en to choose the language.
+  standard base. DeepSeek Harness standard mode writes the kernel into ~/.dsh/AGENTS.md
+  (read natively by dsh) and syncs skills into ~/.dsh/skills/; global mode installs a local
+  bundle snapshot and registers it in $DSH_HOME/cordis.patch.yml (applies to every profile),
+  or use dsh plugin --profile <name> add helloagents to install from npm.
+  Set HELLOAGENTS_LANG=cn|en or use --lang cn|en to choose the language.
   Legacy --inject/--plugin aliases still work, mapping to --standard/--global.
 `
 

@@ -16,3 +16,4 @@ _to_delete/
 *.key
 *.p12
 *.pfx
+.claude/settings.local.json

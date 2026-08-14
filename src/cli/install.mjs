@@ -14,9 +14,16 @@ import { readInstallState, writeInstallState } from '../kernel/config.mjs'
 import { ensureDir, fileExists, readJson, readText, removePath, writeJsonAtomic, writeTextAtomic } from '../kernel/fsx.mjs'
 import { appDir, helloagentsRoot, toPosix, userConfigPath } from '../kernel/paths.mjs'
 import { injectKernel, readKernelText, removeKernel } from '../hosts/carriers.mjs'
+import { resolveDshHome } from '../hosts/registry.mjs'
 import { backupCodexConfig, removeCodexBackups } from '../hosts/codex-backup.mjs'
 import { installCodexManagedConfig, uninstallCodexManagedConfig } from '../hosts/codex-config.mjs'
 import { installCodexHooks, uninstallCodexHooks } from '../hosts/codex-hooks.mjs'
+import {
+  installDshPlugin,
+  removeDshSkills,
+  syncDshSkills,
+  uninstallDshPlugin,
+} from '../hosts/dsh-config.mjs'
 import { removeCursorHooks, removeSettingsHooks, upsertCursorHooks, upsertSettingsHooks } from '../hosts/hooks-config.mjs'
 import {
   installClaudePlugin,
@@ -153,14 +160,25 @@ function installHostStandard(ctx, host, kernel) {
     ctx.log(ctx.t('install.standard.done', { host: host.label, path: carrier }))
   }
 
-  // 2. 软链接
-  const linkPath = join(ctx.home, `.${host.id}`, 'helloagents')
+  // 2. 软链接（dsh 跟随 $DSH_HOME）
+  const linkPath =
+    host.id === 'dsh'
+      ? join(resolveDshHome(ctx.home), 'helloagents')
+      : join(ctx.home, `.${host.id}`, 'helloagents')
   createSymlink(ctx.app, linkPath)
 
-  // 3. hooks 注入
+  // 3. hooks 注入（dsh 无用户级 hooks，hooks-dsh.json 不存在时自动跳过）
   installHostHooks(ctx, host)
 
-  // 4. Codex 额外配置
+  // 4. dsh 原生技能目录同步
+  if (host.id === 'dsh') {
+    const synced = syncDshSkills(ctx.home, ctx.app)
+    if (!synced.ok) {
+      ctx.log(ctx.t('install.dshSkillsFailed', { message: synced.reason }))
+    }
+  }
+
+  // 5. Codex 额外配置
   if (host.id === 'codex') {
     try {
       const configPath = String(host.codexConfigPath(ctx.home))
@@ -180,11 +198,20 @@ function uninstallHostStandard(ctx, host) {
   const carrier = host.carrierPath(ctx.home)
   if (carrier) removeKernel(carrier)
 
-  // 软链接
-  removePath(join(ctx.home, `.${host.id}`, 'helloagents'))
+  // 软链接（dsh 跟随 $DSH_HOME）
+  const linkPath =
+    host.id === 'dsh'
+      ? join(resolveDshHome(ctx.home), 'helloagents')
+      : join(ctx.home, `.${host.id}`, 'helloagents')
+  removePath(linkPath)
 
   // hooks
   uninstallHostHooks(ctx, host)
+
+  // dsh 原生技能目录清理
+  if (host.id === 'dsh') {
+    removeDshSkills(ctx.home, ctx.app)
+  }
 
   // Codex 额外清理
   if (host.id === 'codex') {
@@ -205,6 +232,7 @@ function installHostPlugin(ctx, host) {
   if (host.id === 'codex') return installCodexPlugin(ctx.home, ctx.app)
   if (host.id === 'grok') return installGrokPlugin(ctx.home, ctx.app)
   if (host.id === 'hermes') return installHermesPlugin(ctx.home, ctx.app)
+  if (host.id === 'dsh') return installDshPlugin(ctx.home, ctx.app)
   return { ok: false }
 }
 
@@ -215,6 +243,7 @@ function uninstallHostPlugin(ctx, host) {
   if (host.id === 'codex') return uninstallCodexPlugin(ctx.home)
   if (host.id === 'grok') return uninstallGrokPlugin(ctx.home)
   if (host.id === 'hermes') return uninstallHermesPlugin(ctx.home)
+  if (host.id === 'dsh') return uninstallDshPlugin(ctx.home)
   return { ok: true }
 }
 
@@ -375,6 +404,14 @@ export function runUpdate(ctx, allHosts) {
 
     // 更新 hooks（可能已变更）
     installHostHooks(ctx, host)
+
+    // dsh：刷新原生技能目录
+    if (host.id === 'dsh') {
+      const synced = syncDshSkills(ctx.home, ctx.app)
+      if (!synced.ok) {
+        ctx.log(ctx.t('install.dshSkillsFailed', { message: synced.reason }))
+      }
+    }
 
     // Codex：标准/全局模式均依赖标准层受管配置，统一刷新受管行与 hooks 信任哈希
     if (host.id === 'codex') {

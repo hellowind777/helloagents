@@ -4,7 +4,7 @@
 
 # HelloAGENTS
 
-**The thinking activation layer for AI coding CLIs: a course-correction kernel plus 23 on-demand thinking skills, shipped to Claude Code, Codex CLI, Grok Build, Cursor, and Hermes with one command.**
+**The thinking activation layer for AI coding CLIs: a course-correction kernel plus 23 on-demand thinking skills, shipped to Claude Code, Codex CLI, Grok Build, Cursor, Hermes, and DeepSeek Harness with one command.**
 
 [English](./README.md) · [简体中文](./README_CN.md) · [Changelog](./CHANGELOG.md)
 
@@ -29,7 +29,7 @@ HelloAGENTS does three things:
 
 1. **Course-correct**: a kernel lives in the host's rules file and corrects the habits above — organized into explicit sections covering identity, bias-correction patterns, dynamic capability routing, execution discipline, verification habits, interruption recovery, knowledge management, and safety.
 2. **Activate**: 23 thinking skills (planning, implementation, requirements discovery, quality self-check, full-scope review, UI, debugging, security, and more) load on demand, each supplying the judgment framework and quality bar for its scenario — not an approval checklist.
-3. **Distribute**: it reliably installs all of this into five hosts via npm or git clone, across standard mode and global (native marketplace) mode; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
+3. **Distribute**: it reliably installs all of this into six hosts via npm or git clone, across standard mode and global (native marketplace) mode; install, update, health check, uninstall, and migration are each a single command, and uninstalling restores everything in full.
 
 What it doesn't do: no process management, no state machines, no scripts that evaluate, verify, or audit in the model's place — verification is an activated model habit (run real commands yourself, paste the raw output), not something for scripts to intercept.
 
@@ -87,12 +87,25 @@ The three methods can be stacked (hosts generally follow "the nearest rules file
 | Grok Build | `~/.grok/AGENTS.md` + hooks + symlink | Plugin marketplace (local marketplace auto-registered) | Yes | Yes |
 | Cursor | hooks + symlink (no user-level rules file) | `~/.cursor/plugins/local/helloagents` (kernel ships as a rule) | Yes | Yes |
 | Hermes | `~/.hermes/AGENTS.md` + symlink | `HERMES_HOME/local-plugins/helloagents` (external_dirs registered) | Yes | Yes |
+| DeepSeek Harness | `~/.dsh/AGENTS.md` + `~/.dsh/skills/` + symlink | dsh bundle (local snapshot + `$DSH_HOME/cordis.patch.yml`, or `dsh plugin add helloagents@beta`) | – | – |
 
-All five hosts support both standard and global modes. Global mode always layers on the standard base (hooks, symlink, and where applicable the user-level rules carrier); it does not replace it.
+All six hosts support both standard and global modes. Global mode always layers on the standard base (hooks, symlink, and where applicable the user-level rules carrier); it does not replace it.
 
 Cursor has no user-level rules file that HelloAGENTS can inject. `~/.cursor/rules/` is not used as a global carrier — Cursor rule resolution walks upward from the workspace and does not reliably reach the home directory. Standard mode therefore installs only hooks and the `~/.cursor/helloagents` symlink. Global mode also drops a local plugin whose kernel rule is `rules/helloagents-kernel.mdc` with `alwaysApply: true` and deliberately **no** `description` (Cursor currently downgrades rules that carry both to "agent-requested"). The plugin directory holds only what Cursor reads — manifest, skills, rules; the HelloAGENTS CLI itself stays out of it. Run **Developer: Reload Window** in Cursor after a global install.
 
 Gemini CLI is no longer a supported host. If you installed it there, run `npx helloagents migrate` to strip the managed block from `~/.gemini/GEMINI.md` and drop the install record, then remove the extension yourself with `gemini extensions uninstall helloagents`.
+
+## DeepSeek Harness
+
+DeepSeek Harness (`dsh`) reads `$DSH_HOME/AGENTS.md` (defaults to `~/.dsh/AGENTS.md`) as user-global instructions and auto-discovers skills in `$DSH_HOME/skills/` — both natively, no plugin required.
+
+- **Standard mode** (`helloagents install dsh --standard`): the kernel goes into `~/.dsh/AGENTS.md` and the 23 skills are synced into `~/.dsh/skills/hello-*`. dsh's built-in `skill` tool exposes them on demand. Uninstalling removes only HelloAGENTS-managed skills.
+- **Global mode** (`helloagents install dsh --global`): a local bundle snapshot is installed to `~/.dsh/plugins/helloagents/` and registered in `$DSH_HOME/cordis.patch.yml` — the machine-level patch layer that applies to every profile. The plugin registers the kernel as a system-prompt section and the 23 skills as runtime skills; the standard layer (AGENTS.md + skills dir + symlink) is also installed.
+- The npm package ships a `dsh.bundle` manifest, so you can also install it from the registry with `dsh plugin --profile <name> add helloagents@beta`.
+
+dsh support ships on the `beta` npm channel until it lands in a stable release: `npx helloagents@beta install dsh`. Compatibility is verified against dsh `0.1.0-rc.5` (mainline snapshot `7b9644f`, 2026-08-14); dsh is in developer preview, so re-run `helloagents doctor` after dsh upgrades.
+
+HelloAGENTS is listed in the [`dsh-plugin` topic](https://github.com/topics/dsh-plugin).
 
 ## Skills at a Glance
 
@@ -133,7 +146,7 @@ Environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `HELLOAGENTS_HOSTS` | `all` | Target hosts (comma-separated: claude,codex,grok,cursor,hermes) |
+| `HELLOAGENTS_HOSTS` | `all` | Target hosts (comma-separated: claude,codex,grok,cursor,hermes,dsh) |
 | `HELLOAGENTS_METHOD` | (auto) | Install mode: `standard` or `global` (legacy `inject`/`plugin` also accepted) |
 | `HELLOAGENTS_VERSION` | `latest` | npm dist-tag (npm source only) |
 | `HELLOAGENTS_SOURCE` | `npm` | `npm` or `git` |

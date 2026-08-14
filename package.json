@@ -1,6 +1,6 @@
 {
   "name": "helloagents",
-  "version": "4.0.4",
+  "version": "4.0.5",
   "type": "module",
   "description": "HelloAGENTS — AI 编码 CLI 的思维激活层：纠偏内核 + 按需思维技能，一条命令分发到 Claude Code、Codex、Grok、Cursor。A thinking-activation layer for AI coding CLIs.",
   "author": "HelloWind",
@@ -21,11 +21,21 @@
     "skills/",
     "hooks/",
     "assets/",
+    "dsh/",
     ".claude-plugin/",
     ".cursor-plugin/",
     ".codex-plugin/",
     "README_CN.md"
   ],
+  "exports": {
+    "./dsh": "./dsh/index.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./dsh/cordis.patch.yml"
+    }
+  },
   "scripts": {
     "test": "node --test \"tests/**/*.test.mjs\"",
     "typecheck": "tsc -p jsconfig.json",
@@ -39,6 +49,11 @@
     "codex",
     "grok",
     "cursor",
+    "hermes",
+    "deepseek",
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
     "cli",
     "skills",
     "prompt"

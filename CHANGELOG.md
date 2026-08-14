@@ -1,5 +1,20 @@
 # 更新日志
 
+## 4.0.5-beta.1（2026-08-14）
+
+新增与变化：
+
+- 新增 DeepSeek Harness（dsh）宿主，成为第六个支持的宿主。标准模式把内核写入 `$DSH_HOME/AGENTS.md` 并把 23 个技能同步到 `$DSH_HOME/skills/hello-*`；全局模式安装本地 bundle 快照到 `$DSH_HOME/plugins/helloagents/` 并在 `$DSH_HOME/cordis.patch.yml` 注册插件行，插件把内核注册为系统提示段落、技能注册为运行时技能
+- npm 包新增 `dsh.bundle` 清单与 `exports` 子路径，支持 `dsh plugin --profile <name> add helloagents@beta` 从 registry 安装
+- 补丁行入口统一为 `file://` URL，兼容 Windows 下 Node ESM 的绝对路径解析限制
+- doctor 新增 dsh 专属检查：home 补丁层注册行、原生技能目录
+- 兼容性在 dsh `0.1.0-rc.5`（mainline 快照 `7b9644f`）上验证通过（2026-08-14）
+- 新增 dsh 标准/全局模式、模式切换、补丁层还原集成测试与 bundle 清单契约测试，测试套件共 65 项
+
+缺陷修复：
+
+- Codex 安装受管 `notify` 行不再覆盖外部工具（如 ChatGPT App）包裹的 wrapper 配置——现有 `notify` 行只要引用了 `helloagents-js` 即视为已覆盖；`addonPresent` 与 doctor 同步把 wrapped 状态视为已启用，消除误报
+
 ## 4.0.4-beta.18（2026-07-29）
 
 缺陷修复：

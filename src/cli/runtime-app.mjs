@@ -15,6 +15,7 @@ export const APP_ENTRIES = [
   'skills',
   'hooks',
   'assets',
+  'dsh',
   '.claude-plugin',
   '.cursor-plugin',
   'package.json',

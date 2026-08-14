@@ -1,0 +1,6 @@
+# helloagents 作为 dsh bundle 的补丁层：
+# `dsh plugin --profile <name> add helloagents` 安装本包后，此行把插件挂进组合。
+# 行内 name 通过 Node 子路径解析到包内 dsh/index.js（见 package.json exports）。
+- insert:
+    - id: helloagents
+      name: helloagents/dsh

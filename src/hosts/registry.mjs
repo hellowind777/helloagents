@@ -5,7 +5,19 @@
 import { join } from 'node:path'
 
 /**
- * @typedef {'claude' | 'codex' | 'grok' | 'cursor' | 'hermes'} HostId
+ * DeepSeek Harness 宿主目录。$DSH_HOME 环境变量优先；
+ * 测试隔离（HELLOAGENTS_HOME）下固定为 home/.dsh。
+ * @param {string} home
+ * @returns {string}
+ */
+export function resolveDshHome(home) {
+  if (process.env.HELLOAGENTS_HOME) return join(home, '.dsh')
+  const env = String(process.env.DSH_HOME || '').trim()
+  return env || join(home, '.dsh')
+}
+
+/**
+ * @typedef {'claude' | 'codex' | 'grok' | 'cursor' | 'hermes' | 'dsh'} HostId
  *
  * @typedef {Object} HostCapabilities
  * @property {boolean} standard 支持标准模式（用户级载体文件）
@@ -84,6 +96,19 @@ export const HOSTS = [
     carrierPath: () => null,
     settingsPath: () => null,
     cursorHooksPath: (home) => join(home, '.cursor', 'hooks.json'),
+    grokHooksPath: () => null,
+    hermesHooksPath: () => null,
+    codexConfigPath: () => null,
+  },
+  {
+    id: 'dsh',
+    label: 'DeepSeek Harness',
+    aliases: ['deepseek-harness', 'harness', 'deepseek'],
+    capabilities: { standard: true, global: true, guard: false, notify: false },
+    // dsh-agent-instructions 原生读取 $DSH_HOME/AGENTS.md
+    carrierPath: (home) => join(resolveDshHome(home), 'AGENTS.md'),
+    settingsPath: () => null,
+    cursorHooksPath: () => null,
     grokHooksPath: () => null,
     hermesHooksPath: () => null,
     codexConfigPath: () => null,

@@ -310,3 +310,86 @@ test('hermes 全局模式：local-plugins 快照 + external_dirs 登记', () => 
     cleanup()
   }
 })
+
+test('dsh 标准模式：AGENTS.md 载体 + 原生技能目录 + 软链接，卸载还原', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const { ctx } = makeCtx(home)
+    runInstall(ctx, [host('dsh')], 'standard')
+
+    const carrier = host('dsh').carrierPath(home) ?? ''
+    assert.ok(hasMarkedBlock(carrier))
+    assert.equal(readMarkedVersion(carrier), PACKAGE_VERSION)
+    assert.ok(fileExists(join(home, '.dsh', 'skills', 'hello-plan', 'SKILL.md')))
+    assert.ok(fileExists(join(home, '.dsh', 'helloagents')), '软链接应创建')
+
+    const state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
+      readJson(join(home, '.helloagents', 'install.json'))
+    )
+    assert.equal(state.hosts.dsh?.mode, 'standard')
+
+    runUninstall(ctx, [host('dsh')], { all: false, purge: false })
+    assert.equal(hasMarkedBlock(carrier), false)
+    assert.equal(fileExists(join(home, '.dsh', 'skills', 'hello-plan')), false)
+    assert.equal(fileExists(join(home, '.dsh', 'helloagents')), false)
+  } finally {
+    cleanup()
+  }
+})
+
+test('dsh 全局模式：bundle 快照 + home 补丁注册，doctor 无问题，卸载完整清理', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const { ctx } = makeCtx(home)
+    runInstall(ctx, [host('dsh')], 'global')
+
+    const pluginDir = join(home, '.dsh', 'plugins', 'helloagents')
+    assert.ok(fileExists(join(pluginDir, 'dsh', 'index.js')))
+    assert.ok(fileExists(join(pluginDir, 'skills', 'hello-plan', 'SKILL.md')))
+    assert.ok(fileExists(join(home, '.dsh', 'cordis.patch.yml')))
+
+    const state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
+      readJson(join(home, '.helloagents', 'install.json'))
+    )
+    assert.equal(state.hosts.dsh?.mode, 'global')
+
+    // 全局模式叠加标准层：载体与技能目录同样落盘
+    assert.ok(hasMarkedBlock(host('dsh').carrierPath(home) ?? ''))
+    assert.ok(fileExists(join(home, '.dsh', 'skills', 'hello-plan', 'SKILL.md')))
+
+    runUpdate(ctx, HOSTS)
+    assert.ok(fileExists(join(pluginDir, 'dsh', 'index.js')), 'update 后插件快照仍在')
+
+    runUninstall(ctx, [host('dsh')], { all: false, purge: false })
+    assert.equal(fileExists(pluginDir), false)
+    assert.equal(fileExists(join(home, '.dsh', 'cordis.patch.yml')), false)
+    assert.equal(hasMarkedBlock(host('dsh').carrierPath(home) ?? ''), false)
+    assert.equal(fileExists(join(home, '.dsh', 'skills', 'hello-plan')), false)
+  } finally {
+    cleanup()
+  }
+})
+
+test('dsh 模式切换：global → standard 移除插件快照与补丁行', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const { ctx } = makeCtx(home)
+    const pluginDir = join(home, '.dsh', 'plugins', 'helloagents')
+
+    runInstall(ctx, [host('dsh')], 'global')
+    assert.ok(fileExists(pluginDir))
+    assert.ok(fileExists(join(home, '.dsh', 'cordis.patch.yml')))
+
+    runInstall(ctx, [host('dsh')], 'standard')
+    assert.equal(fileExists(pluginDir), false, '切到标准模式应移除插件快照')
+    assert.equal(fileExists(join(home, '.dsh', 'cordis.patch.yml')), false, '切到标准模式应移除补丁行')
+    assert.ok(hasMarkedBlock(host('dsh').carrierPath(home) ?? ''))
+
+    const state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
+      readJson(join(home, '.helloagents', 'install.json'))
+    )
+    assert.equal(state.hosts.dsh?.mode, 'standard')
+  } finally {
+    cleanup()
+  }
+})
