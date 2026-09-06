@@ -18,6 +18,7 @@ export const APP_ENTRIES = [
   'dsh',
   '.claude-plugin',
   '.cursor-plugin',
+  '.codex-plugin',
   'package.json',
   'LICENSE.md',
 ]

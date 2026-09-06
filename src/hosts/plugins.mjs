@@ -154,7 +154,7 @@ function buildClaudeMarketplace(home, appDirPath) {
  */
 export function installClaudePlugin(home, appDirPath) {
   const built = buildClaudeMarketplace(home, appDirPath)
-  if (!built.ok) return { ok: false, manualSteps: built.reason }
+  if (!built.ok || !built.root) return { ok: false, manualSteps: built.reason }
 
   const steps = `claude plugin marketplace add "${built.root}" && claude plugin install ${CLAUDE_PLUGIN_ID}`
 
@@ -304,6 +304,10 @@ function removeCodexMarketplaceEntry(home) {
     if (!entry || typeof entry !== 'object') return true
     return /** @type {{ name?: string }} */ (entry).name !== PLUGIN_NAME
   })
+  if (existing.plugins.length === 0) {
+    removePath(path)
+    return
+  }
   writeJsonAtomic(path, existing)
 }
 
@@ -453,7 +457,7 @@ function removeGrokMarketplaceSource(home) {
 /** @param {string} home @param {string} appDirPath @returns {PluginResult} */
 export function installGrokPlugin(home, appDirPath) {
   const built = buildGrokMarketplace(home, appDirPath)
-  if (!built.ok) return { ok: false, manualSteps: built.reason }
+  if (!built.ok || !built.root || !built.pluginDir) return { ok: false, manualSteps: built.reason }
 
   removePath(join(home, '.grok', 'plugins', PLUGIN_NAME))
   ensureGrokMarketplaceSource(home, built.root)
@@ -557,7 +561,19 @@ function updateHermesExternalDirs(configPath, skillsDir, mode) {
       const value = trimmed.slice(1).trim().replace(/^['"]|['"]$/g, '')
       return toPosix(value) !== target && value !== skillsDir
     })
-    writeTextAtomic(configPath, `${lines.join('\n').replace(/\n+$/, '')}\n`)
+    let cleaned = lines.join('\n').replace(/\n+$/, '')
+    cleaned = cleaned.replace(/^[ \t]*external_dirs:[ \t]*\r?$/m, (match, offset, full) => {
+      const after = full.slice(offset + match.length)
+      if (/^\r?\n([ \t]*-[ \t]*.+)/.test(after)) return match
+      return ''
+    })
+    cleaned = cleaned.replace(/^[ \t]*skills:[ \t]*\r?\n(?:[ \t]*\r?\n)*$/m, '')
+    cleaned = cleaned.trim()
+    if (!cleaned) {
+      removePath(configPath)
+      return
+    }
+    writeTextAtomic(configPath, `${cleaned}\n`)
     return
   }
 

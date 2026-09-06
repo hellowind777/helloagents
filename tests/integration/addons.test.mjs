@@ -64,26 +64,35 @@ test('claude：guard 与 notify 写入 settings.json，停用后干净移除', (
   }
 })
 
-test('grok：附加组件共用独立 hooks 文件，全部停用后文件删除', () => {
+test('grok：附加组件共用独立 hooks 文件，基础条目不受影响', () => {
   const { home, cleanup } = makeFakeHome()
   try {
     const { ctx } = makeCtx(home)
     runInstall(ctx, [host('grok')], 'standard')
     const hooksPath = join(home, '.grok', 'hooks', 'helloagents.json')
 
+    const base = /** @type {{ hooks: Record<string, unknown> }} */ (readJson(hooksPath))
+    assert.ok(base.hooks.UserPromptSubmit)
+
     toggle(ctx, 'grok', 'guard', true)
     toggle(ctx, 'grok', 'notify', true)
     const config = /** @type {{ hooks: Record<string, unknown> }} */ (readJson(hooksPath))
     assert.ok(config.hooks.PreToolUse)
     assert.ok(config.hooks.Stop)
+    assert.ok(config.hooks.UserPromptSubmit)
 
     toggle(ctx, 'grok', 'guard', false)
     const guardOff = /** @type {{ hooks: Record<string, unknown> }} */ (readJson(hooksPath))
     assert.equal(guardOff.hooks.PreToolUse, undefined)
     assert.ok(guardOff.hooks.Stop)
+    assert.ok(guardOff.hooks.UserPromptSubmit)
 
     toggle(ctx, 'grok', 'notify', false)
-    assert.equal(readText(hooksPath), null)
+    const baseRestored = /** @type {{ hooks: Record<string, unknown> }} */ (readJson(hooksPath))
+    assert.ok(baseRestored.hooks.UserPromptSubmit)
+    assert.ok(baseRestored.hooks.Stop)
+    assert.equal(JSON.stringify(baseRestored).includes('/guard.mjs'), false)
+    assert.equal(JSON.stringify(baseRestored).includes('/notify.mjs'), false)
   } finally {
     cleanup()
   }

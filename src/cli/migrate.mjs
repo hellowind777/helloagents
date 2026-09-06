@@ -42,7 +42,7 @@ export function cleanLegacyCodexConfig(configPath) {
     if (/^\s*\[hooks\.state\./.test(line)) {
       // 窥视后续非空行，判断该段是否由当前版本写入（内容行带管理标记）
       let contentHasManagedMarker = false
-      for (let j = i + 1; j < lines.length && !/^\s*\[/.test(lines[j]); j += 1) {
+      for (let j = i + 1; j < lines.length && !/^\s*\[/.test(lines[j] ?? ''); j += 1) {
         const nextLine = lines[j]
         if (nextLine && nextLine.trim() && nextLine.includes(MANAGED_TOML_SUFFIX)) {
           contentHasManagedMarker = true

@@ -62,8 +62,8 @@ test('settings 形态：只移除受管条目，事件清空后删除键', () =>
     upsertSettingsHooks(settingsPath, ownedEntry(), { home: HOME })
     const removed = removeSettingsHooks(settingsPath, { home: HOME })
     assert.equal(removed, 1)
-    const settings = /** @type {Record<string, unknown>} */ (readJson(settingsPath))
-    assert.equal(settings.hooks, undefined)
+    const settings = /** @type {Record<string, unknown> | null} */ (readJson(settingsPath))
+    assert.equal(settings === null || settings.hooks === undefined, true)
   })
 })
 

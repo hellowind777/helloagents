@@ -72,8 +72,8 @@ function settingsEntries(app, addon, hostId) {
 }
 
 /**
- * Grok 使用独立的 hooks 文件，文件整体归我们管理：
- * 按当前启用的组件重写全文；两个组件都停用时删除文件。
+ * Grok 使用独立的 hooks 文件，基础条目与附加组件条目共存：
+ * 仅增删附加组件条目，基础条目保持不动；两个组件都停用时仅移除附加组件条目。
  * @param {import('./main.mjs').CliContext} ctx
  * @param {HostAdapter} host
  * @param {{ guard: boolean, notify: boolean }} enabled
@@ -86,7 +86,7 @@ function writeGrokHooksFile(ctx, host, enabled) {
 
 /**
  * Hermes 使用独立的 hooks 文件，格式与 Grok 一致：
- * 按当前启用的组件重写全文；两个组件都停用时删除文件。
+ * 仅增删附加组件条目，基础条目保持不动；两个组件都停用时仅移除附加组件条目。
  * @param {import('./main.mjs').CliContext} ctx
  * @param {HostAdapter} host
  * @param {{ guard: boolean, notify: boolean }} enabled
@@ -98,21 +98,39 @@ function writeHermesHooksFile(ctx, host, enabled) {
 }
 
 /**
- * 写入受管 hooks JSON 文件。
+ * 写入受管 hooks JSON 文件，仅增删附加组件条目，基础条目保持不动。
  * @param {import('./main.mjs').CliContext} ctx
  * @param {string} hostId
  * @param {string} filePath
  * @param {{ guard: boolean, notify: boolean }} enabled
  */
 function _writeManagedHooksFile(ctx, hostId, filePath, enabled) {
-  if (!enabled.guard && !enabled.notify) {
-    removePath(filePath)
-    return
+  /** @param {unknown} command */
+  const isAddonCommand = (command) => {
+    const value = String(command || '')
+    return value.includes('/guard.mjs') || value.includes('/notify.mjs')
   }
+  const existing = /** @type {{ version?: number, hooks?: Record<string, unknown[]> } | null} */ (readJson(filePath))
+  const current = existing && typeof existing.hooks === 'object' && existing.hooks
+    ? /** @type {Record<string, unknown[]>} */ (existing.hooks)
+    : {}
   /** @type {Record<string, unknown[]>} */
-  const hooks = {}
+  const merged = {}
+  for (const [event, groups] of Object.entries(current)) {
+    if (!Array.isArray(groups)) continue
+    const kept = groups.filter((group) => {
+      if (!group || typeof group !== 'object') return true
+      const inner = Array.isArray(/** @type {{hooks?: unknown}} */ (group).hooks)
+        ? /** @type {Array<{command?: unknown}>} */ (/** @type {{hooks?: unknown}} */ (group).hooks)
+        : []
+      if (inner.length === 0) return true
+      return !inner.some((hook) => isAddonCommand(hook?.command))
+    })
+    if (kept.length > 0) merged[event] = kept
+  }
   if (enabled.guard) {
-    hooks.PreToolUse = [
+    merged.PreToolUse = [
+      ...(merged.PreToolUse ?? []),
       {
         matcher: 'Bash',
         hooks: [
@@ -122,7 +140,8 @@ function _writeManagedHooksFile(ctx, hostId, filePath, enabled) {
     ]
   }
   if (enabled.notify) {
-    hooks.Stop = [
+    merged.Stop = [
+      ...(merged.Stop ?? []),
       {
         matcher: '',
         hooks: [
@@ -131,7 +150,12 @@ function _writeManagedHooksFile(ctx, hostId, filePath, enabled) {
       },
     ]
   }
-  writeTextAtomic(filePath, `${JSON.stringify({ version: 1, hooks }, null, 2)}\n`)
+  if (Object.keys(merged).length === 0) {
+    removePath(filePath)
+    return
+  }
+  const version = typeof existing?.version === 'number' ? existing.version : 1
+  writeTextAtomic(filePath, `${JSON.stringify({ version, hooks: merged }, null, 2)}\n`)
 }
 
 /**

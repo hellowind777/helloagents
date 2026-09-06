@@ -33,6 +33,10 @@ export const MESSAGES = {
     cn: '{host}：内核已写入 {path}',
     en: '{host}: kernel written to {path}',
   },
+  'install.standard.hooksDone': {
+    cn: '{host}：钩子与软链接已安装（无全局规则文件）',
+    en: '{host}: hooks and symlink installed (no global rules file)',
+  },
   'install.global.done': {
     cn: '{host}：全局模式安装完成',
     en: '{host}: global mode installed',
@@ -84,6 +88,14 @@ export const MESSAGES = {
   'update.nothing': {
     cn: '尚未安装到任何宿主。先执行 helloagents install。',
     en: 'Nothing is installed yet. Run "helloagents install" first.',
+  },
+  'update.gitPulled': {
+    cn: '远端仓库已更新：{path}（{branch}）',
+    en: 'Remote repository updated: {path} ({branch})',
+  },
+  'update.gitFallback': {
+    cn: '远端拉取失败，使用本地副本：{path}',
+    en: 'Remote pull failed, using the local copy: {path}',
   },
   'init.done': {
     cn: '项目初始化完成：内核已写入 {carrier}，知识库目录 {kb} 已就绪。',

@@ -5,6 +5,22 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PACKAGE_VERSION, REPO_ROOT } from '../helpers/env.mjs'
+import { makeFakeHome } from '../helpers/env.mjs'
+import { syncApp } from '../../src/cli/runtime-app.mjs'
+import { appDir } from '../../src/kernel/paths.mjs'
+
+test('CLI hook 转发保留首个标志，无子命令时不重复转发命令名', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    syncApp(REPO_ROOT, appDir(home))
+    const result = runNode([join(REPO_ROOT, 'cli.mjs'), 'guard', '--host', 'cursor'], {
+      input: JSON.stringify({ command: 'git reset --hard HEAD' }),
+      env: { HELLOAGENTS_HOME: home },
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(JSON.parse(result.stdout).permission, 'deny')
+  } finally { cleanup() }
+})
 
 /**
  * @param {string[]} args
@@ -83,6 +99,41 @@ test('notify：测试通道记录声音与桌面通知，cursor 返回空对象'
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test('notify route：短写、全称和旧别名使用运行副本，未知命令不接管', () => {
+  const notifyPath = join(REPO_ROOT, 'src', 'addons', 'notify.mjs')
+  const home = join(tmpdir(), 'helloagents route 中文')
+  const commands = ['plan', 'build', 'auto', 'prd', 'qa', 'eva', 'ask', 'init', 'commit', 'clean', 'help']
+  const aliases = { do: 'build', design: 'plan', review: 'qa', idea: 'ask' }
+  for (const host of ['claude', 'grok']) {
+    for (const [raw, canonical] of [
+      ...commands.flatMap((name) => [[name, name], [`hello-${name}`, name]]),
+      ...Object.entries(aliases),
+    ]) {
+      const result = runNode([notifyPath, 'route', '--host', host], {
+        input: JSON.stringify({ prompt: `  ~${raw} 执行任务` }),
+        env: { HELLOAGENTS_HOME: home },
+      })
+      assert.equal(result.status, 0, result.stderr)
+      const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext
+      const expected = join(home, '.helloagents', 'app', 'skills', `hello-${canonical}`, 'SKILL.md').replaceAll('\\', '/')
+      assert.ok(context.includes(`\`${expected}\``), `${host}: ${raw}`)
+      assert.ok(!context.includes('hello-hello-'))
+    }
+  }
+  for (const prompt of ['', '说明 ~plan', '~custom', '~hello-custom', '~constructor', '~toString', '~plan/other', '~plan.extra', '~hello-hello-plan']) {
+    const result = runNode([notifyPath, 'route', '--host', 'claude'], {
+      input: JSON.stringify({ prompt }),
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.deepEqual(JSON.parse(result.stdout), { suppressOutput: true }, prompt)
+  }
+  const silent = runNode([notifyPath, 'route', '--host', 'codex', '--silent'], {
+    input: JSON.stringify({ prompt: '~plan' }),
+  })
+  assert.equal(silent.status, 0)
+  assert.deepEqual(JSON.parse(silent.stdout), { suppressOutput: true })
 })
 
 test('npm 包内容：关键文件在列，测试与旧产物不在列', () => {

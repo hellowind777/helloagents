@@ -23,7 +23,7 @@ import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { resolveCanonicalCommandSkill } from '../hosts/codex-config.mjs'
+import { appDir } from '../kernel/paths.mjs'
 
 // ── 常量和路径 ─────────────────────────────────────────────────────────
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -36,7 +36,8 @@ const HOST = readFlag('--host') || (args[0] === 'codex' ? 'codex' : 'claude')
 const SILENT = args.includes('--silent')
 
 // ~command 别名映射
-const COMMAND_ALIASES = { do: 'build', design: 'plan', review: 'qa', idea: 'ask' }
+const COMMAND_ALIASES = new Map([['do', 'build'], ['design', 'plan'], ['review', 'qa'], ['idea', 'ask']])
+const COMMANDS = new Set(['plan', 'build', 'auto', 'prd', 'qa', 'eva', 'ask', 'init', 'commit', 'clean', 'help'])
 
 /** @param {string} name */
 function readFlag(name) {
@@ -44,6 +45,7 @@ function readFlag(name) {
   return index >= 0 ? (args[index + 1] ?? '') : ''
 }
 
+/** @param {unknown} configLanguage */
 function detectLanguage(configLanguage) {
   const forced = String(process.env.HELLOAGENTS_LANG || '').toLowerCase()
   if (forced.startsWith('cn') || forced.startsWith('zh')) return 'cn'
@@ -205,10 +207,12 @@ function notifyDesktop(event, detail) {
  */
 function parseCommand(prompt) {
   const trimmed = prompt.trim()
-  const match = trimmed.match(/^~(\w[\w-]*)/)
-  if (!match) return null
+  const match = trimmed.match(/^~(\w[\w-]*)(?=\s|$)/)
+  if (!match?.[1]) return null
   const raw = match[1]
-  const canonical = COMMAND_ALIASES[raw] || raw
+  const short = raw.replace(/^hello-/, '')
+  const canonical = COMMAND_ALIASES.get(short) ?? short
+  if (!COMMANDS.has(canonical)) return null
   return { skillName: raw, canonicalName: `hello-${canonical}` }
 }
 
@@ -220,7 +224,7 @@ function parseCommand(prompt) {
  * @returns {string}
  */
 function buildRouteInstruction(skillName, canonicalName, home) {
-  const skillPath = join(home, '.codex', 'helloagents', 'skills', canonicalName, 'SKILL.md')
+  const skillPath = join(appDir(home), 'skills', canonicalName, 'SKILL.md')
     .replaceAll('\\', '/')
   return [
     `[HelloAGENTS] 检测到命令 ~${skillName}，已自动路由到 ${canonicalName} 技能。`,
@@ -275,7 +279,7 @@ function cmdCodexNotify() {
     data = rawArg ? JSON.parse(rawArg) : readStdinJson()
   } catch { data = {} }
 
-  const type = String(data.type || '')
+  const type = String(/** @type {{ type?: unknown }} */ (data).type || '')
   if (type === 'approval-requested') {
     notifySound('notification')
     notifyDesktop('notification', '')

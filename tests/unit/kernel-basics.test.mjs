@@ -6,6 +6,24 @@ import { join } from 'node:path'
 import { readJson, readText, writeJsonAtomic, writeTextAtomic } from '../../src/kernel/fsx.mjs'
 import { createTranslator, detectLanguage } from '../../src/kernel/i18n.mjs'
 import { MESSAGES } from '../../src/kernel/messages.mjs'
+import { readInstallState, writeInstallState } from '../../src/kernel/config.mjs'
+import { makeFakeHome } from '../helpers/env.mjs'
+
+test('安装来源：往返保留、旧状态兼容、拒绝损坏的 Git 来源', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const state = readInstallState(home)
+    assert.equal(state.source, undefined)
+    for (const source of /** @type {import('../../src/kernel/config.mjs').InstallSource[]} */ ([
+      { type: 'npm' }, { type: 'git', url: 'https://example.com/repo.git', branch: 'main', path: home },
+    ])) {
+      writeInstallState(home, { ...state, source })
+      assert.deepEqual(readInstallState(home).source, source)
+    }
+    writeJsonAtomic(join(home, '.helloagents', 'install.json'), { ...state, source: { type: 'git' } })
+    assert.throws(() => readInstallState(home), /Invalid installation source/)
+  } finally { cleanup() }
+})
 
 test('原子写入：内容完整且无临时文件残留', () => {
   const dir = mkdtempSync(join(tmpdir(), 'helloagents-fsx-'))

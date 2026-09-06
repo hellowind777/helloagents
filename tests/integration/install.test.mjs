@@ -6,7 +6,35 @@ import { hasMarkedBlock, readMarkedVersion } from '../../src/kernel/ownership.mj
 import { findHost } from '../../src/hosts/registry.mjs'
 import { runInstall, runUninstall, runUpdate } from '../../src/cli/install.mjs'
 import { HOSTS } from '../../src/hosts/registry.mjs'
-import { PACKAGE_VERSION, makeCtx, makeFakeHome } from '../helpers/env.mjs'
+import { PACKAGE_VERSION, REPO_ROOT, makeCtx, makeFakeHome } from '../helpers/env.mjs'
+import { execFileSync } from 'node:child_process'
+import { readInstallState, writeInstallState } from '../../src/kernel/config.mjs'
+
+test('Git 来源更新保留脏工作区，不重置本地修改', () => {
+  const { home, cleanup } = makeFakeHome()
+  try {
+    const { ctx, lines } = makeCtx(home)
+    runInstall(ctx, [host('claude')], 'standard')
+    const source = join(home, 'source')
+    writeTextAtomic(join(source, 'package.json'), JSON.stringify({ version: ctx.version }))
+    writeTextAtomic(join(source, 'prompts', 'kernel.md'), 'original\n')
+    const options = { cwd: source, encoding: /** @type {const} */ ('utf8') }
+    execFileSync('git', ['init', '-b', 'main'], options)
+    execFileSync('git', ['add', '.'], options)
+    execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', 'fixture'], options)
+    writeTextAtomic(join(source, 'prompts', 'kernel.md'), 'local change\n')
+    const state = readInstallState(home)
+    state.source = { type: 'git', url: source, path: source, branch: 'main' }
+    writeInstallState(home, state)
+    runUpdate(ctx, [host('claude')])
+    assert.equal(readText(join(source, 'prompts', 'kernel.md')), 'local change\n')
+    assert.ok(lines.some((line) => line.includes('使用本地副本')))
+  } finally { cleanup() }
+})
+
+const kernelText = readText(join(REPO_ROOT, 'prompts', 'kernel.md'))
+assert.ok(kernelText)
+const kernel = kernelText.trim()
 
 /** @param {string} id */
 function host(id) {
@@ -30,7 +58,7 @@ test('标准模式安装：载体写入内核，安装状态记录，重复安�
       assert.equal(readMarkedVersion(carrier ?? ''), PACKAGE_VERSION, target.id)
       const text = readText(carrier ?? '') ?? ''
       assert.equal(text.split('HELLOAGENTS_START').length - 1, 1, `${target.id} 只应有一个受管块`)
-      assert.ok(text.includes('简单优先'), `${target.id} 载体应包含内核内容`)
+      assert.ok(text.includes(kernel), `${target.id} 载体应包含完整的当前内核`)
     }
 
     const state = /** @type {{ hosts: Record<string, { mode: string }> }} */ (
@@ -80,7 +108,7 @@ test('cursor 标准模式创建软链接与 hooks，全局模式下发清单、�
     const rule = readText(join(pluginDir, 'rules', 'helloagents-kernel.mdc')) ?? ''
     assert.ok(rule.startsWith('---\nalwaysApply: true\n---\n'), '规则文件缺少 alwaysApply frontmatter')
     assert.ok(!rule.includes('description:'), 'Cursor 缺陷：alwaysApply 与 description 同时存在会被降级')
-    assert.ok(rule.includes('简单优先'), '规则文件应包含内核正文')
+    assert.ok(rule.includes(kernel), '规则文件应包含完整的当前内核')
 
     // 插件目录只放 Cursor 认识的东西，运行副本的 CLI 与资源不进去。
     for (const noise of ['src', 'cli.mjs', 'assets', 'package.json', '.claude-plugin']) {
@@ -103,7 +131,7 @@ test('cursor 全局模式随 update 刷新到当前版本', () => {
     writeTextAtomic(ruleFile, '---\nalwaysApply: true\n---\n\n过期内容\n')
 
     runUpdate(ctx, HOSTS)
-    assert.ok((readText(ruleFile) ?? '').includes('简单优先'))
+    assert.ok((readText(ruleFile) ?? '').includes(kernel))
   } finally {
     cleanup()
   }

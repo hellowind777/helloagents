@@ -128,7 +128,7 @@ HelloAGENTS 已收录在 [`dsh-plugin` topic](https://github.com/topics/dsh-plug
 
 ## 项目知识库
 
-`helloagents init` 在项目中建立 `.helloagents/`：`context.md`（项目事实）、`guidelines.md`（编码约定）、`DESIGN.md`（设计系统，界面项目需要时创建）、`verify.yaml`（验证命令）、`plans/`（方案文档）、`archive/`（已完成方案按月归档）。内核还定义了 `notes/` 约定，context.md 中某主题积累过厚时抽出。一条原则：只记代码里看不出来的内容；不创建空文件，不填充模板套话。
+`helloagents init` 同步用户级运行副本，写入或更新项目 `AGENTS.md` 的受管块，并在 `.helloagents/` 中补充缺失的 `context.md`、`guidelines.md` 模板文件，建立 `plans/` 与 `archive/` 目录。已有知识库文件和受管块外的用户内容不覆盖。`hello-init` 技能随后核实项目事实并填写真实验证命令到 `verify.yaml`；`DESIGN.md` 和 `notes/` 仅在有实际内容时创建。模板中的占位说明应替换或删除，不把模板当作已经核实的知识。
 
 ## 一键安装脚本
 

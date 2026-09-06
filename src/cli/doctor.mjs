@@ -160,7 +160,7 @@ export function buildDoctorReport(ctx) {
 
       if (hooksPath) {
         const hooksData = readJson(hooksPath)
-        if (!hooksData || !hooksData.hooks) {
+        if (!hooksData || typeof hooksData !== 'object' || !('hooks' in hooksData) || !hooksData.hooks) {
           issues.push({ code: 'hooks-missing', level: 'error', host: host.id, message: hooksPath })
         }
       }

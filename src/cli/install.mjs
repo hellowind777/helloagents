@@ -8,7 +8,7 @@
  *
  * 切换安装方式时先移除旧方式的落盘内容，再写入新方式。
  */
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { readInstallState, writeInstallState } from '../kernel/config.mjs'
 import { ensureDir, fileExists, readJson, readText, removePath, writeJsonAtomic, writeTextAtomic } from '../kernel/fsx.mjs'
@@ -46,6 +46,7 @@ import { removeApp, syncApp } from './runtime-app.mjs'
 
 // ── 工具函数 ────────────────────────────────────────────────────────────
 
+/** @param {string} packageRootPath @returns {InstallSource} */
 function detectSource(packageRootPath) {
   if (!fileExists(join(packageRootPath, '.git'))) {
     return { type: 'npm' }
@@ -62,11 +63,13 @@ function detectSource(packageRootPath) {
   return { type: 'npm' }
 }
 
+/** @param {Extract<InstallSource, {type: 'git'}>} source */
 function gitPullSource(source) {
   try {
-    execSync(`git fetch origin ${source.branch}`, { cwd: source.path, encoding: 'utf-8', timeout: 60000 })
-    execSync(`git checkout ${source.branch}`, { cwd: source.path, encoding: 'utf-8', timeout: 30000 })
-    execSync(`git reset --hard origin/${source.branch}`, { cwd: source.path, encoding: 'utf-8', timeout: 30000 })
+    const options = { cwd: source.path, encoding: /** @type {const} */ ('utf-8'), timeout: 60000 }
+    const branch = execFileSync('git', ['branch', '--show-current'], options).trim()
+    if (branch !== source.branch || execFileSync('git', ['status', '--porcelain'], options).trim()) return null
+    execFileSync('git', ['pull', '--ff-only', 'origin', source.branch], options)
     return source.path
   } catch {
     return null
@@ -91,6 +94,47 @@ function createSymlink(target, linkPath) {
 // ── 宿主 hooks 安装 / 卸载 ─────────────────────────────────────────────
 
 /**
+ * 判断一条独立 hooks 文件中的内层命令是否属于附加组件（guard 或 notify）。
+ * 基础 hooks 使用 helloagents-js，附加组件使用运行副本中的 guard.mjs 或 notify.mjs。
+ * @param {unknown} command
+ */
+function isAddonHookCommand(command) {
+  const value = String(command || '')
+  return value.includes('/guard.mjs') || value.includes('/notify.mjs')
+}
+
+/**
+ * 合并写入独立 hooks 文件：保留已有的附加组件条目，仅替换基础条目。
+ * @param {string} hooksPath
+ * @param {{hooks?: Record<string, unknown[]>}} hooksData
+ */
+function mergeGrokHooksFile(hooksPath, hooksData) {
+  const baseHooks = hooksData && typeof hooksData.hooks === 'object' && hooksData.hooks
+    ? /** @type {Record<string, unknown[]>} */ (hooksData.hooks)
+    : {}
+  const existing = /** @type {{hooks?: Record<string, unknown[]>} | null} */ (readJson(hooksPath))
+  const current = existing && typeof existing.hooks === 'object' && existing.hooks
+    ? /** @type {Record<string, unknown[]>} */ (existing.hooks)
+    : {}
+  /** @type {Record<string, unknown[]>} */
+  const merged = {}
+  const events = new Set([...Object.keys(current), ...Object.keys(baseHooks)])
+  for (const event of events) {
+    const kept = Array.isArray(current[event]) ? current[event].filter((group) => {
+      if (!group || typeof group !== 'object') return true
+      const inner = Array.isArray(/** @type {{hooks?: unknown}} */ (group).hooks)
+        ? /** @type {Array<{command?: unknown}>} */ (/** @type {{hooks?: unknown}} */ (group).hooks)
+        : []
+      return inner.some((hook) => isAddonHookCommand(hook?.command))
+    }) : []
+    const base = Array.isArray(baseHooks[event]) ? baseHooks[event] : []
+    const combined = [...kept, ...base]
+    if (combined.length > 0) merged[event] = combined
+  }
+  writeJsonAtomic(hooksPath, { hooks: merged })
+}
+
+/**
  * 从 hooks 定义文件中读取 hooks 内容并注入到宿主对应配置。
  * 根据宿主类型选择不同的注入方式。
  * @param {CliContext} ctx
@@ -98,7 +142,7 @@ function createSymlink(target, linkPath) {
  */
 function installHostHooks(ctx, host) {
   const hooksFile = join(ctx.app, 'hooks', `hooks-${host.id}.json`)
-  const hooksData = readJson(hooksFile)
+  const hooksData = /** @type {{hooks?: Record<string, Array<{matcher?: string, hooks: Array<{type: string, command: string, timeout?: number}>}>>} | null} */ (readJson(hooksFile))
   if (!hooksData || !hooksData.hooks) return
 
   if (host.id === 'claude') {
@@ -110,16 +154,25 @@ function installHostHooks(ctx, host) {
     installCodexHooks(hooksPath, hooksData.hooks)
   } else if (host.id === 'grok') {
     const hooksPath = join(ctx.home, '.grok', 'hooks', 'helloagents.json')
-    writeTextAtomic(hooksPath, JSON.stringify(hooksData, null, 2) + '\n')
+    mergeGrokHooksFile(hooksPath, hooksData)
   } else if (host.id === 'cursor') {
     const hooksPath = join(ctx.home, '.cursor', 'hooks.json')
-    /** @type {Record<string, Array<{ command: string, timeout: number }>>} */
+    /** @type {Record<string, Array<{ command: string, timeout?: number }>>} */
     const flat = {}
     for (const [event, groups] of Object.entries(hooksData.hooks)) {
       if (!Array.isArray(groups)) continue
-      flat[event] = groups.flatMap((g) =>
-        Array.isArray(g.hooks) ? g.hooks.map((h) => ({ command: h.command, timeout: h.timeout })) : []
-      )
+      flat[event] = groups.flatMap((g) => {
+        if (g && typeof g === 'object' && Array.isArray(/** @type {{hooks?: unknown}} */ (g).hooks)) {
+          const nested = /** @type {unknown} */ (/** @type {{hooks?: unknown}} */ (g).hooks)
+          return /** @type {Array<{command: string, timeout?: number}>} */ (nested).map((h) => ({ command: h.command, timeout: h.timeout }))
+        }
+        if (g && typeof g === 'object' && typeof /** @type {{command?: unknown}} */ (g).command === 'string') {
+          const entry = /** @type {unknown} */ (g)
+          const typed = /** @type {{command: string, timeout?: number}} */ (entry)
+          return [{ command: typed.command, ...(typed.timeout !== undefined ? { timeout: typed.timeout } : {}) }]
+        }
+        return []
+      })
     }
     upsertCursorHooks(hooksPath, flat, { home: ctx.home })
   } else if (host.id === 'hermes') {
@@ -153,11 +206,13 @@ function uninstallHostHooks(ctx, host) {
  * @param {string} kernel
  */
 function installHostStandard(ctx, host, kernel) {
-  // 1. 载体文件注入（Cursor 跳过）
+  // 1. 载体文件注入（Cursor 无全局规则文件，仅安装钩子与软链接）
   const carrier = host.carrierPath(ctx.home)
   if (carrier) {
     injectKernel(carrier, kernel, ctx.version)
     ctx.log(ctx.t('install.standard.done', { host: host.label, path: carrier }))
+  } else {
+    ctx.log(ctx.t('install.standard.hooksDone', { host: host.label }))
   }
 
   // 2. 软链接（dsh 跟随 $DSH_HOME）
@@ -273,6 +328,7 @@ function ensureUserConfig(home) {
 
 // ── 主流程 ──────────────────────────────────────────────────────────────
 
+/** @param {CliContext} ctx @param {HostAdapter[]} targets @param {'standard' | 'global' | null} requestedMode */
 export function runInstall(ctx, targets, requestedMode) {
   const version = syncApp(ctx.packageRoot, ctx.app)
   ctx.log(ctx.t('app.synced', { path: ctx.app, version: version ?? ctx.version }))
@@ -341,6 +397,7 @@ export function runInstall(ctx, targets, requestedMode) {
   ctx.log(ctx.t('install.summary', { count: installedCount }))
 }
 
+/** @param {CliContext} ctx @param {HostAdapter[]} targets @param {{all: boolean, purge: boolean}} options */
 export function runUninstall(ctx, targets, options) {
   const state = readInstallState(ctx.home)
 
@@ -372,6 +429,7 @@ export function runUninstall(ctx, targets, options) {
   }
 }
 
+/** @param {CliContext} ctx @param {HostAdapter[]} allHosts */
 export function runUpdate(ctx, allHosts) {
   const state = readInstallState(ctx.home)
   const installed = allHosts.filter((host) => state.hosts[host.id])
@@ -385,9 +443,9 @@ export function runUpdate(ctx, allHosts) {
     const pulled = gitPullSource(state.source)
     if (pulled) {
       sourceRoot = pulled
-      ctx.log(`Git 仓库已更新：${pulled}（${state.source.branch}）`)
+      ctx.log(ctx.t('update.gitPulled', { path: pulled, branch: state.source.branch }))
     } else {
-      ctx.log(`Git 拉取失败，使用本地副本：${state.source.path}`)
+      ctx.log(ctx.t('update.gitFallback', { path: state.source.path }))
       sourceRoot = state.source.path
     }
   }

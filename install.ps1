@@ -7,6 +7,8 @@
 #   HELLOAGENTS_BRANCH    Git 分支（git 来源时生效），默认 main
 #   HELLOAGENTS_GIT_URL   Git 远程地址（git 来源时生效），默认官方仓库
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 
 $version  = if ($env:HELLOAGENTS_VERSION)  { $env:HELLOAGENTS_VERSION }  else { 'latest' }
 $hosts    = if ($env:HELLOAGENTS_HOSTS)    { $env:HELLOAGENTS_HOSTS }    else { 'all' }

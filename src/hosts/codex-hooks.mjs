@@ -9,10 +9,11 @@
 import { readJson, removePath, writeJsonAtomic } from '../kernel/fsx.mjs'
 
 // hooks.json 中归我们管理的 hook。每条至少包含 type: command 且 command 中含 helloagents。
+/** @param {unknown} handler */
 function isManagedHookHandler(handler) {
   return handler && typeof handler === 'object' &&
-    handler.type === 'command' &&
-    typeof handler.command === 'string' &&
+    'type' in handler && handler.type === 'command' &&
+    'command' in handler && typeof handler.command === 'string' &&
     handler.command.includes('helloagents')
 }
 

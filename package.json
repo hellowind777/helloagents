@@ -1,8 +1,8 @@
 {
   "name": "helloagents",
-  "version": "4.0.5",
+  "version": "4.0.6",
   "type": "module",
-  "description": "HelloAGENTS — AI 编码 CLI 的思维激活层：纠偏内核 + 按需思维技能，一条命令分发到 Claude Code、Codex、Grok、Cursor。A thinking-activation layer for AI coding CLIs.",
+  "description": "HelloAGENTS — AI 编码 CLI 的思维激活层：纠偏内核 + 按需思维技能，一条命令分发到 Claude Code、Codex CLI、Grok Build、Cursor、Hermes、DeepSeek Harness。A thinking-activation layer for AI coding CLIs.",
   "author": "HelloWind",
   "license": "Apache-2.0",
   "homepage": "https://github.com/hellowind777/helloagents",
@@ -25,7 +25,9 @@
     ".claude-plugin/",
     ".cursor-plugin/",
     ".codex-plugin/",
-    "README_CN.md"
+    "README.md",
+    "README_CN.md",
+    "LICENSE.md"
   ],
   "exports": {
     "./dsh": "./dsh/index.js",

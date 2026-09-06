@@ -128,7 +128,7 @@ Both add-ons are optional and decoupled from the core:
 
 ## Project Knowledge Base
 
-`helloagents init` sets up `.helloagents/` in your project: `context.md` (project facts), `guidelines.md` (conventions), `DESIGN.md` (design system, for UI projects), `verify.yaml` (verification commands), `plans/` (plan documents), and `archive/` (completed plans). The kernel also defines a `notes/` convention for extracting thick topics out of `context.md`. One principle: record only what can't be read from the code; no empty files are created, no boilerplate is filled in.
+`helloagents init` syncs the user-level runtime copy, writes or updates the managed block in the project's `AGENTS.md`, adds missing `context.md` and `guidelines.md` templates under `.helloagents/`, and creates `plans/` and `archive/`. Existing knowledge files and user content outside the managed block are preserved. The `hello-init` skill then verifies project facts and records real verification commands in `verify.yaml`; `DESIGN.md` and `notes/` are created only when there is actual content to record. Replace or remove template placeholders rather than treating them as verified knowledge.
 
 ## One-Click Install Scripts
 

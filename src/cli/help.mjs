@@ -18,7 +18,7 @@ HelloAGENTS v{version} — AI 编码 CLI 的思维激活层
   migrate                                      清理 3.x 版本的全部残留
 
 附加组件（可选）
-  guard on|off [宿主…]                         危险命令拦截（支持：claude、grok、cursor、hermes）
+  guard on|off [宿主…]                         危险命令拦截（支持：claude、codex、grok、cursor、hermes）
   notify on|off [宿主…]                        完成提醒（支持：claude、codex、grok、cursor、hermes）
 
 其他
@@ -57,7 +57,7 @@ Install and maintain
   migrate                                       Clean up everything left behind by version 3.x
 
 Optional add-ons
-  guard on|off [hosts…]                         Dangerous-command blocking (claude, grok, cursor, hermes)
+  guard on|off [hosts…]                         Dangerous-command blocking (claude, codex, grok, cursor, hermes)
   notify on|off [hosts…]                        Completion notifications (claude, codex, grok, cursor, hermes)
 
 Other

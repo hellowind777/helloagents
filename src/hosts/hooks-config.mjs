@@ -7,7 +7,7 @@
  *    { version: 1, hooks: { 事件名: [ { command, timeout } ] } }
  * 归属判断只看命令是否指向运行副本目录（或 3.x 遗留特征），其余条目一律不动。
  */
-import { readJson, writeTextAtomic } from '../kernel/fsx.mjs'
+import { readJson, removePath, writeTextAtomic } from '../kernel/fsx.mjs'
 import { isLegacyHookCommand, isOwnedHookCommand } from '../kernel/ownership.mjs'
 
 /**
@@ -98,14 +98,19 @@ export function removeSettingsHooks(settingsPath, options) {
     }
   }
   if (Object.keys(hooksRecord).length === 0) delete settings.hooks
-  if (removed > 0) writeTextAtomic(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
+  if (removed === 0) return removed
+  if (Object.keys(settings).length === 0) {
+    removePath(settingsPath)
+    return removed
+  }
+  writeTextAtomic(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
   return removed
 }
 
 /**
  * 写入 cursor 形态的 hooks 条目。
  * @param {string} hooksPath
- * @param {Record<string, Array<{ command: string, timeout: number }>>} entriesByEvent
+ * @param {Record<string, Array<{ command: string, timeout?: number }>>} entriesByEvent
  * @param {OwnershipOptions} options
  */
 export function upsertCursorHooks(hooksPath, entriesByEvent, options) {
@@ -154,6 +159,11 @@ export function removeCursorHooks(hooksPath, options) {
     }
   }
   if (Object.keys(hooksRecord).length === 0) delete config.hooks
-  if (removed > 0) writeTextAtomic(hooksPath, `${JSON.stringify(config, null, 2)}\n`)
+  if (removed === 0) return removed
+  if (!config.hooks) {
+    removePath(hooksPath)
+    return removed
+  }
+  writeTextAtomic(hooksPath, `${JSON.stringify(config, null, 2)}\n`)
   return removed
 }

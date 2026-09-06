@@ -44,9 +44,6 @@ const EVENTS_WITH_MATCHER = new Set([
 
 const HOOK_STATE_HEADER_RE = /^\[hooks\.state\."((?:\\.|[^"])*)"\](?:\s*#.*)?$/
 
-// 命令参数别名映射，兼容旧版短写
-const COMMAND_ALIASES = { do: 'build', design: 'plan', review: 'qa', idea: 'ask' }
-
 // ── TOML 行级工具 ─────────────────────────────────────────────────────
 
 /**
@@ -69,19 +66,22 @@ function existingNotifyCoversHelloagents(text) {
   return false
 }
 
+/** @param {string} line */
 function isTableHeader(line) {
   return /^\s*\[/.test(line.trim())
 }
 
+/** @param {string} text */
 function splitTopLevel(text) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   let end = lines.length
   for (let i = 0; i < lines.length; i += 1) {
-    if (isTableHeader(lines[i])) { end = i; break }
+    if (isTableHeader(lines[i] ?? '')) { end = i; break }
   }
   return { top: lines.slice(0, end), sections: lines.slice(end) }
 }
 
+/** @param {string} text */
 function normalize(text) {
   return text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
 }
@@ -89,6 +89,8 @@ function normalize(text) {
 /**
  * 在顶层区域（第一个表头之前）按顺序更新指定键的值行。
  * 受管行置顶，其余顶层键排在后面。
+ * @param {string} text
+ * @param {Array<{key: string, line: string}>} entries
  */
 function upsertOrderedTopLevel(text, entries) {
   const { top, sections } = splitTopLevel(text)
@@ -107,13 +109,15 @@ function upsertOrderedTopLevel(text, entries) {
   return normalize(result) ? `${normalize(result)}\n` : ''
 }
 
+/** @param {string} text @param {string} header @param {string} key @param {string} line */
 function upsertSectionLine(text, header, key, line) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   let sectionStart = -1
   let sectionEnd = lines.length
   for (let i = 0; i < lines.length; i += 1) {
-    if (lines[i].trim() === header) { sectionStart = i; continue }
-    if (sectionStart >= 0 && isTableHeader(lines[i])) { sectionEnd = i; break }
+    const current = lines[i] ?? ''
+    if (current.trim() === header) { sectionStart = i; continue }
+    if (sectionStart >= 0 && isTableHeader(current)) { sectionEnd = i; break }
   }
   if (sectionStart < 0) {
     const base = normalize(text)
@@ -121,29 +125,33 @@ function upsertSectionLine(text, header, key, line) {
     return base ? `${base}\n\n${block}\n` : `${block}\n`
   }
   for (let i = sectionStart + 1; i < sectionEnd; i += 1) {
-    if (lines[i].trim().startsWith(`${key} =`) || lines[i].trim().startsWith(`${key}=`)) {
+    const current = lines[i] ?? ''
+    if (current.trim().startsWith(`${key} =`) || current.trim().startsWith(`${key}=`)) {
       lines[i] = line
       return `${normalize(lines.join('\n'))}\n`
     }
   }
   let insertAt = sectionEnd
-  while (insertAt > sectionStart + 1 && !lines[insertAt - 1].trim()) insertAt -= 1
+  while (insertAt > sectionStart + 1 && !(lines[insertAt - 1] ?? '').trim()) insertAt -= 1
   lines.splice(insertAt, 0, line)
   return `${normalize(lines.join('\n'))}\n`
 }
 
+/** @param {string} text @param {string} header @param {string} key @param {(line: string) => boolean} shouldRemove */
 function removeSectionLine(text, header, key, shouldRemove) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   let sectionStart = -1
   let sectionEnd = lines.length
   for (let i = 0; i < lines.length; i += 1) {
-    if (lines[i].trim() === header) { sectionStart = i; continue }
-    if (sectionStart >= 0 && isTableHeader(lines[i])) { sectionEnd = i; break }
+    const current = lines[i] ?? ''
+    if (current.trim() === header) { sectionStart = i; continue }
+    if (sectionStart >= 0 && isTableHeader(current)) { sectionEnd = i; break }
   }
   if (sectionStart < 0) return `${normalize(text)}\n`
   let removed = false
   for (let i = sectionStart + 1; i < sectionEnd; i += 1) {
-    if ((lines[i].trim().startsWith(`${key} =`) || lines[i].trim().startsWith(`${key}=`)) && shouldRemove(lines[i].trim())) {
+    const current = (lines[i] ?? '').trim()
+    if ((current.startsWith(`${key} =`) || current.startsWith(`${key}=`)) && shouldRemove(current)) {
       lines.splice(i, 1)
       sectionEnd -= 1
       removed = true
@@ -158,6 +166,7 @@ function removeSectionLine(text, header, key, shouldRemove) {
   return `${normalize(lines.join('\n'))}\n`
 }
 
+/** @param {string} text @param {string} header @param {string} key */
 function readSectionLine(text, header, key) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   let inSection = false
@@ -172,38 +181,41 @@ function readSectionLine(text, header, key) {
 }
 
 // ── TOML 转义 / 反转义 ────────────────────────────────────────────────
+/** @param {unknown} value */
 function escapeTomlBasicString(value) {
   return String(value || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
+/** @param {unknown} value */
 function unescapeTomlBasicString(value) {
   return String(value || '').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
 }
 
 // ── JSON 规范化（按键排序，确保哈希稳定） ─────────────────────────────
+/** @param {unknown} value @returns {unknown} */
 function canonicalizeJson(value) {
   if (Array.isArray(value)) return value.map(canonicalizeJson)
   if (!value || typeof value !== 'object') return value
-  return Object.keys(value).sort().reduce((acc, key) => {
-    if (value[key] !== undefined) acc[key] = canonicalizeJson(value[key])
-    return acc
-  }, {})
+  return Object.fromEntries(Object.entries(value).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+    .filter(([, item]) => item !== undefined).map(([key, item]) => [key, canonicalizeJson(item)]))
 }
 
 // ── hooks 信任哈希计算 ────────────────────────────────────────────────
 
 /**
  * 收集 config.toml 中所有 hooks.state 段的信息。
+ * @param {string} text
  */
 function collectHookStateSections(text) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
   const sections = []
   for (let index = 0; index < lines.length; index += 1) {
-    const match = HOOK_STATE_HEADER_RE.exec(lines[index].trim())
+    const current = lines[index] ?? ''
+    const match = HOOK_STATE_HEADER_RE.exec(current.trim())
     if (!match) continue
     let end = lines.length
     for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
-      if (isTableHeader(lines[cursor])) { end = cursor; break }
+      if (isTableHeader(lines[cursor] ?? '')) { end = cursor; break }
     }
     const bodyLines = lines.slice(index + 1, end)
     const trustedHashLine = bodyLines.find((line) => /^\s*trusted_hash\s*=/.test(line))
@@ -213,7 +225,7 @@ function collectHookStateSections(text) {
       start: index,
       end,
       trustedHash: trustedHashMatch ? unescapeTomlBasicString(trustedHashMatch[1]) : '',
-      managed: lines[index].includes(MANAGED_TOML_SUFFIX)
+      managed: current.includes(MANAGED_TOML_SUFFIX)
         || bodyLines.some((line) => line.includes(MANAGED_TOML_SUFFIX)),
     })
     index = end - 1
@@ -221,6 +233,7 @@ function collectHookStateSections(text) {
   return { lines, sections }
 }
 
+/** @param {string} text @param {(section: ReturnType<typeof collectHookStateSections>['sections'][number]) => boolean} shouldRemove */
 function removeHookStateSections(text, shouldRemove) {
   const { lines, sections } = collectHookStateSections(text)
   if (!sections.length) return normalize(text)
@@ -238,10 +251,12 @@ function removeHookStateSections(text, shouldRemove) {
   return normalize(kept.join('\n'))
 }
 
+/** @param {{key: string, trustedHash: string}} entry */
 function serializeHookStateBlock(entry) {
   return `[hooks.state."${escapeTomlBasicString(entry.key)}"] ${MANAGED_TOML_SUFFIX}\ntrusted_hash = "${escapeTomlBasicString(entry.trustedHash)}"`
 }
 
+/** @param {string} text @param {Array<{key: string, trustedHash: string}>} entries */
 function appendHookStateBlocks(text, entries) {
   if (!entries.length) return normalize(text)
   const blocks = entries.map(serializeHookStateBlock).join('\n\n')
@@ -253,6 +268,8 @@ function appendHookStateBlocks(text, entries) {
  * 从 hooks.json 中提取我们管理的 hook 条目，计算信任哈希。
  * 使用与 Codex 一致的身份格式：snake_case 事件名 + 排序 JSON keys +
  * 对 SessionStart 等事件包含 matcher 字段。
+ * @param {string} hooksPath
+ * @param {unknown} hooksData
  */
 export function buildManagedHookTrustEntries(hooksPath, hooksData) {
   const hooks = hooksData && typeof hooksData === 'object' && !Array.isArray(hooksData)
@@ -265,7 +282,8 @@ export function buildManagedHookTrustEntries(hooksPath, hooksData) {
   for (const [eventName, groups] of Object.entries(hooks)) {
     if (!Array.isArray(groups)) continue
     groups.forEach((group, groupIndex) => {
-      const handlers = Array.isArray(group?.hooks) ? group.hooks : []
+      const inner = group && typeof group === 'object' ? group.hooks : undefined
+      const handlers = Array.isArray(inner) ? /** @type {unknown[]} */ (inner) : []
       handlers.forEach((handler, handlerIndex) => {
         if (!handler || typeof handler !== 'object') return
         const cmd = /** @type {{ command?: string }} */ (handler)
@@ -298,6 +316,8 @@ export function buildManagedHookTrustEntries(hooksPath, hooksData) {
 
 /**
  * 同步 hooks.state 信任段：移除受管旧段及 key 重合的非受管段，写入新受管段。
+ * @param {string} text
+ * @param {Array<{key: string, trustedHash: string}>} entries
  */
 function syncHookStateSections(text, entries) {
   if (!entries.length) {
@@ -372,6 +392,8 @@ export function installCodexManagedConfig(configPath, hooksPath, hooksData, back
 /**
  * 移除 config.toml 中所有受管内容；若有安装前备份，则恢复其中的
  * model_instructions_file / notify 原始值。
+ * @param {string} configPath
+ * @param {string} backupDir
  */
 export function uninstallCodexManagedConfig(configPath, backupDir) {
   let backup = null
@@ -380,8 +402,9 @@ export function uninstallCodexManagedConfig(configPath, backupDir) {
       const backups = readdirSync(backupDir)
         .filter((name) => /^config\.toml_\d{8}-\d{6}\.bak$/.test(name))
         .sort()
-      if (backups.length > 0) {
-        backup = readText(join(backupDir, backups[backups.length - 1]))
+      const latest = backups.at(-1)
+      if (latest) {
+        backup = readText(join(backupDir, latest))
       }
     } catch { /* 读取失败则跳过恢复 */ }
   }
@@ -439,6 +462,9 @@ export function uninstallCodexManagedConfig(configPath, backupDir) {
 
 /**
  * 更新 hooks.state 信任哈希（hooks.json 变更时调用）。
+ * @param {string} configPath
+ * @param {string} hooksPath
+ * @param {unknown} hooksData
  */
 export function syncCodexHookTrust(configPath, hooksPath, hooksData) {
   const existing = readText(configPath)
@@ -508,10 +534,4 @@ export function isHooksFeatureDisabled(text) {
   const line = readSectionLine(text, FEATURES_HEADER, 'hooks')
   if (!line) return false
   return /=\s*false\b/.test(line)
-}
-
-// ── 命令路由（供 notify route 使用）──────────────────────────────────
-
-export function resolveCanonicalCommandSkill(command) {
-  return COMMAND_ALIASES[command] || command
 }

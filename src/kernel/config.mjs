@@ -8,6 +8,8 @@ import { installStatePath, userConfigPath } from './paths.mjs'
 
 export const STATE_VERSION = 4
 
+/** @typedef {{type: 'npm'} | {type: 'git', url: string, branch: string, path: string}} InstallSource */
+
 /**
  * @typedef {Object} UserConfig
  * @property {'cn' | 'en' | null} language 界面语言；null 表示跟随系统。
@@ -26,6 +28,7 @@ export const STATE_VERSION = 4
  * @property {number} version
  * @property {Record<string, HostInstall>} hosts
  * @property {{ guard: string[], notify: string[] }} addons
+ * @property {InstallSource} [source]
  */
 
 /**
@@ -53,9 +56,16 @@ export function readInstallState(home) {
   const raw = /** @type {Partial<InstallState> | null} */ (readJson(installStatePath(home)))
   const hosts = raw && typeof raw.hosts === 'object' && raw.hosts ? raw.hosts : {}
   const addons = raw && typeof raw.addons === 'object' && raw.addons ? raw.addons : {}
+  const source = raw?.source
+  if (source !== undefined && (!source || typeof source !== 'object' ||
+    (source.type !== 'npm' && source.type !== 'git') ||
+    (source.type === 'git' && [source.url, source.branch, source.path].some((value) => typeof value !== 'string' || !value.trim())))) {
+    throw new Error('Invalid installation source in install.json')
+  }
   return {
     version: STATE_VERSION,
     hosts: /** @type {Record<string, HostInstall>} */ (hosts),
+    ...(source ? { source } : {}),
     addons: {
       guard: Array.isArray(/** @type {{guard?: unknown}} */ (addons).guard)
         ? /** @type {string[]} */ (/** @type {{guard?: unknown}} */ (addons).guard)
