@@ -2,28 +2,58 @@
 
 ## 简体中文
 
-### 缺陷修复
+### 行为校准与验证
 
-- **Cursor 标准模式钩子为空**：`hooks-cursor.json` 为扁平格式，安装时按设置形态解析导致 `stop` 为空数组。现兼容两种格式，正确写入通知钩子；标准模式增加安装提示。
-- **Grok 与 Hermes 基础钩子被附加组件覆盖**：基础条目与附加组件共用同一独立钩子文件，启用附加组件会整体重写文件，停用会直接删除文件，基础条目丢失。现改为合并写入，仅增删附加组件条目，基础条目保持不动。
-- **Hermes 卸载残留空配置**：卸载后 `config.yaml` 留下空的 `skills` 与 `external_dirs` 块。现无用户内容时直接删除文件，有用户内容时完整保留用户条目。
-- **Codex 市场索引卸载残留**：卸载后 `marketplace.json` 留下空插件列表。现插件为空时直接删除文件。
-- **运行副本与 npm 包缺文件**：运行副本补齐 `.codex-plugin`，npm 包补齐 `README.md` 与 `LICENSE.md`；包描述补齐全部六个宿主。
-- **空钩子文件残留**：移除受管条目后不再留下空文件，无其他内容时直接删除。
-- **帮助与提示**：帮助补齐 Codex 的危险命令拦截支持；更新时的远端拉取提示补齐多语言；一键安装脚本固定为 UTF-8 输出，避免中文路径显示异常。
-- **命令路由与安装来源**：短写与全称使用同一解析，未知命令不接管，技能路径统一指向用户级运行副本；安装来源读取修复，Git 来源更新仅允许干净工作区同分支快进。
+- **内核按风险匹配投入**：执行纪律、验证习惯与投入规模改按目标、实际影响、风险和不确定性决定，不按输入长度或文件数量机械分级；明确的局部任务直接完成并做相关检查，重要取舍与高风险先明确方案；复用同一代码状态下的有效结果，无新变更、失败或未解决风险不重复或扩大验证。
+- **默认不新增治理机制**：不为假设中的扩展增加抽象、配置、兼容层、流程或文档；不默认新增哈希校验、契约冻结、基线或门禁；测试、验证和审计按影响与风险开展，不为凑覆盖率增加。
+- **安全与删除**：任何卸载、删除或清理先列出完整清单再精确处理；删除文件优先移入回收站，无回收站时保留并说明；凭据仅在授权修改时替换为占位符，只读讨论不改源文件；文本读写与脚本执行使用无 `BOM` 的 `UTF-8`。
+- **表达与路由**：除代码、命令、路径、专名外优先使用用户语言，避免黑话与过度学术化；`~` 命令仅路由已列出的技能，技能缺失时说明路径并继续不依赖部分，未知命令不触发。
+
+### 技能与模板
+
+- **自主推进、方案、实现、自检**：按实际复杂度选择工作方式，不重复请求已获授权；方案仅在重要取舍与变更风险需对齐时进入；实现按影响确定验证范围并复用结果；自检按风险检查，不为低影响改动重复完整检查。
+- **审查与质量**：审查精简为证据支撑的结论，调查按风险循环；自检复用有效结果，只报告新变更与风险。
+- **界面、接口、测试、写作**：界面按产品定位建立设计基础并覆盖关键状态；接口明确新增字段的兼容验证与破坏性边界；测试按层级与风险选择，不重复覆盖；写作按读者与用途组织，不以篇幅短为目标。
+- **需求、清理、复盘、协作**：需求记录依据与验收条件；清理先列清单再处理，优先可恢复方式；复盘仅记录可复用经验；子代理按收益委派并明确所有权。
+- **模板**：方案、验证清单与项目模板同步为按改动范围选择检查，扩大范围需有理由。
+
+### 安装与运行链路
+
+- **命令路由统一**：短写与全称使用同一解析，未知命令不接管，技能路径统一指向用户级运行副本；运行时参数透传修复。
+- **安装来源与更新**：修复来源读取丢失；`Git` 来源更新仅允许干净工作区同分支快进，不再强制重置。
+- **安装验证**：改为核对当前完整内核，避免措辞调整误报。
+- **Cursor 标准钩子**：兼容扁平格式，正确写入通知钩子；标准模式增加安装提示。
+- **独立钩子文件合并**：`Grok` 与 `Hermes` 的基础条目与附加组件合并写入，互不覆盖。
+- **卸载清理**：`Hermes` 空配置、`Codex` 空市场索引与空钩子文件不再残留；用户自有条目完整保留。
+- **包内容**：运行副本补齐 `.codex-plugin`，`npm` 包补齐 `README.md` 与 `LICENSE.md`；包描述补齐六个宿主。
+- **提示与脚本**：帮助补齐 `Codex` 拦截支持；更新提示补齐多语言；安装脚本固定 `UTF-8` 输出。
 
 ---
 
 ## English
 
-### Bug Fixes
+### Behavior and verification
 
-- **Empty Cursor standard hooks**: `hooks-cursor.json` uses the flat format, but the installer parsed it as the settings format and wrote an empty `stop` array. Both formats are now handled and the notify hook is written correctly; standard mode also logs its completion.
-- **Grok and Hermes base hooks overwritten by add-ons**: base entries and add-on entries share one standalone hooks file. Enabling an add-on rewrote the whole file and disabling removed it, losing the base entries. Writes are now merged: only add-on entries are added or removed while base entries stay intact.
-- **Hermes empty config leftover after uninstall**: an empty `skills` and `external_dirs` block remained in `config.yaml`. The file is now removed when it holds no user content, and user entries are fully kept otherwise.
-- **Codex marketplace index leftover after uninstall**: an empty plugin list remained in `marketplace.json`. The file is now removed when no plugins remain.
-- **Missing runtime and package files**: the runtime copy now includes `.codex-plugin`, and the npm package now includes `README.md` and `LICENSE.md`; the package description lists all six hosts.
-- **Empty hooks files**: removing managed entries no longer leaves empty files behind; files with no remaining content are deleted.
-- **Help and prompts**: help now lists Codex for dangerous-command blocking; remote pull prompts during update are localized; the one-click install script pins UTF-8 output to avoid garbled Chinese paths.
-- **Command routing and install source**: short and full skill names share one parser, unknown commands are left alone, and skill paths point to the user-level runtime copy; install source reading is fixed and Git updates only fast-forward a clean tree on the same branch.
+- **Match effort to risk**: execution, verification, and scope follow goals, impact, risk, and uncertainty instead of input length or file counts; direct tasks finish with related checks while material trade-offs get a plan first; valid results for the same code state are reused without repeated or expanded verification.
+- **No default governance overhead**: no new abstractions, configs, compatibility layers, flows, docs, hash checks, frozen contracts, baselines, or gates for hypothetical needs; testing follows impact and risk, not coverage quotas.
+- **Safety and deletion**: list every deletion target before acting; prefer recycle locations and keep files when none exists; replace credentials with placeholders only when authorized to edit; read and write text and scripts as `UTF-8` without `BOM`.
+- **Expression and routing**: use the user's language except for code, commands, paths, and proper names; route only listed `~` commands and explain missing skill paths without guessing.
+
+### Skills and templates
+
+- **Autonomy, planning, implementation, self-check**: choose the working mode by complexity without re-requesting granted approvals; plan only for material trade-offs and risky changes; scope verification by impact and reuse results; check by risk instead of rerunning everything.
+- **Review and quality**: keep evidence-backed conclusions with risk-driven investigation; reuse valid results and report only new changes and risks.
+- **Interface, API, testing, writing**: build the design foundation by product positioning with key states covered; verify compatibility for added fields and name breaking boundaries; choose tests by level and risk without duplication; organize writing by reader and purpose instead of brevity.
+- **Requirements, cleanup, retrospectives, collaboration**: record reasons and acceptance criteria; list cleanup targets first with recoverable handling; keep only reusable lessons; delegate subagents by benefit with clear ownership.
+- **Templates**: plans and verification lists select checks by change scope with reasons required for expansion.
+
+### Install and runtime
+
+- **Unified routing**: short and full skill names share one parser, unknown commands are left alone, and skill paths point to the user-level runtime copy; runtime argument forwarding is fixed.
+- **Source and update**: install source reading is fixed; `Git` updates only fast-forward a clean tree on the same branch.
+- **Install verification**: compare the full current kernel instead of wording-sensitive checks.
+- **Cursor hooks**: handle the flat format and log standard-mode completion.
+- **Standalone hooks**: merge base and add-on entries for `Grok` and `Hermes` without overwriting.
+- **Uninstall cleanup**: remove empty `Hermes` configs, empty `Codex` marketplace entries, and empty hooks files while keeping user entries.
+- **Package contents**: include `.codex-plugin` in the runtime copy and `README.md` with `LICENSE.md` in the `npm` package; list all six hosts in the description.
+- **Prompts and scripts**: list `Codex` for blocking support; localize update prompts; pin `UTF-8` output for the install script.
